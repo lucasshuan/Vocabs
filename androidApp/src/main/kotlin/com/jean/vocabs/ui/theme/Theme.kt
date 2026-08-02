@@ -8,108 +8,122 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jean.vocabs.R
 
-/*
- * Linguagem visual do app: fundo neutro, cartões brancos, tinta quase preta,
- * azul para ação/palavra e laranja para expressão. As palavras capturadas
- * aparecem sempre em serif itálico — é a assinatura tipográfica do app.
+/** Cores semânticas que não têm um papel próprio no ColorScheme do Material. */
+object TagararaColors {
+    val Mint = Color(0xFF8FDC5E)
+    val MintDark = Color(0xFF3F8A22)
+}
+
+/**
+ * Se o tema corrente é o escuro.
+ *
+ * Não é preferência de estilo: no handoff o cartão claro tem contorno de 1 px
+ * para se separar do fundo quase branco, e o escuro não tem nenhum — a própria
+ * superfície já se destaca. Sem esse sinal cada tela adivinharia sozinha, que é
+ * como metade delas acabou com contorno no escuro.
  */
+val LocalTemaEscuro = staticCompositionLocalOf { false }
 
-private val CoresClaras = lightColorScheme(
-    primary = Color(0xFF189BEF),
-    onPrimary = Color(0xFFFFFFFF),
-    primaryContainer = Color(0xFFDCF0FE),
-    onPrimaryContainer = Color(0xFF085A8C),
-    secondary = Color(0xFF4B5563),
-    onSecondary = Color(0xFFFFFFFF),
-    secondaryContainer = Color(0xFFE8EAEE),
-    onSecondaryContainer = Color(0xFF2A3038),
-    tertiary = Color(0xFFEF8318),
-    onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFFCEBD6),
-    onTertiaryContainer = Color(0xFF8A4A04),
-    background = Color(0xFFF3F4F6),
-    onBackground = Color(0xFF15181D),
-    surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF15181D),
-    surfaceVariant = Color(0xFFEAECEF),
-    onSurfaceVariant = Color(0xFF697077),
-    outline = Color(0xFFD8DCE1),
-    outlineVariant = Color(0xFFE7EAED),
-    inverseSurface = Color(0xFF1A1D23),
-    inverseOnSurface = Color(0xFFF2F3F5),
-    error = Color(0xFFBA1A1A),
-    onError = Color(0xFFFFFFFF),
-    errorContainer = Color(0xFFFDE7E1),
-    onErrorContainer = Color(0xFF7E2B18),
+private val LightColors = lightColorScheme(
+    primary = Color(0xFF8C34B4),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFEED9F7),
+    onPrimaryContainer = Color(0xFF4C1264),
+    secondary = Color(0xFF6C6178),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFF1EBF8),
+    onSecondaryContainer = Color(0xFF33273F),
+    tertiary = TagararaColors.MintDark,
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFDDF3D1),
+    onTertiaryContainer = Color(0xFF19430A),
+    background = Color(0xFFFAF7FD),
+    onBackground = Color(0xFF221A2C),
+    surface = Color.White,
+    onSurface = Color(0xFF221A2C),
+    surfaceVariant = Color(0xFFF1EBF8),
+    onSurfaceVariant = Color(0xFF6C6178),
+    outline = Color(0xFFE4DAEE),
+    outlineVariant = Color(0xFFEDE6F4),
+    error = Color(0xFFB3261E),
+    onError = Color.White,
+    errorContainer = Color(0xFFF9DEDC),
+    onErrorContainer = Color(0xFF410E0B),
 )
 
-private val CoresEscuras = darkColorScheme(
-    primary = Color(0xFF58BEF9),
-    onPrimary = Color(0xFF00344F),
-    primaryContainer = Color(0xFF0B4A70),
-    onPrimaryContainer = Color(0xFFCBE9FD),
-    secondary = Color(0xFFB6BCC6),
-    onSecondary = Color(0xFF232831),
-    secondaryContainer = Color(0xFF2B313A),
-    onSecondaryContainer = Color(0xFFDDE1E8),
-    tertiary = Color(0xFFF7A455),
-    onTertiary = Color(0xFF4A2800),
-    tertiaryContainer = Color(0xFF643D0A),
-    onTertiaryContainer = Color(0xFFFCDEBE),
-    background = Color(0xFF0F1115),
-    onBackground = Color(0xFFE8EAED),
-    surface = Color(0xFF181B21),
-    onSurface = Color(0xFFE8EAED),
-    surfaceVariant = Color(0xFF242830),
-    onSurfaceVariant = Color(0xFF9AA1AA),
-    outline = Color(0xFF3A4048),
-    outlineVariant = Color(0xFF2B3038),
-    inverseSurface = Color(0xFFE8EAED),
-    inverseOnSurface = Color(0xFF181B21),
+private val DarkColors = darkColorScheme(
+    primary = Color(0xFFBC7BE8),
+    onPrimary = Color(0xFF1A1222),
+    primaryContainer = Color(0xFF4A275E),
+    onPrimaryContainer = Color(0xFFEFD9FF),
+    secondary = Color(0xFFB8ACCA),
+    onSecondary = Color(0xFF271F30),
+    secondaryContainer = Color(0xFF332A40),
+    onSecondaryContainer = Color(0xFFE6DDF0),
+    tertiary = TagararaColors.Mint,
+    onTertiary = Color(0xFF183109),
+    tertiaryContainer = Color(0xFF294B1A),
+    onTertiaryContainer = Color(0xFFD9F4CA),
+    background = Color(0xFF14101A),
+    onBackground = Color(0xFFF0EAF6),
+    surface = Color(0xFF1E1826),
+    onSurface = Color(0xFFF0EAF6),
+    surfaceVariant = Color(0xFF2A2234),
+    onSurfaceVariant = Color(0xFF9A8FA8),
+    outline = Color(0xFF332A40),
+    outlineVariant = Color(0xFF2A2234),
     error = Color(0xFFFFB4AB),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
 )
 
-/**
- * Serif itálico é reservado para as palavras capturadas e títulos de tela;
- * todo o resto fica no sans padrão. Um estilo só de fonte já diferencia o
- * conteúdo (a palavra) da interface ao redor dele.
- */
-private val Fontes: Typography = Typography().let { base ->
-    val palavra = base.headlineLarge.copy(
-        fontFamily = FontFamily.Serif,
-        fontStyle = FontStyle.Italic,
-        fontWeight = FontWeight.Bold,
-    )
-    base.copy(
-        displaySmall = palavra.copy(fontSize = 38.sp, lineHeight = 44.sp),
-        headlineLarge = palavra.copy(fontSize = 32.sp, lineHeight = 38.sp),
-        headlineMedium = palavra.copy(fontSize = 24.sp, lineHeight = 30.sp),
-        titleLarge = palavra.copy(fontSize = 21.sp, lineHeight = 26.sp),
-        labelSmall = base.labelSmall.copy(
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.4.sp,
-            fontSize = 11.sp,
-        ),
-    )
-}
+private val Figtree = FontFamily(
+    Font(R.font.figtree_variable, FontWeight.Normal),
+    Font(R.font.figtree_variable, FontWeight.Medium),
+    Font(R.font.figtree_variable, FontWeight.SemiBold),
+    Font(R.font.figtree_variable, FontWeight.Bold),
+)
 
-private val Formas = Shapes(
+val Bricolage = FontFamily(
+    Font(R.font.bricolage_grotesque_variable, FontWeight.Medium),
+    Font(R.font.bricolage_grotesque_variable, FontWeight.Bold),
+    Font(R.font.bricolage_grotesque_variable, FontWeight.ExtraBold),
+)
+
+private val Type = Typography(
+    displaySmall = TextStyle(fontFamily = Bricolage, fontWeight = FontWeight.ExtraBold, fontSize = 36.sp, lineHeight = 42.sp),
+    headlineLarge = TextStyle(fontFamily = Bricolage, fontWeight = FontWeight.ExtraBold, fontSize = 30.sp, lineHeight = 35.sp),
+    headlineMedium = TextStyle(fontFamily = Bricolage, fontWeight = FontWeight.Bold, fontSize = 24.sp, lineHeight = 30.sp),
+    headlineSmall = TextStyle(fontFamily = Bricolage, fontWeight = FontWeight.Bold, fontSize = 21.sp, lineHeight = 27.sp),
+    titleLarge = TextStyle(fontFamily = Bricolage, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp),
+    titleMedium = TextStyle(fontFamily = Figtree, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
+    titleSmall = TextStyle(fontFamily = Figtree, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp),
+    bodyLarge = TextStyle(fontFamily = Figtree, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
+    bodyMedium = TextStyle(fontFamily = Figtree, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 21.sp),
+    bodySmall = TextStyle(fontFamily = Figtree, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 18.sp),
+    labelLarge = TextStyle(fontFamily = Figtree, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp),
+    labelMedium = TextStyle(fontFamily = Figtree, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp),
+    labelSmall = TextStyle(fontFamily = Figtree, fontWeight = FontWeight.Bold, fontSize = 10.sp, lineHeight = 14.sp, letterSpacing = 0.8.sp),
+)
+
+private val Shapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(18.dp),
-    large = RoundedCornerShape(24.dp),
-    extraLarge = RoundedCornerShape(32.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(22.dp),
+    extraLarge = RoundedCornerShape(30.dp),
 )
 
 @Composable
@@ -117,60 +131,12 @@ fun VocabsTheme(
     temaEscuro: Boolean = isSystemInDarkTheme(),
     conteudo: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = if (temaEscuro) CoresEscuras else CoresClaras,
-        typography = Fontes,
-        shapes = Formas,
-        content = conteudo,
-    )
-}
-
-/** Um fundo e a tinta que fica legível sobre ele. */
-data class CorDeAtalho(val fundo: Color, val conteudo: Color)
-
-/**
- * A paleta exclusiva dos cards da tela de Início.
- *
- * Vive fora do [androidx.compose.material3.ColorScheme] de propósito. Azul e
- * laranja já carregam significado fixo no resto do app — azul é ação de captura
- * e PALAVRA, laranja é EXPRESSÃO — e reusá-los na grade fazia os cards parecerem
- * eco dos botões logo abaixo, com a mesma cor querendo dizer duas coisas.
- *
- * Estes três tons não aparecem em nenhum outro lugar, então "cor de card" vira
- * uma categoria própria em vez de um empréstimo.
- *
- * O padrão de cada par segue o do tema: no claro, fundo saturado com tinta
- * branca; no escuro, fundo pastel com tinta profunda. É o que mantém o contraste
- * alto nos dois modos sem trocar a matiz.
- */
-object CoresDeAtalho {
-
-    /** Capturar — o gesto que dá origem a tudo. */
-    val violeta: CorDeAtalho
-        @Composable get() = conforme(
-            claro = CorDeAtalho(Color(0xFF6C4FE0), Color(0xFFFFFFFF)),
-            escuro = CorDeAtalho(Color(0xFFBCA9FF), Color(0xFF25105E)),
+    CompositionLocalProvider(LocalTemaEscuro provides temaEscuro) {
+        MaterialTheme(
+            colorScheme = if (temaEscuro) DarkColors else LightColors,
+            typography = Type,
+            shapes = Shapes,
+            content = conteudo,
         )
-
-    /** Palavras — o que já cresceu. */
-    val turquesa: CorDeAtalho
-        @Composable get() = conforme(
-            claro = CorDeAtalho(Color(0xFF0E9384), Color(0xFFFFFFFF)),
-            escuro = CorDeAtalho(Color(0xFF63D9C6), Color(0xFF00352D)),
-        )
-
-    /** Pendentes — o que ficou esperando. */
-    val framboesa: CorDeAtalho
-        @Composable get() = conforme(
-            claro = CorDeAtalho(Color(0xFFBE3E82), Color(0xFFFFFFFF)),
-            escuro = CorDeAtalho(Color(0xFFF5A3CC), Color(0xFF480B30)),
-        )
-
-    /**
-     * Deriva do fundo em vigor, e não de `isSystemInDarkTheme()`: assim continua
-     * certo se alguém forçar o tema pelo parâmetro de [VocabsTheme].
-     */
-    @Composable
-    private fun conforme(claro: CorDeAtalho, escuro: CorDeAtalho): CorDeAtalho =
-        if (MaterialTheme.colorScheme.background.luminance() < 0.5f) escuro else claro
+    }
 }

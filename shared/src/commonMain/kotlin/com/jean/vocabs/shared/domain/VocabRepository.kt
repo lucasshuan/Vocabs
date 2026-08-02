@@ -29,8 +29,13 @@ interface VocabRepository {
     /** A home observa isto: só o que já virou ficha. */
     fun observarProntas(): Flow<List<Entrada>>
 
-    /** O inbox: tudo que ainda não é ficha — rascunho, na fila, gerando ou com erro. */
+    /** Entradas que ainda estão na fila da IA, sendo geradas ou falharam. */
     fun observarInbox(): Flow<List<Entrada>>
+
+    /** Capturas de mídia ainda aguardando uma seleção confirmada. */
+    fun observarCapturasPendentes(): Flow<List<Captura>>
+
+    fun observarCapturaPorId(id: Long): Flow<Captura?>
 
     fun observarPorId(id: Long): Flow<Entrada?>
 
@@ -41,24 +46,47 @@ interface VocabRepository {
 
     fun observarRetencao(id: Long): Flow<RetencaoAgora?>
 
-    /** Grava a captura de texto como PENDENTE e devolve na hora. Não espera a IA. */
-    suspend fun capturarTexto(trecho: String, alvo: String, origem: String?): Long
+    fun observarAtividade(dias: Int = 84): Flow<List<AtividadeDiaria>>
+
+    fun observarUsoIa(): Flow<UsoIa>
+
+    /** Retrato consistente usado pelo ZIP de portabilidade local. */
+    suspend fun dadosParaExportacao(): DadosExportacao
+
+    /** Cria uma captura textual e todas as fichas selecionadas numa transação. */
+    suspend fun capturarTexto(trecho: String, alvos: List<AlvoSelecionado>): List<Long>
 
     /**
-     * Guarda uma foto ou um áudio como RASCUNHO. É a captura de 5 segundos: o
-     * arquivo já está salvo e a transcrição fica para quando você tiver calma.
+     * Guarda foto ou áudio como captura em transcrição. O arquivo fica seguro
+     * antes de OCR/voz começar e sempre pode seguir para edição manual.
      */
-    suspend fun capturarMidia(formato: FormatoCaptura, caminho: String, origem: String?): Long
+    suspend fun capturarMidia(
+        formato: FormatoCaptura,
+        caminho: String,
+        duracaoMs: Long? = null,
+    ): Long
 
-    /** Transcreve um rascunho e o coloca na fila da IA. */
-    suspend fun transcrever(id: Long, trecho: String, alvo: String, origem: String?)
+    /** Conclui a tentativa automática; erro não impede a edição manual. */
+    suspend fun registrarTranscricao(id: Long, trecho: String?, erro: String? = null)
+
+    /** Confirma o texto editado e cria uma entrada por seleção. */
+    suspend fun confirmarCaptura(
+        id: Long,
+        trecho: String,
+        alvos: List<AlvoSelecionado>,
+    ): List<Long>
 
     /** Chama o servidor e grava o resultado (ou o erro) na entrada. */
-    suspend fun gerarFicha(id: Long)
+    suspend fun gerarFicha(id: Long): Boolean
+
+    /** Processa entradas independentes com no máximo duas requisições simultâneas. */
+    suspend fun gerarFichas(ids: List<Long>, concorrencia: Int = 2): List<Boolean>
 
     /** Grava o resultado de um cartão e marca o dia no calendário de revisões. */
     suspend fun registrarResposta(id: Long, acertou: Boolean)
 
     /** Descarta a entrada e o arquivo de mídia, se houver. */
     suspend fun excluir(id: Long)
+
+    suspend fun excluirCaptura(id: Long)
 }

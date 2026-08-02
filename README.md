@@ -1,16 +1,15 @@
-# Vocabs
+# Tagarara
 
-App de vocabulário que captura palavras e expressões em inglês no momento em que
+Tagarara é um app de vocabulário que captura palavras e expressões em inglês no momento em que
 elas aparecem — jogando, lendo, assistindo — e transforma cada captura numa ficha
 gerada por IA.
 
 Os dados ficam no aparelho. O servidor só intermedia a chamada de IA.
 
-**Estado:** Fases 1, 1.5 e 2 implementadas. A captura acontece por texto, foto ou
-áudio (foto e áudio ficam no inbox até você transcrever), a ficha leva ~6s de ponta
-a ponta, e cada palavra tem força de memória que decai sozinha e volta pra fila de
-revisão. Falta o uso real: os critérios de saída que dependem de você — capturar em
-segundos nos contextos reais e revisar 7 dias seguidos — ainda não foram cumpridos.
+**Estado:** identidade Tagarara e fluxo local-first implementados. Uma captura pode
+gerar várias fichas; foto usa OCR local, áudio tenta transcrição local no Android
+13+, e ambos mantêm edição manual. A revisão é um cloze digitado, o perfil mostra
+84 dias de atividade e a exportação gera um ZIP versionado com JSON e mídias.
 
 ## Rodar
 

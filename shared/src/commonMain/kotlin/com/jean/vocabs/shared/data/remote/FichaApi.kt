@@ -3,6 +3,7 @@ package com.jean.vocabs.shared.data.remote
 import com.jean.vocabs.contracts.ErroResponse
 import com.jean.vocabs.contracts.FichaResponse
 import com.jean.vocabs.contracts.GerarFichaRequest
+import com.jean.vocabs.contracts.TipoAlvo
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.header
@@ -21,11 +22,11 @@ class FichaApi(
     private val token: String,
     private val client: HttpClient,
 ) {
-    suspend fun gerar(trecho: String, alvo: String): FichaResponse {
+    suspend fun gerar(trecho: String, alvo: String, tipo: TipoAlvo): FichaResponse {
         val resposta = client.post("$baseUrl/v1/ficha") {
             contentType(ContentType.Application.Json)
             header(HttpHeaders.Authorization, "Bearer $token")
-            setBody(GerarFichaRequest(trecho = trecho, alvo = alvo))
+            setBody(GerarFichaRequest(trecho = trecho, alvo = alvo, tipo = tipo))
         }
 
         if (!resposta.status.isSuccess()) {

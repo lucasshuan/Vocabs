@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Vocabs" parent="android:Theme.Material.NoActionBar">
+        <item name="android:fontFamily">@font/figtree_variable</item>
+        <item name="android:windowSplashScreenBackground">@color/tagarara_splash</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/tagarara_splash</item>
+        <item name="android:navigationBarColor">@color/tagarara_splash</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>

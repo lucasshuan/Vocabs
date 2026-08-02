@@ -32,4 +32,8 @@ class FichaViewModel(app: Application) : AndroidViewModel(app) {
     fun tentarDeNovo() {
         AppContainer.escopo.launch { repositorio.gerarFicha(id) }
     }
+
+    fun excluir() {
+        AppContainer.escopo.launch { repositorio.excluir(id) }
+    }
 }

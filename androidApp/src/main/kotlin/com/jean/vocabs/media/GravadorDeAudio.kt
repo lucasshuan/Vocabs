@@ -1,90 +1,150 @@
 package com.jean.vocabs.media
 
 import android.content.Context
+import android.media.AudioFormat
+import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.os.Build
 import com.jean.vocabs.shared.media.ArquivosDeMidia
 import java.io.File
+import java.io.FileOutputStream
+import java.io.RandomAccessFile
+import kotlin.concurrent.thread
 
-/**
- * Gravador de memo de voz.
- *
- * Sem transcrição automática, por decisão do roadmap: gravar é o que precisa ser
- * instantâneo. Transformar em texto é trabalho de outro momento.
- */
+/** Grava PCM 16 kHz mono dentro de WAV, formato aceito pelo reconhecimento local. */
 class GravadorDeAudio(private val context: Context) {
 
-    private var recorder: MediaRecorder? = null
+    private var audioRecord: AudioRecord? = null
     private var arquivo: File? = null
+    private var trabalhador: Thread? = null
 
-    val gravando: Boolean get() = recorder != null
+    @Volatile
+    private var escrevendo = false
 
-    /** Começa a gravar imediatamente. Devolve false se o microfone não abriu. */
+    val gravando: Boolean get() = escrevendo
+
+    @Suppress("MissingPermission") // A permissão é concedida pelo launcher antes deste ponto.
     fun iniciar(): Boolean {
         if (gravando) return true
-
-        val destino = ArquivosDeMidia.novoAudio(context)
-        val novo = criarRecorder().apply {
-            setAudioSource(MediaRecorder.AudioSource.MIC)
-            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
-            setAudioEncodingBitRate(96_000)
-            setAudioSamplingRate(44_100)
-            setOutputFile(destino.absolutePath)
+        val tamanho = maxOf(
+            AudioRecord.getMinBufferSize(
+                TAXA_AMOSTRAGEM,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+            ),
+            4_096,
+        )
+        val gravador = runCatching {
+            AudioRecord(
+                MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                TAXA_AMOSTRAGEM,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                tamanho * 2,
+            )
+        }.getOrNull() ?: return false
+        if (gravador.state != AudioRecord.STATE_INITIALIZED) {
+            gravador.release()
+            return false
         }
 
+        val destino = ArquivosDeMidia.novoAudio(context)
         return runCatching {
-            novo.prepare()
-            novo.start()
-            recorder = novo
+            FileOutputStream(destino).use { it.write(ByteArray(CABECALHO_WAV)) }
+            gravador.startRecording()
+            escrevendo = true
+            audioRecord = gravador
             arquivo = destino
+            trabalhador = thread(name = "tagarara-wav", isDaemon = true) {
+                FileOutputStream(destino, true).use { saida ->
+                    val buffer = ByteArray(tamanho)
+                    while (escrevendo) {
+                        val lidos = gravador.read(buffer, 0, buffer.size)
+                        if (lidos > 0) saida.write(buffer, 0, lidos)
+                    }
+                }
+            }
             true
         }.getOrElse {
-            novo.release()
+            escrevendo = false
+            gravador.release()
             destino.delete()
             false
         }
     }
 
-    /**
-     * Encerra e devolve o arquivo gravado, ou null se não deu para salvar.
-     *
-     * `stop()` lança se a gravação durou menos que alguns décimos de segundo —
-     * um toque duplo sem querer, por exemplo. Nesse caso o arquivo sai corrompido
-     * e é melhor descartar do que deixar um áudio mudo no inbox.
-     */
     fun parar(): File? {
-        val atual = recorder ?: return null
+        val gravador = audioRecord ?: return null
         val destino = arquivo
+        escrevendo = false
+        runCatching { gravador.stop() }
+        trabalhador?.join(2_000)
+        gravador.release()
+        limparEstado()
 
-        val salvou = runCatching { atual.stop() }.isSuccess
-        atual.release()
-        recorder = null
-        arquivo = null
-
-        if (!salvou || destino == null) {
+        if (destino == null || destino.length() <= CABECALHO_WAV) {
             destino?.delete()
             return null
         }
-        return destino.takeIf { it.length() > 0 }
+        return runCatching {
+            escreverCabecalho(destino)
+            destino
+        }.getOrElse {
+            destino.delete()
+            null
+        }
     }
 
-    /** Aborta sem guardar nada — usado quando a tela morre no meio da gravação. */
     fun cancelar() {
-        recorder?.let { atual ->
-            runCatching { atual.stop() }
-            atual.release()
+        escrevendo = false
+        audioRecord?.let { gravador ->
+            runCatching { gravador.stop() }
+            trabalhador?.join(1_000)
+            gravador.release()
         }
-        recorder = null
         arquivo?.delete()
-        arquivo = null
+        limparEstado()
     }
 
-    private fun criarRecorder(): MediaRecorder =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(context)
-        } else {
-            @Suppress("DEPRECATION")
-            MediaRecorder()
+    private fun limparEstado() {
+        audioRecord = null
+        arquivo = null
+        trabalhador = null
+    }
+
+    private fun escreverCabecalho(destino: File) {
+        val dados = destino.length() - CABECALHO_WAV
+        RandomAccessFile(destino, "rw").use { wav ->
+            wav.seek(0)
+            wav.writeBytes("RIFF")
+            wav.writeIntLe((dados + 36).toInt())
+            wav.writeBytes("WAVEfmt ")
+            wav.writeIntLe(16)
+            wav.writeShortLe(1)
+            wav.writeShortLe(1)
+            wav.writeIntLe(TAXA_AMOSTRAGEM)
+            wav.writeIntLe(TAXA_AMOSTRAGEM * BYTES_POR_AMOSTRA)
+            wav.writeShortLe(BYTES_POR_AMOSTRA)
+            wav.writeShortLe(16)
+            wav.writeBytes("data")
+            wav.writeIntLe(dados.toInt())
         }
+    }
+
+    private fun RandomAccessFile.writeIntLe(valor: Int) {
+        write(valor and 0xff)
+        write(valor ushr 8 and 0xff)
+        write(valor ushr 16 and 0xff)
+        write(valor ushr 24 and 0xff)
+    }
+
+    private fun RandomAccessFile.writeShortLe(valor: Int) {
+        write(valor and 0xff)
+        write(valor ushr 8 and 0xff)
+    }
+
+    companion object {
+        const val TAXA_AMOSTRAGEM = 16_000
+        const val CABECALHO_WAV = 44
+        private const val BYTES_POR_AMOSTRA = 2
+    }
 }

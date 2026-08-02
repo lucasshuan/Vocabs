@@ -27,6 +27,8 @@ dependencies {
     implementation(libs.logback.classic)
 
     implementation(libs.anthropic.java)
+
+    testImplementation(kotlin("test"))
 }
 
 application {

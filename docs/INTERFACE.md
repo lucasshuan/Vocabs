@@ -1,55 +1,38 @@
-# Interface
+# Interface Tagarara
 
-Critérios de layout que valem para o app inteiro. Não é guia de estilo — cor,
-tipografia e formas moram no [Theme.kt](../androidApp/src/main/kotlin/com/jean/vocabs/ui/theme/Theme.kt),
-que é o lugar certo para isso. Aqui ficam as decisões que a gente esqueceria e
-tornaria a repetir errado.
+O handoff em `handoff/` é a referência das oito telas. O tema segue o sistema e
+usa Figtree no corpo e Bricolage Grotesque em títulos/termos, ambas empacotadas.
 
-## A zona do polegar manda no que é ação
+## Semântica visual
 
-**Ação vai embaixo. Informação vai em cima.**
+- **Ameixa:** marca, seleção e ações.
+- **Menta:** progresso, memória e conclusão.
+- **Lilás-cinza:** superfícies de apoio e estados neutros.
+- **Vermelho:** somente erros e ações destrutivas.
 
-O aparelho é segurado com uma mão e operado com o polegar, que descreve um arco a
-partir do canto inferior. O topo da tela é a região mais difícil de alcançar — em
-telas de 6,5" você precisa reposicionar o aparelho na mão para tocar lá.
+O logo do papagaio aparece no cabeçalho, splash e launcher. Todo alvo de toque
+tem pelo menos 48 dp. Conteúdo crítico é rolável para 340×716, teclado aberto e
+fonte ampliada.
 
-Isso inverte o instinto de web, onde a chamada para ação vai no topo porque o
-mouse alcança tudo igual. Aqui:
+## Navegação
 
-- **Embaixo:** botões de captura, confirmar, responder um cartão, a barra de abas.
-- **Em cima:** saudação, contagens, títulos, qualquer coisa que se lê e não se toca.
+A barra inferior tem Início, Palavras, captura central, Pendentes e Perfil. O
+botão central abre diretamente a tela com abas Texto/Áudio/Foto; não há leque
+flutuante.
 
-A captura mostra por que isso precisa ser **ancorado** e não só ordenado. A
-primeira versão a punha por último na coluna rolável da Início, o que parecia
-suficiente — mas num dia sem nada a revisar o conteúdo encolhia, e os botões
-subiam para o terço superior da tela, exatamente onde o polegar não chega.
+## Telas
 
-Hoje ela mora no **botão central da barra inferior**, que é o alvo mais fácil de
-acertar com o polegar de qualquer mão. Isso resolve o problema de vez: a posição
-não depende de conteúdo, de tela nem de rolagem, e capturar deixou de custar uma
-troca de aba — de qualquer lugar do app são dois toques (abrir o leque, escolher
-o formato), e gravar áudio para no mesmo lugar em que começou, porque o próprio
-botão vira o "parar".
+- **Início:** logo/par de idiomas, força média, CTA de revisão, captura mais
+  antiga, totais e fichas do dia.
+- **Palavras:** coluna única, busca por alvo/tradução e filtros de memória.
+- **Captura:** trecho único; toque seleciona token e arraste seleciona intervalo.
+  Editar o trecho limpa todas as seleções.
+- **Pendentes:** separa transcrição/seleção de capturas e geração de fichas.
+- **Transcrever:** mídia, resultado local editável e o mesmo seletor multi-alvo.
+- **Ficha:** conteúdo e memória; relacionados expandem localmente; compartilhar e
+  excluir ficam no overflow.
+- **Revisão:** cloze digitado, feedback imediato e resposta revelada no erro.
+- **Perfil:** heatmap de 84 dias, métricas, idiomas, IA mensal e exportação.
 
-Exceções conscientes:
-
-- O botão "voltar" fica no topo à esquerda porque é onde o Android inteiro o
-  coloca, e contrariar isso custa mais do que o alcance.
-- Telas que abrem com o teclado em pé (a de Capturar, a de Transcrever) não
-  seguem a regra: metade da tela já está ocupada pelo teclado e a noção de
-  "embaixo" muda. Lá a ordem é a da leitura.
-
-## A captura nunca pode custar um toque a mais
-
-O princípio 1 do [PRODUTO.md](PRODUTO.md) é "captura antes de tudo", e o critério
-de saída da Fase 1 é capturar em menos de 10 segundos. Cada toque e cada
-transição de tela come esse orçamento.
-
-Consequências práticas já pagas:
-
-- A captura fica na barra, alcançável de qualquer aba — nunca é preciso navegar
-  até uma tela para começar.
-- O campo de trecho pede foco sozinho, então o teclado sobe junto com a tela.
-- Áudio começa a gravar no toque em "Áudio", sem tela de confirmação. A gravação
-  vive na barra, então trocar de aba no meio dela não a perde.
-- Salvar fecha a tela na hora; a ficha é gerada em background.
+Estados de carregamento, vazio, processamento e erro fazem parte da tela e nunca
+substituem conteúdo real por exemplos fixos.

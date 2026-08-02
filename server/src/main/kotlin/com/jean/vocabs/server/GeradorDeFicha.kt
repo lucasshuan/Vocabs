@@ -62,6 +62,7 @@ class GeradorDeFicha(
                 """
                 Snippet: ${pedido.trecho}
                 Target: ${pedido.alvo}
+                Type selected by the app: ${pedido.tipo.name}
                 """.trimIndent()
             )
             .build()
@@ -72,12 +73,12 @@ class GeradorDeFicha(
             .firstNotNullOfOrNull { bloco -> bloco.text().orElse(null)?.text() }
             ?: error("A Claude API não devolveu nenhum bloco de texto.")
 
-        return json.decodeFromString<FichaResponse>(texto)
+        val ficha = json.decodeFromString<FichaResponse>(texto)
+        return aplicarDecisoesLocais(pedido, ficha)
     }
 
     // Configurável para dar para comparar modelos sem recompilar. O padrão é o
-    // mais capaz: a classificação PALAVRA vs EXPRESSAO é o julgamento mais sutil
-    // da ficha, e errar isso contamina todos os outros campos.
+    // mais capaz para produzir definições contextualizadas e termos relacionados.
     private val modelo: String = Config["MODELO"] ?: MODELO_PADRAO
 
     /** Haiku 4.5 rejeita `effort` com 400; Opus e Sonnet aceitam. */
@@ -110,18 +111,9 @@ class GeradorDeFicha(
                 ${alvo.nome} and mark the part of it that caught their attention.
                 Your job is to build the study card for that target.
 
-                Classifying `tipo` — use this practical test: if you looked up ONLY
-                the target, in isolation, in a dictionary, would the sense it
-                carries INSIDE this snippet be listed there?
-                  - Yes -> PALAVRA    (e.g. ${alvo.exemplosDePalavra})
-                  - No  -> EXPRESSAO  (${alvo.exemplosDeExpressao})
-                What decides is not how many words the target has, it is whether
-                its meaning is the sum of its parts. Always judge the target INSIDE
-                the snippet, never in isolation: the same word shifts sense with
-                context.
-
-                `tipo` is exactly PALAVRA or EXPRESSAO. Those are field values, not
-                words to translate.
+                `tipo` is supplied by the app. Copy it exactly; never classify or
+                change it. It is PALAVRA for one selected token and EXPRESSAO for
+                two or more selected tokens.
 
                 The other fields:
                 - `traducao`: in $nativo, the sense the target carries IN THIS
@@ -133,6 +125,9 @@ class GeradorDeFicha(
                   ${alvo.notacaoDePronuncia}. For expressions, transcribe the whole
                   expression. (The field is named `ipa` from when English was the
                   only target; the notation it should carry is the one above.)
+                - `relacionadas`: 3 to 6 useful terms in ${alvo.nome} that are
+                  semantically related to the target. Return only concise terms,
+                  without definitions or numbering.
             """.trimIndent()
         }
 
@@ -144,7 +139,9 @@ class GeradorDeFicha(
             mapOf(
                 "type" to "object",
                 "additionalProperties" to false,
-                "required" to listOf("tipo", "traducao", "definicoes", "exemplo", "ipa"),
+                "required" to listOf(
+                    "tipo", "traducao", "definicoes", "exemplo", "ipa", "relacionadas"
+                ),
                 "properties" to mapOf(
                     "tipo" to mapOf(
                         "type" to "string",
@@ -157,8 +154,27 @@ class GeradorDeFicha(
                     ),
                     "exemplo" to mapOf("type" to "string"),
                     "ipa" to mapOf("type" to "string"),
+                    "relacionadas" to mapOf(
+                        "type" to "array",
+                        "minItems" to 3,
+                        "maxItems" to 6,
+                        "items" to mapOf("type" to "string"),
+                    ),
                 ),
             )
         )
     }
 }
+
+/** A seleção no aparelho é a autoridade; a saída do modelo nunca a sobrescreve. */
+internal fun aplicarDecisoesLocais(
+    pedido: GerarFichaRequest,
+    ficha: FichaResponse,
+): FichaResponse = ficha.copy(
+    tipo = pedido.tipo,
+    relacionadas = ficha.relacionadas
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .distinct()
+        .take(6),
+)

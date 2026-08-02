@@ -4,5 +4,11 @@
       Tema mínimo: a aparência real vem do Material 3 do Compose. Isto existe só
       para a janela do Android não abrir com barra de título e fundo errado.
     -->
-    <style name="Theme.Vocabs" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Vocabs" parent="android:Theme.Material.NoActionBar">
+        <item name="android:fontFamily">@font/figtree_variable</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/tagarara_splash</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/tagarara_splash</item>
+    </style>
 </resources>

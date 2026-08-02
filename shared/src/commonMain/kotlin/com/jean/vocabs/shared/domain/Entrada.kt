@@ -1,23 +1,28 @@
 package com.jean.vocabs.shared.domain
 
 import com.jean.vocabs.contracts.FichaResponse
+import com.jean.vocabs.contracts.TipoAlvo
 
 /**
- * Uma captura e, quando pronta, a ficha dela.
+ * Um alvo confirmado dentro de uma captura e, quando pronta, sua ficha.
  *
  * [ficha] reusa o tipo do contrato de propósito: um terceiro formato só para o
  * domínio seria uma cópia a mais para manter em sincronia, sem ganho nenhum.
  *
- * [trecho] e [alvo] são nulos enquanto a captura for um rascunho de foto ou
- * áudio: o sinal cru já está guardado, mas ninguém transcreveu ainda.
+ * [trecho] pode ser nulo apenas em dados legados incompletos. Capturas cruas de
+ * mídia vivem em [Captura] e só ganham entradas depois da seleção.
  *
  * [retencao] segue a mesma regra de [ficha]: existe se e somente se há ficha
  * para revisar.
  */
 data class Entrada(
     val id: Long,
+    val capturaId: Long,
     val trecho: String?,
     val alvo: String?,
+    val inicio: Int?,
+    val fim: Int?,
+    val tipo: TipoAlvo,
     val origem: String?,
     val criadoEm: Long,
     val status: StatusEntrada,
@@ -27,9 +32,6 @@ data class Entrada(
     val retencao: Retencao?,
     val erro: String?,
 ) {
-    /** Rascunho de mídia esperando transcrição — o trabalho manual da Fase 1.5. */
-    val precisaTranscricao: Boolean get() = status == StatusEntrada.RASCUNHO
-
     fun precisaRevisar(agora: Long): Boolean = retencao?.precisaRevisar(agora) == true
 
     /** O que mostrar como título quando ainda não há alvo digitado. */
@@ -70,7 +72,6 @@ private fun prioridadeDuplicata(status: StatusEntrada): Int = when (status) {
     StatusEntrada.GERANDO -> 1
     StatusEntrada.PENDENTE -> 2
     StatusEntrada.ERRO -> 3
-    StatusEntrada.RASCUNHO -> 4
 }
 
 /**
@@ -95,11 +96,10 @@ enum class FormatoCaptura {
  * O que sustenta o critério de saída da Fase 1: a captura grava e volta na hora
  * (PENDENTE), e a geração da ficha acontece depois, em background.
  *
- * RASCUNHO é o estado anterior a tudo isso, criado na Fase 1.5: existe foto ou
- * áudio guardado, mas não há texto para mandar para a IA ainda.
+ * O rascunho agora pertence a [Captura]; uma entrada só existe depois que um
+ * alvo foi confirmado.
  */
 enum class StatusEntrada {
-    RASCUNHO,
     PENDENTE,
     GERANDO,
     PRONTA,

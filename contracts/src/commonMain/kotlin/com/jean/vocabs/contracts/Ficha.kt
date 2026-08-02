@@ -14,6 +14,8 @@ import kotlinx.serialization.Serializable
 data class GerarFichaRequest(
     val trecho: String,
     val alvo: String,
+    /** Classificado localmente: um token é palavra; vários, expressão. */
+    val tipo: TipoAlvo,
 )
 
 /** O que o servidor devolve: a ficha da Fase 1. */
@@ -24,12 +26,13 @@ data class FichaResponse(
     val definicoes: List<String>,
     val exemplo: String,
     val ipa: String,
+    /** Termos próximos para a seção "Puxa outras palavras". */
+    val relacionadas: List<String> = emptyList(),
 )
 
 /**
- * Palavra vs expressão. O teste prático do documento: se procurar só esse termo
- * isolado no dicionário, o sentido que apareceu na frase aparece? Se sim é
- * PALAVRA; se não (phrasal verb, idioma, collocation), é EXPRESSAO.
+ * Palavra vs expressão é uma decisão de captura, não da IA: um token selecionado
+ * vira PALAVRA e dois ou mais tokens contíguos viram EXPRESSAO.
  */
 @Serializable
 enum class TipoAlvo {

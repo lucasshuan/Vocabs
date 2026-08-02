@@ -1,61 +1,48 @@
 package com.jean.vocabs.ui.inicio
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.scaleIn
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.ResumoRevisao
-import com.jean.vocabs.ui.idiomas.Idiomas
+import com.jean.vocabs.R
+import com.jean.vocabs.ui.components.BotaoPrincipal
+import com.jean.vocabs.ui.components.CartaoDaTela
+import com.jean.vocabs.ui.components.CartaoMetrica
 import com.jean.vocabs.ui.components.Icones
-import com.jean.vocabs.ui.components.escalaAoPressionar
-import com.jean.vocabs.ui.components.tempoAte
-import com.jean.vocabs.ui.theme.CorDeAtalho
-import com.jean.vocabs.ui.theme.CoresDeAtalho
+import com.jean.vocabs.ui.components.LinhaDeLista
+import com.jean.vocabs.ui.components.PilulaDeIdiomas
+import com.jean.vocabs.ui.components.RotuloDeSecao
 import java.time.LocalTime
 
-/**
- * A porta do app.
- *
- * Não tem bloco de captura próprio: o botão central da barra faz isso de
- * qualquer aba, e é o alvo mais fácil do rodapé. O critério de alcance do
- * polegar do [docs/INTERFACE.md] continua sendo obedecido — só que pela barra,
- * que é a mesma em toda tela, em vez de por um bloco repetido aqui.
- */
 @Composable
 fun InicioScreen(
     aoEscrever: () -> Unit,
@@ -66,414 +53,140 @@ fun InicioScreen(
     vm: InicioViewModel = viewModel(),
 ) {
     val estado by vm.estado.collectAsStateWithLifecycle()
-
+    val naFila = estado.revisao?.naFila ?: 0
     Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding(),
+            .verticalScroll(rememberScrollState())
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+            Image(painterResource(R.drawable.logo_tagarara), stringResource(R.string.logo_description), Modifier.size(34.dp))
+            Text("TAGARARA", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 9.dp))
+            Spacer(Modifier.weight(1f))
+            PilulaDeIdiomas(aoAbrirPerfil)
+        }
+
+        CartaoDaTela(
+            forma = MaterialTheme.shapes.extraLarge,
+            recheio = PaddingValues(20.dp),
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Cabecalho(
-                estado = estado,
-                aoAbrirPerfil = aoAbrirPerfil,
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AnelMemoria(estado.forcaMedia)
+                Column(Modifier.weight(1f).padding(start = 16.dp)) {
+                    Text(saudacao(), style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        text = if (naFila == 0) "Sua memória está em dia.\nNada esfriou hoje."
+                        else "$naFila ${if (naFila == 1) "palavra esfriou" else "palavras esfriaram"}.\n${minutosDeRevisao(naFila)} resolvem.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 5.dp),
+                    )
+                }
+            }
+            BotaoPrincipal(
+                texto = if (naFila > 0) "Revisar $naFila ${if (naFila == 1) "palavra" else "palavras"}" else "Nada para revisar",
+                aoClicar = aoRevisar,
+                habilitado = naFila > 0,
                 modifier = Modifier.padding(top = 16.dp),
             )
+        }
 
-            FilaDeIdiomas(modifier = Modifier.padding(top = 16.dp))
-
-            estado.revisao?.let { revisao ->
-                if (revisao.naFila > 0) {
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = scaleIn(tween(240)) + fadeIn(tween(240)),
+        estado.capturaMaisAntiga?.let {
+            val total = estado.capturasPendentes
+            LinhaDeLista(
+                titulo = "$total ${if (total == 1) "captura esperando você" else "capturas esperando você"}",
+                detalhe = "continue a transcrição",
+                aoClicar = aoAbrirPendentes,
+                fim = {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.size(30.dp).background(MaterialTheme.colorScheme.tertiary, CircleShape),
                     ) {
-                        CartaoRevisao(
-                            revisao = revisao,
-                            aoRevisar = aoRevisar,
-                            modifier = Modifier.padding(top = 24.dp),
+                        Icon(
+                            imageVector = Icones.Avancar,
+                            contentDescription = "Abrir pendentes",
+                            tint = MaterialTheme.colorScheme.onTertiary,
+                            modifier = Modifier.size(18.dp),
                         )
                     }
-                } else {
-                    // Sumir quando não há o que revisar deixaria o recurso
-                    // invisível justamente no dia em que você está em dia.
+                },
+            )
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            CartaoMetrica("${estado.totalPalavras}", "vocabulários", Modifier.weight(1f), aoClicar = aoAbrirPalavras)
+            CartaoMetrica("${estado.dominadas}", "dominadas", Modifier.weight(1f), destaque = true)
+            CartaoMetrica("${estado.revisao?.diasSeguidos ?: 0}", "dias seguidos", Modifier.weight(1f), destaque = true)
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            RotuloDeSecao("Capturadas hoje")
+            if (estado.recentesHoje.isEmpty()) {
+                CartaoDaTela(forma = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(), aoClicar = aoEscrever) {
+                    Text("Ainda nenhuma ficha hoje", style = MaterialTheme.typography.titleSmall)
                     Text(
-                        text = "Nada pedindo revisão agora" +
-                            (revisao.proximaEmMillis?.let { " — a próxima volta ${tempoAte(it)}." }
-                                ?: "."),
+                        "Capture algo que encontrou no mundo real.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 20.dp),
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
-            }
-
-            GradeDeAtalhos(
-                estado = estado,
-                aoEscrever = aoEscrever,
-                aoAbrirPalavras = aoAbrirPalavras,
-                aoAbrirPendentes = aoAbrirPendentes,
-                modifier = Modifier.padding(top = 24.dp),
-            )
-
-            // Espaço da barra, que flutua por cima desta coluna.
-            Spacer(modifier = Modifier.height(120.dp))
-        }
-    }
-}
-
-/**
- * Tudo que o app faz, numa grade só.
- *
- * O que existe e o que ainda não existe convivem aqui de propósito: a diferença
- * é dita pela cor, não por um título de seção. Um card apagado no meio dos
- * coloridos já se explica sozinho, e separar em duas listas daria a promessa o
- * mesmo peso visual do que funciona.
- */
-@Composable
-private fun GradeDeAtalhos(
-    estado: InicioEstado,
-    aoEscrever: () -> Unit,
-    aoAbrirPalavras: () -> Unit,
-    aoAbrirPendentes: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val cores = MaterialTheme.colorScheme
-
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CartaoDeAtalho(
-                titulo = "Capturar",
-                legenda = "áudio, foto ou texto",
-                icone = Icones.CapturarCirculo,
-                // Paleta própria da grade, e não o azul/laranja do app: aqueles
-                // já significam ação de captura e tipo de palavra, e repeti-los
-                // aqui fazia os cards parecerem eco dos botões logo abaixo.
-                atalho = CoresDeAtalho.violeta,
-                aoClicar = aoEscrever,
-                modifier = Modifier.weight(1f),
-            )
-            CartaoDeAtalho(
-                titulo = "Palavras",
-                legenda = when (estado.totalPalavras) {
-                    0 -> "nenhuma ainda"
-                    1 -> "1 ficha"
-                    else -> "${estado.totalPalavras} fichas"
-                },
-                icone = Icones.Cartas,
-                atalho = CoresDeAtalho.turquesa,
-                aoClicar = aoAbrirPalavras,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CartaoDeAtalho(
-                titulo = "Pendentes",
-                legenda = when (estado.pendentes) {
-                    0 -> "nada parado"
-                    1 -> "1 esperando"
-                    else -> "${estado.pendentes} esperando"
-                },
-                icone = Icones.Inbox,
-                atalho = CoresDeAtalho.framboesa,
-                aoClicar = aoAbrirPendentes,
-                modifier = Modifier.weight(1f),
-            )
-            CartaoDeAtalho(
-                titulo = "Exercícios",
-                legenda = "cloze, leitura, associação",
-                icone = Icones.Check,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            CartaoDeAtalho(
-                titulo = "Rede",
-                legenda = "palavras puxando palavras",
-                icone = Icones.Rede,
-                modifier = Modifier.weight(1f),
-            )
-            CartaoDeAtalho(
-                titulo = "Escuta",
-                legenda = "ditado e cruzadas",
-                icone = Icones.Som,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
-}
-
-/**
- * Um card da grade. Sem [aoClicar] ele é uma promessa, não um botão.
- *
- * Nada de `onClick` que não faz nada: um card que responde ao toque com silêncio
- * é pior que um que visivelmente não responde. O apagamento e a palavra
- * "em breve" no lugar da legenda dizem isso antes de você tentar.
- */
-@Composable
-private fun CartaoDeAtalho(
-    titulo: String,
-    legenda: String,
-    icone: ImageVector,
-    modifier: Modifier = Modifier,
-    atalho: CorDeAtalho? = null,
-    aoClicar: (() -> Unit)? = null,
-) {
-    val cores = MaterialTheme.colorScheme
-    val disponivel = aoClicar != null
-
-    val fundo = atalho?.fundo ?: cores.surface.copy(alpha = 0.55f)
-    val conteudo = atalho?.conteudo ?: cores.onSurfaceVariant.copy(alpha = 0.75f)
-    val interacao = remember { MutableInteractionSource() }
-
-    val corpo: @Composable () -> Unit = {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(conteudo.copy(alpha = 0.14f), CircleShape),
-            ) {
-                Icon(
-                    imageVector = icone,
-                    contentDescription = null,
-                    tint = conteudo,
-                    modifier = Modifier.size(19.dp),
-                )
-            }
-            Text(
-                text = titulo,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = conteudo,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-            Text(
-                text = if (disponivel) legenda else "em breve",
-                style = MaterialTheme.typography.bodySmall,
-                color = conteudo.copy(alpha = 0.75f),
-                modifier = Modifier.padding(top = 2.dp),
-            )
-        }
-    }
-
-    if (aoClicar == null) {
-        Surface(shape = MaterialTheme.shapes.large, color = fundo, modifier = modifier) { corpo() }
-    } else {
-        Surface(
-            onClick = aoClicar,
-            shape = MaterialTheme.shapes.large,
-            color = fundo,
-            interactionSource = interacao,
-            modifier = modifier.escalaAoPressionar(interacao),
-        ) { corpo() }
-    }
-}
-
-/**
- * O cabeçalho inteiro é o botão do perfil.
- *
- * A bandeira no lugar do ícone de pessoa não é enfeite: o idioma nativo é o que
- * define em que língua as fichas são escritas, ou seja, qual "projeto" está
- * aberto. Mostrá-lo aqui é a resposta mais curta para "sobre que base o app está
- * trabalhando agora", e como a troca mora na tela de progresso, a mesma bandeira
- * vira o caminho até lá.
- */
-@Composable
-private fun Cabecalho(
-    estado: InicioEstado,
-    aoAbrirPerfil: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val cores = MaterialTheme.colorScheme
-    val interacao = remember { MutableInteractionSource() }
-    val nativo = Idiomas.nativoAtual
-
-    Surface(
-        onClick = aoAbrirPerfil,
-        shape = MaterialTheme.shapes.large,
-        color = Color.Transparent,
-        interactionSource = interacao,
-        modifier = modifier
-            .fillMaxWidth()
-            .escalaAoPressionar(interacao),
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(vertical = 8.dp),
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = saudacao(),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = cores.onBackground,
-                )
-                Text(
-                    text = resumoDoDia(estado),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = cores.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(46.dp)
-                    .background(cores.secondaryContainer, CircleShape),
-            ) {
-                Text(text = nativo.bandeira, fontSize = 22.sp)
-            }
-            Icon(
-                imageVector = Icones.Avancar,
-                contentDescription = "Seu progresso",
-                tint = cores.onSurfaceVariant,
-                modifier = Modifier
-                    .padding(start = 2.dp)
-                    .size(20.dp),
-            )
-        }
-    }
-}
-
-/**
- * Os idiomas que se está aprendendo.
- *
- * Rola na horizontal porque a lista é feita para crescer; hoje tem um item só e
- * um "+" que ainda não faz nada. O "+" fica desde já para o lugar da ação existir
- * antes da ação — quando um segundo idioma entrar, nada se move de posição.
- */
-@Composable
-private fun FilaDeIdiomas(modifier: Modifier = Modifier) {
-    val cores = MaterialTheme.colorScheme
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Idiomas.alvos.forEach { idioma ->
-            val selecionado = idioma.codigo == Idiomas.alvoAtual.codigo
-            Surface(
-                shape = RoundedCornerShape(50),
-                color = if (selecionado) cores.inverseSurface else cores.surface,
-                border = if (selecionado) null else BorderStroke(1.dp, cores.outline),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                ) {
-                    Text(text = idioma.bandeira, fontSize = 16.sp)
-                    Text(
-                        text = idioma.nome,
-                        style = MaterialTheme.typography.labelLarge
-                            .copy(fontWeight = FontWeight.SemiBold),
-                        color = if (selecionado) cores.inverseOnSurface else cores.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
+            } else {
+                estado.recentesHoje.forEach { entrada ->
+                    CartaoDaTela(
+                        forma = MaterialTheme.shapes.small,
+                        recheio = PaddingValues(horizontal = 15.dp, vertical = 12.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(entrada.titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            Text(
+                                entrada.ficha?.traducao.orEmpty(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
         }
-
-        Surface(
-            shape = CircleShape,
-            color = Color.Transparent,
-            border = BorderStroke(1.dp, cores.outline),
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    imageVector = Icones.Mais,
-                    contentDescription = "Adicionar idioma",
-                    tint = cores.onSurfaceVariant,
-                    modifier = Modifier.size(17.dp),
-                )
-            }
-        }
+        Spacer(Modifier.navigationBarsPadding().height(110.dp))
     }
 }
 
-private fun saudacao(): String = when (LocalTime.now().hour) {
+/** "Bom dia" até as 12, "Boa tarde" até as 18, "Boa noite" depois. */
+private fun saudacao(agora: LocalTime = LocalTime.now()): String = when (agora.hour) {
     in 5..11 -> "Bom dia"
     in 12..17 -> "Boa tarde"
     else -> "Boa noite"
 }
 
-private fun resumoDoDia(estado: InicioEstado): String {
-    if (estado.totalPalavras == 0) return "Nenhuma palavra ainda — capture a primeira."
-
-    val palavras = if (estado.totalPalavras == 1) "1 palavra" else "${estado.totalPalavras} palavras"
-    val sequencia = estado.revisao?.diasSeguidos ?: 0
-    return if (sequencia >= 2) "$palavras  ·  $sequencia dias seguidos" else palavras
+/**
+ * O custo da fila em minutos, arredondado para cima.
+ *
+ * Meio minuto por cartão é o que o handoff assume ("3 palavras … 10 min
+ * resolvem" seria generoso demais para 3); manter a conta explícita evita
+ * prometer um número que a sessão não cumpre.
+ */
+private fun minutosDeRevisao(naFila: Int): String {
+    val minutos = ((naFila * 30 + 59) / 60).coerceAtLeast(1)
+    return "$minutos min"
 }
 
 @Composable
-private fun CartaoRevisao(
-    revisao: ResumoRevisao,
-    aoRevisar: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val cores = MaterialTheme.colorScheme
-    val interacao = remember { MutableInteractionSource() }
-
-    Surface(
-        onClick = aoRevisar,
-        shape = MaterialTheme.shapes.large,
-        color = cores.primary,
-        interactionSource = interacao,
-        modifier = modifier
-            .fillMaxWidth()
-            .escalaAoPressionar(interacao),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(16.dp)) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(44.dp)
-                    .background(cores.onPrimary.copy(alpha = 0.18f), CircleShape),
-            ) {
-                Icon(
-                    imageVector = Icones.Repetir,
-                    contentDescription = null,
-                    tint = cores.onPrimary,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 14.dp),
-            ) {
-                Text(
-                    text = if (revisao.naFila == 1) {
-                        "1 palavra pedindo revisão"
-                    } else {
-                        "${revisao.naFila} palavras pedindo revisão"
-                    },
-                    style = MaterialTheme.typography.titleSmall,
-                    color = cores.onPrimary,
-                )
-                val legenda = when {
-                    revisao.revisouHoje -> "Você já revisou hoje."
-                    revisao.diasSeguidos >= 2 -> "${revisao.diasSeguidos} dias seguidos — não perca."
-                    else -> "Leva uns 4 minutos."
-                }
-                Text(
-                    text = legenda,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = cores.onPrimary.copy(alpha = 0.85f),
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
-            Text(
-                text = "→",
-                style = MaterialTheme.typography.titleMedium,
-                color = cores.onPrimary,
-            )
+private fun AnelMemoria(valor: Int) {
+    val trilha = MaterialTheme.colorScheme.outlineVariant
+    val cor = MaterialTheme.colorScheme.tertiary
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(74.dp)) {
+        Canvas(Modifier.fillMaxSize()) {
+            val traco = Stroke(8.dp.toPx(), cap = StrokeCap.Round)
+            drawArc(trilha, -90f, 360f, false, style = traco)
+            drawArc(cor, -90f, 360f * valor.coerceIn(0, 100) / 100f, false, style = traco)
         }
+        Text("$valor%", style = MaterialTheme.typography.headlineSmall)
     }
 }

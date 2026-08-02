@@ -54,7 +54,7 @@ class CapturaRapida internal constructor() {
 
 @Composable
 fun rememberCapturaRapida(
-    aoSalvarMidia: (FormatoCaptura, String) -> Unit,
+    aoSalvarMidia: (FormatoCaptura, String, Long?) -> Unit,
     aoCapturado: (FormatoCaptura) -> Unit,
 ): CapturaRapida {
     val contexto = LocalContext.current
@@ -70,7 +70,7 @@ fun rememberCapturaRapida(
         val arquivo = fotoPendente
         fotoPendente = null
         if (deuCerto && arquivo != null) {
-            aoSalvarMidia(FormatoCaptura.FOTO, arquivo.absolutePath)
+            aoSalvarMidia(FormatoCaptura.FOTO, arquivo.absolutePath, null)
             aoCapturado(FormatoCaptura.FOTO)
         } else {
             arquivo?.delete()
@@ -106,9 +106,10 @@ fun rememberCapturaRapida(
     }
 
     estado.aoParar = {
+        val duracaoMs = estado.segundos * 1_000L
         estado.gravando = false
         gravador.parar()?.let { arquivo ->
-            aoSalvarMidia(FormatoCaptura.AUDIO, arquivo.absolutePath)
+            aoSalvarMidia(FormatoCaptura.AUDIO, arquivo.absolutePath, duracaoMs)
             aoCapturado(FormatoCaptura.AUDIO)
         }
     }
@@ -129,6 +130,3 @@ fun rememberCapturaRapida(
 
     return estado
 }
-
-fun formatarDuracao(segundos: Long): String =
-    "%d:%02d".format(segundos / 60, segundos % 60)

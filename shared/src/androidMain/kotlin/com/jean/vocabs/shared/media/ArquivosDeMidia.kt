@@ -16,7 +16,7 @@ object ArquivosDeMidia {
 
     fun novaFoto(context: Context): File = novo(context, "foto", "jpg")
 
-    fun novoAudio(context: Context): File = novo(context, "audio", "m4a")
+    fun novoAudio(context: Context): File = novo(context, "audio", "wav")
 
     private fun novo(context: Context, prefixo: String, extensao: String): File {
         val pasta = File(context.filesDir, PASTA).apply { mkdirs() }

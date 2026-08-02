@@ -118,4 +118,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
+    // Modelo latino empacotado: OCR disponível offline desde o primeiro uso.
+    implementation(libs.mlkit.text.recognition)
 }

@@ -1,136 +1,187 @@
--- Uma tabela só. A ficha nasce sempre de exatamente uma captura, então separar
--- em duas tabelas com FK só adicionaria um JOIN sem ganho nenhum agora.
---
--- Fase 1.5: a mesma tabela guarda os três formatos de captura. Foto e áudio
--- entram como RASCUNHO, sem trecho nem alvo — eles só passam a existir quando
--- você transcreve. É por isso que essas duas colunas aceitam NULL.
-CREATE TABLE entrada (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    trecho          TEXT,            -- NULL enquanto o rascunho não foi transcrito
-    alvo            TEXT,            -- idem
-    origem          TEXT,            -- jogo, livro, série... opcional
-    criado_em       INTEGER NOT NULL,
-    status          TEXT NOT NULL,   -- RASCUNHO | PENDENTE | GERANDO | PRONTA | ERRO
-    formato         TEXT NOT NULL,   -- TEXTO | FOTO | AUDIO
-    midia_caminho   TEXT,            -- arquivo local, quando formato != TEXTO
-    tipo            TEXT,            -- PALAVRA | EXPRESSAO (vem da IA)
-    traducao        TEXT,
-    definicoes_json TEXT,            -- array JSON: 1-2 strings, nunca consultado por conteúdo
-    exemplo         TEXT,
-    ipa             TEXT,
-    erro            TEXT,            -- mensagem quando status = ERRO
-
-    -- Fase 2 — retenção. Dois números e não um: se todas as palavras caíssem no
-    -- mesmo ritmo, uma dominada há meses sumiria tão rápido quanto uma nova —
-    -- que é justamente a vantagem que a repetição espaçada existe para dar.
-    --
-    -- No fim da tabela de propósito: 2.sqm adiciona estas colunas com ALTER
-    -- TABLE, que anexa no fim. Instalação nova e migrada precisam bater.
-    pontos                REAL    NOT NULL DEFAULT 100.0,  -- 0-100, salvos na última resposta
-    taxa_decaimento       REAL    NOT NULL DEFAULT 40.0,   -- pontos perdidos por dia
-    data_ultima_interacao INTEGER NOT NULL DEFAULT 0,      -- 0 = ainda não virou ficha
-    -- Distingue "nunca revisada" de "revisada". Sem isto, uma ficha recém-gerada
-    -- nasce com 100 pontos e a tela a chamaria de "dominada" — mentira que
-    -- desmoraliza o recurso inteiro no primeiro contato.
-    revisoes              INTEGER NOT NULL DEFAULT 0,
-
-    -- Placar por palavra, para a taxa de acerto da Fase 8.
-    --
-    -- Parecem redundantes com `revisoes`, e daqui para a frente são mesmo: toda
-    -- resposta soma nos dois lugares. A diferença aparece no passado. As revisões
-    -- feitas antes desta coluna existir não têm resultado guardado, e `acertos +
-    -- erros` é justamente o total de que se sabe o desfecho — então a taxa sai
-    -- calculada só sobre elas. Derivar `erros = revisoes - acertos` seria mais
-    -- curto e contaria que toda revisão antiga foi um erro.
-    acertos               INTEGER NOT NULL DEFAULT 0,
-    erros                 INTEGER NOT NULL DEFAULT 0
+-- Uma captura guarda o contexto e a mídia. Várias entradas podem apontar para
+-- ela, inclusive seleções sobrepostas do mesmo trecho.
+CREATE TABLE captura (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    trecho            TEXT,
+    origem            TEXT,
+    criado_em         INTEGER NOT NULL,
+    status            TEXT NOT NULL, -- TRANSCREVENDO | AGUARDANDO_SELECAO | PROCESSADA
+    formato           TEXT NOT NULL, -- TEXTO | FOTO | AUDIO
+    midia_caminho     TEXT,
+    duracao_ms        INTEGER,
+    erro_transcricao  TEXT
 );
 
-CREATE INDEX entrada_criado_em ON entrada(criado_em DESC);
+CREATE INDEX captura_criado_em ON captura(criado_em DESC);
+CREATE INDEX captura_status ON captura(status);
 
--- Calendário de revisões: uma linha por dia local em que você respondeu ao menos
--- um cartão. É o mínimo para o critério de saída da fase ("7 dias seguidos") ser
--- verificável sozinho — sem trilha de eventos, sem tabela de sessões.
---
--- `dia` é um Julian Day Number local: vira à meia-noite do fuso do aparelho,
--- então dias seguidos diferem exatamente em 1 e a sequência vira uma subtração.
--- Nenhuma aritmética de calendário no Kotlin, que aqui não tem kotlinx-datetime.
+-- Uma entrada é um alvo confirmado e, quando pronta, sua ficha e retenção.
+CREATE TABLE entrada (
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    captura_id              INTEGER NOT NULL REFERENCES captura(id) ON DELETE CASCADE,
+    alvo                    TEXT NOT NULL,
+    inicio                  INTEGER,
+    fim                     INTEGER,
+    tipo                    TEXT NOT NULL, -- PALAVRA | EXPRESSAO, decidido localmente
+    status                  TEXT NOT NULL, -- PENDENTE | GERANDO | PRONTA | ERRO
+    traducao                TEXT,
+    definicoes_json         TEXT,
+    exemplo                 TEXT,
+    ipa                     TEXT,
+    relacionadas_json       TEXT,
+    erro                    TEXT,
+    pontos                  REAL NOT NULL DEFAULT 100.0,
+    taxa_decaimento         REAL NOT NULL DEFAULT 40.0,
+    data_ultima_interacao   INTEGER NOT NULL DEFAULT 0,
+    revisoes                INTEGER NOT NULL DEFAULT 0,
+    acertos                 INTEGER NOT NULL DEFAULT 0,
+    erros                   INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX entrada_captura ON entrada(captura_id);
+CREATE INDEX entrada_status ON entrada(status);
+
+CREATE VIEW entrada_com_captura AS
+SELECT
+    e.id,
+    e.captura_id,
+    e.alvo,
+    e.inicio,
+    e.fim,
+    e.tipo,
+    e.status,
+    e.traducao,
+    e.definicoes_json,
+    e.exemplo,
+    e.ipa,
+    e.relacionadas_json,
+    e.erro,
+    e.pontos,
+    e.taxa_decaimento,
+    e.data_ultima_interacao,
+    e.revisoes,
+    e.acertos,
+    e.erros,
+    c.trecho,
+    c.origem,
+    c.criado_em,
+    c.formato,
+    c.midia_caminho,
+    c.duracao_ms
+FROM entrada e
+JOIN captura c ON c.id = e.captura_id;
+
 CREATE TABLE dia_revisado (
     dia      INTEGER NOT NULL PRIMARY KEY,
     revisoes INTEGER NOT NULL DEFAULT 0
 );
 
-buscarPorId:
-SELECT * FROM entrada WHERE id = ?;
+-- Contador local e informativo. Sem conta de usuário, ele não é uma quota de
+-- segurança; registra apenas gerações concluídas pelo aparelho.
+CREATE TABLE uso_ia (
+    mes       TEXT NOT NULL PRIMARY KEY,
+    geracoes  INTEGER NOT NULL DEFAULT 0
+);
 
--- A home mostra só o que virou ficha. Tudo que ainda está cru vive no inbox,
--- que é justamente a separação que a Fase 1.5 pede.
+buscarEntradaPorId:
+SELECT * FROM entrada_com_captura WHERE id = ?;
+
 listarProntas:
-SELECT * FROM entrada WHERE status = 'PRONTA' ORDER BY criado_em DESC;
+SELECT * FROM entrada_com_captura WHERE status = 'PRONTA' ORDER BY criado_em DESC;
 
--- Mais antigo primeiro: o que está parado há mais tempo é o que corre risco de
--- virar backlog esquecido.
 listarInbox:
-SELECT * FROM entrada WHERE status != 'PRONTA' ORDER BY criado_em ASC;
+SELECT * FROM entrada_com_captura WHERE status != 'PRONTA' ORDER BY criado_em ASC;
+
+listarTodasEntradas:
+SELECT * FROM entrada_com_captura ORDER BY criado_em DESC, id DESC;
+
+buscarCapturaPorId:
+SELECT * FROM captura WHERE id = ?;
+
+listarCapturasPendentes:
+SELECT * FROM captura WHERE status != 'PROCESSADA' ORDER BY criado_em ASC;
+
+listarTodasCapturas:
+SELECT * FROM captura ORDER BY criado_em DESC;
 
 inserirCaptura:
-INSERT INTO entrada (trecho, alvo, origem, criado_em, status, formato, midia_caminho)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT INTO captura (
+    trecho, origem, criado_em, status, formato, midia_caminho, duracao_ms, erro_transcricao
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 ultimoIdInserido:
 SELECT last_insert_rowid();
 
--- Fecha o ciclo do rascunho: a transcrição chega e a entrada entra na fila da IA.
-transcrever:
-UPDATE entrada SET trecho = ?, alvo = ?, origem = ?, status = ?, erro = NULL WHERE id = ?;
+inserirEntrada:
+INSERT INTO entrada (captura_id, alvo, inicio, fim, tipo, status)
+VALUES (?, ?, ?, ?, ?, ?);
+
+registrarTranscricao:
+UPDATE captura
+SET trecho = ?, status = 'AGUARDANDO_SELECAO', erro_transcricao = ?
+WHERE id = ?;
+
+processarCaptura:
+UPDATE captura
+SET trecho = ?, status = 'PROCESSADA', erro_transcricao = NULL
+WHERE id = ?;
 
 marcarStatus:
 UPDATE entrada SET status = ?, erro = NULL WHERE id = ?;
 
 salvarFicha:
 UPDATE entrada
-SET status = ?, tipo = ?, traducao = ?, definicoes_json = ?, exemplo = ?, ipa = ?, erro = NULL
+SET status = ?, tipo = ?, traducao = ?, definicoes_json = ?, exemplo = ?, ipa = ?,
+    relacionadas_json = ?, erro = NULL
 WHERE id = ?;
 
 marcarErro:
 UPDATE entrada SET status = ?, erro = ? WHERE id = ?;
 
-excluir:
+excluirEntrada:
 DELETE FROM entrada WHERE id = ?;
 
--- Não existe uma query "listarFila". Os pontos atuais dependem de "agora", e um
--- Flow do SQLDelight só reemite quando a tabela muda, nunca quando o relógio
--- anda: um WHERE com o tempo dentro congelaria o "agora" no instante em que a
--- query foi montada, e a fila pararia sem dar erro nenhum. O filtro vive no
--- Kotlin, na mesma função pura que desenha a barra da ficha.
+excluirEntradasDaCaptura:
+DELETE FROM entrada WHERE captura_id = ?;
 
--- Os valores já chegam calculados pelo domínio.
+excluirCaptura:
+DELETE FROM captura WHERE id = ?;
+
+contarEntradasDaCaptura:
+SELECT count(*) FROM entrada WHERE captura_id = ?;
+
+listarIdsDaCaptura:
+SELECT id FROM entrada WHERE captura_id = ? ORDER BY id;
+
 salvarRetencao:
 UPDATE entrada
 SET pontos = ?, taxa_decaimento = ?, data_ultima_interacao = ?,
     revisoes = ?, acertos = ?, erros = ?
 WHERE id = ?;
 
--- Único lugar onde a fronteira do dia é definida. 'localtime' usa o fuso do
--- aparelho; o + 0.5 desloca o Julian Day (que vira ao meio-dia) para virar à
--- meia-noite.
---
--- O `:instante + 0` não é enfeite: dentro de uma chamada de função o SQLDelight
--- não consegue inferir o tipo do parâmetro e o gera como String. A soma força o
--- contexto numérico e ele sai como Long.
 diaLocal:
 SELECT CAST(julianday((:instante + 0) / 1000, 'unixepoch', 'localtime') + 0.5 AS INTEGER);
 
--- Dois statements em vez de um UPSERT: `ON CONFLICT DO UPDATE` pede SQLite 3.24,
--- que só chegou no Android 10 (API 29). O minSdk daqui é 26, que traz o 3.19 —
--- um UPSERT compilaria, passaria no emulador moderno e quebraria num Android 8.
+mesLocal:
+SELECT strftime('%Y-%m', (:instante + 0) / 1000, 'unixepoch', 'localtime');
+
 abrirDia:
 INSERT OR IGNORE INTO dia_revisado (dia, revisoes) VALUES (?, 0);
 
 somarRevisao:
 UPDATE dia_revisado SET revisoes = revisoes + 1 WHERE dia = ?;
 
--- Do mais recente para trás; a sequência para no primeiro buraco. O teto é
--- folga: nenhuma sequência real precisa de mais de um ano de histórico.
 listarDiasRevisados:
 SELECT dia FROM dia_revisado ORDER BY dia DESC LIMIT 400;
+
+listarAtividadeDesde:
+SELECT dia, revisoes FROM dia_revisado WHERE dia >= ? ORDER BY dia ASC;
+
+abrirMesIa:
+INSERT OR IGNORE INTO uso_ia (mes, geracoes) VALUES (?, 0);
+
+somarGeracaoIa:
+UPDATE uso_ia SET geracoes = geracoes + 1 WHERE mes = ?;
+
+observarUsoIaDoMes:
+SELECT geracoes FROM uso_ia WHERE mes = ?;

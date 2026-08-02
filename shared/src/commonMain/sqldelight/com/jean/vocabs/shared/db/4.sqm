@@ -1,0 +1,133 @@
+-- Separa a captura bruta das fichas. Cada linha antiga vira uma captura; linhas
+-- com alvo também viram uma entrada filha, preservando ficha e retenção.
+
+PRAGMA foreign_keys = 0;
+
+ALTER TABLE entrada RENAME TO entrada_legado;
+
+CREATE TABLE captura (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    trecho            TEXT,
+    origem            TEXT,
+    criado_em         INTEGER NOT NULL,
+    status            TEXT NOT NULL,
+    formato           TEXT NOT NULL,
+    midia_caminho     TEXT,
+    duracao_ms        INTEGER,
+    erro_transcricao  TEXT
+);
+
+CREATE TABLE entrada (
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    captura_id              INTEGER NOT NULL REFERENCES captura(id) ON DELETE CASCADE,
+    alvo                    TEXT NOT NULL,
+    inicio                  INTEGER,
+    fim                     INTEGER,
+    tipo                    TEXT NOT NULL,
+    status                  TEXT NOT NULL,
+    traducao                TEXT,
+    definicoes_json         TEXT,
+    exemplo                 TEXT,
+    ipa                     TEXT,
+    relacionadas_json       TEXT,
+    erro                    TEXT,
+    pontos                  REAL NOT NULL DEFAULT 100.0,
+    taxa_decaimento         REAL NOT NULL DEFAULT 40.0,
+    data_ultima_interacao   INTEGER NOT NULL DEFAULT 0,
+    revisoes                INTEGER NOT NULL DEFAULT 0,
+    acertos                 INTEGER NOT NULL DEFAULT 0,
+    erros                   INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO captura (
+    id, trecho, origem, criado_em, status, formato, midia_caminho, duracao_ms, erro_transcricao
+)
+SELECT
+    id,
+    trecho,
+    origem,
+    criado_em,
+    CASE
+        WHEN alvo IS NULL OR trim(alvo) = '' OR status = 'RASCUNHO'
+            THEN 'AGUARDANDO_SELECAO'
+        ELSE 'PROCESSADA'
+    END,
+    formato,
+    midia_caminho,
+    NULL,
+    CASE WHEN status = 'RASCUNHO' THEN erro ELSE NULL END
+FROM entrada_legado;
+
+INSERT INTO entrada (
+    id, captura_id, alvo, inicio, fim, tipo, status,
+    traducao, definicoes_json, exemplo, ipa, relacionadas_json, erro,
+    pontos, taxa_decaimento, data_ultima_interacao, revisoes, acertos, erros
+)
+SELECT
+    id,
+    id,
+    alvo,
+    CASE WHEN trecho IS NOT NULL AND instr(trecho, alvo) > 0
+        THEN instr(trecho, alvo) - 1 ELSE NULL END,
+    CASE WHEN trecho IS NOT NULL AND instr(trecho, alvo) > 0
+        THEN instr(trecho, alvo) + length(alvo) - 1 ELSE NULL END,
+    COALESCE(tipo, 'PALAVRA'),
+    CASE WHEN status = 'RASCUNHO' THEN 'PENDENTE' ELSE status END,
+    traducao,
+    definicoes_json,
+    exemplo,
+    ipa,
+    NULL,
+    CASE WHEN status = 'RASCUNHO' THEN NULL ELSE erro END,
+    pontos,
+    taxa_decaimento,
+    data_ultima_interacao,
+    revisoes,
+    acertos,
+    erros
+FROM entrada_legado
+WHERE alvo IS NOT NULL AND trim(alvo) != '';
+
+DROP TABLE entrada_legado;
+
+CREATE INDEX captura_criado_em ON captura(criado_em DESC);
+CREATE INDEX captura_status ON captura(status);
+CREATE INDEX entrada_captura ON entrada(captura_id);
+CREATE INDEX entrada_status ON entrada(status);
+
+CREATE VIEW entrada_com_captura AS
+SELECT
+    e.id,
+    e.captura_id,
+    e.alvo,
+    e.inicio,
+    e.fim,
+    e.tipo,
+    e.status,
+    e.traducao,
+    e.definicoes_json,
+    e.exemplo,
+    e.ipa,
+    e.relacionadas_json,
+    e.erro,
+    e.pontos,
+    e.taxa_decaimento,
+    e.data_ultima_interacao,
+    e.revisoes,
+    e.acertos,
+    e.erros,
+    c.trecho,
+    c.origem,
+    c.criado_em,
+    c.formato,
+    c.midia_caminho,
+    c.duracao_ms
+FROM entrada e
+JOIN captura c ON c.id = e.captura_id;
+
+CREATE TABLE uso_ia (
+    mes       TEXT NOT NULL PRIMARY KEY,
+    geracoes  INTEGER NOT NULL DEFAULT 0
+);
+
+PRAGMA foreign_keys = 1;

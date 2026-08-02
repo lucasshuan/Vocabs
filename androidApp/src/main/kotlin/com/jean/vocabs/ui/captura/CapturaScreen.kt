@@ -1,246 +1,213 @@
 package com.jean.vocabs.ui.captura
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.shared.domain.AlvoSelecionado
 import com.jean.vocabs.ui.components.AvisoDuplicata
 import com.jean.vocabs.ui.components.BotaoCircular
+import com.jean.vocabs.ui.components.BotaoPrincipal
+import com.jean.vocabs.ui.components.ChipsDeSelecao
+import com.jean.vocabs.ui.components.DiscoDeIcone
 import com.jean.vocabs.ui.components.Icones
+import com.jean.vocabs.ui.components.PilulaSelecionavel
+import com.jean.vocabs.ui.components.RotuloDeSecao
+import com.jean.vocabs.ui.components.SeletorDeTermos
+import com.jean.vocabs.ui.components.formatarDuracao
 
-/**
- * A captura por escrito.
- *
- * Áudio e foto saíram daqui: eles vivem no botão central da barra, alcançáveis
- * de qualquer aba sem trocar de tela. O que sobrou é o caminho mais lento e mais
- * completo dos três — e o único que precisa de teclado.
- */
+private enum class AbaCaptura(val rotulo: String) { TEXTO("Texto"), AUDIO("Áudio"), FOTO("Foto") }
+
 @Composable
 fun CapturaScreen(
     aoCapturarTexto: () -> Unit,
     aoVoltar: () -> Unit,
     vm: CapturaViewModel = viewModel(),
 ) {
-    var trecho by rememberSaveable { mutableStateOf("") }
-    var alvo by rememberSaveable { mutableStateOf("") }
-    var origem by rememberSaveable { mutableStateOf("") }
-
+    var aba by remember { mutableStateOf(AbaCaptura.TEXTO) }
+    var trecho by remember { mutableStateOf("") }
+    val selecoes = remember { mutableStateListOf<AlvoSelecionado>() }
     val duplicata by vm.duplicata.collectAsStateWithLifecycle()
+    val captura = rememberCapturaRapida(
+        aoSalvarMidia = vm::salvarMidia,
+        aoCapturado = { aoCapturarTexto() },
+    )
 
-    val focoTrecho = remember { FocusRequester() }
-    val gerenciadorFoco = LocalFocusManager.current
-
-    // É isto que faz a captura caber em 10 segundos: o teclado já sobe com o
-    // cursor no campo certo, sem um toque a mais.
-    LaunchedEffect(Unit) { focoTrecho.requestFocus() }
-
-    LaunchedEffect(alvo) { vm.procurarDuplicata(alvo) }
-
-    val podeSalvar = trecho.isNotBlank() && alvo.isNotBlank()
+    LaunchedEffect(selecoes.lastOrNull()?.texto) {
+        vm.procurarDuplicata(selecoes.lastOrNull()?.texto.orEmpty())
+    }
 
     fun salvarTexto() {
-        if (!podeSalvar) return
-        vm.salvarTexto(trecho = trecho, alvo = alvo, origem = origem)
-        trecho = ""
-        alvo = ""
-        gerenciadorFoco.clearFocus()
+        if (trecho.isBlank() || selecoes.isEmpty()) return
+        vm.salvarTexto(trecho, selecoes.toList())
         aoCapturarTexto()
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
-            .imePadding()
-            .padding(horizontal = 20.dp),
+            .imePadding(),
     ) {
-        Box(modifier = Modifier.padding(top = 8.dp)) {
-            BotaoCircular(icone = Icones.Voltar, descricao = "Voltar", aoClicar = aoVoltar)
-        }
-
-        Text(
-            text = "Escrever",
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(top = 16.dp),
-        )
-        Text(
-            text = "O que te pegou?",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp, bottom = 20.dp),
-        )
-
-        Surface(
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surface,
-            shadowElevation = 1.dp,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column {
-                CampoCaptura(
-                    valor = trecho,
-                    aoMudar = { trecho = it },
-                    rotulo = "Trecho",
-                    dica = "A frase onde apareceu",
-                    minLinhas = 3,
-                    opcoesTeclado = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    modifier = Modifier.focusRequester(focoTrecho),
-                )
-                DivisorSuave()
-                CampoCaptura(
-                    valor = alvo,
-                    aoMudar = { alvo = it },
-                    rotulo = "Alvo",
-                    dica = "O que te pegou (1 palavra ou várias)",
-                    umaLinha = true,
-                    opcoesTeclado = KeyboardOptions(imeAction = ImeAction.Next),
-                    acoesTeclado = KeyboardActions(
-                        onNext = { gerenciadorFoco.moveFocus(FocusDirection.Down) },
-                    ),
-                )
-                DivisorSuave()
-                CampoCaptura(
-                    valor = origem,
-                    aoMudar = { origem = it },
-                    rotulo = "Origem (opcional)",
-                    dica = "jogo, livro, série…",
-                    umaLinha = true,
-                    opcoesTeclado = KeyboardOptions(imeAction = ImeAction.Done),
-                    acoesTeclado = KeyboardActions(onDone = { salvarTexto() }),
-                )
-            }
-        }
-
-        AnimatedVisibility(
-            visible = duplicata != null,
-            enter = fadeIn(tween(220)),
-            exit = fadeOut(tween(140)),
-        ) {
-            duplicata?.let { entrada ->
-                AvisoDuplicata(
-                    entrada = entrada,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
-            }
-        }
-
-        Button(
-            onClick = ::salvarTexto,
-            enabled = podeSalvar,
-            shape = MaterialTheme.shapes.large,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp)
-                .height(56.dp),
+                .statusBarsPadding()
+                .padding(start = 20.dp, end = 14.dp, top = 12.dp, bottom = 4.dp),
         ) {
-            Icon(
-                imageVector = Icones.Mais,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
+            Text("Capturar", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+            BotaoCircular(Icones.Fechar, "Fechar captura", aoVoltar)
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+        ) {
+            AbaCaptura.entries.forEach { item ->
+                PilulaSelecionavel(
+                    rotulo = item.rotulo,
+                    selecionada = aba == item,
+                    aoClicar = { aba = item },
+                    forma = RoundedCornerShape(14.dp),
+                    modifier = Modifier.weight(1f).height(46.dp),
+                )
+            }
+        }
+
+        when (aba) {
+            AbaCaptura.TEXTO -> ConteudoTexto(
+                trecho = trecho,
+                selecoes = selecoes,
+                aoMudarTrecho = {
+                    trecho = it
+                    selecoes.clear()
+                },
+                aoSelecionar = { alvo ->
+                    if (selecoes.none { it.inicio == alvo.inicio && it.fim == alvo.fim }) selecoes += alvo
+                },
+                aoRemover = selecoes::remove,
             )
-            Text(
-                text = "Salvar captura",
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                modifier = Modifier.padding(start = 8.dp),
+            AbaCaptura.AUDIO -> ConteudoMidia(
+                icone = Icones.Microfone,
+                titulo = if (captura.gravando) "Gravando ${formatarDuracao(captura.segundos)}" else "Gravar um trecho",
+                detalhe = "O reconhecimento local tenta transcrever em inglês. Você sempre poderá editar.",
+                acao = if (captura.gravando) "Parar e salvar" else "Começar gravação",
+                aoClicar = { if (captura.gravando) captura.pararAudio() else captura.gravarAudio() },
+            )
+            AbaCaptura.FOTO -> ConteudoMidia(
+                icone = Icones.Camera,
+                titulo = "Fotografar um trecho",
+                detalhe = "O texto é lido no aparelho pelo modelo latino, sem enviar a imagem.",
+                acao = "Abrir câmera",
+                aoClicar = captura::tirarFoto,
             )
         }
 
-        Text(
-            text = "A ficha é gerada sozinha depois. Você pode voltar ao que estava fazendo.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 12.dp),
-        )
+        if (aba == AbaCaptura.TEXTO) {
+            duplicata?.let { AvisoDuplicata(it, Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
+            BotaoPrincipal(
+                texto = if (selecoes.isEmpty()) "Selecione o que guardar" else "Guardar ${selecoes.size} ${if (selecoes.size == 1) "captura" else "capturas"}",
+                aoClicar = ::salvarTexto,
+                habilitado = trecho.isNotBlank() && selecoes.isNotEmpty(),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            )
+        }
 
-        Spacer(modifier = Modifier.height(150.dp))
+        Spacer(Modifier.navigationBarsPadding().height(24.dp))
     }
 }
 
-/** Campo sem borda dentro do cartão — a moldura é o próprio cartão. */
 @Composable
-private fun CampoCaptura(
-    valor: String,
-    aoMudar: (String) -> Unit,
-    rotulo: String,
-    dica: String,
-    modifier: Modifier = Modifier,
-    minLinhas: Int = 1,
-    umaLinha: Boolean = false,
-    opcoesTeclado: KeyboardOptions = KeyboardOptions.Default,
-    acoesTeclado: KeyboardActions = KeyboardActions.Default,
+private fun ConteudoTexto(
+    trecho: String,
+    selecoes: List<AlvoSelecionado>,
+    aoMudarTrecho: (String) -> Unit,
+    aoSelecionar: (AlvoSelecionado) -> Unit,
+    aoRemover: (AlvoSelecionado) -> Unit,
 ) {
-    TextField(
-        value = valor,
-        onValueChange = aoMudar,
-        label = { Text(rotulo) },
-        placeholder = { Text(dica) },
-        minLines = minLinhas,
-        singleLine = umaLinha,
-        keyboardOptions = opcoesTeclado,
-        keyboardActions = acoesTeclado,
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            disabledContainerColor = Color.Transparent,
-            errorContainerColor = Color.Transparent,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            cursorColor = MaterialTheme.colorScheme.primary,
-            focusedLabelColor = MaterialTheme.colorScheme.primary,
-        ),
-        modifier = modifier.fillMaxWidth(),
-    )
+    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+        RotuloDeSecao("Trecho onde apareceu")
+        OutlinedTextField(
+            value = trecho,
+            onValueChange = aoMudarTrecho,
+            placeholder = { Text("The plan went haywire when the power cut out.") },
+            minLines = 2,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
+
+        if (trecho.isNotBlank()) {
+            RotuloDeSecao("Selecione o que chamou atenção", Modifier.padding(top = 18.dp, bottom = 9.dp))
+            SeletorDeTermos(trecho, aoSelecionar)
+            Text(
+                "Toque numa palavra ou arraste por várias.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
+
+        if (selecoes.isNotEmpty()) {
+            RotuloDeSecao("${selecoes.size} ${if (selecoes.size == 1) "selecionada" else "selecionadas"}", Modifier.padding(top = 18.dp, bottom = 9.dp))
+            ChipsDeSelecao(selecoes, aoRemover)
+        }
+    }
 }
 
 @Composable
-private fun DivisorSuave() {
-    HorizontalDivider(
-        color = MaterialTheme.colorScheme.outlineVariant,
-        modifier = Modifier.padding(horizontal = 16.dp),
-    )
+private fun ConteudoMidia(
+    icone: androidx.compose.ui.graphics.vector.ImageVector,
+    titulo: String,
+    detalhe: String,
+    acao: String,
+    aoClicar: () -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 30.dp),
+    ) {
+        DiscoDeIcone(
+            icone = icone,
+            descricao = null,
+            cor = MaterialTheme.colorScheme.primary,
+            fundo = MaterialTheme.colorScheme.secondaryContainer,
+            tamanho = 92.dp,
+        )
+        Text(titulo, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 20.dp))
+        Text(
+            detalhe,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        BotaoPrincipal(acao, aoClicar, Modifier.padding(top = 24.dp))
+    }
 }
