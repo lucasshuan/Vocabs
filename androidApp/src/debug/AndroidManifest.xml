@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Só no build de debug: o servidor local roda em http:// sem TLS, e desde o
+  Android 9 isso é bloqueado por padrão (falha com "CLEARTEXT communication not
+  permitted", que é fácil confundir com erro do servidor).
+
+  Fica fora do release de propósito — quando o backend for para a nuvem, será
+  https e esta permissão não deve existir em produção.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:usesCleartextTraffic="true" />
+</manifest>

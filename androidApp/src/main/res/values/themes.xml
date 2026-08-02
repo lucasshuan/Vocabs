@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Tema mínimo: a aparência real vem do Material 3 do Compose. Isto existe só
+      para a janela do Android não abrir com barra de título e fundo errado.
+    -->
+    <style name="Theme.Vocabs" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

@@ -1,0 +1,15 @@
+-- Placar por palavra: quantas vezes você acertou e quantas errou.
+--
+-- `revisoes` sozinho diz quantas vezes a palavra foi respondida, mas não o
+-- desfecho — e sem desfecho não há taxa de acerto, que é uma das métricas
+-- centrais da Fase 8 ("deveria subir ao longo do tempo").
+--
+-- Ambas nascem em zero, inclusive para palavras que já têm revisões. É o
+-- honesto: o resultado daquelas respostas não foi guardado e não dá para
+-- inventar. Por isso `erros` é uma coluna de verdade em vez de
+-- `revisoes - acertos` — a subtração afirmaria que toda revisão antiga foi um
+-- erro, e uma palavra revisada três vezes apareceria com 0% de acerto.
+-- A taxa passa a contar de agora, sobre `acertos + erros`.
+
+ALTER TABLE entrada ADD COLUMN acertos INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE entrada ADD COLUMN erros INTEGER NOT NULL DEFAULT 0;
