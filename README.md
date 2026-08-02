@@ -62,4 +62,5 @@ firewall do Windows.
 | [docs/PRODUTO.md](docs/PRODUTO.md) | Visão, princípios, core loop, retenção, monetização |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Fases, escopo e critérios de saída |
 | [docs/EXERCICIOS-E-METRICAS.md](docs/EXERCICIOS-E-METRICAS.md) | Catálogo de minigames e painel de métricas |
+| [docs/INTERFACE.md](docs/INTERFACE.md) | Critérios de layout: zona do polegar, custo da captura |
 | [docs/NOTAS.md](docs/NOTAS.md) | O que falta provar, o que está torto, ideias soltas |

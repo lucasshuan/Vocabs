@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.inbox
+package com.jean.vocabs.ui.pendentes
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class InboxViewModel(app: Application) : AndroidViewModel(app) {
+class PendentesViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repositorio = AppContainer.repositorio(app)
 

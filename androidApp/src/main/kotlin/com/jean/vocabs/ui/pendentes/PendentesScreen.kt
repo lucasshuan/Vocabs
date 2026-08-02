@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.inbox
+package com.jean.vocabs.ui.pendentes
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -41,14 +41,14 @@ import com.jean.vocabs.ui.components.escalaAoPressionar
 import com.jean.vocabs.ui.components.tempoRelativo
 
 @Composable
-fun InboxScreen(
+fun PendentesScreen(
     aoAbrirEntrada: (Entrada) -> Unit,
-    vm: InboxViewModel = viewModel(),
+    vm: PendentesViewModel = viewModel(),
 ) {
     val entradas by vm.entradas.collectAsStateWithLifecycle()
 
     if (entradas.isEmpty()) {
-        InboxVazio()
+        PendentesVazio()
         return
     }
 
@@ -64,7 +64,7 @@ fun InboxScreen(
         }
 
         items(entradas, key = { it.id }) { entrada ->
-            ItemInbox(
+            ItemPendente(
                 entrada = entrada,
                 aoClicar = { aoAbrirEntrada(entrada) },
                 modifier = Modifier.animateItem(
@@ -83,7 +83,7 @@ private fun Cabecalho(entradas: List<Entrada>) {
 
     Column(modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)) {
         Text(
-            text = "Inbox",
+            text = "Pendentes",
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -111,7 +111,7 @@ private fun Cabecalho(entradas: List<Entrada>) {
 }
 
 @Composable
-private fun ItemInbox(
+private fun ItemPendente(
     entrada: Entrada,
     aoClicar: () -> Unit,
     modifier: Modifier = Modifier,
@@ -226,7 +226,7 @@ private fun SeloDeFormato(entrada: Entrada) {
 }
 
 @Composable
-private fun InboxVazio() {
+private fun PendentesVazio() {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -249,7 +249,7 @@ private fun InboxVazio() {
             }
         }
         Text(
-            text = "Inbox limpo",
+            text = "Nada pendente",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(top = 24.dp),

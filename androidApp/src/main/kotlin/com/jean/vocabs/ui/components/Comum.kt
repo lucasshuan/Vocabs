@@ -241,7 +241,7 @@ private fun rotuloStatusDuplicata(status: StatusEntrada): String = when (status)
     StatusEntrada.GERANDO -> "gerando ficha"
     StatusEntrada.PENDENTE -> "na fila"
     StatusEntrada.ERRO -> "com erro"
-    StatusEntrada.RASCUNHO -> "no inbox"
+    StatusEntrada.RASCUNHO -> "sem transcrever"
 }
 
 /** "agora", "há 5min", "há 2h", "ontem", "há 3d". */

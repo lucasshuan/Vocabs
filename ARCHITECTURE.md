@@ -180,6 +180,15 @@ Usa **structured outputs** na chamada à Claude API: o schema obriga a resposta 
 vir no formato exato de `FichaResponse`. Sem isso o modelo às vezes devolve o JSON
 embrulhado em markdown, e você acaba escrevendo regex para extrair.
 
+O prompt é a única coisa do projeto escrita em inglês; comentários e identificadores
+seguem em português. O idioma da instrução e o da saída são independentes — a
+tradução sai em português porque a instrução manda, não porque a instrução esteja
+em português — e uma cópia traduzida do prompt por idioma nativo seria manter N
+versões de uma prosa calibrada, sendo que o teste de PALAVRA vs EXPRESSAO é a
+parte mais sutil da ficha. Os idiomas saem de `ParDeIdiomas`, hoje sempre o mesmo
+par: o que varia de verdade é o **alvo** (notação de pronúncia e exemplos do teste),
+não o nativo, que só diz em que língua escrever.
+
 Falhas viram `503` com mensagem curta — para o app isso significa "tente de novo",
 não "desista". A causa completa fica no log do servidor.
 

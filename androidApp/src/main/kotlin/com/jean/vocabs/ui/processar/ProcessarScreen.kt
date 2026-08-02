@@ -112,7 +112,7 @@ fun ProcessarScreen(
             text = {
                 Text(
                     "A gravação ou foto vai junto, e isso não tem volta. " +
-                        "Se ainda tiver dúvida, deixe no inbox — ele não cobra nada por esperar.",
+                        "Se ainda tiver dúvida, deixe em Pendentes — não custa nada esperar.",
                 )
             },
             confirmButton = {

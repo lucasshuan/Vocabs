@@ -107,6 +107,59 @@ object Icones {
         icone("check", "M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z")
     }
 
+    val Pessoa: ImageVector by lazy {
+        icone(
+            "pessoa",
+            "M12,12c2.21,0 4,-1.79 4,-4s-1.79,-4 -4,-4 -4,1.79 -4,4 1.79,4 4,4zM12,14c-2.67,0 -8,1.34 -8,4v2h16v-2c0,-2.66 -5.33,-4 -8,-4z",
+        )
+    }
+
+    /** Palavras puxando palavras — a rede de associações da Fase 3. */
+    val Rede: ImageVector by lazy {
+        icone(
+            "rede",
+            "M17,16l-4,-4V8.82C14.16,8.4 15,7.3 15,6c0,-1.66 -1.34,-3 -3,-3S9,4.34 9,6c0,1.3 0.84,2.4 2,2.82V12l-4,4H3v5h5v-3.05l4,-4.2 4,4.2V21h5v-5h-4z",
+        )
+    }
+
+    val Grafico: ImageVector by lazy {
+        icone("grafico", "M5,9.2h3V19H5zM10.6,5h2.8v14h-2.8zm5.6,8H19v6h-2.8z")
+    }
+
+    val Casa: ImageVector by lazy {
+        icone("casa", "M10,20v-6h4v6h5v-8h3L12,3 2,12h3v8z")
+    }
+
+    /** Seta para a direita: "isto abre outra tela". */
+    val Avancar: ImageVector by lazy {
+        icone("avancar", "M10,6L8.59,7.41 13.17,12l-4.58,4.59L10,18l6,-6z")
+    }
+
+    /** Seta para baixo: "isto abre uma lista de opções". */
+    val Expandir: ImageVector by lazy {
+        icone("expandir", "M7.41,8.59L12,13.17l4.59,-4.58L18,10l-6,6 -6,-6z")
+    }
+
+    /**
+     * Relógio para a aba de Pendentes.
+     *
+     * A bandeja de "inbox" dizia de onde as capturas vêm; o relógio diz o que
+     * elas estão fazendo — esperando você. É o significado que importa na aba.
+     */
+    val Lapis: ImageVector by lazy {
+        icone(
+            "lapis",
+            "M3,17.25V21h3.75L17.81,9.94l-3.75,-3.75L3,17.25zM20.71,7.04c0.39,-0.39 0.39,-1.02 0,-1.41l-2.34,-2.34c-0.39,-0.39 -1.02,-0.39 -1.41,0l-1.83,1.83 3.75,3.75 1.83,-1.83z",
+        )
+    }
+
+    val Relogio: ImageVector by lazy {
+        icone(
+            "relogio",
+            "M11.99,2C6.47,2 2,6.48 2,12s4.47,10 9.99,10C17.52,22 22,17.52 22,12S17.52,2 11.99,2zM12,20c-4.42,0 -8,-3.58 -8,-8s3.58,-8 8,-8 8,3.58 8,8 -3.58,8 -8,8zM12.5,7H11v6l5.25,3.15 0.75,-1.23 -4.5,-2.67z",
+        )
+    }
+
     val Fechar: ImageVector by lazy {
         icone(
             "fechar",

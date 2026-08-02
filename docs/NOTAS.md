@@ -11,12 +11,14 @@ o que está torto e o que talvez valha a pena. Uma linha cada.
 
 ## Inconsistências conhecidas
 
-- O app abre em "Palavras", então toda captura custa um toque a mais — atrito contra o princípio 1 ("captura antes de tudo").
-- `InboxViewModel.tentarDeNovo` existe e não é chamado por ninguém.
+- `PendentesViewModel.tentarDeNovo` existe e não é chamado por ninguém.
 - Origem quase nunca é preenchida em captura de foto/áudio: o campo fica abaixo dos botões de mídia, e você já saiu da tela.
 - Uma palavra acertada uma vez só já aparece como "Dominada" por algumas horas — é verdade que a memória está fresca, mas o rótulo soa forte cedo demais.
 
 ## Ideias
 
 - Capturar pelo compartilhar do sistema, sem abrir o app.
+- Transcrever um pendente num toque só. O caminho barato não é a IA generativa: o `SpeechRecognizer` do Android transcreve áudio de graça e o ML Kit faz OCR na foto sem rede — é o mesmo raciocínio da seção "Onde a IA não é necessária" do PRODUTO.md. A IA entraria só para limpar o texto, se entrar. O botão devolve o resultado nos campos, e você confirma antes de gerar a ficha: transcrição automática errada que vira ficha sozinha custa dinheiro e produz lixo.
 - Taxa de acerto por tipo de exercício, quando houver mais de um exercício (hoje só existe o flashcard).
+- Deixar o usuário escolher idioma nativo e alvo. O prompt já é parametrizado (`ParDeIdiomas`); falta o contrato levar os dois idiomas, o banco guardar em que par cada entrada nasceu (senão regerar ficha antiga vira lixo), o TTS sair de `Locale.US` e o campo `ipa` virar `pronuncia` — IPA não serve para mandarim nem japonês.
+- Traduzir a interface. Problema separado do prompt e bem maior: todas as strings estão no código, sem recursos do Android.

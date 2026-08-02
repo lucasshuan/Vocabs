@@ -26,15 +26,22 @@ class GeradorDeFicha(
             .apiKey(Config.obrigatorio("ANTHROPIC_API_KEY"))
             .build()
     },
+    /**
+     * Enquanto o app não escolher idiomas, toda ficha sai deste par. O parâmetro
+     * existe para que a escolha, quando vier, seja uma linha no `gerar` e não
+     * uma reescrita do prompt.
+     */
+    private val idiomas: ParDeIdiomas = ParDeIdiomas.PADRAO,
 ) {
     private val client: AnthropicClient by lazy(clientFactory)
     private val json = Json { ignoreUnknownKeys = true }
+    private val promptSistema: String = promptDe(idiomas)
 
     fun gerar(pedido: GerarFichaRequest): FichaResponse {
         val params = MessageCreateParams.builder()
             .model(modelo)
             .maxTokens(2048L)
-            .system(PROMPT_SISTEMA)
+            .system(promptSistema)
             .outputConfig(
                 OutputConfig.builder()
                     .apply {
@@ -53,8 +60,8 @@ class GeradorDeFicha(
             )
             .addUserMessage(
                 """
-                Trecho: ${pedido.trecho}
-                Alvo: ${pedido.alvo}
+                Snippet: ${pedido.trecho}
+                Target: ${pedido.alvo}
                 """.trimIndent()
             )
             .build()
@@ -79,30 +86,55 @@ class GeradorDeFicha(
     private companion object {
         const val MODELO_PADRAO = "claude-opus-5"
 
-        val PROMPT_SISTEMA = """
-            Você ajuda um brasileiro que está aprendendo inglês "vivendo" o idioma
-            (jogos, séries, livros). Ele captura um trecho em inglês e marca o que
-            chamou atenção dentro dele. Sua tarefa é montar a ficha desse alvo.
+        /**
+         * O prompt é a única coisa deste projeto escrita em inglês — todo o resto,
+         * inclusive estes comentários, continua em português.
+         *
+         * Dois motivos. O idioma da instrução e o idioma da saída são
+         * independentes: o modelo lê inglês e escreve a tradução em português
+         * porque a instrução manda, não porque a instrução esteja em português.
+         * E manter uma cópia traduzida do prompt por idioma nativo seria manter N
+         * versões de uma prosa calibrada — o teste de PALAVRA vs EXPRESSAO é a
+         * parte mais sutil da ficha, e traduzir é recalibrar sem querer.
+         *
+         * Os nomes dos campos e os valores do enum ficam como estão: são o
+         * contrato com [FichaResponse], não texto para o modelo traduzir.
+         */
+        fun promptDe(idiomas: ParDeIdiomas): String {
+            val nativo = idiomas.nativo
+            val alvo = idiomas.alvo
 
-            Classificação do campo `tipo` — use este teste prático:
-            procurando SÓ o alvo isolado num dicionário, o sentido que ele tem
-            DENTRO deste trecho aparece?
-              - Sim  -> PALAVRA    (ex.: "ubiquitous", "meticulously")
-              - Não  -> EXPRESSAO  (phrasal verb, idioma, collocation:
-                                    "kick the bucket", "on the fence", "pull off")
-            O que decide não é quantas palavras o alvo tem, e sim se o significado
-            nasce da soma das partes. Analise sempre o alvo DENTRO do trecho, nunca
-            isolado: a mesma palavra muda de sentido conforme o contexto.
+            return """
+                You help someone whose native language is $nativo learn ${alvo.nome}
+                by living it — games, shows, books. They capture a snippet of
+                ${alvo.nome} and mark the part of it that caught their attention.
+                Your job is to build the study card for that target.
 
-            Regras dos demais campos:
-            - `traducao`: em português do Brasil, o sentido que o alvo tem NESTE
-              trecho — não a tradução mais comum da palavra fora de contexto.
-            - `definicoes`: 1 ou 2 definições em português, curtas e diretas.
-            - `exemplo`: UMA frase nova em inglês usando o alvo no mesmo sentido.
-              Não repita o trecho original.
-            - `ipa`: pronúncia do alvo em IPA, sem barras. Para expressões, a
-              transcrição da expressão inteira.
-        """.trimIndent()
+                Classifying `tipo` — use this practical test: if you looked up ONLY
+                the target, in isolation, in a dictionary, would the sense it
+                carries INSIDE this snippet be listed there?
+                  - Yes -> PALAVRA    (e.g. ${alvo.exemplosDePalavra})
+                  - No  -> EXPRESSAO  (${alvo.exemplosDeExpressao})
+                What decides is not how many words the target has, it is whether
+                its meaning is the sum of its parts. Always judge the target INSIDE
+                the snippet, never in isolation: the same word shifts sense with
+                context.
+
+                `tipo` is exactly PALAVRA or EXPRESSAO. Those are field values, not
+                words to translate.
+
+                The other fields:
+                - `traducao`: in $nativo, the sense the target carries IN THIS
+                  snippet — not the term's most common translation out of context.
+                - `definicoes`: 1 or 2 definitions in $nativo, short and direct.
+                - `exemplo`: ONE new sentence in ${alvo.nome} using the target in
+                  the same sense. Do not repeat the original snippet.
+                - `ipa`: the target's pronunciation written as
+                  ${alvo.notacaoDePronuncia}. For expressions, transcribe the whole
+                  expression. (The field is named `ipa` from when English was the
+                  only target; the notation it should carry is the one above.)
+            """.trimIndent()
+        }
 
         /**
          * Espelha [FichaResponse]. `additionalProperties: false` e todos os campos

@@ -9,6 +9,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -122,4 +123,54 @@ fun VocabsTheme(
         shapes = Formas,
         content = conteudo,
     )
+}
+
+/** Um fundo e a tinta que fica legível sobre ele. */
+data class CorDeAtalho(val fundo: Color, val conteudo: Color)
+
+/**
+ * A paleta exclusiva dos cards da tela de Início.
+ *
+ * Vive fora do [androidx.compose.material3.ColorScheme] de propósito. Azul e
+ * laranja já carregam significado fixo no resto do app — azul é ação de captura
+ * e PALAVRA, laranja é EXPRESSÃO — e reusá-los na grade fazia os cards parecerem
+ * eco dos botões logo abaixo, com a mesma cor querendo dizer duas coisas.
+ *
+ * Estes três tons não aparecem em nenhum outro lugar, então "cor de card" vira
+ * uma categoria própria em vez de um empréstimo.
+ *
+ * O padrão de cada par segue o do tema: no claro, fundo saturado com tinta
+ * branca; no escuro, fundo pastel com tinta profunda. É o que mantém o contraste
+ * alto nos dois modos sem trocar a matiz.
+ */
+object CoresDeAtalho {
+
+    /** Capturar — o gesto que dá origem a tudo. */
+    val violeta: CorDeAtalho
+        @Composable get() = conforme(
+            claro = CorDeAtalho(Color(0xFF6C4FE0), Color(0xFFFFFFFF)),
+            escuro = CorDeAtalho(Color(0xFFBCA9FF), Color(0xFF25105E)),
+        )
+
+    /** Palavras — o que já cresceu. */
+    val turquesa: CorDeAtalho
+        @Composable get() = conforme(
+            claro = CorDeAtalho(Color(0xFF0E9384), Color(0xFFFFFFFF)),
+            escuro = CorDeAtalho(Color(0xFF63D9C6), Color(0xFF00352D)),
+        )
+
+    /** Pendentes — o que ficou esperando. */
+    val framboesa: CorDeAtalho
+        @Composable get() = conforme(
+            claro = CorDeAtalho(Color(0xFFBE3E82), Color(0xFFFFFFFF)),
+            escuro = CorDeAtalho(Color(0xFFF5A3CC), Color(0xFF480B30)),
+        )
+
+    /**
+     * Deriva do fundo em vigor, e não de `isSystemInDarkTheme()`: assim continua
+     * certo se alguém forçar o tema pelo parâmetro de [VocabsTheme].
+     */
+    @Composable
+    private fun conforme(claro: CorDeAtalho, escuro: CorDeAtalho): CorDeAtalho =
+        if (MaterialTheme.colorScheme.background.luminance() < 0.5f) escuro else claro
 }
