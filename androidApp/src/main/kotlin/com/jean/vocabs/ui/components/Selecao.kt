@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -15,13 +16,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -112,7 +116,16 @@ fun SeletorDeTermos(
     }
 }
 
-/** As pílulas do que já foi escolhido: termo, tipo e o ✕ que desfaz. */
+/**
+ * As pílulas do que já foi escolhido: termo, tipo e o ✕ que desfaz.
+ *
+ * Cada uma entra com um pulinho quando o dedo solta o trecho. É o recibo do
+ * gesto: o realce no texto some no instante em que a seleção termina — por
+ * decisão de desenho, para que intervalos sobrepostos não virem sopa de cor — e
+ * sem esse movimento aqui embaixo o gesto acabaria sem nada confirmando que ele
+ * pegou. O `key` prende a animação ao intervalo, e não à posição na lista: sem
+ * ele, remover a primeira pílula faria todas as outras entrarem de novo.
+ */
 @Composable
 fun ChipsDeSelecao(
     selecoes: List<AlvoSelecionado>,
@@ -125,18 +138,33 @@ fun ChipsDeSelecao(
         modifier = modifier.fillMaxWidth(),
     ) {
         selecoes.forEach { alvo ->
-            ChipDeSelecao(alvo) { aoRemover(alvo) }
+            key(alvo.inicio, alvo.fim) {
+                ChipDeSelecao(alvo) { aoRemover(alvo) }
+            }
         }
     }
 }
 
 @Composable
 private fun ChipDeSelecao(alvo: AlvoSelecionado, aoRemover: () -> Unit) {
+    var chegou by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { chegou = true }
+    val escala by animateFloatAsState(
+        targetValue = if (chegou) 1f else 0.7f,
+        animationSpec = Movimento.molaElastica(),
+        label = "escalaDoChip",
+    )
+    val toque = lembrarToque()
+
     Surface(
         onClick = aoRemover,
         shape = CircleShape,
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
+        interactionSource = toque,
+        modifier = Modifier
+            .graphicsLayer { scaleX = escala; scaleY = escala; alpha = if (chegou) 1f else 0f }
+            .encolheAoTocar(toque, minimo = 0.94f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

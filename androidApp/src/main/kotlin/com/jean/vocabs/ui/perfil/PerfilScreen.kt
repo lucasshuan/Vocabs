@@ -43,6 +43,8 @@ import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.LinhaDeLista
 import com.jean.vocabs.ui.components.LinhaDeUsoDeIa
 import com.jean.vocabs.ui.components.RotuloDeSecao
+import com.jean.vocabs.ui.components.contagemAnimada
+import com.jean.vocabs.ui.components.fracaoAnimada
 import com.jean.vocabs.ui.idiomas.idiomaDe
 
 /**
@@ -84,23 +86,26 @@ fun PerfilScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            // Os três contam do zero. São o balanço do hábito inteiro, somando
+            // todos os idiomas, e é a única tela do app em que esses números são
+            // o assunto e não um detalhe de apoio — aqui a contagem é o conteúdo.
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
                 NumeroDoResumo(
-                    valor = "${estado.totalDeDominadas}",
+                    valor = "${contagemAnimada(estado.totalDeDominadas, "dominadasNoTotal")}",
                     rotulo = if (estado.totalDeDominadas == 1) "dominada" else "dominadas",
                     cor = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.weight(1f),
                 )
                 DivisorVertical()
                 NumeroDoResumo(
-                    valor = "${estado.diasSeguidos}",
+                    valor = "${contagemAnimada(estado.diasSeguidos, "diasSeguidosNoTotal")}",
                     rotulo = if (estado.diasSeguidos == 1) "dia seguido" else "dias seguidos",
                     cor = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
                 DivisorVertical()
                 NumeroDoResumo(
-                    valor = "${estado.totalDeFichas}",
+                    valor = "${contagemAnimada(estado.totalDeFichas, "fichasNoTotal")}",
                     rotulo = if (estado.totalDeFichas == 1) "ficha" else "fichas",
                     cor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f),
@@ -199,7 +204,10 @@ private fun ProgressoPorIdioma(
 @Composable
 private fun LinhaDeCurso(curso: ResumoCurso, aoClicar: () -> Unit) {
     val cores = MaterialTheme.colorScheme
-    val fracao = if (curso.total == 0) 0f else curso.dominadas.toFloat() / curso.total
+    val fracao by fracaoAnimada(
+        alvo = if (curso.total == 0) 0f else curso.dominadas.toFloat() / curso.total,
+        rotulo = "fracaoDoCurso",
+    )
 
     LinhaDeLista(
         aoClicar = aoClicar,

@@ -46,7 +46,9 @@ import com.jean.vocabs.ui.components.DiaDaSemana
 import com.jean.vocabs.ui.components.FaixaDaSemana
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.LinhaDeUsoDeIa
+import com.jean.vocabs.ui.components.contagemAnimada
 import com.jean.vocabs.ui.components.contornoDeCartao
+import com.jean.vocabs.ui.components.fracaoAnimada
 import com.jean.vocabs.ui.idiomas.idiomaDe
 
 /**
@@ -149,6 +151,7 @@ fun ProgressoScreen(
                         color = cores.onSurfaceVariant,
                     )
                 }
+                val avancoDaQuota by fracaoAnimada(estado.quota.fracao, "fracaoDaQuota")
                 Box(
                     Modifier
                         .fillMaxWidth()
@@ -157,7 +160,7 @@ fun ProgressoScreen(
                 ) {
                     Box(
                         Modifier
-                            .fillMaxWidth(estado.quota.fracao)
+                            .fillMaxWidth(avancoDaQuota)
                             .height(8.dp)
                             .background(cores.tertiary, RoundedCornerShape(4.dp)),
                     )
@@ -177,7 +180,12 @@ fun ProgressoScreen(
                     tamanho = 78.dp,
                     espessura = 9.dp,
                 ) {
-                    Text("${estado.dominadas}", style = MaterialTheme.typography.headlineMedium)
+                    // Conta do zero junto com o arco: é a contagem de conquista
+                    // acumulada que `contagemAnimada` existe para servir.
+                    Text(
+                        text = "${contagemAnimada(estado.dominadas, "dominadas")}",
+                        style = MaterialTheme.typography.headlineMedium,
+                    )
                     Text(
                         text = "de ${estado.total}",
                         style = MaterialTheme.typography.labelSmall,

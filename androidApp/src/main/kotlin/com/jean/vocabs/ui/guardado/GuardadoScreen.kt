@@ -1,9 +1,13 @@
 package com.jean.vocabs.ui.guardado
 
-import androidx.compose.animation.core.Spring
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,6 +47,9 @@ import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.BotaoPrincipal
 import com.jean.vocabs.ui.components.CartaoDaTela
 import com.jean.vocabs.ui.components.Icones
+import com.jean.vocabs.ui.components.Movimento
+import com.jean.vocabs.ui.components.entradaSuave
+import com.jean.vocabs.ui.components.respirando
 import com.jean.vocabs.ui.idiomas.idiomaDe
 import kotlinx.coroutines.delay
 
@@ -109,7 +116,9 @@ fun GuardadoScreen(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            estado.entradas.forEach { LinhaGuardada(it) }
+            estado.entradas.forEachIndexed { indice, entrada ->
+                LinhaGuardada(entrada, Modifier.entradaSuave(indice))
+            }
         }
 
         Surface(shape = MaterialTheme.shapes.medium, color = cores.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
@@ -153,7 +162,7 @@ private fun SeloDeConfirmacao() {
     LaunchedEffect(Unit) { apareceu = true }
     val escala by animateFloatAsState(
         targetValue = if (apareceu) 1f else 0.5f,
-        animationSpec = spring(dampingRatio = 0.52f, stiffness = Spring.StiffnessMediumLow),
+        animationSpec = Movimento.molaElastica(),
         label = "escalaDoSelo",
     )
 
@@ -170,8 +179,16 @@ private fun SeloDeConfirmacao() {
     }
 }
 
+/**
+ * Uma linha do que acabou de entrar.
+ *
+ * É a única tela do app em que o conteúdo muda **sozinho**, com a pessoa olhando:
+ * a IA volta e "montando o sentido" vira a tradução. Essa troca é a promessa da
+ * tela sendo cumprida, e por isso as duas metades da linha — o subtexto e o selo
+ * da direita — cruzam em vez de trocar de um quadro para o outro.
+ */
 @Composable
-private fun LinhaGuardada(entrada: Entrada) {
+private fun LinhaGuardada(entrada: Entrada, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
     val pronta = entrada.status == StatusEntrada.PRONTA
     val comErro = entrada.status == StatusEntrada.ERRO
@@ -179,39 +196,52 @@ private fun LinhaGuardada(entrada: Entrada) {
     CartaoDaTela(
         forma = MaterialTheme.shapes.medium,
         recheio = PaddingValues(horizontal = 15.dp, vertical = 13.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(entrada.titulo, style = MaterialTheme.typography.titleMedium)
-                when {
-                    pronta -> Text(
-                        text = entrada.ficha?.traducao.orEmpty(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = cores.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 3.dp),
-                    )
-                    comErro -> Text(
-                        text = "não deu certo — dá para tentar de novo em Pendentes",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = cores.error,
-                        modifier = Modifier.padding(top = 3.dp),
-                    )
-                    else -> Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(7.dp),
-                        modifier = Modifier.padding(top = 5.dp),
-                    ) {
-                        BarraIndeterminada()
-                        Text(
-                            text = "montando o sentido",
+                AnimatedContent(
+                    targetState = entrada.status,
+                    transitionSpec = { fadeIn(tween(Movimento.PADRAO)) togetherWith fadeOut(tween(Movimento.RAPIDO)) },
+                    label = "estadoDaLinha",
+                ) { status ->
+                    when (status) {
+                        StatusEntrada.PRONTA -> Text(
+                            text = entrada.ficha?.traducao.orEmpty(),
                             style = MaterialTheme.typography.bodySmall,
                             color = cores.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 3.dp),
                         )
+                        StatusEntrada.ERRO -> Text(
+                            text = "não deu certo — dá para tentar de novo em Pendentes",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = cores.error,
+                            modifier = Modifier.padding(top = 3.dp),
+                        )
+                        else -> Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(7.dp),
+                            modifier = Modifier.padding(top = 5.dp),
+                        ) {
+                            BarraIndeterminada()
+                            Text(
+                                text = "montando o sentido",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = cores.onSurfaceVariant,
+                                modifier = Modifier.respirando(ativo = true),
+                            )
+                        }
                     }
                 }
             }
-            if (pronta) {
+            // O selo de pronta entra com mola: ele é o desfecho de uma espera, e
+            // é a única coisa da linha que a pessoa pode estar esperando ver.
+            AnimatedVisibility(
+                visible = pronta,
+                enter = scaleIn(Movimento.molaElastica()) + fadeIn(tween(Movimento.PADRAO)),
+                exit = fadeOut(tween(Movimento.RAPIDO)),
+            ) {
                 Surface(shape = CircleShape, color = cores.tertiaryContainer) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -222,7 +252,8 @@ private fun LinhaGuardada(entrada: Entrada) {
                         Text("ficha pronta", style = MaterialTheme.typography.labelSmall, color = cores.onTertiaryContainer)
                     }
                 }
-            } else if (!comErro) {
+            }
+            if (!pronta && !comErro) {
                 Text("IA", style = MaterialTheme.typography.labelSmall, color = cores.outline)
             }
         }

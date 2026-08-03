@@ -30,6 +30,20 @@ Duas convenções globais que o handoff de idiomas trouxe:
   cinza quando o curso ainda não tem nada agendado. Nunca vazio, nunca um "0"
   escrito — o zero é a boa notícia da faixa. A ordem é fixa: o deslize do
   carrossel depende de a posição não mudar.
+- **Três durações e duas molas** (`ui/components/Movimento.kt`): toda animação sai
+  de `Movimento`. `RAPIDO` (150 ms) para o que só reage, `PADRAO` (240 ms) para o
+  que entra e sai, `AMPLO` (620 ms) só para o que se lê enquanto corre — o arco do
+  anel, a barra da quota, um número contando. A regra que decide entre eles:
+  **nada pelo que se espera passa de `PADRAO`**. Entradas são sempre mais longas
+  que saídas, porque quem fecha já decidiu sair.
+
+Do vocabulário de movimento saem quatro peças que as telas reusam: `encolheAoTocar`
+(o cartão cede sob o dedo — está dentro de `CartaoDaTela`, não em cada chamada),
+`entradaSuave` (a chegada escalonada, com teto de 5 itens e proibida em lista
+lazy, onde o certo é `animateItem`), `fracaoAnimada` (devolve `State` para que o
+`Canvas` leia o valor na fase de desenho em vez de recompor a cada quadro) e
+`contagemAnimada` (só para conquista acumulada; fila e dívida não contam do zero,
+senão o atraso vira placar).
 
 O fluxo de captura são três telas, e cada passo já é durável: a folha guarda o
 trecho (`Capturar`), a seleção marca os termos (`Selecionar`) e a confirmação

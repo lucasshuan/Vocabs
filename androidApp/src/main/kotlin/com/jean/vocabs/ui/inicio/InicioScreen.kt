@@ -53,6 +53,8 @@ import com.jean.vocabs.ui.components.FaixaDeIdiomas
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.PontosDePagina
 import com.jean.vocabs.ui.components.RotuloDeSecao
+import com.jean.vocabs.ui.components.contagemAnimada
+import com.jean.vocabs.ui.components.entradaSuave
 import com.jean.vocabs.ui.components.tempoAte
 import com.jean.vocabs.ui.idiomas.idiomaDe
 
@@ -213,12 +215,18 @@ private fun PaginaDeCurso(
             }
         }
 
+        // As capturas do dia entram escalonadas, de cima para baixo. É a lista
+        // que cresce enquanto a pessoa usa o app, e é o único lugar do Início
+        // onde ela vê o próprio dia se acumulando — chegar montada faz três
+        // capturas parecerem um histórico velho em vez do que aconteceu hoje.
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
             RotuloDeSecao("Capturadas hoje em ${idioma.nome.lowercase()}")
             if (pagina.capturadasHoje.isEmpty()) {
                 ConviteDeCaptura(idioma.nome.lowercase(), aoCapturar)
             } else {
-                pagina.capturadasHoje.forEach { LinhaDeCapturada(it) }
+                pagina.capturadasHoje.forEachIndexed { indice, entrada ->
+                    LinhaDeCapturada(entrada, Modifier.entradaSuave(indice))
+                }
             }
         }
 
@@ -244,7 +252,10 @@ private fun AnelDoCurso(pagina: PaginaDoInicio) {
         if (emDia) {
             Icon(Icones.Check, null, tint = cores.tertiary, modifier = Modifier.size(26.dp))
         } else {
-            Text("${pagina.forcaMedia}%", style = MaterialTheme.typography.headlineSmall)
+            // A porcentagem sobe no mesmo tempo em que o arco corre: os dois são
+            // a mesma medida, e vê-los chegarem juntos é o que impede o anel de
+            // parecer decoração ao redor de um número.
+            Text("${contagemAnimada(pagina.forcaMedia, "forcaMedia")}%", style = MaterialTheme.typography.headlineSmall)
         }
     }
 }
@@ -289,11 +300,11 @@ private fun LinhaDoQueVem(pagina: PaginaDoInicio, modifier: Modifier = Modifier)
 }
 
 @Composable
-private fun LinhaDeCapturada(entrada: Entrada) {
+private fun LinhaDeCapturada(entrada: Entrada, modifier: Modifier = Modifier) {
     CartaoDaTela(
         forma = MaterialTheme.shapes.small,
         recheio = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(entrada.titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))

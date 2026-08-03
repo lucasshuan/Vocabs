@@ -1,5 +1,13 @@
 package com.jean.vocabs.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +26,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
@@ -72,19 +82,55 @@ fun BarraInferior(
 /** A altura da fileira de ícones, sem os insets. O botão de captura se alinha por ela. */
 val ALTURA_DA_BARRA = 68.dp
 
+/**
+ * Um dos quatro lugares.
+ *
+ * Sem rótulo escrito, o ícone é a única coisa que responde ao toque — e uma troca
+ * seca de cor num desenho de 23 dp é quase invisível no canto do olho. O ícone da
+ * aba que acaba de ser aberta cresce 12% e volta, com a mola de [Movimento]: é o
+ * mesmo "cedeu e voltou" dos cartões, ao contrário, e é o que confirma o toque
+ * antes mesmo de a tela nova ter desenhado.
+ */
 @Composable
 private fun ItemAba(aba: Aba, selecionada: Boolean, aoClicar: () -> Unit, modifier: Modifier) {
-    Surface(onClick = aoClicar, color = Color.Transparent, shape = CircleShape, modifier = modifier.height(56.dp)) {
+    val tinta by animateColorAsState(
+        targetValue = if (selecionada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(Movimento.PADRAO),
+        label = "tintaDaAba",
+    )
+    val escala by animateFloatAsState(
+        targetValue = if (selecionada) 1.12f else 1f,
+        animationSpec = Movimento.molaElastica(),
+        label = "escalaDaAba",
+    )
+    val toque = lembrarToque()
+
+    Surface(
+        onClick = aoClicar,
+        color = Color.Transparent,
+        shape = CircleShape,
+        interactionSource = toque,
+        modifier = modifier.height(56.dp),
+    ) {
         Box(contentAlignment = Alignment.Center) {
-            Box {
+            Box(Modifier.graphicsLayer { scaleX = escala; scaleY = escala }) {
                 Icon(
                     imageVector = aba.icone,
                     contentDescription = aba.rotulo,
-                    tint = if (selecionada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = tinta,
                     modifier = Modifier.size(23.dp),
                 )
-                if (aba.selo > 0) {
-                    Badge(Modifier.align(Alignment.TopEnd)) { Text(aba.selo.coerceAtMost(99).toString()) }
+                // O selo entra com mola e sai encolhendo: a fila de Pendentes
+                // muda sozinha, ao fundo, enquanto a pessoa está noutra aba, e
+                // um número que aparece do nada no canto do ícone não se lê como
+                // "chegou algo" — se lê como um defeito de desenho.
+                AnimatedVisibility(
+                    visible = aba.selo > 0,
+                    enter = scaleIn(Movimento.molaElastica()) + fadeIn(tween(Movimento.RAPIDO)),
+                    exit = scaleOut(tween(Movimento.RAPIDO)) + fadeOut(tween(Movimento.RAPIDO)),
+                    modifier = Modifier.align(Alignment.TopEnd),
+                ) {
+                    Badge { Text(aba.selo.coerceAtMost(99).toString()) }
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,11 +23,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +44,12 @@ import androidx.compose.ui.unit.sp
  * Serve à força média do Início e ao estoque de palavras do Progresso, que são a
  * mesma forma com conteúdos diferentes — daí o miolo ser um slot em vez de um
  * texto formatado aqui dentro.
+ *
+ * O arco se preenche do topo até o valor quando a tela abre. É a animação mais
+ * longa do app ([Movimento.AMPLO]) e a que menos custa: ninguém espera por ela —
+ * o número do miolo já está legível no primeiro quadro, e o anel é o que confirma
+ * o que ele diz. A fração é lida dentro do `Canvas`, então cada quadro invalida o
+ * desenho e nada mais.
  */
 @Composable
 fun AnelDeProgresso(
@@ -50,11 +61,12 @@ fun AnelDeProgresso(
     miolo: @Composable ColumnScope.() -> Unit,
 ) {
     val trilha = MaterialTheme.colorScheme.outlineVariant
+    val animada = fracaoAnimada(fracao, "arcoDoAnel")
     Box(contentAlignment = Alignment.Center, modifier = modifier.size(tamanho)) {
         Canvas(Modifier.fillMaxSize()) {
             val traco = Stroke(espessura.toPx(), cap = StrokeCap.Round)
             drawArc(trilha, -90f, 360f, false, style = traco)
-            drawArc(cor, -90f, 360f * fracao.coerceIn(0f, 1f), false, style = traco)
+            drawArc(cor, -90f, 360f * animada.value, false, style = traco)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally, content = miolo)
     }
@@ -80,15 +92,20 @@ data class DiaDaSemana(
  *
  * Aparece no cartão de Progresso e no topo do Dia a dia — a mesma faixa, para
  * que passar de uma tela para a outra não pareça trocar de assunto.
+ *
+ * Os sete dias entram da segunda para o domingo, um logo atrás do outro. O
+ * escalonamento aqui não é enfeite: ele desenha na tela a direção em que a semana
+ * se lê, e como o passo é de 34 ms, o domingo chega 170 ms depois da segunda —
+ * antes de a pessoa ter terminado de olhar para o primeiro quadrado.
  */
 @Composable
 fun FaixaDaSemana(dias: List<DiaDaSemana>, modifier: Modifier = Modifier) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = modifier.fillMaxWidth()) {
-        dias.forEach { dia ->
+        dias.forEachIndexed { indice, dia ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).entradaSuave(indice, deslocamento = 8.dp),
             ) {
                 Text(
                     text = if (dia.hoje) "hoje" else dia.sigla,
@@ -111,13 +128,18 @@ private fun QuadradoDoDia(dia: DiaDaSemana) {
     // Dois tons de menta e não um gradiente: a faixa tem sete quadrados de 40 dp,
     // e uma escala fina neles não é legível — o que precisa ficar claro é
     // "trabalhei" contra "trabalhei bastante".
-    val fundo = when {
+    val fundoAlvo = when {
         dia.hoje -> cores.secondaryContainer
         dia.futuro -> cores.surfaceVariant
         dia.revisoes >= REVISOES_DE_DIA_CHEIO -> cores.tertiary
         dia.revisoes > 0 -> cores.tertiaryContainer
         else -> cores.outlineVariant
     }
+    // O quadrado de hoje muda de cor no meio da sessão, quando a terceira revisão
+    // o leva de menta clara a menta forte. A transição é o que faz esse degrau
+    // ser notado: repintado de um quadro para o outro, ele só aparece na próxima
+    // vez que alguém vier olhar a semana.
+    val fundo by animateColorAsState(fundoAlvo, tween(Movimento.PADRAO), label = "fundoDoDia")
     val texto = when {
         dia.hoje -> cores.primary
         dia.futuro -> cores.outline
@@ -162,13 +184,25 @@ private const val REVISOES_DE_DIA_CHEIO = 3
  *
  * Faixas de peso zero somem em vez de virarem um fio de 1 px: um traço sem
  * largura útil só diz que existe uma categoria vazia, e a legenda ao lado já diz.
+ *
+ * Ela se desenha da esquerda para a direita ao abrir, no mesmo tempo do anel logo
+ * acima — os dois falam do mesmo estoque, e crescerem juntos é o que diz isso. O
+ * traçado é `scaleX` num `graphicsLayer`, e não largura animada: assim as três
+ * faixas são medidas uma vez só, e a animação fica inteira na fase de desenho.
  */
 @Composable
 fun BarraDeFaixas(faixas: List<Pair<Int, Color>>, modifier: Modifier = Modifier, altura: Dp = 8.dp) {
     val visiveis = faixas.filter { it.first > 0 }
+    val tracado = fracaoAnimada(1f, "tracadoDaBarra")
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = modifier.fillMaxWidth().height(altura),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(altura)
+            .graphicsLayer {
+                scaleX = tracado.value
+                transformOrigin = TransformOrigin(0f, 0.5f)
+            },
     ) {
         if (visiveis.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxSize().background(MaterialTheme.colorScheme.outlineVariant, CircleShape))
@@ -223,7 +257,10 @@ fun CabecalhoDeDentro(
 @Composable
 fun LinhaDeUsoDeIa(usadas: Int, limite: Int, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
-    val fracao = (usadas.toFloat() / limite.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val fracao by fracaoAnimada(
+        alvo = usadas.toFloat() / limite.coerceAtLeast(1),
+        rotulo = "fracaoDeUsoDeIa",
+    )
     LinhaDeLista(
         titulo = "Gerações por IA",
         detalhe = "$usadas de $limite este mês",
@@ -234,13 +271,13 @@ fun LinhaDeUsoDeIa(usadas: Int, limite: Int, modifier: Modifier = Modifier) {
                 Modifier
                     .width(52.dp)
                     .height(6.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant, CircleShape),
+                    .background(cores.outlineVariant, CircleShape),
             ) {
                 Box(
                     Modifier
                         .fillMaxWidth(fracao)
                         .height(6.dp)
-                        .background(MaterialTheme.colorScheme.primary, CircleShape),
+                        .background(cores.primary, CircleShape),
                 )
             }
         },

@@ -66,11 +66,7 @@ Sem terminal dá no mesmo: Android Studio → **Device Manager** → ▶ no `voc
 estiver conectado** — emulador, celular físico por USB, ou os dois ao mesmo
 tempo. Ele não sobe emulador e não abre o app — o ícone da Tagarara aparece na
 gaveta. (`:androidApp:assembleDebug` é o irmão que só compila e para no `.apk`,
-sem instalar em lugar nenhum.) Para abrir sem tocar na tela:
-
-```powershell
-& "$env:ANDROID_HOME\platform-tools\adb.exe" shell am start -n com.jean.vocabs/.MainActivity
-```
+sem instalar em lugar nenhum.) 
 
 Pra instalar no **celular físico** em vez do emulador (ou além dele): ativar
 "Depuração USB" em Opções do desenvolvedor, conectar por cabo e aceitar o

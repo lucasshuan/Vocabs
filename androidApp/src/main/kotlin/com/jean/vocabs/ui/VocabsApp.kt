@@ -5,6 +5,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
@@ -47,6 +48,7 @@ import com.jean.vocabs.ui.components.BarraInferior
 import com.jean.vocabs.ui.components.BotaoDeCaptura
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.MINIMO_DE_GRAVACAO_MS
+import com.jean.vocabs.ui.components.Movimento
 import com.jean.vocabs.ui.configuracoes.ConfiguracoesScreen
 import com.jean.vocabs.ui.ficha.FichaScreen
 import com.jean.vocabs.ui.guardado.GuardadoScreen
@@ -162,8 +164,12 @@ fun VocabsApp() {
             navController = nav,
             startDestination = Rotas.INICIO,
             modifier = Modifier.fillMaxSize(),
-            enterTransition = { fadeIn(tween(220)) },
-            exitTransition = { fadeOut(tween(140)) },
+            // A troca de aba é um fundido com um respiro de escala: a tela nova
+            // chega em 98% e assenta. Um fundido puro entre quatro telas que têm
+            // o mesmo fundo e a mesma barra embaixo não se lê como troca — se lê
+            // como o conteúdo sendo repintado no lugar.
+            enterTransition = { fadeIn(tween(Movimento.PADRAO)) + scaleIn(tween(Movimento.PADRAO), initialScale = 0.98f) },
+            exitTransition = { fadeOut(tween(Movimento.RAPIDO)) },
         ) {
             composable(Rotas.INICIO) {
                 InicioScreen(
@@ -275,8 +281,8 @@ fun VocabsApp() {
             SnackbarHost(snackbar, Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
             AnimatedVisibility(
                 visible = barraVisivel,
-                enter = slideInVertically(tween(220)) { it } + fadeIn(tween(220)),
-                exit = slideOutVertically(tween(170)) { it } + fadeOut(tween(170)),
+                enter = slideInVertically(tween(Movimento.PADRAO)) { it } + fadeIn(tween(Movimento.PADRAO)),
+                exit = slideOutVertically(tween(Movimento.RAPIDO)) { it } + fadeOut(tween(Movimento.RAPIDO)),
             ) {
                 BarraInferior(
                     abasEsquerda = listOf(Aba(Rotas.INICIO, Icones.Casa, "Início"), Aba(Rotas.PALAVRAS, Icones.Cartas, "Palavras")),
@@ -292,8 +298,8 @@ fun VocabsApp() {
         // sombra e o rótulo de gravação podem passar da borda sem ser recortados.
         AnimatedVisibility(
             visible = barraVisivel,
-            enter = slideInVertically(tween(220)) { it } + fadeIn(tween(220)),
-            exit = slideOutVertically(tween(170)) { it } + fadeOut(tween(170)),
+            enter = slideInVertically(tween(Movimento.PADRAO)) { it } + fadeIn(tween(Movimento.PADRAO)),
+            exit = slideOutVertically(tween(Movimento.RAPIDO)) { it } + fadeOut(tween(Movimento.RAPIDO)),
             modifier = Modifier.align(Alignment.BottomCenter),
         ) {
             Box(
@@ -369,8 +375,18 @@ private fun avisar(
     }
 }
 
-private fun subir() = slideInVertically(tween(300, easing = FastOutSlowInEasing)) { it / 5 } + fadeIn(tween(300))
-private fun descer() = slideOutVertically(tween(220)) { it / 5 } + fadeOut(tween(220))
+/**
+ * As telas cheias sobem por cima da aba e descem de volta.
+ *
+ * A entrada é mais longa que a saída de propósito, e é assim em todo o app: quem
+ * abre uma tela vai ficar nela e tem tempo de ver a chegada; quem fecha já
+ * decidiu sair, e cada milissegundo a mais ali é espera pura.
+ */
+private fun subir() =
+    slideInVertically(tween(Movimento.PADRAO, easing = FastOutSlowInEasing)) { it / 5 } + fadeIn(tween(Movimento.PADRAO))
+
+private fun descer() =
+    slideOutVertically(tween(Movimento.RAPIDO)) { it / 5 } + fadeOut(tween(Movimento.RAPIDO))
 
 private fun NavHostController.irParaAba(rota: String) {
     navigate(rota) {

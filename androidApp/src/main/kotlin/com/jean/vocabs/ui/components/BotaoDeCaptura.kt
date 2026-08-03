@@ -3,12 +3,10 @@ package com.jean.vocabs.ui.components
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -72,19 +70,19 @@ fun BotaoDeCaptura(
 
     val escala by animateFloatAsState(
         targetValue = if (gravando) 1.12f else if (pressionado) 0.9f else 1f,
-        animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMedium),
+        animationSpec = Movimento.molaElastica(),
         label = "escalaDoBotao",
     )
     val fundo by animateColorAsState(
         targetValue = if (gravando) cores.tertiary else cores.primary,
-        animationSpec = tween(200),
+        animationSpec = tween(Movimento.PADRAO),
         label = "fundoDoBotao",
     )
     // O `+` gira 45° e vira `×` quando a gravação começa: o mesmo alvo desfaz o
     // que ele fez, e o giro é o que liga uma coisa à outra.
     val giro by animateFloatAsState(
         targetValue = if (gravando) 45f else 0f,
-        animationSpec = tween(220),
+        animationSpec = tween(Movimento.PADRAO),
         label = "giroDoBotao",
     )
 
@@ -93,8 +91,8 @@ fun BotaoDeCaptura(
 
         AnimatedVisibility(
             visible = gravando,
-            enter = fadeIn(tween(160)) + scaleIn(initialScale = 0.8f),
-            exit = fadeOut(tween(120)) + scaleOut(targetScale = 0.8f),
+            enter = fadeIn(tween(Movimento.RAPIDO)) + scaleIn(initialScale = 0.8f),
+            exit = fadeOut(tween(Movimento.RAPIDO)) + scaleOut(targetScale = 0.8f),
             modifier = Modifier.offset(y = (-46).dp),
         ) {
             Surface(shape = CircleShape, color = cores.tertiary, shadowElevation = 4.dp) {

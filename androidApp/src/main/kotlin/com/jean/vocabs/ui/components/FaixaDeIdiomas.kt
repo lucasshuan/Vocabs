@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -114,19 +115,21 @@ fun ChipDeIdioma(
     val cores = MaterialTheme.colorScheme
     val fundo by animateColorAsState(
         targetValue = if (selecionado) cores.primary else cores.surface,
-        animationSpec = tween(180),
+        animationSpec = tween(Movimento.RAPIDO),
         label = "fundoDoChip",
     )
     val texto by animateColorAsState(
         targetValue = if (selecionado) cores.onPrimary else cores.onSurfaceVariant,
-        animationSpec = tween(180),
+        animationSpec = tween(Movimento.RAPIDO),
         label = "textoDoChip",
     )
 
+    val toque = lembrarToque()
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier
+            .encolheAoTocar(toque, minimo = 0.94f)
             .height(38.dp)
             .clip(CircleShape)
             .background(fundo)
@@ -134,7 +137,7 @@ fun ChipDeIdioma(
                 if (selecionado) Modifier
                 else Modifier.border(1.dp, cores.outline, CircleShape),
             )
-            .clickable(onClick = aoClicar)
+            .clickable(interactionSource = toque, indication = ripple(), onClick = aoClicar)
             .padding(start = 8.dp, end = 10.dp)
             .semantics { contentDescription = descricaoDoSelo(idioma.nome, selo) },
     ) {
@@ -233,7 +236,7 @@ fun PilulaDeFiltroDeIdioma(
     val cores = MaterialTheme.colorScheme
     val fundo by animateColorAsState(
         targetValue = if (selecionado) cores.primary else cores.surface,
-        animationSpec = tween(160),
+        animationSpec = tween(Movimento.RAPIDO),
         label = "fundoDoFiltro",
     )
     Row(
@@ -292,7 +295,7 @@ fun PontosDePagina(total: Int, atual: Int, modifier: Modifier = Modifier) {
             )
             val cor by animateColorAsState(
                 targetValue = if (aberto) cores.primary else cores.outlineVariant,
-                animationSpec = tween(180),
+                animationSpec = tween(Movimento.RAPIDO),
                 label = "corDoPonto",
             )
             Box(Modifier.width(largura).height(5.dp).background(cor, CircleShape))

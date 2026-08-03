@@ -1,5 +1,8 @@
 package com.jean.vocabs.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,7 +26,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,6 +43,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
@@ -99,15 +109,27 @@ fun CaixaTracejada(
     conteudo: @Composable ColumnScope.() -> Unit,
 ) {
     val forma = RoundedCornerShape(raio)
+    val toque = lembrarToque()
     val base = modifier
+        .then(if (aoClicar != null) Modifier.encolheAoTocar(toque) else Modifier)
         .clip(forma)
-        .then(if (aoClicar != null) Modifier.clickable(onClick = aoClicar) else Modifier)
+        .then(
+            if (aoClicar != null) Modifier.clickable(interactionSource = toque, indication = ripple(), onClick = aoClicar)
+            else Modifier,
+        )
         .contornoTracejado(cor, raio)
         .padding(recheio)
     Column(modifier = base, content = conteudo)
 }
 
-/** A superfície padrão de conteúdo: surface, contorno conforme o tema, cantos grandes. */
+/**
+ * A superfície padrão de conteúdo: surface, contorno conforme o tema, cantos grandes.
+ *
+ * Quando é clicável, cede sob o dedo. O encolhimento mora aqui e não em cada
+ * chamada porque é justamente a espécie de detalhe que só existe se for de graça:
+ * há dezenas de cartões clicáveis no app, e nenhuma tela lembraria de pedir por
+ * ele um a um.
+ */
 @Composable
 fun CartaoDaTela(
     modifier: Modifier = Modifier,
@@ -124,7 +146,16 @@ fun CartaoDaTela(
     if (aoClicar == null) {
         Surface(shape = forma, color = cor, border = contorno, modifier = modifier, content = interno)
     } else {
-        Surface(onClick = aoClicar, shape = forma, color = cor, border = contorno, modifier = modifier, content = interno)
+        val toque = lembrarToque()
+        Surface(
+            onClick = aoClicar,
+            shape = forma,
+            color = cor,
+            border = contorno,
+            interactionSource = toque,
+            modifier = modifier.encolheAoTocar(toque),
+            content = interno,
+        )
     }
 }
 
@@ -159,6 +190,11 @@ fun CartaoMetrica(
         recheio = PaddingValues(horizontal = 14.dp, vertical = 13.dp),
         aoClicar = aoClicar,
     ) {
+        // Sem transição no número, de propósito. O ladrilho recebe uma `String`
+        // já formatada — "42%", "4,2", "—" — e quem quer ver o valor subir passa
+        // o resultado de `contagemAnimada`. Um `AnimatedContent` aqui dispararia
+        // uma transição por quadro justamente nesse caso, que é o único em que o
+        // número de fato se move.
         Text(
             text = valor,
             style = MaterialTheme.typography.headlineMedium,
@@ -262,12 +298,16 @@ fun BotaoPrincipal(
     habilitado: Boolean = true,
     conteudoInicial: (@Composable RowScope.() -> Unit)? = null,
 ) {
+    val toque = lembrarToque()
+    // Menos que os cartões (0,97): este botão ocupa a largura da tela, e a mesma
+    // proporção num alvo desse tamanho vira um solavanco em vez de um toque.
     Button(
         onClick = aoClicar,
         enabled = habilitado,
         shape = RoundedCornerShape(18.dp),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        modifier = modifier.fillMaxWidth().height(56.dp),
+        interactionSource = toque,
+        modifier = modifier.encolheAoTocar(toque, minimo = 0.985f).fillMaxWidth().height(56.dp),
     ) {
         conteudoInicial?.invoke(this)
         Text(texto, style = MaterialTheme.typography.titleMedium)
@@ -284,20 +324,31 @@ fun PilulaSelecionavel(
     forma: Shape = CircleShape,
 ) {
     val cores = MaterialTheme.colorScheme
+    val toque = lembrarToque()
+    // As cores transitam em vez de trocar de um quadro para o outro: numa fileira
+    // de filtros, o corte seco faz duas pílulas piscarem ao mesmo tempo e nenhuma
+    // das duas diz de onde a seleção veio.
+    val fundo by animateColorAsState(
+        targetValue = if (selecionada) cores.primary else cores.surface,
+        animationSpec = tween(Movimento.RAPIDO),
+        label = "fundoDaPilula",
+    )
+    val tinta by animateColorAsState(
+        targetValue = if (selecionada) cores.onPrimary else cores.onSurfaceVariant,
+        animationSpec = tween(Movimento.RAPIDO),
+        label = "tintaDaPilula",
+    )
     Surface(
         onClick = aoClicar,
         shape = forma,
-        color = if (selecionada) cores.primary else cores.surface,
-        contentColor = if (selecionada) cores.onPrimary else cores.onSurfaceVariant,
+        color = fundo,
+        contentColor = tinta,
         border = if (selecionada) null else contornoDeCartao(),
-        modifier = modifier,
+        interactionSource = toque,
+        modifier = modifier.encolheAoTocar(toque, minimo = 0.94f),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)) {
-            Text(
-                text = rotulo,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (selecionada) cores.onPrimary else cores.onSurfaceVariant,
-            )
+            Text(text = rotulo, style = MaterialTheme.typography.labelMedium, color = tinta)
         }
     }
 }
@@ -330,11 +381,27 @@ fun Pilula(
     if (aoClicar == null) {
         Surface(shape = CircleShape, color = fundo, border = contorno, modifier = modifier, content = conteudo)
     } else {
-        Surface(onClick = aoClicar, shape = CircleShape, color = fundo, border = contorno, modifier = modifier, content = conteudo)
+        val toque = lembrarToque()
+        Surface(
+            onClick = aoClicar,
+            shape = CircleShape,
+            color = fundo,
+            border = contorno,
+            interactionSource = toque,
+            modifier = modifier.encolheAoTocar(toque, minimo = 0.94f),
+            content = conteudo,
+        )
     }
 }
 
-/** O vazio de Palavras, Pendentes e Revisão: disco de menta, título e uma linha. */
+/**
+ * O vazio de Palavras, Pendentes e Revisão: disco de menta, título e uma linha.
+ *
+ * O disco entra com mola e o texto sobe atrás dele. Uma tela vazia é o único
+ * lugar do app em que não há conteúdo nenhum para segurar o olho, e chegar
+ * montada faz "Memória em dia" parecer uma falha de carregamento em vez do
+ * desfecho bom que ela é.
+ */
 @Composable
 fun EstadoVazio(
     icone: ImageVector,
@@ -343,27 +410,41 @@ fun EstadoVazio(
     modifier: Modifier = Modifier,
     acao: (@Composable () -> Unit)? = null,
 ) {
+    var chegou by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { chegou = true }
+    val escala by animateFloatAsState(
+        targetValue = if (chegou) 1f else 0.6f,
+        animationSpec = Movimento.molaElastica(),
+        label = "escalaDoVazio",
+    )
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 60.dp),
     ) {
-        DiscoDeIcone(
-            icone = icone,
-            descricao = null,
-            cor = MaterialTheme.colorScheme.tertiary,
-            fundo = MaterialTheme.colorScheme.tertiaryContainer,
-            tamanho = 72.dp,
+        Box(Modifier.graphicsLayer { scaleX = escala; scaleY = escala; alpha = if (chegou) 1f else 0f }) {
+            DiscoDeIcone(
+                icone = icone,
+                descricao = null,
+                cor = MaterialTheme.colorScheme.tertiary,
+                fundo = MaterialTheme.colorScheme.tertiaryContainer,
+                tamanho = 72.dp,
+            )
+        }
+        Text(
+            text = titulo,
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.entradaSuave(indice = 1).padding(top = 16.dp),
         )
-        Text(titulo, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 16.dp))
         Text(
             text = detalhe,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.entradaSuave(indice = 2).padding(top = 4.dp),
         )
         acao?.let {
-            Box(Modifier.padding(top = 20.dp)) { it() }
+            Box(Modifier.entradaSuave(indice = 3).padding(top = 20.dp)) { it() }
         }
     }
 }
@@ -376,11 +457,14 @@ fun BotaoCircular(
     aoClicar: () -> Unit,
     cor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
+    val toque = lembrarToque()
     Surface(
         onClick = aoClicar,
         shape = CircleShape,
         color = Color.Transparent,
         contentColor = cor,
+        interactionSource = toque,
+        modifier = Modifier.encolheAoTocar(toque, minimo = 0.88f),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp)) {
             Icon(icone, descricao, tint = cor, modifier = Modifier.size(24.dp))
