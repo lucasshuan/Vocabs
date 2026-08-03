@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.jean.vocabs.shared.domain.FormatoCaptura
 
 data class Aba(val rota: String, val icone: ImageVector, val rotulo: String, val selo: Int = 0)
 
@@ -33,13 +35,20 @@ data class Aba(val rota: String, val icone: ImageVector, val rotulo: String, val
  * — ser o alvo óbvio. O nome continua existindo como `contentDescription`, que é
  * o que o leitor de tela lê.
  */
+/**
+ * A barra cuida das quatro abas e deixa o meio vago.
+ *
+ * O botão de captura **não** mora aqui, e a razão é técnica antes de ser de
+ * desenho: `Surface` recorta o próprio conteúdo, e o leque precisa desenhar
+ * acima da borda de cima da barra. Quem o compõe é a camada de cima, com a mesma
+ * geometria — daí [ALTURA_DA_BARRA] ser público.
+ */
 @Composable
 fun BarraInferior(
     abasEsquerda: List<Aba>,
     abasDireita: List<Aba>,
     rotaAtual: String?,
     aoNavegar: (String) -> Unit,
-    aoCapturar: () -> Unit,
 ) {
     Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
         Column {
@@ -47,27 +56,34 @@ fun BarraInferior(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceAround,
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding().height(68.dp).padding(horizontal = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .height(ALTURA_DA_BARRA)
+                    .padding(horizontal = 8.dp),
             ) {
                 abasEsquerda.forEach { ItemAba(it, rotaAtual == it.rota, { aoNavegar(it.rota) }, Modifier.weight(1f)) }
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.weight(1f)) {
-                    Surface(
-                        onClick = aoCapturar,
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primary,
-                        shadowElevation = 6.dp,
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(Icones.Mais, "Capturar", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(26.dp))
-                        }
-                    }
-                }
+                Spacer(Modifier.weight(1f))
                 abasDireita.forEach { ItemAba(it, rotaAtual == it.rota, { aoNavegar(it.rota) }, Modifier.weight(1f)) }
             }
         }
     }
 }
+
+/** A altura da fileira de ícones, sem os insets. O leque se alinha por ela. */
+val ALTURA_DA_BARRA = 68.dp
+
+/**
+ * A ordem do leque é a mesma das abas da Captura.
+ *
+ * Texto primeiro porque é o caminho mais usado e o único que termina sem sair da
+ * tela; foto e áudio existem para capturar em segundos e resolver depois.
+ */
+val OPCOES_DE_CAPTURA = listOf(
+    OpcaoDeCaptura(FormatoCaptura.TEXTO, Icones.Lapis, "Texto"),
+    OpcaoDeCaptura(FormatoCaptura.AUDIO, Icones.Microfone, "Áudio"),
+    OpcaoDeCaptura(FormatoCaptura.FOTO, Icones.Camera, "Foto"),
+)
 
 @Composable
 private fun ItemAba(aba: Aba, selecionada: Boolean, aoClicar: () -> Unit, modifier: Modifier) {

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.AlvoSelecionado
+import com.jean.vocabs.shared.domain.FormatoCaptura
 import com.jean.vocabs.ui.components.AvisoDuplicata
 import com.jean.vocabs.ui.components.BotaoCircular
 import com.jean.vocabs.ui.components.BotaoPrincipal
@@ -41,15 +42,28 @@ import com.jean.vocabs.ui.components.RotuloDeSecao
 import com.jean.vocabs.ui.components.SeletorDeTermos
 import com.jean.vocabs.ui.components.formatarDuracao
 
-private enum class AbaCaptura(val rotulo: String) { TEXTO("Texto"), AUDIO("Áudio"), FOTO("Foto") }
+/**
+ * O nome de cada aba. Não há enum próprio para elas: as abas **são** os formatos
+ * de captura, e um segundo enum com os mesmos três nomes só criaria a chance de
+ * um ganhar um caso a mais que o outro não tem.
+ */
+fun rotuloDoFormato(formato: FormatoCaptura): String = when (formato) {
+    FormatoCaptura.TEXTO -> "Texto"
+    FormatoCaptura.AUDIO -> "Áudio"
+    FormatoCaptura.FOTO -> "Foto"
+}
 
 @Composable
 fun CapturaScreen(
     aoCapturarTexto: () -> Unit,
     aoVoltar: () -> Unit,
+    formatoInicial: FormatoCaptura = FormatoCaptura.TEXTO,
     vm: CapturaViewModel = viewModel(),
 ) {
-    var aba by remember { mutableStateOf(AbaCaptura.TEXTO) }
+    // A escolha do leque é só o ponto de partida: uma vez dentro, as abas
+    // continuam valendo, e quem entrou por Foto sem gostar do resultado troca
+    // para Texto sem sair e voltar.
+    var aba by remember { mutableStateOf(formatoInicial) }
     var trecho by remember { mutableStateOf("") }
     val selecoes = remember { mutableStateListOf<AlvoSelecionado>() }
     val duplicata by vm.duplicata.collectAsStateWithLifecycle()
@@ -89,9 +103,9 @@ fun CapturaScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
-            AbaCaptura.entries.forEach { item ->
+            FormatoCaptura.entries.forEach { item ->
                 PilulaSelecionavel(
-                    rotulo = item.rotulo,
+                    rotulo = rotuloDoFormato(item),
                     selecionada = aba == item,
                     aoClicar = { aba = item },
                     forma = RoundedCornerShape(14.dp),
@@ -101,7 +115,7 @@ fun CapturaScreen(
         }
 
         when (aba) {
-            AbaCaptura.TEXTO -> ConteudoTexto(
+            FormatoCaptura.TEXTO -> ConteudoTexto(
                 trecho = trecho,
                 selecoes = selecoes,
                 aoMudarTrecho = {
@@ -113,14 +127,14 @@ fun CapturaScreen(
                 },
                 aoRemover = selecoes::remove,
             )
-            AbaCaptura.AUDIO -> ConteudoMidia(
+            FormatoCaptura.AUDIO -> ConteudoMidia(
                 icone = Icones.Microfone,
                 titulo = if (captura.gravando) "Gravando ${formatarDuracao(captura.segundos)}" else "Gravar um trecho",
                 detalhe = "O reconhecimento local tenta transcrever em inglês. Você sempre poderá editar.",
                 acao = if (captura.gravando) "Parar e salvar" else "Começar gravação",
                 aoClicar = { if (captura.gravando) captura.pararAudio() else captura.gravarAudio() },
             )
-            AbaCaptura.FOTO -> ConteudoMidia(
+            FormatoCaptura.FOTO -> ConteudoMidia(
                 icone = Icones.Camera,
                 titulo = "Fotografar um trecho",
                 detalhe = "O texto é lido no aparelho pelo modelo latino, sem enviar a imagem.",
@@ -129,7 +143,7 @@ fun CapturaScreen(
             )
         }
 
-        if (aba == AbaCaptura.TEXTO) {
+        if (aba == FormatoCaptura.TEXTO) {
             duplicata?.let { AvisoDuplicata(it, Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) }
             BotaoPrincipal(
                 texto = if (selecoes.isEmpty()) "Selecione o que guardar" else "Guardar ${selecoes.size} ${if (selecoes.size == 1) "captura" else "capturas"}",

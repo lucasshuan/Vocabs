@@ -82,8 +82,30 @@ o R8: as 43 bandeiras sairiam do APK e só a tela mostraria o estrago.
 
 A barra inferior tem Início, Palavras, captura central, Pendentes e Perfil, só
 com ícones — os rótulos sob eles competiam com o botão de captura, que precisa ser
-o alvo óbvio; o nome sobrevive no `contentDescription`. O botão central abre
-direto a tela com abas Texto/Áudio/Foto; não há leque flutuante.
+o alvo óbvio; o nome sobrevive no `contentDescription`.
+
+O botão central abre um **leque** com Texto, Áudio e Foto. O handoff pedia que ele
+fosse direto para a tela de abas, e a decisão foi revista: o formato é a primeira
+escolha de toda captura, e resolvê-la antes de a tela abrir tira um toque do
+caminho que precisa caber em segundos. As abas continuam lá dentro — quem entrou
+por Foto e mudou de ideia troca sem sair.
+
+Três detalhes do leque não são enfeite:
+
+- **Arco, não coluna.** Uma coluna cresceria por cima da lista e a última opção
+  ficaria longe do polegar. O arco mantém as três à mesma distância do botão.
+- **O `+` gira 45° e vira `×`.** O mesmo alvo desfaz o que ele fez.
+- **Saída escalonada, do centro para fora.** Mostra de onde as opções vieram. A
+  abertura tem mola com quique; o fechamento é curto e seco, porque desfazer não
+  é momento de se demorar.
+
+O véu que escurece o fundo é o alvo de fechar — é o gesto que se tenta antes de
+procurar o botão — e o "voltar" do sistema fecha o leque antes de sair da tela.
+
+O botão **não** mora dentro de `BarraInferior`: `Surface` recorta o próprio
+conteúdo, e o arco precisa passar da borda de cima da barra. A barra deixa o meio
+vago e a camada de cima compõe o leque sobre o vão, com os mesmos insets e a
+mesma `ALTURA_DA_BARRA`.
 
 Progresso, Dia a dia, O que falta e Configurações são **páginas de dentro**: abrem
 com voltar no topo, a barra continua visível e a aba Perfil continua acesa. Novo
@@ -105,8 +127,8 @@ pílulas diz. Editar o trecho limpa todas as seleções.
   CTA de revisão, aviso de capturas paradas, três números e as fichas do dia.
 - **Palavras:** coluna única, busca por alvo/tradução, filtros de memória e cartão
   com barra curta, nível e quando a palavra volta ("revisar agora" / "em 2d 4h").
-- **Captura:** abas de formato, trecho único e o seletor; o botão guarda quantas
-  capturas foram marcadas.
+- **Captura:** abas de formato já na escolhida no leque, trecho único e o seletor;
+  o botão guarda quantas capturas foram marcadas.
 - **Pendentes:** capturas cruas com disco de formato acima das fichas em geração.
 - **Transcrever:** mídia, transcrição local editável e o mesmo seletor.
 - **Ficha:** termo, pronúncia e tradução no topo; força de memória, seu contexto

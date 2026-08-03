@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -10,13 +11,18 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -30,10 +36,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.jean.vocabs.shared.domain.FormatoCaptura
 import com.jean.vocabs.ui.captura.CapturaScreen
+import com.jean.vocabs.ui.components.ALTURA_DA_BARRA
 import com.jean.vocabs.ui.components.Aba
 import com.jean.vocabs.ui.components.BarraInferior
 import com.jean.vocabs.ui.components.Icones
+import com.jean.vocabs.ui.components.LequeDeCaptura
+import com.jean.vocabs.ui.components.OPCOES_DE_CAPTURA
+import com.jean.vocabs.ui.components.VeuDoLeque
 import com.jean.vocabs.ui.configuracoes.ConfiguracoesScreen
 import com.jean.vocabs.ui.ficha.FichaScreen
 import com.jean.vocabs.ui.home.HomeScreen
@@ -54,7 +65,7 @@ private object Rotas {
     const val PALAVRAS = "palavras"
     const val PENDENTES = "pendentes"
     const val PERFIL = "perfil"
-    const val CAPTURA = "captura"
+    const val CAPTURA = "captura/{formato}"
     const val REVISAO = "revisao"
     const val FICHA = "ficha/{id}"
     const val PROCESSAR = "processar/{id}"
@@ -71,6 +82,7 @@ private object Rotas {
 
     fun ficha(id: Long) = "ficha/$id"
     fun processar(id: Long) = "processar/$id"
+    fun captura(formato: FormatoCaptura) = "captura/${formato.name}"
     val telaCheia = setOf(CAPTURA, REVISAO, FICHA, PROCESSAR, NOVO_IDIOMA, IDIOMA_NATIVO)
 
     private val paginasDeDentro = mapOf(
@@ -94,6 +106,15 @@ fun VocabsApp() {
     val pendentesVm: PendentesViewModel = viewModel()
     val totalPendentes by pendentesVm.total.collectAsStateWithLifecycle()
     val barraVisivel = rota !in Rotas.telaCheia
+    var lequeAberto by remember { mutableStateOf(false) }
+
+    // Sair da aba com o leque aberto o deixaria aberto na volta, e a pessoa
+    // encontraria a tela escurecida sem ter pedido nada.
+    LaunchedEffect(rota) { lequeAberto = false }
+
+    // Enquanto o leque estiver aberto, voltar fecha o leque em vez de sair da
+    // tela: é o que o gesto significa quando há algo sobreposto.
+    BackHandler(enabled = lequeAberto) { lequeAberto = false }
     // Numa página de dentro, quem fica aceso na barra é a aba de onde ela abriu.
     // Sem isto, entrar em Progresso apagaria a barra inteira e a pessoa perderia
     // a referência de onde está.
@@ -116,7 +137,7 @@ fun VocabsApp() {
         ) {
             composable(Rotas.INICIO) {
                 InicioScreen(
-                    aoEscrever = { nav.navigate(Rotas.CAPTURA) },
+                    aoEscrever = { nav.navigate(Rotas.captura(FormatoCaptura.TEXTO)) },
                     aoAbrirPalavras = { nav.irParaAba(Rotas.PALAVRAS) },
                     aoAbrirPendentes = { nav.irParaAba(Rotas.PENDENTES) },
                     aoRevisar = { nav.navigate(Rotas.REVISAO) },
@@ -168,13 +189,19 @@ fun VocabsApp() {
             composable(Rotas.IDIOMA_NATIVO, enterTransition = { subir() }, popExitTransition = { descer() }) {
                 NovoIdiomaScreen(aoVoltar = { nav.popBackStack() }, paraNativo = true)
             }
-            composable(Rotas.CAPTURA, enterTransition = { subir() }, popExitTransition = { descer() }) {
+            composable(
+                Rotas.CAPTURA,
+                arguments = listOf(navArgument("formato") { type = NavType.StringType }),
+                enterTransition = { subir() },
+                popExitTransition = { descer() },
+            ) { entrada ->
                 CapturaScreen(
                     aoCapturarTexto = {
                         nav.popBackStack()
                         avisar("Captura salva. O processamento continua em segundo plano.")
                     },
                     aoVoltar = { nav.popBackStack() },
+                    formatoInicial = FormatoCaptura.de(entrada.arguments?.getString("formato")),
                 )
             }
             composable(Rotas.REVISAO, enterTransition = { subir() }, popExitTransition = { descer() }) {
@@ -198,6 +225,9 @@ fun VocabsApp() {
             }
         }
 
+        // Entre a barra e o leque: escurece o conteúdo sem cobrir nenhum dos dois.
+        VeuDoLeque(aberto = lequeAberto, aoFechar = { lequeAberto = false })
+
         Column(modifier = Modifier.align(Alignment.BottomCenter), horizontalAlignment = Alignment.CenterHorizontally) {
             SnackbarHost(snackbar, Modifier.padding(horizontal = 16.dp, vertical = 6.dp))
             AnimatedVisibility(
@@ -210,7 +240,28 @@ fun VocabsApp() {
                     abasDireita = listOf(Aba(Rotas.PENDENTES, Icones.Relogio, "Pendentes", totalPendentes), Aba(Rotas.PERFIL, Icones.Pessoa, "Perfil")),
                     rotaAtual = abaAtual,
                     aoNavegar = nav::irParaAba,
-                    aoCapturar = { nav.navigate(Rotas.CAPTURA) },
+                )
+            }
+        }
+
+        // O leque por cima da barra, ancorado no vão que ela deixa: a mesma
+        // altura e os mesmos insets reproduzem o centro do slot vazio, e daqui
+        // o arco pode passar da borda da barra sem ser recortado.
+        AnimatedVisibility(
+            visible = barraVisivel,
+            enter = slideInVertically(tween(220)) { it } + fadeIn(tween(220)),
+            exit = slideOutVertically(tween(170)) { it } + fadeOut(tween(170)),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.navigationBarsPadding().height(ALTURA_DA_BARRA),
+            ) {
+                LequeDeCaptura(
+                    opcoes = OPCOES_DE_CAPTURA,
+                    aberto = lequeAberto,
+                    aoAlternar = { lequeAberto = it },
+                    aoEscolher = { nav.navigate(Rotas.captura(it)) },
                 )
             }
         }
