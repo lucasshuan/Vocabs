@@ -2,6 +2,7 @@ package com.jean.vocabs.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,8 +26,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -51,6 +59,53 @@ import com.jean.vocabs.ui.theme.LocalTemaEscuro
 @Composable
 fun contornoDeCartao(): BorderStroke? =
     if (LocalTemaEscuro.current) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+
+/**
+ * O contorno tracejado de "aqui cabe mais alguma coisa".
+ *
+ * O handoff o usa em quatro lugares — o `+` da faixa, "Adicionar idioma", o
+ * convite de captura do dia vazio e o rodapé da fila — e sempre com o mesmo
+ * sentido: a caixa existe, o conteúdo é que ainda não. Um contorno sólido diria
+ * "isto é um cartão"; o tracejado diz "isto é um espaço".
+ *
+ * Desenhado à mão porque `BorderStroke` não aceita `PathEffect`.
+ */
+fun Modifier.contornoTracejado(
+    cor: Color,
+    raio: Dp = 18.dp,
+    espessura: Dp = 1.dp,
+): Modifier = drawBehind {
+    val traco = espessura.toPx()
+    drawRoundRect(
+        color = cor,
+        topLeft = Offset(traco / 2f, traco / 2f),
+        size = Size(size.width - traco, size.height - traco),
+        cornerRadius = CornerRadius(raio.toPx()),
+        style = Stroke(
+            width = traco,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(traco * 5, traco * 4)),
+        ),
+    )
+}
+
+/** A caixa tracejada pronta: fundo do tema, contorno pontilhado, conteúdo livre. */
+@Composable
+fun CaixaTracejada(
+    modifier: Modifier = Modifier,
+    raio: Dp = 18.dp,
+    cor: Color = MaterialTheme.colorScheme.outline,
+    recheio: PaddingValues = PaddingValues(horizontal = 15.dp, vertical = 12.dp),
+    aoClicar: (() -> Unit)? = null,
+    conteudo: @Composable ColumnScope.() -> Unit,
+) {
+    val forma = RoundedCornerShape(raio)
+    val base = modifier
+        .clip(forma)
+        .then(if (aoClicar != null) Modifier.clickable(onClick = aoClicar) else Modifier)
+        .contornoTracejado(cor, raio)
+        .padding(recheio)
+    Column(modifier = base, content = conteudo)
+}
 
 /** A superfície padrão de conteúdo: surface, contorno conforme o tema, cantos grandes. */
 @Composable

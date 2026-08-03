@@ -13,6 +13,7 @@ import com.jean.vocabs.shared.domain.Captura
 import com.jean.vocabs.shared.domain.DadosExportacao
 import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
+import com.jean.vocabs.shared.domain.Escopo
 import com.jean.vocabs.shared.domain.Evento
 import com.jean.vocabs.shared.domain.FormatoCaptura
 import com.jean.vocabs.shared.domain.NivelMemoria
@@ -71,6 +72,7 @@ class VocabRepositoryImpl(
 
     override fun observarCursos(): Flow<List<ResumoCurso>> =
         todasAsProntas().map { prontas ->
+            val instante = agora()
             prontas
                 .groupBy { it.par }
                 .map { (par, entradas) ->
@@ -78,6 +80,10 @@ class VocabRepositoryImpl(
                         par = par,
                         total = entradas.size,
                         dominadas = entradas.count { Degraus.nivel(it.degrau) == NivelMemoria.DOMINADA },
+                        naFila = entradas.count { it.precisaRevisar(instante) },
+                        proximaEmMillis = entradas
+                            .mapNotNull { it.retencao?.proximaRevisaoEm(instante) }
+                            .minOrNull(),
                     )
                 }
         }
@@ -85,20 +91,35 @@ class VocabRepositoryImpl(
     private fun todasAsProntas(): Flow<List<Entrada>> =
         queries.listarProntas().asFlow().mapToList(io).map { linhas -> linhas.map(::paraDominio) }
 
-    override fun observarProntas(): Flow<List<Entrada>> = todasAsProntas().doCurso { it.par }
+    override fun observarProntas(escopo: Escopo): Flow<List<Entrada>> =
+        todasAsProntas().no(escopo) { it.par }
 
-    override fun observarInbox(): Flow<List<Entrada>> =
+    override fun observarInbox(escopo: Escopo): Flow<List<Entrada>> =
         queries.listarInbox().asFlow().mapToList(io).map { linhas -> linhas.map(::paraDominio) }
-            .doCurso { it.par }
+            .no(escopo) { it.par }
 
-    override fun observarCapturasPendentes(): Flow<List<Captura>> =
+    override fun observarCapturasPendentes(escopo: Escopo): Flow<List<Captura>> =
         queries.listarCapturasPendentes().asFlow().mapToList(io)
             .map { linhas -> linhas.map(::capturaParaDominio) }
-            .doCurso { it.par }
+            .no(escopo) { it.par }
 
-    /** Só o que pertence ao curso aberto — a regra que vale para quase tudo aqui. */
-    private fun <T> Flow<List<T>>.doCurso(par: (T) -> ParIdiomas): Flow<List<T>> =
-        combine(cursoAtivo) { itens, curso -> itens.filter { par(it) == curso } }
+    /**
+     * O recorte de [Escopo] aplicado a uma lista já montada.
+     *
+     * Filtrar em memória e não em SQL é de propósito: o curso aberto é um fluxo
+     * de preferência, e uma consulta parametrizada por ele teria que ser refeita
+     * — e o cursor reaberto — a cada troca de idioma na faixa. A lista inteira de
+     * fichas de um aparelho cabe folgada na memória; o cursor recriado a cada
+     * deslize do carrossel, não.
+     */
+    private fun <T> Flow<List<T>>.no(escopo: Escopo, par: (T) -> ParIdiomas): Flow<List<T>> =
+        combine(cabeNoEscopo(escopo)) { itens, cabe -> itens.filter { cabe(par(it)) } }
+
+    private fun cabeNoEscopo(escopo: Escopo): Flow<(ParIdiomas) -> Boolean> = when (escopo) {
+        Escopo.Todos -> flowOf({ _: ParIdiomas -> true })
+        is Escopo.Curso -> flowOf({ par: ParIdiomas -> par.alvo == escopo.alvo })
+        Escopo.CursoAberto -> cursoAtivo.map { aberto -> { par: ParIdiomas -> par == aberto } }
+    }
 
     override fun observarCapturaPorId(id: Long): Flow<Captura?> =
         queries.buscarCapturaPorId(id).asFlow().mapToOneOrNull(io)
@@ -107,15 +128,24 @@ class VocabRepositoryImpl(
     override fun observarPorId(id: Long): Flow<Entrada?> =
         queries.buscarEntradaPorId(id).asFlow().mapToOneOrNull(io).map { it?.let(::paraDominio) }
 
-    override fun observarFilaDeRevisao(): Flow<List<Entrada>> = observarProntas().map { prontas ->
-        val instante = agora()
-        prontas
-            .filter { it.precisaRevisar(instante) }
-            .sortedBy { it.retencao?.pontosEm(instante) ?: 0.0 }
+    override fun observarEntradas(ids: List<Long>): Flow<List<Entrada>> {
+        // `IN ()` não é SQL válido no SQLite, e uma lista vazia é o estado normal
+        // da tela de confirmação enquanto o argumento de navegação não chegou.
+        if (ids.isEmpty()) return flowOf(emptyList())
+        return queries.listarEntradasPorIds(ids).asFlow().mapToList(io)
+            .map { linhas -> linhas.map(::paraDominio) }
     }
 
-    override fun observarResumoDeRevisao(): Flow<ResumoRevisao> = combine(
-        observarProntas(),
+    override fun observarFilaDeRevisao(escopo: Escopo): Flow<List<Entrada>> =
+        observarProntas(escopo).map { prontas ->
+            val instante = agora()
+            prontas
+                .filter { it.precisaRevisar(instante) }
+                .sortedBy { it.retencao?.pontosEm(instante) ?: 0.0 }
+        }
+
+    override fun observarResumoDeRevisao(escopo: Escopo): Flow<ResumoRevisao> = combine(
+        observarProntas(escopo),
         queries.listarDiasRevisados().asFlow().mapToList(io),
     ) { prontas, dias ->
         val instante = agora()
@@ -170,7 +200,7 @@ class VocabRepositoryImpl(
         }.asFlow().mapToList(io)
     }
 
-    override fun observarEventos(dias: Int): Flow<List<Evento>> {
+    override fun observarEventos(dias: Int, escopo: Escopo): Flow<List<Evento>> {
         val primeiroDia = diaLocalDe(agora()) - (dias.coerceAtLeast(1) - 1)
         return queries.listarEventosDesde(primeiroDia) { id, entradaId, dia, instante, tipo, detalhe, alvo, nativo, alvoIdioma ->
             Evento(
@@ -183,7 +213,7 @@ class VocabRepositoryImpl(
                 par = ParIdiomas(nativo = nativo, alvo = alvoIdioma),
                 detalhe = detalhe,
             )
-        }.asFlow().mapToList(io).doCurso { it.par }
+        }.asFlow().mapToList(io).no(escopo) { it.par }
     }
 
     override fun observarUsoIa(): Flow<UsoIa> {
@@ -213,28 +243,35 @@ class VocabRepositoryImpl(
     override suspend fun capturarTexto(
         trecho: String,
         alvos: List<AlvoSelecionado>,
+        par: ParIdiomas?,
     ): List<Long> = withContext(io) {
         val texto = trecho
         require(texto.isNotBlank()) { "O trecho é obrigatório." }
         require(alvos.isNotEmpty()) { "Selecione ao menos um alvo." }
         require(alvos.all { it.eValidoEm(texto) }) { "Há uma seleção fora do trecho atual." }
 
-        val curso = cursoAgora()
+        val curso = cursoDaCaptura(par)
         queries.transactionWithResult {
-            queries.inserirCaptura(
+            val capturaId = inserirCaptura(
                 trecho = texto,
-                origem = null,
-                criado_em = agora(),
-                status = StatusCaptura.PROCESSADA.name,
-                formato = FormatoCaptura.TEXTO.name,
-                midia_caminho = null,
-                duracao_ms = null,
-                erro_transcricao = null,
-                idioma_nativo = curso.nativo,
-                idioma_alvo = curso.alvo,
+                status = StatusCaptura.PROCESSADA,
+                formato = FormatoCaptura.TEXTO,
+                curso = curso,
             )
-            val capturaId = queries.ultimoIdInserido().executeAsOne()
             inserirAlvos(capturaId, alvos)
+        }
+    }
+
+    override suspend fun capturarTrecho(trecho: String, par: ParIdiomas?): Long = withContext(io) {
+        require(trecho.isNotBlank()) { "O trecho é obrigatório." }
+        val curso = cursoDaCaptura(par)
+        queries.transactionWithResult {
+            inserirCaptura(
+                trecho = trecho,
+                status = StatusCaptura.AGUARDANDO_SELECAO,
+                formato = FormatoCaptura.TEXTO,
+                curso = curso,
+            )
         }
     }
 
@@ -242,28 +279,57 @@ class VocabRepositoryImpl(
         formato: FormatoCaptura,
         caminho: String,
         duracaoMs: Long?,
+        par: ParIdiomas?,
     ): Long = withContext(io) {
         require(formato != FormatoCaptura.TEXTO) { "Mídia precisa ser foto ou áudio." }
-        val curso = cursoAgora()
+        val curso = cursoDaCaptura(par)
         queries.transactionWithResult {
-            queries.inserirCaptura(
+            inserirCaptura(
                 trecho = null,
-                origem = null,
-                criado_em = agora(),
-                status = StatusCaptura.TRANSCREVENDO.name,
-                formato = formato.name,
-                midia_caminho = caminho,
-                duracao_ms = duracaoMs,
-                erro_transcricao = null,
-                idioma_nativo = curso.nativo,
-                idioma_alvo = curso.alvo,
+                status = StatusCaptura.TRANSCREVENDO,
+                formato = formato,
+                curso = curso,
+                caminho = caminho,
+                duracaoMs = duracaoMs,
             )
-            queries.ultimoIdInserido().executeAsOne()
         }
     }
 
-    /** O curso do momento em que a captura é gravada — depois disso ela não muda mais de língua. */
-    private suspend fun cursoAgora(): ParIdiomas = cursoAtivo.first()
+    override suspend fun alterarIdiomaDaCaptura(id: Long, alvo: String): Unit = withContext(io) {
+        queries.alterarIdiomaDaCaptura(idioma_alvo = alvo, id = id)
+    }
+
+    private fun inserirCaptura(
+        trecho: String?,
+        status: StatusCaptura,
+        formato: FormatoCaptura,
+        curso: ParIdiomas,
+        caminho: String? = null,
+        duracaoMs: Long? = null,
+    ): Long {
+        queries.inserirCaptura(
+            trecho = trecho,
+            origem = null,
+            criado_em = agora(),
+            status = status.name,
+            formato = formato.name,
+            midia_caminho = caminho,
+            duracao_ms = duracaoMs,
+            erro_transcricao = null,
+            idioma_nativo = curso.nativo,
+            idioma_alvo = curso.alvo,
+        )
+        return queries.ultimoIdInserido().executeAsOne()
+    }
+
+    /**
+     * Em que par esta captura nasce — o escolhido na folha, ou o curso aberto.
+     *
+     * Desde que o idioma passou a ser decidido no ato da gravação, o curso aberto
+     * virou só o palpite inicial: capturar em espanhol estando na página do
+     * inglês é um caso normal, e o que chega aqui é a decisão já tomada.
+     */
+    private suspend fun cursoDaCaptura(par: ParIdiomas?): ParIdiomas = par ?: cursoAtivo.first()
 
     override suspend fun registrarTranscricao(id: Long, trecho: String?, erro: String?) {
         withContext(io) {

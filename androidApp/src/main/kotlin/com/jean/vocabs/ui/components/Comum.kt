@@ -170,19 +170,33 @@ fun formatarDuracaoMs(duracaoMs: Long): String {
 fun formatarDuracao(segundos: Long): String = formatarDuracaoMs(segundos * 1_000L)
 
 /**
- * Como chamar uma captura crua: "Áudio · 0:12", "Foto do Kindle", "Texto".
+ * Como chamar uma captura crua: "Áudio · 0:12", "Foto do Kindle", "“tant pis”".
  *
- * A lista de Pendentes e o cabeçalho da transcrição precisam do mesmo nome —
- * quem toca numa linha tem que reconhecer a tela que abriu. É também o único
- * lugar onde `origem` aparece, o que a torna útil de preencher.
+ * A lista de Pendentes e o cabeçalho da seleção precisam do mesmo nome — quem
+ * toca numa linha tem que reconhecer a tela que abriu. É também o único lugar
+ * onde `origem` aparece, o que a torna útil de preencher.
+ *
+ * Texto colado mostra o próprio trecho entre aspas, e não a palavra "Texto":
+ * numa fila de cinco capturas, "Texto" três vezes não distingue nada, e o
+ * trecho é o que a pessoa reconhece de imediato.
  */
 fun tituloDaCaptura(captura: Captura): String {
     val origem = captura.origem?.takeIf { it.isNotBlank() }
     return when (captura.formato) {
         FormatoCaptura.AUDIO -> captura.duracaoMs?.let { "Áudio · ${formatarDuracaoMs(it)}" } ?: "Áudio"
         FormatoCaptura.FOTO -> origem?.let { "Foto do $it" } ?: "Foto"
-        FormatoCaptura.TEXTO -> origem?.let { "Texto do $it" } ?: "Texto"
+        FormatoCaptura.TEXTO -> captura.trecho?.takeIf { it.isNotBlank() }?.let { "“${resumir(it)}”" }
+            ?: origem?.let { "Texto do $it" }
+            ?: "Texto"
     }
+}
+
+/** Uma linha de trecho para caber num título, cortada na palavra e não na letra. */
+fun resumir(texto: String, limite: Int = 38): String {
+    val limpo = texto.trim().replace(Regex("\\s+"), " ")
+    if (limpo.length <= limite) return limpo
+    val corte = limpo.take(limite).substringBeforeLast(' ', limpo.take(limite))
+    return "$corte…"
 }
 
 /**

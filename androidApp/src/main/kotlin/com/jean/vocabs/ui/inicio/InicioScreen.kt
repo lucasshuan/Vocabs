@@ -1,8 +1,11 @@
 package com.jean.vocabs.ui.inicio
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,198 +19,378 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.R
+import com.jean.vocabs.shared.domain.Entrada
+import com.jean.vocabs.ui.components.AnelDeProgresso
 import com.jean.vocabs.ui.components.BotaoPrincipal
+import com.jean.vocabs.ui.components.CaixaTracejada
 import com.jean.vocabs.ui.components.CartaoDaTela
-import com.jean.vocabs.ui.components.CartaoMetrica
+import com.jean.vocabs.ui.components.DiscoDeIcone
+import com.jean.vocabs.ui.components.FaixaDeIdiomas
 import com.jean.vocabs.ui.components.Icones
-import com.jean.vocabs.ui.components.LinhaDeLista
-import com.jean.vocabs.ui.components.PilulaDeIdiomas
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.components.PontosDePagina
 import com.jean.vocabs.ui.components.RotuloDeSecao
-import java.time.LocalTime
+import com.jean.vocabs.ui.components.tempoAte
+import com.jean.vocabs.ui.idiomas.idiomaDe
 
+/**
+ * Tela 01/02 do handoff — a Início, uma página por curso.
+ *
+ * É a **única** aba recortada por idioma, e a troca é um deslize. As outras três
+ * mostram sempre tudo: um filtro que continuasse ligado ao mudar de aba faria
+ * palavras sumirem sem que ninguém tivesse pedido.
+ *
+ * Deslizar não é só navegar — é trocar o curso aberto. Por isso o botão de
+ * revisar, a folha do `+` e a fila de revisão seguem a página visível sem que
+ * nenhuma delas precise saber que existe um carrossel.
+ */
 @Composable
 fun InicioScreen(
-    aoEscrever: () -> Unit,
-    aoAbrirPalavras: () -> Unit,
+    aoCapturar: () -> Unit,
     aoAbrirPendentes: () -> Unit,
     aoRevisar: () -> Unit,
     aoAbrirPerfil: () -> Unit,
+    aoAdicionarIdioma: () -> Unit,
     vm: InicioViewModel = viewModel(),
 ) {
     val estado by vm.estado.collectAsStateWithLifecycle()
-    val naFila = estado.revisao?.naFila ?: 0
-    Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .statusBarsPadding()
-            .padding(horizontal = 20.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+    val paginas = estado.paginas
+    val pager = rememberPagerState(pageCount = { paginas.size })
+
+    // Duas direções, e a ordem entre elas importa. O pager nasce na página 0, que
+    // quase nunca é o curso aberto — deixá-lo mandar antes de estar posicionado
+    // faria abrir o app no inglês trocar o curso para o inglês, em silêncio.
+    // Por isso ele só passa a mandar depois do primeiro posicionamento.
+    var posicionado by remember { mutableStateOf(false) }
+
+    LaunchedEffect(paginas.size, estado.ativo) {
+        if (paginas.isEmpty()) return@LaunchedEffect
+        if (!posicionado) {
+            pager.scrollToPage(estado.indiceAtivo)
+            posicionado = true
+        } else if (estado.indiceAtivo != pager.currentPage && !pager.isScrollInProgress) {
+            pager.animateScrollToPage(estado.indiceAtivo)
+        }
+    }
+
+    LaunchedEffect(posicionado) {
+        if (!posicionado) return@LaunchedEffect
+        snapshotFlow { pager.settledPage }.collect { indice ->
+            paginas.getOrNull(indice)?.let { vm.abrirCurso(it.par.alvo) }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 14.dp),
+        ) {
             Image(painterResource(R.drawable.logo_tagarara), stringResource(R.string.logo_description), Modifier.size(34.dp))
             Text("TAGARARA", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 9.dp))
             Spacer(Modifier.weight(1f))
-            PilulaDeIdiomas(
-                aoClicar = aoAbrirPerfil,
-                nativo = idiomaDe(estado.par.nativo),
-                alvo = idiomaDe(estado.par.alvo),
-            )
-        }
-
-        CartaoDaTela(
-            forma = MaterialTheme.shapes.extraLarge,
-            recheio = PaddingValues(20.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AnelMemoria(estado.forcaMedia)
-                Column(Modifier.weight(1f).padding(start = 16.dp)) {
-                    Text(saudacao(), style = MaterialTheme.typography.headlineSmall)
-                    Text(
-                        text = if (naFila == 0) "Sua memória está em dia.\nNada esfriou hoje."
-                        else "$naFila ${if (naFila == 1) "palavra esfriou" else "palavras esfriaram"}.\n${minutosDeRevisao(naFila)} resolvem.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 5.dp),
+            Surface(onClick = aoAbrirPerfil, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp)) {
+                    Icon(
+                        imageVector = Icones.Pessoa,
+                        contentDescription = "Você",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }
-            BotaoPrincipal(
-                texto = if (naFila > 0) "Revisar $naFila ${if (naFila == 1) "palavra" else "palavras"}" else "Nada para revisar",
-                aoClicar = aoRevisar,
-                habilitado = naFila > 0,
-                modifier = Modifier.padding(top = 16.dp),
+        }
+
+        if (estado.temCarrossel) {
+            FaixaDeIdiomas(
+                cursos = estado.cursos,
+                ativo = estado.ativo,
+                aoEscolher = vm::abrirCurso,
+                aoAdicionar = aoAdicionarIdioma,
+                modifier = Modifier.padding(bottom = 14.dp),
             )
         }
 
-        estado.capturaMaisAntiga?.let {
-            val total = estado.capturasPendentes
-            LinhaDeLista(
-                titulo = "$total ${if (total == 1) "captura esperando você" else "capturas esperando você"}",
-                detalhe = "continue a transcrição",
-                aoClicar = aoAbrirPendentes,
-                fim = {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(30.dp).background(MaterialTheme.colorScheme.tertiary, CircleShape),
-                    ) {
-                        Icon(
-                            imageVector = Icones.Avancar,
-                            contentDescription = "Abrir pendentes",
-                            tint = MaterialTheme.colorScheme.onTertiary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                },
-            )
-        }
-
-        val dias = estado.revisao?.diasSeguidos ?: 0
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            CartaoMetrica(
-                valor = "${estado.totalPalavras}",
-                rotulo = if (estado.totalPalavras == 1) "vocabulário" else "vocabulários",
-                modifier = Modifier.weight(1f),
-                aoClicar = aoAbrirPalavras,
-            )
-            CartaoMetrica(
-                valor = "${estado.dominadas}",
-                rotulo = if (estado.dominadas == 1) "dominada" else "dominadas",
-                modifier = Modifier.weight(1f),
-                destaque = true,
-            )
-            CartaoMetrica(
-                valor = "$dias",
-                rotulo = if (dias == 1) "dia seguido" else "dias seguidos",
-                modifier = Modifier.weight(1f),
-                destaque = true,
-            )
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            RotuloDeSecao("Capturadas hoje")
-            if (estado.recentesHoje.isEmpty()) {
-                CartaoDaTela(forma = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(), aoClicar = aoEscrever) {
-                    Text("Ainda nenhuma ficha hoje", style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        "Capture algo que encontrou no mundo real.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                }
-            } else {
-                estado.recentesHoje.forEach { entrada ->
-                    CartaoDaTela(
-                        forma = MaterialTheme.shapes.small,
-                        recheio = PaddingValues(horizontal = 15.dp, vertical = 12.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(entrada.titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-                            Text(
-                                entrada.ficha?.traducao.orEmpty(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
+        HorizontalPager(
+            state = pager,
+            beyondViewportPageCount = 1,
+            modifier = Modifier.weight(1f),
+        ) { indice ->
+            paginas.getOrNull(indice)?.let { pagina ->
+                PaginaDeCurso(
+                    pagina = pagina,
+                    indice = indice,
+                    total = paginas.size,
+                    mostrarPontos = estado.temCarrossel,
+                    aoRevisar = aoRevisar,
+                    aoCapturar = aoCapturar,
+                )
             }
         }
-        Spacer(Modifier.navigationBarsPadding().height(110.dp))
+
+        RodapeDaFila(
+            total = estado.capturasNaFila,
+            noCurso = estado.paginaAtiva?.capturasNaFila ?: 0,
+            idioma = idiomaDe(estado.ativo).nome,
+            aoClicar = aoAbrirPendentes,
+            modifier = Modifier.padding(horizontal = 20.dp),
+        )
+        Spacer(Modifier.navigationBarsPadding().height(ESPACO_DA_BARRA))
     }
-}
-
-/** "Bom dia" até as 12, "Boa tarde" até as 18, "Boa noite" depois. */
-private fun saudacao(agora: LocalTime = LocalTime.now()): String = when (agora.hour) {
-    in 5..11 -> "Bom dia"
-    in 12..17 -> "Boa tarde"
-    else -> "Boa noite"
-}
-
-/**
- * O custo da fila em minutos, arredondado para cima.
- *
- * Meio minuto por cartão é o que o handoff assume ("3 palavras … 10 min
- * resolvem" seria generoso demais para 3); manter a conta explícita evita
- * prometer um número que a sessão não cumpre.
- */
-private fun minutosDeRevisao(naFila: Int): String {
-    val minutos = ((naFila * 30 + 59) / 60).coerceAtLeast(1)
-    return "$minutos min"
 }
 
 @Composable
-private fun AnelMemoria(valor: Int) {
-    val trilha = MaterialTheme.colorScheme.outlineVariant
-    val cor = MaterialTheme.colorScheme.tertiary
-    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(74.dp)) {
-        Canvas(Modifier.fillMaxSize()) {
-            val traco = Stroke(8.dp.toPx(), cap = StrokeCap.Round)
-            drawArc(trilha, -90f, 360f, false, style = traco)
-            drawArc(cor, -90f, 360f * valor.coerceIn(0, 100) / 100f, false, style = traco)
+private fun PaginaDeCurso(
+    pagina: PaginaDoInicio,
+    indice: Int,
+    total: Int,
+    mostrarPontos: Boolean,
+    aoRevisar: () -> Unit,
+    aoCapturar: () -> Unit,
+) {
+    val idioma = idiomaDe(pagina.par.alvo)
+    val resumo = pagina.resumo
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp),
+    ) {
+        CartaoDaTela(
+            forma = MaterialTheme.shapes.extraLarge,
+            recheio = PaddingValues(18.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AnelDoCurso(pagina)
+                Column(Modifier.weight(1f).padding(start = 15.dp)) {
+                    Text("Seu ${idioma.nome.lowercase()}", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        text = detalheDoCurso(resumo.total, resumo.dominadas, resumo.naFila),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+
+            if (resumo.naFila > 0) {
+                BotaoPrincipal(
+                    texto = "Revisar ${resumo.naFila} ${if (resumo.naFila == 1) "palavra" else "palavras"}",
+                    aoClicar = aoRevisar,
+                    modifier = Modifier.padding(top = 15.dp),
+                )
+            } else {
+                LinhaDoQueVem(pagina, Modifier.padding(top = 15.dp))
+            }
         }
-        Text("$valor%", style = MaterialTheme.typography.headlineSmall)
+
+        if (mostrarPontos) {
+            PontosDePagina(total, indice, Modifier.align(Alignment.CenterHorizontally))
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            RotuloDeSecao("Capturadas hoje em ${idioma.nome.lowercase()}")
+            if (pagina.capturadasHoje.isEmpty()) {
+                ConviteDeCaptura(idioma.nome.lowercase(), aoCapturar)
+            } else {
+                pagina.capturadasHoje.forEach { LinhaDeCapturada(it) }
+            }
+        }
+
+        Spacer(Modifier.height(4.dp))
     }
 }
+
+/**
+ * O anel do curso: a força média por dentro, ou o tique quando não há fila.
+ *
+ * Curso em dia repete no anel o mesmo tique que a bandeira mostra na faixa — é a
+ * confirmação de que o selo lá em cima não estava falando de outra coisa.
+ */
+@Composable
+private fun AnelDoCurso(pagina: PaginaDoInicio) {
+    val cores = MaterialTheme.colorScheme
+    val emDia = pagina.resumo.naFila == 0 && pagina.resumo.total > 0
+    AnelDeProgresso(
+        fracao = if (emDia) 1f else pagina.forcaMedia / 100f,
+        tamanho = 70.dp,
+        espessura = 8.dp,
+    ) {
+        if (emDia) {
+            Icon(Icones.Check, null, tint = cores.tertiary, modifier = Modifier.size(26.dp))
+        } else {
+            Text("${pagina.forcaMedia}%", style = MaterialTheme.typography.headlineSmall)
+        }
+    }
+}
+
+/** "Próximas 5 em 19h · nada a fazer hoje" — o cartão de um curso sem fila. */
+@Composable
+private fun LinhaDoQueVem(pagina: PaginaDoInicio, modifier: Modifier = Modifier) {
+    val cores = MaterialTheme.colorScheme
+    val proxima = pagina.resumo.proximaEmMillis
+    CartaoDaTela(
+        forma = MaterialTheme.shapes.medium,
+        cor = cores.surfaceVariant,
+        recheio = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            DiscoDeIcone(
+                icone = if (proxima == null) Icones.Mais else Icones.Relogio,
+                descricao = null,
+                cor = cores.onSurfaceVariant,
+                fundo = cores.surface,
+                tamanho = 34.dp,
+            )
+            Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                Text(
+                    text = when {
+                        proxima == null -> "Nada agendado ainda"
+                        pagina.proximasEm24h > 1 -> "Próximas ${pagina.proximasEm24h} ${tempoAte(proxima)}"
+                        else -> "Próxima ${tempoAte(proxima)}"
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    text = if (proxima == null) "capture algo para começar" else "nada a fazer hoje",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cores.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 1.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LinhaDeCapturada(entrada: Entrada) {
+    CartaoDaTela(
+        forma = MaterialTheme.shapes.small,
+        recheio = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(entrada.titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(
+                text = entrada.ficha?.traducao.orEmpty(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Dia sem captura vira convite, e não tela vazia — o custo de capturar é o ponto do app. */
+@Composable
+private fun ConviteDeCaptura(idioma: String, aoClicar: () -> Unit) {
+    CaixaTracejada(
+        modifier = Modifier.fillMaxWidth(),
+        recheio = PaddingValues(18.dp),
+        aoClicar = aoClicar,
+    ) {
+        Text(
+            text = "Nada ainda. Ouviu alguma coisa hoje que valia guardar?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        BotaoPrincipal(
+            texto = "Capturar em $idioma",
+            aoClicar = aoClicar,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+    }
+}
+
+/**
+ * O rodapé da fila, fora do carrossel.
+ *
+ * A fila é de todos os idiomas e não muda quando a página muda — o que muda é
+ * quanto dela pertence ao curso aberto. Trocar só a segunda linha, com um
+ * `AnimatedContent` curto, é o que diz isso sem sugerir que a fila inteira
+ * pertence à página.
+ */
+@Composable
+private fun RodapeDaFila(
+    total: Int,
+    noCurso: Int,
+    idioma: String,
+    aoClicar: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (total == 0) return
+    val cores = MaterialTheme.colorScheme
+    CaixaTracejada(modifier = modifier.fillMaxWidth(), aoClicar = aoClicar) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            DiscoDeIcone(
+                icone = Icones.Relogio,
+                descricao = null,
+                cor = cores.tertiary,
+                fundo = cores.tertiaryContainer,
+                tamanho = 34.dp,
+            )
+            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(
+                    text = "$total ${if (total == 1) "captura na fila" else "capturas na fila"}",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                AnimatedContent(
+                    targetState = noCurso,
+                    transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(100)) },
+                    label = "filaDoCurso",
+                ) { quantas ->
+                    Text(
+                        text = when {
+                            quantas == 0 -> "de todos os idiomas"
+                            quantas == total -> "todas do ${idioma.lowercase()}"
+                            quantas == 1 -> "1 delas é do ${idioma.lowercase()}"
+                            else -> "$quantas delas são do ${idioma.lowercase()}"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = cores.onSurfaceVariant,
+                    )
+                }
+            }
+            Icon(Icones.Avancar, null, tint = cores.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+private fun detalheDoCurso(total: Int, dominadas: Int, naFila: Int): String {
+    val estoque = if (total == 0) "nenhuma ficha ainda" else "$total ${if (total == 1) "ficha" else "fichas"} · $dominadas ${if (dominadas == 1) "dominada" else "dominadas"}"
+    val fila = when {
+        total == 0 -> "capture a primeira"
+        naFila == 0 -> "nada esfriou hoje"
+        naFila == 1 -> "1 esfriou hoje"
+        else -> "$naFila esfriaram hoje"
+    }
+    return "$estoque\n$fila"
+}
+
+/** A barra de baixo mais o vão do botão de captura, que passa dela para cima. */
+private val ESPACO_DA_BARRA = 92.dp

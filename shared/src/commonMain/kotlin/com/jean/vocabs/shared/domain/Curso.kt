@@ -24,12 +24,39 @@ data class ParIdiomas(
  * [dominadas] conta degraus, não pontos: a faixa mostraria um número diferente a
  * cada hora se contasse força de memória, porque ela decai sozinha. O que a
  * pessoa quer ver ali é o quanto já subiu, e isso não desce enquanto ela dorme.
+ *
+ * [naFila] e [proximaEmMillis] existem para o selo: são a mesma pergunta que o
+ * cartão da Início faz, respondida por curso, e sem elas a faixa teria que ler a
+ * fila de cada idioma por conta própria.
  */
 data class ResumoCurso(
     val par: ParIdiomas,
     val total: Int,
     val dominadas: Int,
-)
+    val naFila: Int = 0,
+    /** Millis até a próxima ficha deste curso pedir revisão. Nulo quando não há nenhuma. */
+    val proximaEmMillis: Long? = null,
+) {
+    val selo: SeloDeCurso
+        get() = when {
+            naFila > 0 -> SeloDeCurso.Revisar(naFila)
+            proximaEmMillis != null -> SeloDeCurso.EmDia
+            else -> SeloDeCurso.Vazio
+        }
+}
+
+/**
+ * O estado que toda bandeira da faixa carrega — nunca vazia, nunca um "0" escrito.
+ *
+ * São três e não quatro: "sem nada agendado" ([Vazio]) é curso novo, e é
+ * diferente de "em dia", que é uma conquista. Escrever zero no lugar do tique
+ * transformaria a única boa notícia da faixa num placar de nada feito.
+ */
+sealed interface SeloDeCurso {
+    data class Revisar(val quantas: Int) : SeloDeCurso
+    data object EmDia : SeloDeCurso
+    data object Vazio : SeloDeCurso
+}
 
 /**
  * A escada de cinco degraus da tela "O que falta".

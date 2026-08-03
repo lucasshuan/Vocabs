@@ -15,20 +15,29 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.ui.components.AcaoSecundaria
 import com.jean.vocabs.ui.components.AnelDeProgresso
+import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.BarraDeFaixas
 import com.jean.vocabs.ui.components.CabecalhoDeDentro
 import com.jean.vocabs.ui.components.CartaoDaTela
@@ -37,23 +46,46 @@ import com.jean.vocabs.ui.components.DiaDaSemana
 import com.jean.vocabs.ui.components.FaixaDaSemana
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.LinhaDeUsoDeIa
+import com.jean.vocabs.ui.components.contornoDeCartao
+import com.jean.vocabs.ui.idiomas.idiomaDe
 
 /**
- * Tela 4a do handoff — "Seu progresso".
+ * Tela 08 do handoff — "Seu progresso", de um curso.
  *
- * Página de dentro, aberta pelo cartão da tela Você. Três blocos: a semana com a
- * quota, o estoque de palavras e os números de apoio. Cada um dos dois primeiros
- * é a porta de uma tela mais funda.
+ * Página de dentro, aberta por uma linha da tela Você. A bandeira no topo diz de
+ * qual curso ela é, e a mesma tela se repete para cada idioma com os números
+ * daquele. Três blocos: a semana com a quota, o estoque de palavras e os números
+ * de apoio. Cada um dos dois primeiros é a porta de uma tela mais funda.
  */
 @Composable
 fun ProgressoScreen(
+    alvo: String?,
     aoVoltar: () -> Unit,
     aoAbrirDiaADia: () -> Unit,
     aoAbrirOQueFalta: () -> Unit,
     vm: ProgressoViewModel = viewModel(),
 ) {
+    LaunchedEffect(alvo) { vm.abrir(alvo) }
     val estado by vm.estado.collectAsStateWithLifecycle()
+    val podeRemover by vm.podeRemover.collectAsStateWithLifecycle()
     val cores = MaterialTheme.colorScheme
+    var confirmarRemocao by remember { mutableStateOf(false) }
+
+    if (confirmarRemocao) {
+        AlertDialog(
+            onDismissRequest = { confirmarRemocao = false },
+            title = { Text("Sair do ${idiomaDe(estado.par.alvo).nome.lowercase()}?") },
+            text = { Text("As fichas continuam guardadas — o idioma volta com tudo se você matricular de novo.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmarRemocao = false
+                    vm.removerCurso(estado.par.alvo)
+                    aoVoltar()
+                }) { Text("Remover", color = cores.error) }
+            },
+            dismissButton = { TextButton(onClick = { confirmarRemocao = false }) { Text("Manter") } },
+        )
+    }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(13.dp),
@@ -63,7 +95,9 @@ fun ProgressoScreen(
             .statusBarsPadding()
             .padding(horizontal = 20.dp),
     ) {
-        CabecalhoDeDentro("Seu progresso", aoVoltar, Modifier.padding(top = 8.dp))
+        CabecalhoDeDentro("Seu progresso", aoVoltar, Modifier.padding(top = 8.dp)) {
+            PilulaDoCurso(estado.par.alvo)
+        }
 
         CartaoDaTela(aoClicar = aoAbrirDiaADia, recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -104,7 +138,11 @@ fun ProgressoScreen(
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-                    Text("Quota de hoje", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Text(
+                        text = "Quota de hoje no ${idiomaDe(estado.par.alvo).nome.lowercase()}",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f),
+                    )
                     Text(
                         text = "${estado.quota.feita} de ${estado.quota.total} ${if (estado.quota.total == 1) "revisão" else "revisões"}",
                         style = MaterialTheme.typography.bodySmall,
@@ -197,7 +235,34 @@ fun ProgressoScreen(
 
         LinhaDeUsoDeIa(usadas = estado.usoIa.usadas, limite = estado.usoIa.limite)
 
+        if (podeRemover) {
+            AcaoSecundaria(
+                texto = "Remover o ${idiomaDe(estado.par.alvo).nome.lowercase()} da faixa",
+                aoClicar = { confirmarRemocao = true },
+            )
+        }
+
         Spacer(Modifier.navigationBarsPadding().height(110.dp))
+    }
+}
+
+/** A bandeira do curso no cabeçalho: sem ela, três telas iguais e nenhum jeito de dizer qual é qual. */
+@Composable
+private fun PilulaDoCurso(alvo: String) {
+    val idioma = idiomaDe(alvo)
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface, border = contornoDeCartao()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            modifier = Modifier.padding(start = 5.dp, end = 11.dp, top = 5.dp, bottom = 5.dp),
+        ) {
+            BandeiraCircular(idioma, tamanho = 20.dp)
+            Text(
+                text = idioma.nome,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

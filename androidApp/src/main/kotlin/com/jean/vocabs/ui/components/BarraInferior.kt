@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.jean.vocabs.shared.domain.FormatoCaptura
 
 data class Aba(val rota: String, val icone: ImageVector, val rotulo: String, val selo: Int = 0)
 
@@ -70,20 +69,8 @@ fun BarraInferior(
     }
 }
 
-/** A altura da fileira de ícones, sem os insets. O leque se alinha por ela. */
+/** A altura da fileira de ícones, sem os insets. O botão de captura se alinha por ela. */
 val ALTURA_DA_BARRA = 68.dp
-
-/**
- * A ordem do leque é a mesma das abas da Captura.
- *
- * Texto primeiro porque é o caminho mais usado e o único que termina sem sair da
- * tela; foto e áudio existem para capturar em segundos e resolver depois.
- */
-val OPCOES_DE_CAPTURA = listOf(
-    OpcaoDeCaptura(FormatoCaptura.TEXTO, Icones.Lapis, "Texto"),
-    OpcaoDeCaptura(FormatoCaptura.AUDIO, Icones.Microfone, "Áudio"),
-    OpcaoDeCaptura(FormatoCaptura.FOTO, Icones.Camera, "Foto"),
-)
 
 @Composable
 private fun ItemAba(aba: Aba, selecionada: Boolean, aoClicar: () -> Unit, modifier: Modifier) {

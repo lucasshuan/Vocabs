@@ -7,6 +7,7 @@ import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.shared.domain.AtividadeDiaria
 import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
+import com.jean.vocabs.shared.domain.Escopo
 import com.jean.vocabs.shared.domain.Evento
 import com.jean.vocabs.shared.domain.NivelMemoria
 import com.jean.vocabs.shared.domain.ParIdiomas
@@ -15,9 +16,14 @@ import com.jean.vocabs.shared.domain.UsoIa
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -83,40 +89,73 @@ data class DiaDoProgresso(
     val futuro: Boolean,
 )
 
+/**
+ * O progresso de **um** curso, que não é necessariamente o aberto.
+ *
+ * A tela abre de uma linha da Você, e a Você mostra os três idiomas. Trocar o
+ * curso aberto só para poder olhar o progresso do francês mexeria na página da
+ * Início e no destino do `+` — um efeito que ninguém pediu ao tocar numa linha.
+ * Daí o curso entrar por [abrir] e virar um [Escopo.Curso] nomeado.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProgressoViewModel(app: Application) : AndroidViewModel(app) {
     private val repositorio = AppContainer.repositorio(app)
+    private val preferencias = AppContainer.preferencias(app)
 
-    /** Em duas etapas: `combine` só tem sobrecarga tipada até cinco fluxos. */
-    private val semanaEQuota = combine(
-        repositorio.observarResumoDeRevisao(),
-        repositorio.observarAtividade(84),
-    ) { revisao, atividade ->
-        val hoje = LocalDate.now()
-        ProgressoEstado(
-            semana = semanaDe(hoje, atividade),
-            mes = nomeDoMes(hoje),
-            diasSeguidos = revisao.diasSeguidos,
-            melhorSequencia = revisao.melhorSequencia,
-            quota = revisao.quota,
-        )
+    /** Nulo até a rota dizer qual curso; nesse intervalo vale o curso aberto. */
+    private val curso = MutableStateFlow<String?>(null)
+
+    private val escopo: Flow<Escopo> = curso.map { alvo ->
+        alvo?.let(Escopo::Curso) ?: Escopo.CursoAberto
     }
 
-    val estado: StateFlow<ProgressoEstado> = combine(
-        semanaEQuota,
-        repositorio.observarProntas(),
-        repositorio.observarEventos(84),
-        repositorio.observarUsoIa(),
-        repositorio.observarCursoAtivo(),
-    ) { base, prontas, eventos, usoIa, par ->
-        base.copy(
-            par = par,
-            palavras = prontas,
-            eventos = eventos,
-            acertos = prontas.sumOf { it.retencao?.acertos ?: 0 },
-            respondidas = prontas.sumOf { it.retencao?.respondidas ?: 0 },
-            usoIa = usoIa,
-        )
+    val estado: StateFlow<ProgressoEstado> = escopo.flatMapLatest { recorte ->
+        /** Em duas etapas: `combine` só tem sobrecarga tipada até cinco fluxos. */
+        val semanaEQuota = combine(
+            repositorio.observarResumoDeRevisao(recorte),
+            repositorio.observarAtividade(84),
+        ) { revisao, atividade ->
+            val hoje = LocalDate.now()
+            ProgressoEstado(
+                semana = semanaDe(hoje, atividade),
+                mes = nomeDoMes(hoje),
+                // A sequência conta atividade em qualquer idioma; a quota é do
+                // curso. São perguntas diferentes: hábito é da pessoa, carga é
+                // da matéria.
+                diasSeguidos = revisao.diasSeguidos,
+                melhorSequencia = revisao.melhorSequencia,
+                quota = revisao.quota,
+            )
+        }
+
+        combine(
+            semanaEQuota,
+            repositorio.observarProntas(recorte),
+            repositorio.observarEventos(84, recorte),
+            repositorio.observarUsoIa(),
+            preferencias.observarPar(),
+        ) { base, prontas, eventos, usoIa, par ->
+            base.copy(
+                par = ParIdiomas(nativo = par.nativo, alvo = (recorte as? Escopo.Curso)?.alvo ?: par.alvo),
+                palavras = prontas,
+                eventos = eventos,
+                acertos = prontas.sumOf { it.retencao?.acertos ?: 0 },
+                respondidas = prontas.sumOf { it.retencao?.respondidas ?: 0 },
+                usoIa = usoIa,
+            )
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressoEstado())
+
+    fun abrir(alvo: String?) {
+        curso.value = alvo?.takeIf { it.isNotBlank() }
+    }
+
+    /** Quantos cursos existem — remover o último deixaria o app sem página nenhuma. */
+    val podeRemover: StateFlow<Boolean> = preferencias.observarCursos()
+        .map { it.size > 1 }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    fun removerCurso(alvo: String) = preferencias.desmatricular(alvo)
 }
 
 /**

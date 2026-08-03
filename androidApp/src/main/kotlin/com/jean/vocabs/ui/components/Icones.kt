@@ -168,6 +168,27 @@ object Icones {
         )
     }
 
+    /**
+     * Ampulheta: o selo de um curso que ainda não tem nada agendado.
+     *
+     * O terceiro estado da faixa, e o único cinza. Escrever "0" no lugar dele
+     * transformaria um curso recém-criado num placar de nada feito.
+     */
+    val Ampulheta: ImageVector by lazy {
+        icone(
+            "ampulheta",
+            "M6,2v6h0.01L6,8.01 10,12l-4,4 0.01,0.01H6V22h12v-5.99h-0.01L18,16l-4,-4 4,-3.99 -0.01,-0.01H18V2H6zM16,16.5V20H8v-3.5l4,-4 4,4zM12,11.5l-4,-4V4h8v3.5l-4,4z",
+        )
+    }
+
+    /** Prancheta: o "Colar" da folha de captura. */
+    val Colar: ImageVector by lazy {
+        icone(
+            "colar",
+            "M19,2h-4.18C14.4,0.84 13.3,0 12,0S9.6,0.84 9.18,2H5C3.9,2 3,2.9 3,4v16c0,1.1 0.9,2 2,2h14c1.1,0 2,-0.9 2,-2V4c0,-1.1 -0.9,-2 -2,-2zM12,2c0.55,0 1,0.45 1,1s-0.45,1 -1,1 -1,-0.45 -1,-1 0.45,-1 1,-1zM19,20H5V4h2v3h10V4h2v16z",
+        )
+    }
+
     val Fechar: ImageVector by lazy {
         icone(
             "fechar",

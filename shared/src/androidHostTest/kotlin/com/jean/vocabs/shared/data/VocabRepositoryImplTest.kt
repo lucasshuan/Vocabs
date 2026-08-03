@@ -3,10 +3,12 @@ package com.jean.vocabs.shared.data
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.jean.vocabs.shared.data.remote.FichaApi
 import com.jean.vocabs.shared.db.VocabsDatabase
+import com.jean.vocabs.shared.domain.Escopo
 import com.jean.vocabs.shared.domain.FormatoCaptura
 import com.jean.vocabs.shared.domain.NivelMemoria
 import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.QuotaDoDia
+import com.jean.vocabs.shared.domain.SeloDeCurso
 import com.jean.vocabs.shared.domain.StatusEntrada
 import com.jean.vocabs.shared.domain.TipoEvento
 import com.jean.vocabs.shared.domain.selecionarTokens
@@ -125,6 +127,89 @@ class VocabRepositoryImplTest {
 
         // A captura guarda o par em que nasceu, e não o par de agora.
         assertEquals(ParIdiomas("pt-BR", "en"), repo.observarInbox().first().single().par)
+    }
+
+    @Test
+    fun `escopo Todos ve os tres idiomas e escopo Curso ve so o nomeado`() = runBlocking {
+        val curso = MutableStateFlow(ParIdiomas("pt-BR", "en"))
+        val repo = repositorio(curso = curso)
+
+        val ingles = "on the fence"
+        repo.capturarTexto(ingles, listOf(selecionarTokens(ingles, 2)!!))
+        curso.value = ParIdiomas("pt-BR", "de")
+        val alemao = "der Zaun"
+        repo.capturarTexto(alemao, listOf(selecionarTokens(alemao, 1)!!))
+
+        // Vocabulários, Pendentes e Você leem assim: tudo, sempre.
+        assertEquals(
+            setOf("fence", "Zaun"),
+            repo.observarInbox(Escopo.Todos).first().mapNotNull { it.alvo }.toSet(),
+        )
+        // "Seu progresso · inglês" lê assim, sem trocar o curso aberto.
+        assertEquals(listOf("fence"), repo.observarInbox(Escopo.Curso("en")).first().map { it.alvo })
+        assertEquals(ParIdiomas("pt-BR", "de"), curso.value)
+    }
+
+    @Test
+    fun `o idioma escolhido na folha vence o curso aberto`() = runBlocking {
+        val curso = MutableStateFlow(ParIdiomas("pt-BR", "en"))
+        val repo = repositorio(curso = curso)
+
+        val espanhol = "se puso las botas"
+        val id = repo.capturarTrecho(espanhol, ParIdiomas("pt-BR", "es"))
+
+        val pendente = repo.observarCapturasPendentes(Escopo.Todos).first().single()
+        assertEquals(id, pendente.id)
+        assertEquals("es", pendente.par.alvo)
+        // E some do curso aberto, que continua sendo o inglês.
+        assertTrue(repo.observarCapturasPendentes().first().isEmpty())
+    }
+
+    @Test
+    fun `trocar o idioma da captura so vale antes de virar fichas`() = runBlocking {
+        val repo = repositorio()
+        val trecho = "tant pis"
+        val id = repo.capturarTrecho(trecho)
+
+        repo.alterarIdiomaDaCaptura(id, "fr")
+        assertEquals("fr", repo.observarCapturaPorId(id).first()?.par?.alvo)
+
+        repo.confirmarCaptura(id, trecho, listOf(selecionarTokens(trecho, 0)!!))
+        repo.alterarIdiomaDaCaptura(id, "de")
+        assertEquals("fr", repo.observarCapturaPorId(id).first()?.par?.alvo)
+    }
+
+    @Test
+    fun `o resumo de cada curso traz o selo da faixa`() = runBlocking {
+        val repo = repositorio()
+        val trecho = "verdant field"
+        val id = repo.capturarTexto(trecho, listOf(selecionarTokens(trecho, 0)!!)).single()
+        assertTrue(repo.gerarFicha(id))
+
+        // Ficha recém-pronta: em dia, com uma revisão agendada para depois.
+        val emDia = repo.observarCursos().first().single()
+        assertEquals(0, emDia.naFila)
+        assertTrue(emDia.proximaEmMillis!! > 0)
+        assertEquals(SeloDeCurso.EmDia, emDia.selo)
+
+        agora += 2 * 86_400_000L
+        assertEquals(SeloDeCurso.Revisar(1), repo.observarCursos().first().single().selo)
+    }
+
+    @Test
+    fun `a tela de confirmacao acompanha so os ids que acabaram de nascer`() = runBlocking {
+        val repo = repositorio()
+        val trecho = "The plan went haywire"
+        val id = repo.capturarTrecho(trecho)
+        val ids = repo.confirmarCaptura(
+            id,
+            trecho,
+            listOf(selecionarTokens(trecho, 3)!!, selecionarTokens(trecho, 1)!!),
+        )
+
+        assertEquals(ids.sorted(), repo.observarEntradas(ids).first().map { it.id })
+        // Lista vazia é o estado normal antes do argumento de rota chegar.
+        assertTrue(repo.observarEntradas(emptyList()).first().isEmpty())
     }
 
     @Test

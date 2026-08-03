@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
+import com.jean.vocabs.shared.domain.Escopo
 import com.jean.vocabs.shared.domain.ParIdiomas
-import com.jean.vocabs.shared.domain.QuotaDoDia
 import com.jean.vocabs.shared.domain.ResumoCurso
 import com.jean.vocabs.shared.domain.UsoIa
 import java.io.File
@@ -18,22 +18,22 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * A tela Você: com que idiomas a pessoa está, e um resumo do curso aberto.
+ * A tela Você: o total primeiro, a quebra por idioma depois.
  *
- * Os números daqui são os três do handoff, e nenhum deles é a mesma coisa que os
- * da tela de Progresso: aqui é a vitrine, lá é a página inteira.
+ * Sequência e estoque são hábito, e hábito é da pessoa e não do curso — quem
+ * estudou espanhol ontem e francês hoje estudou dois dias seguidos. Por isso os
+ * três números do topo somam tudo, e a lista logo abaixo é que reparte.
  */
 data class PerfilEstado(
     val par: ParIdiomas = ParIdiomas.PADRAO,
     /** Todos os cursos matriculados, na ordem da faixa — inclusive os vazios. */
     val cursos: List<ResumoCurso> = emptyList(),
     val diasSeguidos: Int = 0,
-    val quota: QuotaDoDia = QuotaDoDia(feita = 0, naFila = 0),
     val usoIa: UsoIa = UsoIa("", 0),
     val exportando: Boolean = false,
 ) {
-    val cursoAtual: ResumoCurso?
-        get() = cursos.firstOrNull { it.par == par }
+    val totalDeFichas: Int get() = cursos.sumOf { it.total }
+    val totalDeDominadas: Int get() = cursos.sumOf { it.dominadas }
 }
 
 class PerfilViewModel(app: Application) : AndroidViewModel(app) {
@@ -44,7 +44,7 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
     /**
      * A faixa vem da preferência, e não do que existe no banco.
      *
-     * Um curso recém-criado não tem nenhuma palavra. Montar a faixa a partir das
+     * Um curso recém-criado não tem nenhuma palavra. Montar a lista a partir das
      * fichas faria o idioma que a pessoa acabou de escolher desaparecer no
      * instante seguinte — e ela ficaria sem por onde voltar.
      */
@@ -62,7 +62,9 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
     val estado: StateFlow<PerfilEstado> = combine(
         cursos,
         preferencias.observarPar(),
-        repositorio.observarResumoDeRevisao(),
+        // De todos os cursos: a sequência de dias conta atividade em qualquer
+        // idioma, e é o único número desta tela que já era assim antes.
+        repositorio.observarResumoDeRevisao(Escopo.Todos),
         repositorio.observarUsoIa(),
         exportando,
     ) { listaDeCursos, par, revisao, usoIa, estaExportando ->
@@ -70,7 +72,6 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
             par = par,
             cursos = listaDeCursos,
             diasSeguidos = revisao.diasSeguidos,
-            quota = revisao.quota,
             usoIa = usoIa,
             exportando = estaExportando,
         )
@@ -80,8 +81,6 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
     val disponiveis: StateFlow<Int> = preferencias.observarCursos()
         .map { matriculados -> com.jean.vocabs.contracts.Idiomas.CATALOGO.count { it.codigo !in matriculados } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
-
-    fun abrirCurso(codigo: String) = preferencias.abrirCurso(codigo)
 
     fun exportar(aoPronto: (File) -> Unit, aoErro: (String) -> Unit) {
         if (exportando.value) return

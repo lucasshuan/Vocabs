@@ -113,6 +113,10 @@ CREATE TABLE uso_ia (
 buscarEntradaPorId:
 SELECT * FROM entrada_com_captura WHERE id = ?;
 
+-- O punhado de entradas que a tela "Guardado" acompanha enquanto a IA trabalha.
+listarEntradasPorIds:
+SELECT * FROM entrada_com_captura WHERE id IN ? ORDER BY id;
+
 listarProntas:
 SELECT * FROM entrada_com_captura WHERE status = 'PRONTA' ORDER BY criado_em DESC;
 
@@ -153,6 +157,11 @@ processarCaptura:
 UPDATE captura
 SET trecho = ?, status = 'PROCESSADA', erro_transcricao = NULL
 WHERE id = ?;
+
+-- Só vale enquanto a captura não virou fichas: depois disso o par está gravado
+-- em entradas que nasceram nele.
+alterarIdiomaDaCaptura:
+UPDATE captura SET idioma_alvo = ? WHERE id = ? AND status != 'PROCESSADA';
 
 marcarStatus:
 UPDATE entrada SET status = ?, erro = NULL WHERE id = ?;

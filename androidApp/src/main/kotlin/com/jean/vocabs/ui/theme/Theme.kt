@@ -24,6 +24,19 @@ import com.jean.vocabs.shared.PreferenciaDeTema
 object TagararaColors {
     val Mint = Color(0xFF8FDC5E)
     val MintDark = Color(0xFF3F8A22)
+
+    /**
+     * O vermelho do papagaio — a terceira categoria de captura, a foto.
+     *
+     * Não é `error` e nunca deve virar: o handoff dá uma cor por tipo de captura
+     * (texto é ameixa, áudio é menta, foto é este vermelho) para que a associação
+     * se forme no ato da captura e se repita em Pendentes. Usar o vermelho de
+     * erro aqui faria toda foto na fila parecer uma foto com problema.
+     */
+    val Papagaio = Color(0xFFC4243C)
+    val PapagaioContainer = Color(0xFFFBEAEC)
+    val PapagaioEscuro = Color(0xFFF0798F)
+    val PapagaioContainerEscuro = Color(0xFF3A2028)
 }
 
 /**

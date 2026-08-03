@@ -42,12 +42,20 @@ class CapturaRapida internal constructor() {
 
     internal var aoPedirAudio: () -> Unit = {}
     internal var aoParar: () -> Unit = {}
+    internal var aoCancelar: () -> Unit = {}
     internal var aoAbrirCamera: () -> Unit = {}
 
     /** Pede a permissão se precisar; com ela em mãos, grava já no primeiro toque. */
     fun gravarAudio() = aoPedirAudio()
 
     fun pararAudio() = aoParar()
+
+    /**
+     * Encerra sem guardar — o toque que passou do limiar do gesto longo por
+     * acidente. Uma fila cheia de áudios de meio segundo custaria mais para
+     * limpar do que o gesto economiza.
+     */
+    fun cancelarAudio() = aoCancelar()
 
     fun tirarFoto() = aoAbrirCamera()
 }
@@ -103,6 +111,11 @@ fun rememberCapturaRapida(
         } else {
             permissaoAudio.launch(Manifest.permission.RECORD_AUDIO)
         }
+    }
+
+    estado.aoCancelar = {
+        estado.gravando = false
+        gravador.cancelar()
     }
 
     estado.aoParar = {

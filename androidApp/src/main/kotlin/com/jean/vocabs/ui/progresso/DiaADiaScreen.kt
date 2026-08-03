@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -49,10 +50,12 @@ import java.time.LocalDate
  */
 @Composable
 fun DiaADiaScreen(
+    alvo: String?,
     aoVoltar: () -> Unit,
     aoAbrirFicha: (Long) -> Unit,
     vm: ProgressoViewModel = viewModel(),
 ) {
+    LaunchedEffect(alvo) { vm.abrir(alvo) }
     val estado by vm.estado.collectAsStateWithLifecycle()
     val hoje = remember { LocalDate.now() }
     val dias = remember(estado.eventos, estado.quota) {

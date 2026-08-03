@@ -1,0 +1,418 @@
+package com.jean.vocabs.ui.selecionar
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.media.lembrarFoto
+import com.jean.vocabs.media.rememberReprodutor
+import com.jean.vocabs.shared.domain.AlvoSelecionado
+import com.jean.vocabs.shared.domain.FormatoCaptura
+import com.jean.vocabs.shared.domain.StatusCaptura
+import com.jean.vocabs.ui.components.AvisoDuplicata
+import com.jean.vocabs.ui.components.BandeiraCircular
+import com.jean.vocabs.ui.components.BotaoCircular
+import com.jean.vocabs.ui.components.BotaoPrincipal
+import com.jean.vocabs.ui.components.CartaoDaTela
+import com.jean.vocabs.ui.components.ChipsDeSelecao
+import com.jean.vocabs.ui.components.DiscoDeCategoria
+import com.jean.vocabs.ui.components.Icones
+import com.jean.vocabs.ui.components.RotuloDeSecao
+import com.jean.vocabs.ui.components.SeletorDeTermos
+import com.jean.vocabs.ui.components.contornoDeCartao
+import com.jean.vocabs.ui.components.coresDoFormato
+import com.jean.vocabs.ui.components.formatarDuracaoMs
+import com.jean.vocabs.ui.components.rotuloDoFormato
+import com.jean.vocabs.ui.components.tempoRelativo
+import com.jean.vocabs.ui.idiomas.idiomaDe
+
+/**
+ * Telas 09/10 do handoff — "O que chamou atenção?".
+ *
+ * Uma tarefa só: marcar. Serve igual para texto colado, áudio transcrito e foto
+ * lida, e é por isso que o nome não é "transcrever" — transcrever é o que a
+ * máquina já tentou fazer antes de chegar aqui.
+ *
+ * A marcação não fica no texto: cada seleção confirmada limpa o trecho e vira
+ * etiqueta na lista de baixo. É o que permite ao mesmo trecho render `fence` e
+ * `on the fence` sem virar uma sopa de realces sobrepostos.
+ *
+ * O idioma do topo é o destino, e ainda é trocável aqui — a captura já existe,
+ * mas nenhuma ficha nasceu neste par até o "Guardar".
+ */
+@Composable
+fun SelecionarScreen(
+    id: Long,
+    aoVoltar: () -> Unit,
+    aoGuardar: (List<Long>) -> Unit,
+    vm: SelecionarViewModel = viewModel(),
+) {
+    val fluxo = remember(id) { vm.observar(id) }
+    val captura by fluxo.collectAsStateWithLifecycle()
+    val duplicata by vm.duplicata.collectAsStateWithLifecycle()
+    val cursos by vm.cursos.collectAsStateWithLifecycle()
+    var trecho by remember { mutableStateOf("") }
+    val selecoes = remember { mutableStateListOf<AlvoSelecionado>() }
+    var corrigindo by remember { mutableStateOf(false) }
+    var confirmarExclusao by remember { mutableStateOf(false) }
+
+    LaunchedEffect(captura?.id, captura?.trecho) {
+        trecho = captura?.trecho.orEmpty()
+        selecoes.clear()
+        corrigindo = trecho.isBlank()
+    }
+    LaunchedEffect(selecoes.lastOrNull()?.texto, captura?.par?.alvo) {
+        vm.procurarDuplicata(selecoes.lastOrNull()?.texto.orEmpty(), captura?.par?.alvo.orEmpty())
+    }
+
+    if (confirmarExclusao) {
+        AlertDialog(
+            onDismissRequest = { confirmarExclusao = false },
+            title = { Text("Descartar captura?") },
+            text = { Text("A mídia será removida porque ainda não há fichas ligadas a ela.") },
+            confirmButton = {
+                TextButton(onClick = { vm.excluir(id); confirmarExclusao = false; aoVoltar() }) {
+                    Text("Descartar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmarExclusao = false }) { Text("Manter") } },
+        )
+    }
+
+    val atual = captura
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .imePadding(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(start = 8.dp, end = 14.dp, top = 8.dp),
+        ) {
+            BotaoCircular(Icones.Voltar, "Voltar", aoVoltar, MaterialTheme.colorScheme.onSurface)
+            Text(
+                text = "O que chamou atenção?",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.weight(1f).padding(start = 4.dp),
+            )
+            atual?.let {
+                SeletorDeIdioma(
+                    alvo = it.par.alvo,
+                    cursos = cursos,
+                    aoEscolher = { codigo -> vm.trocarIdioma(id, codigo) },
+                )
+            }
+        }
+
+        if (atual == null) return@Column
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(13.dp),
+            modifier = Modifier.padding(horizontal = 20.dp).padding(top = 12.dp),
+        ) {
+            when (atual.formato) {
+                FormatoCaptura.FOTO -> atual.midiaCaminho?.let { PreviaFoto(it) }
+                FormatoCaptura.AUDIO -> atual.midiaCaminho?.let {
+                    PlayerAudio(
+                        caminho = it,
+                        duracaoMs = atual.duracaoMs,
+                        corrigindo = corrigindo,
+                        aoCorrigir = { corrigindo = !corrigindo },
+                    )
+                }
+                FormatoCaptura.TEXTO -> OrigemDoTexto(atual.criadoEm)
+            }
+
+            when {
+                atual.status == StatusCaptura.TRANSCREVENDO -> AvisoDeProcesso(
+                    texto = "Transcrição local em andamento…",
+                    comProgresso = true,
+                )
+                atual.erroTranscricao != null -> AvisoDeErro(atual.erroTranscricao.orEmpty())
+            }
+
+            if (corrigindo || trecho.isBlank()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    RotuloDeSecao("Transcrição")
+                    OutlinedTextField(
+                        value = trecho,
+                        onValueChange = { trecho = it; selecoes.clear() },
+                        placeholder = { Text("Digite o trecho manualmente") },
+                        minLines = 2,
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (trecho.isNotBlank()) {
+                        BotaoPrincipal("Pronto, marcar termos", { corrigindo = false })
+                    }
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SeletorDeTermos(
+                        trecho = trecho,
+                        aoSelecionar = { alvo ->
+                            if (selecoes.none { it.inicio == alvo.inicio && it.fim == alvo.fim }) selecoes += alvo
+                        },
+                    )
+                    Text(
+                        text = "Toque ou arraste para marcar.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visible = selecoes.isNotEmpty(),
+                enter = fadeIn(tween(160)) + expandVertically(tween(180)),
+                exit = fadeOut(tween(120)) + shrinkVertically(tween(140)),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    RotuloDeSecao("${selecoes.size} ${if (selecoes.size == 1) "selecionada" else "selecionadas"}")
+                    ChipsDeSelecao(selecoes, selecoes::remove)
+                }
+            }
+
+            duplicata?.let { AvisoDuplicata(it) }
+
+            BotaoPrincipal(
+                texto = if (selecoes.isEmpty()) "Selecione o que guardar"
+                else "Guardar ${selecoes.size} ${if (selecoes.size == 1) "captura" else "capturas"}",
+                aoClicar = { vm.guardar(id, trecho, selecoes.toList(), aoGuardar) },
+                habilitado = trecho.isNotBlank() && selecoes.isNotEmpty(),
+                modifier = Modifier.padding(top = 4.dp),
+            )
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                TextButton(onClick = { confirmarExclusao = true }) {
+                    Text("Descartar captura", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                }
+            }
+        }
+        Spacer(Modifier.navigationBarsPadding().height(24.dp))
+    }
+}
+
+/**
+ * O chip de idioma do cabeçalho, que abre a lista de cursos.
+ *
+ * Ele é destino, e não etiqueta: quem gravou com o idioma errado marcado
+ * conserta aqui, no último instante em que isso ainda é barato.
+ */
+@Composable
+private fun SeletorDeIdioma(alvo: String, cursos: List<String>, aoEscolher: (String) -> Unit) {
+    var aberto by remember { mutableStateOf(false) }
+    val cores = MaterialTheme.colorScheme
+
+    Box {
+        Surface(
+            onClick = { aberto = true },
+            shape = CircleShape,
+            color = cores.surface,
+            border = contornoDeCartao(),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(start = 5.dp, end = 8.dp, top = 5.dp, bottom = 5.dp),
+            ) {
+                BandeiraCircular(idiomaDe(alvo), tamanho = 19.dp)
+                Icon(Icones.Expandir, "Trocar idioma", tint = cores.onSurfaceVariant, modifier = Modifier.size(14.dp))
+            }
+        }
+        DropdownMenu(expanded = aberto, onDismissRequest = { aberto = false }) {
+            cursos.forEach { codigo ->
+                DropdownMenuItem(
+                    text = { Text(idiomaDe(codigo).nome) },
+                    leadingIcon = { BandeiraCircular(idiomaDe(codigo), tamanho = 20.dp) },
+                    trailingIcon = {
+                        if (codigo == alvo) Icon(Icones.Check, null, tint = cores.tertiary, modifier = Modifier.size(16.dp))
+                    },
+                    onClick = { aberto = false; if (codigo != alvo) aoEscolher(codigo) },
+                )
+            }
+        }
+    }
+}
+
+/** "Texto colado · agora" — de onde este trecho veio, na cor da categoria. */
+@Composable
+private fun OrigemDoTexto(criadoEm: Long) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        DiscoDeCategoria(FormatoCaptura.TEXTO, tamanho = 22.dp)
+        RotuloDeSecao("${rotuloDoFormato(FormatoCaptura.TEXTO)} colado · ${tempoRelativo(criadoEm)}")
+    }
+}
+
+@Composable
+private fun PreviaFoto(caminho: String) {
+    val imagem by lembrarFoto(caminho)
+    Surface(
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        imagem?.let { Image(it, "Foto capturada", contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth()) }
+            ?: Box(Modifier.height(180.dp))
+    }
+}
+
+/**
+ * Play, onda e duração — e o "corrigir texto" ao lado.
+ *
+ * Sem sincronia palavra-a-áudio de propósito: ouvir o trecho de novo resolve, e
+ * um destaque que acompanha a fala exigiria alinhamento por palavra que a
+ * transcrição local não entrega.
+ */
+@Composable
+private fun PlayerAudio(caminho: String, duracaoMs: Long?, corrigindo: Boolean, aoCorrigir: () -> Unit) {
+    val player by rememberReprodutor(caminho)
+    val paleta = coresDoFormato(FormatoCaptura.AUDIO)
+    CartaoDaTela(recheio = PaddingValues(14.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
+            Surface(onClick = player::alternar, shape = CircleShape, color = paleta.cor) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        imageVector = if (player.tocando) Icones.Parar else Icones.Tocar,
+                        contentDescription = if (player.tocando) "Parar" else "Ouvir",
+                        tint = paleta.fundo,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            OndaDeAudio(paleta.cor, Modifier.weight(1f))
+            Text(
+                text = duracaoMs?.let(::formatarDuracaoMs).orEmpty(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+            RotuloDeSecao("Áudio · transcrito pela IA", Modifier.weight(1f))
+            Text(
+                text = if (corrigindo) "voltar" else "corrigir texto",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .then(Modifier)
+                    .clickableSemRipple(aoCorrigir),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AvisoDeProcesso(texto: String, comProgresso: Boolean) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(14.dp)) {
+            if (comProgresso) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            Text(texto, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 12.dp))
+        }
+    }
+}
+
+@Composable
+private fun AvisoDeErro(texto: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = MaterialTheme.shapes.medium,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(
+            text = texto,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.padding(14.dp),
+        )
+    }
+}
+
+private val alturasDaOnda = listOf(0.40f, 0.70f, 1f, 0.55f, 0.80f, 0.35f, 0.65f, 0.45f, 0.90f, 0.30f)
+
+/**
+ * A onda desenhada, com barra de largura fixa em vez de dez barras esticadas.
+ *
+ * Repartir a largura disponível entre dez barras funciona na maquete de 340 px e
+ * vira dez comprimidos deitados num celular de verdade: o que dá a leitura de
+ * "áudio" é a barra fina repetida, não a contagem delas.
+ */
+@Composable
+private fun OndaDeAudio(cor: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier.height(24.dp)) {
+        val largura = 3.dp.toPx()
+        val passo = largura * 2
+        val quantidade = (size.width / passo).toInt().coerceAtLeast(1)
+        repeat(quantidade) { indice ->
+            val altura = size.height * alturasDaOnda[indice % alturasDaOnda.size]
+            drawRoundRect(
+                color = cor.copy(alpha = 0.45f),
+                topLeft = Offset(indice * passo, (size.height - altura) / 2f),
+                size = Size(largura, altura),
+                cornerRadius = CornerRadius(largura / 2f),
+            )
+        }
+    }
+}
+
+/** Texto que age sem virar botão: "corrigir texto" é um atalho, não uma ação da tela. */
+@Composable
+private fun Modifier.clickableSemRipple(aoClicar: () -> Unit): Modifier {
+    val interacao = remember { MutableInteractionSource() }
+    return clickable(interactionSource = interacao, indication = null, onClick = aoClicar)
+}

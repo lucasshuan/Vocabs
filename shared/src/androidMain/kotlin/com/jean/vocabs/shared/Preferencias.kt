@@ -69,6 +69,37 @@ class Preferencias(context: Context) {
         alvo = codigo
     }
 
+    /**
+     * Tira um idioma da faixa. As fichas dele continuam no banco.
+     *
+     * Nunca esvazia a lista: sem curso nenhum a Início não teria página, o `+`
+     * não teria destino e a única saída seria matricular de novo às cegas. Sair
+     * do curso aberto abre o primeiro que sobrou, para que a tela não fique
+     * apontando para um idioma que não está mais ali.
+     */
+    fun desmatricular(codigo: String) {
+        val restantes = cursos - codigo
+        if (restantes.isEmpty()) return
+        cursos = restantes
+        if (alvo == codigo) alvo = restantes.first()
+    }
+
+    /**
+     * Que grupos de Vocabulários estão fechados.
+     *
+     * É preferência e não estado de tela: quem estuda três idiomas e só quer ver
+     * um deles fecha os outros dois uma vez, e reabri-los a cada volta para a aba
+     * anularia o gesto. Guarda os fechados (e não os abertos) porque o padrão é
+     * tudo aberto — um idioma novo aparece expandido sem precisar ser inscrito.
+     */
+    var gruposRecolhidos: Set<String>
+        get() = prefs.getStringSet(RECOLHIDOS, emptySet()).orEmpty()
+        set(valor) = prefs.edit().putStringSet(RECOLHIDOS, valor).apply()
+
+    fun alternarGrupo(codigo: String) {
+        gruposRecolhidos = gruposRecolhidos.let { if (codigo in it) it - codigo else it + codigo }
+    }
+
     // ---- tema ---------------------------------------------------------------
 
     var tema: PreferenciaDeTema
@@ -104,6 +135,8 @@ class Preferencias(context: Context) {
 
     fun observarTema(): Flow<PreferenciaDeTema> = observar(TEMA) { tema }
 
+    fun observarGruposRecolhidos(): Flow<Set<String>> = observar(RECOLHIDOS) { gruposRecolhidos }
+
     /** O nativo sozinho, para a linha "Meu idioma" da tela Você. */
     fun observarNativo(): Flow<String> = observarPar().map { it.nativo }
 
@@ -112,6 +145,7 @@ class Preferencias(context: Context) {
         const val ALVO = "idioma_alvo"
         const val CURSOS = "cursos"
         const val TEMA = "tema"
+        const val RECOLHIDOS = "grupos_recolhidos"
 
         /** Vírgula não aparece em código de idioma nenhum do catálogo. */
         const val SEPARADOR = ","
