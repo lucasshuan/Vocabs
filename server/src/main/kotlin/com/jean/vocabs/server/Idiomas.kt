@@ -1,53 +1,73 @@
 package com.jean.vocabs.server
 
+import com.jean.vocabs.contracts.Idioma
+import com.jean.vocabs.contracts.Idiomas
+
 /**
- * O idioma que está sendo aprendido.
+ * O que muda no prompt quando o idioma alvo muda.
  *
- * É mais que um nome porque três coisas do prompt mudam de língua para língua:
- * a notação em que a pronúncia se escreve e os exemplos do teste palavra vs
- * expressão. Exemplos ingleses numa ficha de japonês seriam ruído, e IPA não é
- * o que alguém aprendendo mandarim quer ler — ali a resposta é pinyin.
+ * É só uma coisa, e é sempre a mesma: **em que notação a pronúncia se escreve**.
+ * Nome do idioma o catálogo do contrato já dá, e a classificação palavra vs
+ * expressão nunca foi da IA — ela vem decidida do aparelho. Sobra a notação, e
+ * ela varia de verdade: IPA não é o que alguém aprendendo mandarim quer ler,
+ * ali a resposta é pinyin; em japonês, o kana com o romaji ao lado.
  *
- * O idioma **nativo**, ao contrário, não precisa de nada disso: ele só diz em
- * que língua escrever a tradução e as definições. É por isso que o eixo que
- * realmente varia aqui é o alvo, e não o nativo.
+ * O idioma **nativo** não precisa de nada disso: ele só diz em que língua
+ * escrever a tradução e as definições, e para isso o nome basta.
  */
 data class IdiomaAlvo(
-    /** Em inglês, porque é a língua em que o prompt está escrito. */
-    val nome: String,
-    /** Como preencher o campo de pronúncia. */
+    val idioma: Idioma,
+    /** Como preencher o campo `pronuncia` da ficha. */
     val notacaoDePronuncia: String,
-    /** Dois ou três alvos que o teste classificaria como PALAVRA, nesta língua. */
-    val exemplosDePalavra: String,
-    /** O mesmo para EXPRESSAO, com o nome que a categoria tem nesta língua. */
-    val exemplosDeExpressao: String,
 ) {
-    companion object {
-        val INGLES = IdiomaAlvo(
-            nome = "English",
-            notacaoDePronuncia = "IPA, without slashes",
-            exemplosDePalavra = "\"ubiquitous\", \"meticulously\"",
-            exemplosDeExpressao = "phrasal verbs, idioms and collocations: " +
-                "\"kick the bucket\", \"on the fence\", \"pull off\"",
-        )
-    }
+    val nome: String get() = idioma.nomeEmIngles
 }
 
 /**
  * O par que define uma ficha: em que língua ela é lida e que língua ela ensina.
  *
- * Hoje só existe [PADRAO], e de propósito. Deixar o usuário escolher mexe no
- * contrato, no banco — cada entrada precisa lembrar em que par nasceu, senão
- * regerar uma ficha antiga depois de trocar de idioma produz lixo — e no TTS,
- * que está fixo em inglês no app. Este tipo existe só para que o prompt já não
- * tenha nenhum idioma escrito por dentro quando essa hora chegar.
+ * Vem do pedido, e não de uma configuração do servidor, porque o par pertence à
+ * entrada: uma ficha de alemão regerada depois de a pessoa trocar de curso
+ * precisa voltar em alemão.
  */
 data class ParDeIdiomas(
-    /** Em inglês, porque é assim que o prompt vai citá-lo. */
-    val nativo: String,
+    val nativo: Idioma,
     val alvo: IdiomaAlvo,
 ) {
     companion object {
-        val PADRAO = ParDeIdiomas(nativo = "Brazilian Portuguese", alvo = IdiomaAlvo.INGLES)
+        val PADRAO = ParDeIdiomas(
+            nativo = Idiomas.PORTUGUES,
+            alvo = alvoDe(Idiomas.INGLES),
+        )
+
+        /**
+         * Nulo quando um dos dois códigos não existe — e aí o pedido é recusado.
+         *
+         * Cair no padrão em vez de recusar seria pior que um erro: a pessoa
+         * receberia uma ficha em inglês para uma palavra alemã e só descobriria
+         * lendo. Um 400 diz o que aconteceu.
+         */
+        fun de(codigoNativo: String, codigoAlvo: String): ParDeIdiomas? {
+            val nativo = Idiomas.de(codigoNativo) ?: return null
+            val alvo = Idiomas.de(codigoAlvo) ?: return null
+            return ParDeIdiomas(nativo = nativo, alvo = alvoDe(alvo))
+        }
     }
 }
+
+/** IPA por padrão; a exceção é o idioma cuja pronúncia ninguém escreve em IPA. */
+private fun alvoDe(idioma: Idioma) = IdiomaAlvo(idioma, notacaoDePronuncia = NOTACOES[idioma.codigo] ?: IPA)
+
+private const val IPA = "IPA, without slashes"
+
+private val NOTACOES: Map<String, String> = mapOf(
+    "zh" to "Hanyu Pinyin with tone marks",
+    "ja" to "the kana reading, followed by Hepburn romaji in parentheses",
+    "ko" to "Revised Romanization of Korean",
+    "ar" to "the fully vowelled Arabic script, followed by a Latin transliteration in parentheses",
+    "fa" to "the Persian script with vowel diacritics, followed by a Latin transliteration in parentheses",
+    "he" to "Hebrew with niqqud, followed by a Latin transliteration in parentheses",
+    "th" to "the Royal Thai General System of Transcription",
+    "hi" to "IAST transliteration",
+    "bn" to "IAST transliteration",
+)

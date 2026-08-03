@@ -13,6 +13,8 @@ data class Captura(
     val midiaCaminho: String?,
     val duracaoMs: Long?,
     val erroTranscricao: String?,
+    /** O curso em que ela nasceu. Um trecho está numa língua só. */
+    val par: ParIdiomas = ParIdiomas.PADRAO,
 ) {
     val aguardandoSelecao: Boolean get() = status == StatusCaptura.AGUARDANDO_SELECAO
     val transcrevendo: Boolean get() = status == StatusCaptura.TRANSCREVENDO

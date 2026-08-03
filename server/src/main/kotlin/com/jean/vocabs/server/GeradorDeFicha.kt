@@ -8,7 +8,17 @@ import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.OutputConfig
 import com.jean.vocabs.contracts.FichaResponse
 import com.jean.vocabs.contracts.GerarFichaRequest
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.json.Json
+
+/**
+ * Par de idiomas que o catálogo não conhece.
+ *
+ * Vira 400, e não 503: repetir o mesmo pedido nunca vai dar certo, e o app
+ * precisa saber a diferença entre "tente de novo" e "isto não existe".
+ */
+class IdiomaDesconhecido(nativo: String, alvo: String) :
+    IllegalArgumentException("Par de idiomas desconhecido: $nativo → $alvo.")
 
 /**
  * Traduz uma captura crua (trecho + alvo) numa ficha completa, via Claude.
@@ -26,22 +36,28 @@ class GeradorDeFicha(
             .apiKey(Config.obrigatorio("ANTHROPIC_API_KEY"))
             .build()
     },
-    /**
-     * Enquanto o app não escolher idiomas, toda ficha sai deste par. O parâmetro
-     * existe para que a escolha, quando vier, seja uma linha no `gerar` e não
-     * uma reescrita do prompt.
-     */
-    private val idiomas: ParDeIdiomas = ParDeIdiomas.PADRAO,
 ) {
     private val client: AnthropicClient by lazy(clientFactory)
     private val json = Json { ignoreUnknownKeys = true }
-    private val promptSistema: String = promptDe(idiomas)
+
+    /**
+     * O prompt de cada par, montado uma vez só.
+     *
+     * O texto do sistema é o pedaço mais longo e mais repetido de toda chamada, e
+     * remontá-lo por requisição produziria strings diferentes byte a byte só por
+     * azar de formatação — o que basta para perder o cache de prompt do outro
+     * lado. São poucos pares por instalação; guardar todos custa nada.
+     */
+    private val prompts = ConcurrentHashMap<ParDeIdiomas, String>()
 
     fun gerar(pedido: GerarFichaRequest): FichaResponse {
+        val idiomas = ParDeIdiomas.de(pedido.idiomaNativo, pedido.idiomaAlvo)
+            ?: throw IdiomaDesconhecido(pedido.idiomaNativo, pedido.idiomaAlvo)
+
         val params = MessageCreateParams.builder()
             .model(modelo)
             .maxTokens(2048L)
-            .system(promptSistema)
+            .system(prompts.computeIfAbsent(idiomas, ::promptDe))
             .outputConfig(
                 OutputConfig.builder()
                     .apply {
@@ -84,7 +100,8 @@ class GeradorDeFicha(
     /** Haiku 4.5 rejeita `effort` com 400; Opus e Sonnet aceitam. */
     private val suportaEffort: Boolean = !modelo.startsWith("claude-haiku")
 
-    private companion object {
+    /** Interno, e não privado, para o teste conferir que o prompt cita os dois idiomas. */
+    internal companion object {
         const val MODELO_PADRAO = "claude-opus-5"
 
         /**
@@ -102,7 +119,7 @@ class GeradorDeFicha(
          * contrato com [FichaResponse], não texto para o modelo traduzir.
          */
         fun promptDe(idiomas: ParDeIdiomas): String {
-            val nativo = idiomas.nativo
+            val nativo = idiomas.nativo.nomeEmIngles
             val alvo = idiomas.alvo
 
             return """
@@ -121,10 +138,9 @@ class GeradorDeFicha(
                 - `definicoes`: 1 or 2 definitions in $nativo, short and direct.
                 - `exemplo`: ONE new sentence in ${alvo.nome} using the target in
                   the same sense. Do not repeat the original snippet.
-                - `ipa`: the target's pronunciation written as
+                - `pronuncia`: the target's pronunciation written as
                   ${alvo.notacaoDePronuncia}. For expressions, transcribe the whole
-                  expression. (The field is named `ipa` from when English was the
-                  only target; the notation it should carry is the one above.)
+                  expression.
                 - `relacionadas`: 3 to 6 useful terms in ${alvo.nome} that are
                   semantically related to the target. Return only concise terms,
                   without definitions or numbering.
@@ -140,7 +156,7 @@ class GeradorDeFicha(
                 "type" to "object",
                 "additionalProperties" to false,
                 "required" to listOf(
-                    "tipo", "traducao", "definicoes", "exemplo", "ipa", "relacionadas"
+                    "tipo", "traducao", "definicoes", "exemplo", "pronuncia", "relacionadas"
                 ),
                 "properties" to mapOf(
                     "tipo" to mapOf(
@@ -153,7 +169,7 @@ class GeradorDeFicha(
                         "items" to mapOf("type" to "string"),
                     ),
                     "exemplo" to mapOf("type" to "string"),
-                    "ipa" to mapOf("type" to "string"),
+                    "pronuncia" to mapOf("type" to "string"),
                     "relacionadas" to mapOf(
                         "type" to "array",
                         "minItems" to 3,

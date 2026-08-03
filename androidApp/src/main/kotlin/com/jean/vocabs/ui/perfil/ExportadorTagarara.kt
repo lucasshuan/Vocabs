@@ -33,10 +33,11 @@ object ExportadorTagarara {
     }
 
     private fun json(dados: DadosExportacao) = JSONObject().apply {
-        put("schemaVersion", 1)
+        // 2: `ipa` virou `pronuncia` e o par de idiomas deixou de ser um valor
+        // fixo do arquivo para ser uma propriedade de cada captura.
+        put("schemaVersion", 2)
         put("app", "Tagarara")
         put("exportadoEm", System.currentTimeMillis())
-        put("idiomas", JSONObject().put("nativo", "pt-BR").put("alvo", "en-US"))
         put("usoIa", JSONObject().put("mes", dados.usoIa.mes).put("geracoes", dados.usoIa.usadas))
         put("capturas", JSONArray().apply {
             dados.capturas.forEach { captura -> put(JSONObject().apply {
@@ -49,6 +50,8 @@ object ExportadorTagarara {
                 put("midia", captura.midiaCaminho?.let { "media/${captura.id}-${File(it).name}" })
                 put("duracaoMs", captura.duracaoMs)
                 put("erroTranscricao", captura.erroTranscricao)
+                put("idiomaNativo", captura.par.nativo)
+                put("idiomaAlvo", captura.par.alvo)
             }) }
         })
         put("entradas", JSONArray().apply {
@@ -63,7 +66,7 @@ object ExportadorTagarara {
                 put("traducao", entrada.ficha?.traducao)
                 put("definicoes", JSONArray(entrada.ficha?.definicoes.orEmpty()))
                 put("exemplo", entrada.ficha?.exemplo)
-                put("ipa", entrada.ficha?.ipa)
+                put("pronuncia", entrada.ficha?.pronuncia)
                 put("relacionadas", JSONArray(entrada.ficha?.relacionadas.orEmpty()))
                 put("erro", entrada.erro)
                 put("retencao", entrada.retencao?.let { retencao -> JSONObject()

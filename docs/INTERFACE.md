@@ -1,8 +1,8 @@
 # Interface Tagarara
 
-O handoff em `handoff/` é a referência das oito telas, em claro e escuro. O tema
-segue o sistema e usa Figtree no corpo e Bricolage Grotesque em títulos e termos,
-ambas empacotadas.
+O handoff em `handoff/` é a referência das catorze telas, em claro e escuro. O
+tema é escolhido em Configurações — claro, escuro ou seguindo o aparelho — e usa
+Figtree no corpo e Bricolage Grotesque em títulos e termos, ambas empacotadas.
 
 ## Semântica visual
 
@@ -53,11 +53,30 @@ dois lugares vira componente antes de divergir num terceiro:
 | `SeletorDeTermos` / `ChipsDeSelecao` | Captura e Transcrever |
 | `BarraDeMemoria` | cartão de Palavras (curta) e ficha (inteira) |
 | `TipoBadge` | Palavras e Ficha |
-| `EstadoVazio` | Palavras, Pendentes e Revisão |
-| `ParDeIdiomas` / `BandeiraCircular` | cabeçalho do Início e linha do Perfil |
+| `EstadoVazio` | Palavras, Pendentes, Revisão, Novo idioma, Dia a dia e O que falta |
+| `ParDeIdiomas` / `BandeiraCircular` | Início, Você e Novo idioma |
+| `CabecalhoDeDentro` | as cinco páginas de dentro |
+| `FaixaDaSemana` | Seu progresso e Dia a dia |
+| `AnelDeProgresso` | força média do Início e estoque do Progresso |
+| `LinhaDeUsoDeIa` | Você e Seu progresso |
 
-As bandeiras são desenhadas, não emoji: o indicador regional depende da fonte do
-sistema e vira retângulo ou duas letras em vários aparelhos.
+## Bandeiras
+
+São a coleção **circle-flags** (MIT, atribuição em `docs/TERCEIROS.md`),
+convertida de SVG para VectorDrawable sem redesenhar nada — desenhos feitos à mão,
+com as proporções e os brasões certos. 43 arquivos, 37 KB no total, em
+`res/drawable/bandeira_*.xml`.
+
+Duas alternativas foram descartadas. Emoji depende da fonte do sistema e vira
+retângulo ou duas letras em vários aparelhos. Desenhar em `Canvas` funcionava
+enquanto havia duas bandeiras e não escala para 43: a do Brasil não é um losango
+com um círculo e a da Coreia do Sul não é desenhável de cabeça.
+
+A máscara circular dos SVGs originais não foi convertida — quem recorta é o
+`Modifier.clip` do Compose, que tem antialiasing de verdade, enquanto um
+`clip-path` dentro do VectorDrawable serrilha a borda em algumas versões. O mapa
+de código para `R.drawable` é explícito porque `getIdentifier()` é invisível para
+o R8: as 43 bandeiras sairiam do APK e só a tela mostraria o estrago.
 
 ## Navegação
 
@@ -65,6 +84,11 @@ A barra inferior tem Início, Palavras, captura central, Pendentes e Perfil, só
 com ícones — os rótulos sob eles competiam com o botão de captura, que precisa ser
 o alvo óbvio; o nome sobrevive no `contentDescription`. O botão central abre
 direto a tela com abas Texto/Áudio/Foto; não há leque flutuante.
+
+Progresso, Dia a dia, O que falta e Configurações são **páginas de dentro**: abrem
+com voltar no topo, a barra continua visível e a aba Perfil continua acesa. Novo
+idioma sobe em tela cheia, como Captura e Revisão, porque é uma escolha que
+termina em confirmação.
 
 ## Seleção de termos
 
@@ -90,8 +114,20 @@ pílulas diz. Editar o trecho limpa todas as seleções.
   excluir ficam no overflow.
 - **Revisão:** barra de progresso no topo, cloze contra o próprio trecho com a
   lacuna sublinhada em ameixa, resposta digitada e "Não lembro" como saída.
-- **Perfil:** heatmap de 12 semanas com a sequência, três números, par de idiomas,
-  gerações por IA do mês e exportação.
+- **Você** (aba Perfil): idioma de partida, faixa horizontal de cursos com "N de
+  M", cartão de progresso do curso aberto, consumo de IA, configurações e
+  exportação. A faixa sangra até as bordas de propósito — o corte do último
+  cartão é o que diz que ela anda.
+- **Seu progresso:** a semana com a quota do dia, o estoque de palavras em anel e
+  faixas, e os três números de apoio. Os dois primeiros blocos são portas.
+- **Dia a dia:** a mesma semana e, abaixo, o que aconteceu em cada dia. Dia sem
+  nada aparece escrito; pular os vazios encostaria terça em sexta.
+- **O que falta:** cada palavra com o degrau em que está e quantos acertos faltam
+  para o próximo nome, mais o resumo das já dominadas.
+- **Configurações:** só tema, num segmentado de largura total.
+- **Novo idioma:** busca, os cursos que já existem e a lista do que sobra. Serve
+  também para trocar o idioma de partida — mesma lista, mesma linha, outro verbo
+  no botão.
 
 Estados de carregamento, vazio, processamento e erro fazem parte da tela e nunca
 substituem conteúdo real por exemplos fixos.

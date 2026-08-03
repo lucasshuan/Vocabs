@@ -34,13 +34,18 @@ import com.jean.vocabs.ui.captura.CapturaScreen
 import com.jean.vocabs.ui.components.Aba
 import com.jean.vocabs.ui.components.BarraInferior
 import com.jean.vocabs.ui.components.Icones
+import com.jean.vocabs.ui.configuracoes.ConfiguracoesScreen
 import com.jean.vocabs.ui.ficha.FichaScreen
 import com.jean.vocabs.ui.home.HomeScreen
+import com.jean.vocabs.ui.idiomas.NovoIdiomaScreen
 import com.jean.vocabs.ui.inicio.InicioScreen
 import com.jean.vocabs.ui.pendentes.PendentesScreen
 import com.jean.vocabs.ui.pendentes.PendentesViewModel
 import com.jean.vocabs.ui.perfil.PerfilScreen
 import com.jean.vocabs.ui.processar.ProcessarScreen
+import com.jean.vocabs.ui.progresso.DiaADiaScreen
+import com.jean.vocabs.ui.progresso.OQueFaltaScreen
+import com.jean.vocabs.ui.progresso.ProgressoScreen
 import com.jean.vocabs.ui.revisao.RevisaoScreen
 import kotlinx.coroutines.launch
 
@@ -53,9 +58,30 @@ private object Rotas {
     const val REVISAO = "revisao"
     const val FICHA = "ficha/{id}"
     const val PROCESSAR = "processar/{id}"
+
+    // Páginas de dentro: abrem por cima da aba, com voltar no topo. A barra
+    // continua visível e marcando a aba de origem — é o que o handoff pede, e é
+    // o que faz "Progresso" parecer parte do Perfil e não um lugar novo.
+    const val PROGRESSO = "progresso"
+    const val DIA_A_DIA = "dia-a-dia"
+    const val O_QUE_FALTA = "o-que-falta"
+    const val CONFIGURACOES = "configuracoes"
+    const val NOVO_IDIOMA = "novo-idioma"
+    const val IDIOMA_NATIVO = "idioma-nativo"
+
     fun ficha(id: Long) = "ficha/$id"
     fun processar(id: Long) = "processar/$id"
-    val telaCheia = setOf(CAPTURA, REVISAO, FICHA, PROCESSAR)
+    val telaCheia = setOf(CAPTURA, REVISAO, FICHA, PROCESSAR, NOVO_IDIOMA, IDIOMA_NATIVO)
+
+    private val paginasDeDentro = mapOf(
+        PROGRESSO to PERFIL,
+        DIA_A_DIA to PERFIL,
+        O_QUE_FALTA to PERFIL,
+        CONFIGURACOES to PERFIL,
+    )
+
+    /** Que aba a barra de baixo acende para esta rota. */
+    fun abaDe(rota: String?): String? = rota?.let { paginasDeDentro[it] ?: it }
 }
 
 @Composable
@@ -68,6 +94,10 @@ fun VocabsApp() {
     val pendentesVm: PendentesViewModel = viewModel()
     val totalPendentes by pendentesVm.total.collectAsStateWithLifecycle()
     val barraVisivel = rota !in Rotas.telaCheia
+    // Numa página de dentro, quem fica aceso na barra é a aba de onde ela abriu.
+    // Sem isto, entrar em Progresso apagaria a barra inteira e a pessoa perderia
+    // a referência de onde está.
+    val abaAtual = Rotas.abaDe(rota)
 
     fun avisar(texto: String) {
         escopo.launch {
@@ -102,7 +132,42 @@ fun VocabsApp() {
                     aoAbrirFicha = { nav.navigate(Rotas.ficha(it.id)) },
                 )
             }
-            composable(Rotas.PERFIL) { PerfilScreen() }
+            composable(Rotas.PERFIL) {
+                PerfilScreen(
+                    aoAbrirProgresso = { nav.navigate(Rotas.PROGRESSO) },
+                    aoAbrirConfiguracoes = { nav.navigate(Rotas.CONFIGURACOES) },
+                    aoAbrirNovoIdioma = { nav.navigate(Rotas.NOVO_IDIOMA) },
+                    aoTrocarIdiomaNativo = { nav.navigate(Rotas.IDIOMA_NATIVO) },
+                )
+            }
+            composable(Rotas.PROGRESSO) {
+                ProgressoScreen(
+                    aoVoltar = { nav.popBackStack() },
+                    aoAbrirDiaADia = { nav.navigate(Rotas.DIA_A_DIA) },
+                    aoAbrirOQueFalta = { nav.navigate(Rotas.O_QUE_FALTA) },
+                )
+            }
+            composable(Rotas.DIA_A_DIA) {
+                DiaADiaScreen(
+                    aoVoltar = { nav.popBackStack() },
+                    aoAbrirFicha = { nav.navigate(Rotas.ficha(it)) },
+                )
+            }
+            composable(Rotas.O_QUE_FALTA) {
+                OQueFaltaScreen(
+                    aoVoltar = { nav.popBackStack() },
+                    aoAbrirFicha = { nav.navigate(Rotas.ficha(it)) },
+                )
+            }
+            composable(Rotas.CONFIGURACOES) {
+                ConfiguracoesScreen(aoVoltar = { nav.popBackStack() })
+            }
+            composable(Rotas.NOVO_IDIOMA, enterTransition = { subir() }, popExitTransition = { descer() }) {
+                NovoIdiomaScreen(aoVoltar = { nav.popBackStack() })
+            }
+            composable(Rotas.IDIOMA_NATIVO, enterTransition = { subir() }, popExitTransition = { descer() }) {
+                NovoIdiomaScreen(aoVoltar = { nav.popBackStack() }, paraNativo = true)
+            }
             composable(Rotas.CAPTURA, enterTransition = { subir() }, popExitTransition = { descer() }) {
                 CapturaScreen(
                     aoCapturarTexto = {
@@ -143,7 +208,7 @@ fun VocabsApp() {
                 BarraInferior(
                     abasEsquerda = listOf(Aba(Rotas.INICIO, Icones.Casa, "Início"), Aba(Rotas.PALAVRAS, Icones.Cartas, "Palavras")),
                     abasDireita = listOf(Aba(Rotas.PENDENTES, Icones.Relogio, "Pendentes", totalPendentes), Aba(Rotas.PERFIL, Icones.Pessoa, "Perfil")),
-                    rotaAtual = rota,
+                    rotaAtual = abaAtual,
                     aoNavegar = nav::irParaAba,
                     aoCapturar = { nav.navigate(Rotas.CAPTURA) },
                 )

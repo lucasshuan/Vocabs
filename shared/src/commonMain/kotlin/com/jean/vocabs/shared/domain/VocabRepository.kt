@@ -9,6 +9,8 @@ data class ResumoRevisao(
     val proximaEmMillis: Long?,
     val diasSeguidos: Int,
     val revisouHoje: Boolean,
+    val melhorSequencia: Int = 0,
+    val quota: QuotaDoDia = QuotaDoDia(feita = 0, naFila = naFila),
 )
 
 /** A barra da ficha, já resolvida — depende do relógio, e o relógio mora no repositório. */
@@ -24,7 +26,22 @@ data class RetencaoAgora(
     val taxaDeAcerto: Double? get() = if (respondidas == 0) null else acertos.toDouble() / respondidas
 }
 
+/**
+ * Tudo aqui é do **curso aberto**.
+ *
+ * O par de idiomas não é parâmetro de cada método porque ele não é uma pergunta
+ * que cada tela faz: é o contexto em que o app inteiro está. Uma tela que
+ * esquecesse de passar o par mostraria palavras alemãs numa sessão de inglês, e
+ * é exatamente esse esquecimento que a assinatura evita. As duas exceções estão
+ * marcadas com `DeTodosOsCursos` no nome.
+ */
 interface VocabRepository {
+
+    /** Qual curso está aberto agora — o que filtra todo o resto desta interface. */
+    fun observarCursoAtivo(): Flow<ParIdiomas>
+
+    /** A faixa de idiomas da tela Você: quanto vocabulário existe em cada curso. */
+    fun observarCursos(): Flow<List<ResumoCurso>>
 
     /** A home observa isto: só o que já virou ficha. */
     fun observarProntas(): Flow<List<Entrada>>
@@ -47,6 +64,9 @@ interface VocabRepository {
     fun observarRetencao(id: Long): Flow<RetencaoAgora?>
 
     fun observarAtividade(dias: Int = 84): Flow<List<AtividadeDiaria>>
+
+    /** A linha do tempo da tela Dia a dia, do mais recente para o mais antigo. */
+    fun observarEventos(dias: Int = 84): Flow<List<Evento>>
 
     fun observarUsoIa(): Flow<UsoIa>
 

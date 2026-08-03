@@ -43,6 +43,11 @@ fun Application.module() {
     }
     install(CallLogging)
     install(StatusPages) {
+        // Antes do handler geral: um par de idiomas que não existe não melhora
+        // se o app tentar de novo, e 503 faria o app tentar.
+        exception<IdiomaDesconhecido> { call, causa ->
+            call.respond(HttpStatusCode.BadRequest, ErroResponse(causa.message.orEmpty()))
+        }
         exception<Throwable> { call, causa ->
             log.error("Falha ao gerar ficha", causa)
             // 503 e não 500: para o app isso é "tente de novo", não "desista".

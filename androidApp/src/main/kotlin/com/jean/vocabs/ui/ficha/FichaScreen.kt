@@ -59,6 +59,7 @@ import com.jean.vocabs.ui.components.corDoRotuloDoNivel
 import com.jean.vocabs.ui.components.rotuloDoNivel
 import com.jean.vocabs.ui.components.tempoAte
 import com.jean.vocabs.ui.components.tempoRelativo
+import com.jean.vocabs.ui.idiomas.idiomaDe
 import java.util.Locale
 
 @Composable
@@ -71,7 +72,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
     var menu by remember { mutableStateOf(false) }
     var confirmarExclusao by remember { mutableStateOf(false) }
     var expandiu by remember { mutableStateOf(false) }
-    val tts = rememberTts()
+    val tts = rememberTts(idiomaDe(entrada?.par?.alvo).etiqueta)
 
     if (confirmarExclusao) {
         AlertDialog(
@@ -129,21 +130,26 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(item.titulo, style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f, fill = false))
-                    Surface(
-                        onClick = { tts?.speak(item.titulo, TextToSpeech.QUEUE_FLUSH, null, "tagarara-ficha") },
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                    ) {
-                        Icon(
-                            imageVector = Icones.Tocar,
-                            contentDescription = "Ouvir pronúncia",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(32.dp).padding(8.dp),
-                        )
+                    // Sem voz instalada para o idioma da ficha o botão não
+                    // aparece: um botão que não faz nada é pior que a ausência
+                    // dele, e falar alemão com voz portuguesa seria pior ainda.
+                    tts?.let { voz ->
+                        Surface(
+                            onClick = { voz.speak(item.titulo, TextToSpeech.QUEUE_FLUSH, null, "tagarara-ficha") },
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                        ) {
+                            Icon(
+                                imageVector = Icones.Tocar,
+                                contentDescription = "Ouvir pronúncia",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(32.dp).padding(8.dp),
+                            )
+                        }
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    item.ficha?.ipa?.takeIf(String::isNotBlank)?.let {
+                    item.ficha?.pronuncia?.takeIf(String::isNotBlank)?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     TipoBadge(item.tipo)
@@ -267,18 +273,38 @@ private fun TrechoDestacado(trecho: String) {
     }
 }
 
+/**
+ * A voz na língua da **ficha**, e não na do curso aberto.
+ *
+ * A ficha guarda o par em que nasceu justamente para isto: abrir uma palavra
+ * alemã antiga depois de trocar para o espanhol tem que falar alemão. Falar a
+ * palavra certa com o sotaque errado é pior do que não falar.
+ *
+ * `setLanguage` devolve `LANG_MISSING_DATA`/`LANG_NOT_SUPPORTED` quando o
+ * aparelho não tem a voz instalada — o mesmo caso do transcritor sem modelo. Aí
+ * o botão some, em vez de pronunciar alemão em português.
+ */
 @Composable
-private fun rememberTts(): TextToSpeech? {
+private fun rememberTts(etiqueta: String): TextToSpeech? {
     val contexto = LocalContext.current
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    DisposableEffect(contexto) {
-        val motor = TextToSpeech(contexto) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                tts?.language = Locale.US
-            }
+    DisposableEffect(contexto, etiqueta) {
+        // O callback pode ler o próprio motor porque `onInit` só chega depois de
+        // a construção retornar: ela depende de um bind de serviço, que é
+        // assíncrono.
+        var motor: TextToSpeech? = null
+        motor = TextToSpeech(contexto) { status ->
+            val disponivel = status == TextToSpeech.SUCCESS &&
+                motor?.setLanguage(Locale.forLanguageTag(etiqueta)) !in VOZ_AUSENTE
+            tts = motor.takeIf { disponivel }
         }
-        tts = motor
-        onDispose { motor.stop(); motor.shutdown() }
+        onDispose {
+            motor.stop()
+            motor.shutdown()
+            tts = null
+        }
     }
     return tts
 }
+
+private val VOZ_AUSENTE = setOf(TextToSpeech.LANG_MISSING_DATA, TextToSpeech.LANG_NOT_SUPPORTED, null)

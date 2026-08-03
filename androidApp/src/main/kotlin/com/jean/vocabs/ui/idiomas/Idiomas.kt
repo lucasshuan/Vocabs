@@ -1,38 +1,99 @@
 package com.jean.vocabs.ui.idiomas
 
+import androidx.annotation.DrawableRes
+import com.jean.vocabs.R
+import com.jean.vocabs.contracts.Idioma
+import com.jean.vocabs.contracts.Idiomas
+
 /**
- * Os idiomas como a interface precisa mostrá-los: bandeira e nome.
+ * O desenho de cada bandeira.
  *
- * Só existe um de cada por enquanto, e isso é intencional — a escolha de verdade
- * ainda não foi construída. O que está aqui são as vitrines: o seletor de idioma
- * nativo e a fila de idiomas que se está aprendendo já ocupam o lugar certo na
- * tela, com o único valor real selecionado, para que ligar o resto depois seja
- * acrescentar itens a estas listas em vez de redesenhar duas telas.
+ * As bandeiras são a coleção **circle-flags** (MIT), convertida de SVG para
+ * VectorDrawable sem redesenhar nada: são desenhos feitos à mão, com as
+ * proporções e os brasões certos. A versão anterior tinha duas delas
+ * aproximadas em `Canvas`, e essa conta não fecha para 43 idiomas — a bandeira
+ * do Brasil não é um losango com um círculo, e a da Coreia do Sul não é
+ * desenhável de cabeça.
  *
- * O servidor tem o seu próprio `ParDeIdiomas`, usado para montar o prompt. Os
- * dois vão virar um só quando o contrato passar a carregar os idiomas — está
- * anotado no NOTAS.md.
+ * Emoji também não serve: o indicador regional depende da fonte do sistema e
+ * vira retângulo ou duas letras em vários aparelhos.
+ *
+ * O mapa é explícito de propósito. `getIdentifier()` resolveria o nome em
+ * runtime numa linha, e é exatamente o tipo de referência que o R8 não enxerga:
+ * as 43 bandeiras seriam removidas do APK e só a tela mostraria o estrago.
  */
-data class IdiomaUi(
-    val codigo: String,
-    /** Emoji de bandeira: dois indicadores regionais, renderizados pelo sistema. */
-    val bandeira: String,
-    val nome: String,
-)
-
-object Idiomas {
-
-    val PORTUGUES = IdiomaUi(codigo = "pt-BR", bandeira = "🇧🇷", nome = "Português")
-    val INGLES = IdiomaUi(codigo = "en", bandeira = "🇺🇸", nome = "Inglês")
-
-    /** Em que língua as fichas são escritas. Hoje, a base do app inteiro. */
-    val nativoAtual: IdiomaUi = PORTUGUES
-
-    /** As opções de idioma nativo já disponíveis. */
-    val nativos: List<IdiomaUi> = listOf(PORTUGUES)
-
-    /** O que se está aprendendo — a fila de bandeiras da tela de Início. */
-    val alvos: List<IdiomaUi> = listOf(INGLES)
-
-    val alvoAtual: IdiomaUi = INGLES
+@DrawableRes
+fun bandeiraDe(idioma: Idioma): Int = when (idioma.pais) {
+    "bd" -> R.drawable.bandeira_bd
+    "bg" -> R.drawable.bandeira_bg
+    "br" -> R.drawable.bandeira_br
+    "cn" -> R.drawable.bandeira_cn
+    "cz" -> R.drawable.bandeira_cz
+    "de" -> R.drawable.bandeira_de
+    "dk" -> R.drawable.bandeira_dk
+    "ee" -> R.drawable.bandeira_ee
+    "es" -> R.drawable.bandeira_es
+    "es-ct" -> R.drawable.bandeira_es_ct
+    "fi" -> R.drawable.bandeira_fi
+    "fr" -> R.drawable.bandeira_fr
+    "gr" -> R.drawable.bandeira_gr
+    "hr" -> R.drawable.bandeira_hr
+    "hu" -> R.drawable.bandeira_hu
+    "id" -> R.drawable.bandeira_id
+    "il" -> R.drawable.bandeira_il
+    "in" -> R.drawable.bandeira_in
+    "ir" -> R.drawable.bandeira_ir
+    "is" -> R.drawable.bandeira_is
+    "it" -> R.drawable.bandeira_it
+    "jp" -> R.drawable.bandeira_jp
+    "ke" -> R.drawable.bandeira_ke
+    "kr" -> R.drawable.bandeira_kr
+    "lt" -> R.drawable.bandeira_lt
+    "lv" -> R.drawable.bandeira_lv
+    "my" -> R.drawable.bandeira_my
+    "nl" -> R.drawable.bandeira_nl
+    "no" -> R.drawable.bandeira_no
+    "ph" -> R.drawable.bandeira_ph
+    "pl" -> R.drawable.bandeira_pl
+    "pt" -> R.drawable.bandeira_pt
+    "ro" -> R.drawable.bandeira_ro
+    "rs" -> R.drawable.bandeira_rs
+    "ru" -> R.drawable.bandeira_ru
+    "sa" -> R.drawable.bandeira_sa
+    "se" -> R.drawable.bandeira_se
+    "sk" -> R.drawable.bandeira_sk
+    "th" -> R.drawable.bandeira_th
+    "tr" -> R.drawable.bandeira_tr
+    "ua" -> R.drawable.bandeira_ua
+    "us" -> R.drawable.bandeira_us
+    "vn" -> R.drawable.bandeira_vn
+    else -> R.drawable.bandeira_us
 }
+
+/**
+ * O idioma de um código, com o inglês como último recurso.
+ *
+ * A interface precisa de **alguma** coisa para desenhar; devolver nulo aqui
+ * espalharia um `?:` por cada linha de cada tela. Quem precisa saber que o
+ * código é desconhecido — o servidor, na hora de gerar — usa [Idiomas.de], que
+ * devolve nulo e recusa.
+ */
+fun idiomaDe(codigo: String?): Idioma = Idiomas.de(codigo) ?: Idiomas.INGLES
+
+/** Filtro da busca da tela "Novo idioma": ignora acento e caixa. */
+fun List<Idioma>.buscar(termo: String): List<Idioma> {
+    val procurado = termo.trim().semAcento()
+    if (procurado.isEmpty()) return this
+    return filter { it.nome.semAcento().contains(procurado) || it.codigo.semAcento().contains(procurado) }
+}
+
+/**
+ * Sem acento e em caixa baixa. Quem digita "japones" na pressa quer achar
+ * "Japonês", e um filtro que exige o circunflexo devolve lista vazia.
+ */
+private fun String.semAcento(): String = lowercase()
+    .replace(ACENTUADAS) { encontro -> SEM_ACENTO[ACENTUADAS_TEXTO.indexOf(encontro.value)].toString() }
+
+private const val ACENTUADAS_TEXTO = "áàâãäéèêëíìîïóòôõöúùûüçñ"
+private const val SEM_ACENTO = "aaaaaeeeeiiiiooooouuuucn"
+private val ACENTUADAS = Regex("[$ACENTUADAS_TEXTO]")

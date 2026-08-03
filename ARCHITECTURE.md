@@ -22,7 +22,7 @@ divergir num terceiro. A tabela está em `docs/INTERFACE.md`.
 ## Captura e fichas
 
 ```text
-captura (contexto, formato, mídia, transcrição)
+captura (contexto, formato, mídia, transcrição, par de idiomas)
    ├── entrada (intervalo selecionado, tipo, ficha, retenção)
    └── entrada (outro intervalo, inclusive sobreposto)
 ```
@@ -43,6 +43,25 @@ ao `uso_ia` do mês.
 
 Ao excluir uma entrada, o repositório conta as irmãs na mesma transação. A mídia
 só é removida quando a última entrada ou a captura inteira desaparece.
+
+## Cursos
+
+O par de idiomas mora na **captura**, não na entrada: um trecho está numa língua
+só, e toda seleção dentro dele herda essa língua por construção. É o que permite
+regerar uma ficha antiga no idioma em que ela nasceu depois de a pessoa trocar de
+curso — o pedido leva o par (`GerarFichaRequest`), e o servidor recusa um par que
+não esteja no catálogo em vez de cair no padrão.
+
+O catálogo de idiomas fica em `:contracts` porque os dois lados precisam da mesma
+lista por motivos diferentes: a interface mostra o nome em português e a bandeira,
+o prompt cita o nome em inglês, o banco guarda o código. Do idioma alvo o servidor
+só precisa saber mais uma coisa — em que notação a pronúncia se escreve (IPA por
+padrão, pinyin no mandarim, kana + romaji no japonês).
+
+Qual curso está aberto é preferência do aparelho (`Preferencias`), e entra no
+repositório como fluxo. Por isso quase toda a `VocabRepository` é do curso aberto,
+sem par nos parâmetros: uma tela que esquecesse de passá-lo mostraria palavras
+alemãs numa sessão de inglês.
 
 ## Estados
 
@@ -67,12 +86,33 @@ com `schemaVersion` e as mídias referenciadas, e é compartilhado por
 
 Cada entrada pronta mantém pontos e taxa de decaimento. Abaixo de 60 entra na
 fila. A revisão registra apenas a primeira tentativa; um erro recoloca o cartão
-uma única vez no final da sessão. `dia_revisado` alimenta sequência e heatmap de
-84 dias. `uso_ia` usa chave `YYYY-MM`, portanto vira naturalmente no mês local.
+uma única vez no final da sessão. `dia_revisado` alimenta sequência e semana.
+`uso_ia` usa chave `YYYY-MM`, portanto vira naturalmente no mês local.
+
+Sobre a mesma retenção existem **duas** leituras, e elas respondem perguntas
+diferentes:
+
+- **Força de memória** (`pontosEm`): quanto se lembra agora. Decai sozinha com o
+  tempo. É o que a ficha e a lista de Palavras mostram.
+- **Degrau** (`Degraus`, 1 a 5): quão longe se chegou. Sai da taxa de decaimento,
+  que já é o histórico de acertos comprimido, e só muda quando um cartão é
+  respondido. É o que "O que falta" mostra, e o que conta as dominadas em toda
+  tela de número — força de memória daria um total diferente a cada hora.
+
+`evento` é a linha do tempo, append-only: captura, ficha pronta, acerto, erro e
+mudança de nível, cada linha com o dia local já resolvido. Ela existe porque a
+retenção guarda só o estado de agora e não responde "o que eu fiz terça". A
+migração reconstrói apenas as capturas — o desfecho das revisões antigas não
+estava guardado, pelo mesmo motivo que `acertos` e `erros` nasceram em zero na
+migração 3.
+
+A **quota do dia** não é meta escolhida: é o que já saiu hoje mais o que ainda
+está na fila. Uma meta fixa seria inalcançável no dia em que 30 palavras vencem
+juntas e já estaria batida num dia sem nada a revisar.
 
 ## Validação
 
-`androidHostTest` usa SQLite JDBC para executar a migração com dados legados e
+`androidHostTest` usa SQLite JDBC para executar as migrações com dados legados e
 testar criação em lote, sobreposição, retenção de mídia, concorrência parcial,
-atividade e virada mensal. `verifySqlDelightMigration` compara migrações com o
-schema novo.
+atividade, virada mensal, escopo de curso, quota, degraus e linha do tempo.
+`verifySqlDelightMigration` compara migrações com o schema novo.

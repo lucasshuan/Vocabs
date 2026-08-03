@@ -5,8 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.shared.domain.Captura
+import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.ResumoRevisao
 import java.time.Instant
 import java.time.LocalDate
@@ -25,6 +27,7 @@ data class InicioEstado(
     val capturasPendentes: Int = 0,
     val capturaMaisAntiga: Captura? = null,
     val recentesHoje: List<Entrada> = emptyList(),
+    val par: ParIdiomas = ParIdiomas.PADRAO,
 )
 
 class InicioViewModel(app: Application) : AndroidViewModel(app) {
@@ -34,12 +37,16 @@ class InicioViewModel(app: Application) : AndroidViewModel(app) {
         repositorio.observarProntas(),
         repositorio.observarResumoDeRevisao(),
         repositorio.observarCapturasPendentes(),
-    ) { prontas, revisao, capturas ->
+        repositorio.observarCursoAtivo(),
+    ) { prontas, revisao, capturas, par ->
         val agora = System.currentTimeMillis()
         val hoje = LocalDate.now()
         InicioEstado(
             totalPalavras = prontas.size,
-            dominadas = prontas.count { it.retencao?.nivelEm(agora) == NivelMemoria.DOMINADA },
+            // Por degrau, como na tela Você e na de Progresso: contar por força
+            // de memória faria o mesmo número aparecer diferente em cada tela,
+            // porque ela decai entre uma e outra.
+            dominadas = prontas.count { Degraus.nivel(it.degrau) == NivelMemoria.DOMINADA },
             forcaMedia = prontas.mapNotNull { it.retencao?.pontosEm(agora) }.averageOrZero().toInt(),
             revisao = revisao,
             capturasPendentes = capturas.size,
@@ -47,6 +54,7 @@ class InicioViewModel(app: Application) : AndroidViewModel(app) {
             recentesHoje = prontas.filter {
                 Instant.ofEpochMilli(it.criadoEm).atZone(ZoneId.systemDefault()).toLocalDate() == hoje
             }.take(3),
+            par = par,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InicioEstado())
 }

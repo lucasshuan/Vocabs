@@ -6,9 +6,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.ui.VocabsApp
 import com.jean.vocabs.ui.theme.VocabsTheme
+import com.jean.vocabs.ui.theme.escuroConforme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,8 +29,15 @@ class MainActivity : ComponentActivity() {
         // O conteúdo desenha atrás das barras do sistema; cada tela aplica os
         // insets que precisa (statusBarsPadding, navigationBarsPadding, imePadding).
         enableEdgeToEdge()
+        val preferencias = AppContainer.preferencias(this)
         setContent {
-            VocabsTheme {
+            // O valor inicial vem da leitura síncrona, e não de um `null` que o
+            // fluxo preenche depois: um default enquanto o disco responde faria
+            // o app abrir no claro e piscar para o escuro no primeiro frame.
+            val tema by preferencias.observarTema()
+                .collectAsStateWithLifecycle(initialValue = preferencias.tema)
+
+            VocabsTheme(temaEscuro = escuroConforme(tema)) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     VocabsApp()
                 }

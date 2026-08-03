@@ -68,9 +68,17 @@ object AppContainer {
     @Volatile
     private var repositorio: VocabRepository? = null
 
+    @Volatile
+    private var preferencias: Preferencias? = null
+
     fun repositorio(context: Context): VocabRepository =
         repositorio ?: synchronized(this) {
             repositorio ?: criar(context.applicationContext).also { repositorio = it }
+        }
+
+    fun preferencias(context: Context): Preferencias =
+        preferencias ?: synchronized(this) {
+            preferencias ?: Preferencias(context.applicationContext).also { preferencias = it }
         }
 
     private fun criar(context: Context): VocabRepository {
@@ -93,6 +101,7 @@ object AppContainer {
             api = FichaApi(baseUrl = baseUrl, token = token, client = http),
             io = Dispatchers.IO,
             agora = { System.currentTimeMillis() },
+            cursoAtivo = preferencias(context).observarPar(),
             removerArquivo = ArquivosDeMidia::remover,
         )
     }

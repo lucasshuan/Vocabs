@@ -9,13 +9,24 @@ import kotlinx.serialization.Serializable
  * bug em runtime.
  */
 
-/** O que o app manda: o modelo unificado de captura (seção 5 do documento). */
+/**
+ * O que o app manda: o modelo unificado de captura (seção 5 do documento).
+ *
+ * O par de idiomas viaja junto, e não como configuração do servidor, porque ele
+ * é uma propriedade da **entrada** — cada uma nasceu num par e é regerada nele.
+ * Um servidor que soubesse o par sozinho reescreveria uma ficha de alemão em
+ * inglês no dia em que a pessoa trocasse de curso.
+ */
 @Serializable
 data class GerarFichaRequest(
     val trecho: String,
     val alvo: String,
     /** Classificado localmente: um token é palavra; vários, expressão. */
     val tipo: TipoAlvo,
+    /** Código de [Idiomas]: em que língua a ficha é escrita. */
+    val idiomaNativo: String,
+    /** Código de [Idiomas]: que língua a ficha ensina. */
+    val idiomaAlvo: String,
 )
 
 /** O que o servidor devolve: a ficha da Fase 1. */
@@ -25,7 +36,15 @@ data class FichaResponse(
     val traducao: String,
     val definicoes: List<String>,
     val exemplo: String,
-    val ipa: String,
+    /**
+     * Como o termo se pronuncia, na notação que o idioma alvo pede.
+     *
+     * Chamava-se `ipa` enquanto só havia inglês. IPA não é o que quem aprende
+     * mandarim quer ler — ali a resposta é pinyin, e em japonês é o kana com o
+     * romaji ao lado. O campo carrega a notação de cada idioma, e qual é ela
+     * está em `IdiomaAlvo`, no servidor.
+     */
+    val pronuncia: String,
     /** Termos próximos para a seção "Puxa outras palavras". */
     val relacionadas: List<String> = emptyList(),
 )

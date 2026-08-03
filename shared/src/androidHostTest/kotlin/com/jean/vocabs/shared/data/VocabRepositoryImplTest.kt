@@ -4,7 +4,11 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.jean.vocabs.shared.data.remote.FichaApi
 import com.jean.vocabs.shared.db.VocabsDatabase
 import com.jean.vocabs.shared.domain.FormatoCaptura
+import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.ParIdiomas
+import com.jean.vocabs.shared.domain.QuotaDoDia
 import com.jean.vocabs.shared.domain.StatusEntrada
+import com.jean.vocabs.shared.domain.TipoEvento
 import com.jean.vocabs.shared.domain.selecionarTokens
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -13,6 +17,7 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import java.time.Instant
@@ -23,7 +28,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
@@ -99,13 +107,92 @@ class VocabRepositoryImplTest {
         assertEquals(0, repo.observarUsoIa().first().usadas)
     }
 
+    @Test
+    fun `cada curso ve so as proprias palavras e trocar de curso troca a lista`() = runBlocking {
+        val curso = MutableStateFlow(ParIdiomas("pt-BR", "en"))
+        val repo = repositorio(curso = curso)
+
+        val ingles = "on the fence"
+        repo.capturarTexto(ingles, listOf(selecionarTokens(ingles, 2)!!))
+
+        curso.value = ParIdiomas("pt-BR", "de")
+        val alemao = "der Zaun"
+        repo.capturarTexto(alemao, listOf(selecionarTokens(alemao, 1)!!))
+
+        assertEquals(listOf("Zaun"), repo.observarInbox().first().map { it.alvo })
+        curso.value = ParIdiomas("pt-BR", "en")
+        assertEquals(listOf("fence"), repo.observarInbox().first().map { it.alvo })
+
+        // A captura guarda o par em que nasceu, e não o par de agora.
+        assertEquals(ParIdiomas("pt-BR", "en"), repo.observarInbox().first().single().par)
+    }
+
+    @Test
+    fun `a ficha e regerada no idioma em que nasceu, mesmo apos trocar de curso`() = runBlocking {
+        val curso = MutableStateFlow(ParIdiomas("pt-BR", "de"))
+        val pedidos = mutableListOf<String>()
+        val repo = repositorio(curso = curso, aoPedir = pedidos::add)
+
+        val trecho = "der Zaun"
+        val id = repo.capturarTexto(trecho, listOf(selecionarTokens(trecho, 1)!!)).single()
+        curso.value = ParIdiomas("pt-BR", "en")
+        assertTrue(repo.gerarFicha(id))
+
+        assertTrue(pedidos.single().contains("\"idiomaAlvo\":\"de\""), pedidos.single())
+    }
+
+    @Test
+    fun `quota conta o que ja saiu hoje e a fila do curso aberto`() = runBlocking {
+        val repo = repositorio()
+        val trecho = "verdant field"
+        val id = repo.capturarTexto(trecho, listOf(selecionarTokens(trecho, 0)!!)).single()
+        assertTrue(repo.gerarFicha(id))
+
+        // Ficha recém-pronta está com 100 pontos: nada na fila, nada feito.
+        assertEquals(QuotaDoDia(feita = 0, naFila = 0), repo.observarResumoDeRevisao().first().quota)
+
+        // Passado o intervalo, ela pede revisão e a quota do dia passa a ter 1.
+        agora += 2 * 86_400_000L
+        assertEquals(QuotaDoDia(feita = 0, naFila = 1), repo.observarResumoDeRevisao().first().quota)
+
+        repo.registrarResposta(id, acertou = true)
+        assertEquals(QuotaDoDia(feita = 1, naFila = 0), repo.observarResumoDeRevisao().first().quota)
+        assertTrue(repo.observarResumoDeRevisao().first().quota.batida)
+    }
+
+    @Test
+    fun `a linha do tempo registra captura, ficha, resposta e mudanca de nivel`() = runBlocking {
+        val repo = repositorio()
+        val trecho = "verdant field"
+        val id = repo.capturarTexto(trecho, listOf(selecionarTokens(trecho, 0)!!)).single()
+        assertTrue(repo.gerarFicha(id))
+        repo.registrarResposta(id, acertou = true)
+
+        val tipos = repo.observarEventos(84).first().map { it.tipo }
+        assertTrue(TipoEvento.CAPTURADA in tipos)
+        assertTrue(TipoEvento.FICHA_PRONTA in tipos)
+        assertTrue(TipoEvento.ACERTO in tipos)
+
+        val acerto = repo.observarEventos(84).first().first { it.tipo == TipoEvento.ACERTO }
+        assertEquals("1", acerto.detalhe)
+        assertEquals("verdant", acerto.alvo)
+
+        // Três acertos depois ela cruza para familiar, e só aí um SUBIU_NIVEL sai.
+        repeat(3) { repo.registrarResposta(id, acertou = true) }
+        val subidas = repo.observarEventos(84).first().filter { it.tipo == TipoEvento.SUBIU_NIVEL }
+        assertEquals(listOf(NivelMemoria.DOMINADA.name, NivelMemoria.FAMILIAR.name), subidas.map { it.detalhe })
+    }
+
     private fun repositorio(
         remover: (String) -> Unit = {},
+        curso: Flow<ParIdiomas> = flowOf(ParIdiomas.PADRAO),
+        aoPedir: (String) -> Unit = {},
         resposta: suspend () -> Pair<HttpStatusCode, String> = { HttpStatusCode.OK to FICHA },
     ): VocabRepositoryImpl {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         VocabsDatabase.Schema.create(driver)
-        val engine = MockEngine {
+        val engine = MockEngine { requisicao ->
+            aoPedir((requisicao.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
             val (status, corpo) = resposta()
             respond(
                 corpo,
@@ -121,6 +208,7 @@ class VocabRepositoryImplTest {
             api = FichaApi("http://teste", "token", cliente),
             io = Dispatchers.IO,
             agora = { agora },
+            cursoAtivo = curso,
             removerArquivo = remover,
         )
     }
@@ -131,7 +219,7 @@ class VocabRepositoryImplTest {
             "traducao":"verdejante",
             "definicoes":["Muito verde"],
             "exemplo":"A verdant field appeared.",
-            "ipa":"/vɜːdənt/",
+            "pronuncia":"vɜːdənt",
             "relacionadas":["lush","green","leafy"]
         }"""
     }

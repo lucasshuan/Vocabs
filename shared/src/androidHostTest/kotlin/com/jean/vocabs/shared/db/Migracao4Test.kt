@@ -31,8 +31,8 @@ class Migracao4Test {
             0,
         )
 
-        // 1.sqm..3.sqm já formavam a versão 4; 4.sqm leva a base para a 5.
-        VocabsDatabase.Schema.migrate(driver, 4, 5)
+        // 1.sqm..3.sqm já formavam a versão 4; daqui até a atual passa por todas.
+        VocabsDatabase.Schema.migrate(driver, 4, VocabsDatabase.Schema.version)
         val queries = VocabsDatabase(driver).vocabsQueries
         val capturas = queries.listarTodasCapturas().executeAsList()
         val entradas = queries.listarTodasEntradas().executeAsList()

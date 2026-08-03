@@ -40,6 +40,7 @@ import com.jean.vocabs.ui.components.CartaoMetrica
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.LinhaDeLista
 import com.jean.vocabs.ui.components.PilulaDeIdiomas
+import com.jean.vocabs.ui.idiomas.idiomaDe
 import com.jean.vocabs.ui.components.RotuloDeSecao
 import java.time.LocalTime
 
@@ -66,7 +67,11 @@ fun InicioScreen(
             Image(painterResource(R.drawable.logo_tagarara), stringResource(R.string.logo_description), Modifier.size(34.dp))
             Text("TAGARARA", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 9.dp))
             Spacer(Modifier.weight(1f))
-            PilulaDeIdiomas(aoAbrirPerfil)
+            PilulaDeIdiomas(
+                aoClicar = aoAbrirPerfil,
+                nativo = idiomaDe(estado.par.nativo),
+                alvo = idiomaDe(estado.par.alvo),
+            )
         }
 
         CartaoDaTela(

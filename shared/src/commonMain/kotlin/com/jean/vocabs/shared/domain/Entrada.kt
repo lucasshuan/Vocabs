@@ -31,8 +31,13 @@ data class Entrada(
     val ficha: FichaResponse?,
     val retencao: Retencao?,
     val erro: String?,
+    /** Herdado da captura: o par em que esta ficha nasceu e no qual ela é regerada. */
+    val par: ParIdiomas = ParIdiomas.PADRAO,
 ) {
     fun precisaRevisar(agora: Long): Boolean = retencao?.precisaRevisar(agora) == true
+
+    /** Em que degrau da escada de "O que falta" ela está. */
+    val degrau: Int get() = Degraus.de(retencao)
 
     /** O que mostrar como título quando ainda não há alvo digitado. */
     val titulo: String

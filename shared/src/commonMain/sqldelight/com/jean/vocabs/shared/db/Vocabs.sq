@@ -1,5 +1,8 @@
 -- Uma captura guarda o contexto e a mídia. Várias entradas podem apontar para
 -- ela, inclusive seleções sobrepostas do mesmo trecho.
+--
+-- O par de idiomas é dela, e não das entradas: um trecho está numa língua só, e
+-- toda seleção dentro dele herda essa língua por construção.
 CREATE TABLE captura (
     id                INTEGER PRIMARY KEY AUTOINCREMENT,
     trecho            TEXT,
@@ -9,11 +12,14 @@ CREATE TABLE captura (
     formato           TEXT NOT NULL, -- TEXTO | FOTO | AUDIO
     midia_caminho     TEXT,
     duracao_ms        INTEGER,
-    erro_transcricao  TEXT
+    erro_transcricao  TEXT,
+    idioma_nativo     TEXT NOT NULL DEFAULT 'pt-BR',
+    idioma_alvo       TEXT NOT NULL DEFAULT 'en'
 );
 
 CREATE INDEX captura_criado_em ON captura(criado_em DESC);
 CREATE INDEX captura_status ON captura(status);
+CREATE INDEX captura_idioma ON captura(idioma_alvo, idioma_nativo);
 
 -- Uma entrada é um alvo confirmado e, quando pronta, sua ficha e retenção.
 CREATE TABLE entrada (
@@ -27,7 +33,8 @@ CREATE TABLE entrada (
     traducao                TEXT,
     definicoes_json         TEXT,
     exemplo                 TEXT,
-    ipa                     TEXT,
+    -- Na notação que o idioma alvo pede: IPA no inglês, pinyin no mandarim.
+    pronuncia               TEXT,
     relacionadas_json       TEXT,
     erro                    TEXT,
     pontos                  REAL NOT NULL DEFAULT 100.0,
@@ -53,7 +60,7 @@ SELECT
     e.traducao,
     e.definicoes_json,
     e.exemplo,
-    e.ipa,
+    e.pronuncia,
     e.relacionadas_json,
     e.erro,
     e.pontos,
@@ -67,7 +74,9 @@ SELECT
     c.criado_em,
     c.formato,
     c.midia_caminho,
-    c.duracao_ms
+    c.duracao_ms,
+    c.idioma_nativo,
+    c.idioma_alvo
 FROM entrada e
 JOIN captura c ON c.id = e.captura_id;
 
@@ -75,6 +84,24 @@ CREATE TABLE dia_revisado (
     dia      INTEGER NOT NULL PRIMARY KEY,
     revisoes INTEGER NOT NULL DEFAULT 0
 );
+
+-- O que aconteceu em cada dia, para a tela Dia a dia.
+--
+-- A retenção guarda só o estado de agora e responde "como está esta palavra";
+-- não responde "o que eu fiz terça". Esta tabela é append-only e cada linha já
+-- nasce com o dia local resolvido, na mesma escala de `dia_revisado`.
+CREATE TABLE evento (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    entrada_id INTEGER NOT NULL REFERENCES entrada(id) ON DELETE CASCADE,
+    dia        INTEGER NOT NULL,
+    instante   INTEGER NOT NULL,
+    tipo       TEXT NOT NULL, -- CAPTURADA | FICHA_PRONTA | ACERTO | ERRO | SUBIU_NIVEL
+    -- Número da revisão no ACERTO/ERRO, nível novo no SUBIU_NIVEL. Nulo no resto.
+    detalhe    TEXT
+);
+
+CREATE INDEX evento_dia ON evento(dia DESC);
+CREATE INDEX evento_entrada ON evento(entrada_id);
 
 -- Contador local e informativo. Sem conta de usuário, ele não é uma quota de
 -- segurança; registra apenas gerações concluídas pelo aparelho.
@@ -106,8 +133,9 @@ SELECT * FROM captura ORDER BY criado_em DESC;
 
 inserirCaptura:
 INSERT INTO captura (
-    trecho, origem, criado_em, status, formato, midia_caminho, duracao_ms, erro_transcricao
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+    trecho, origem, criado_em, status, formato, midia_caminho, duracao_ms, erro_transcricao,
+    idioma_nativo, idioma_alvo
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 ultimoIdInserido:
 SELECT last_insert_rowid();
@@ -131,7 +159,7 @@ UPDATE entrada SET status = ?, erro = NULL WHERE id = ?;
 
 salvarFicha:
 UPDATE entrada
-SET status = ?, tipo = ?, traducao = ?, definicoes_json = ?, exemplo = ?, ipa = ?,
+SET status = ?, tipo = ?, traducao = ?, definicoes_json = ?, exemplo = ?, pronuncia = ?,
     relacionadas_json = ?, erro = NULL
 WHERE id = ?;
 
@@ -185,3 +213,25 @@ UPDATE uso_ia SET geracoes = geracoes + 1 WHERE mes = ?;
 
 observarUsoIaDoMes:
 SELECT geracoes FROM uso_ia WHERE mes = ?;
+
+registrarEvento:
+INSERT INTO evento (entrada_id, dia, instante, tipo, detalhe) VALUES (?, ?, ?, ?, ?);
+
+-- A linha do tempo já sai com o alvo e o idioma do lado: a tela mostra a palavra,
+-- não o id, e filtra pelo curso aberto.
+listarEventosDesde:
+SELECT
+    ev.id,
+    ev.entrada_id,
+    ev.dia,
+    ev.instante,
+    ev.tipo,
+    ev.detalhe,
+    e.alvo,
+    c.idioma_nativo,
+    c.idioma_alvo
+FROM evento ev
+JOIN entrada e ON e.id = ev.entrada_id
+JOIN captura c ON c.id = e.captura_id
+WHERE ev.dia >= ?
+ORDER BY ev.dia DESC, ev.instante DESC, ev.id DESC;
