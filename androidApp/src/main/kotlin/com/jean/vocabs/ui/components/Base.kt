@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -134,11 +136,11 @@ fun LinhaDeLista(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             inicio?.let {
                 it()
-                androidx.compose.foundation.layout.Spacer(Modifier.size(13.dp))
+                Spacer(Modifier.width(13.dp))
             }
             Column(Modifier.weight(1f), content = conteudo)
             fim?.let {
-                androidx.compose.foundation.layout.Spacer(Modifier.size(10.dp))
+                Spacer(Modifier.width(10.dp))
                 it()
             }
         }
@@ -242,6 +244,38 @@ fun PilulaSelecionavel(
                 color = if (selecionada) cores.onPrimary else cores.onSurfaceVariant,
             )
         }
+    }
+}
+
+/**
+ * Pílula de conteúdo: termo relacionado, "ver mais", "tentar de novo".
+ *
+ * Com [destaque] ela vira ameixa sobre lilás — é o que separa "isto é mais uma
+ * palavra" de "isto faz alguma coisa".
+ */
+@Composable
+fun Pilula(
+    texto: String,
+    modifier: Modifier = Modifier,
+    destaque: Boolean = false,
+    aoClicar: (() -> Unit)? = null,
+) {
+    val cores = MaterialTheme.colorScheme
+    val fundo = if (destaque) cores.secondaryContainer else cores.surface
+    val cor = if (destaque) cores.primary else cores.onSurface
+    val contorno = if (destaque) null else contornoDeCartao()
+    val conteudo: @Composable () -> Unit = {
+        Text(
+            text = texto,
+            style = MaterialTheme.typography.bodyMedium,
+            color = cor,
+            modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
+        )
+    }
+    if (aoClicar == null) {
+        Surface(shape = CircleShape, color = fundo, border = contorno, modifier = modifier, content = conteudo)
+    } else {
+        Surface(onClick = aoClicar, shape = CircleShape, color = fundo, border = contorno, modifier = modifier, content = conteudo)
     }
 }
 

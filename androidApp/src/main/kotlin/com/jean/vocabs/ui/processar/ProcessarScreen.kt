@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.processar
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,7 +47,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.media.lembrarFoto
 import com.jean.vocabs.media.rememberReprodutor
 import com.jean.vocabs.shared.domain.AlvoSelecionado
-import com.jean.vocabs.shared.domain.Captura
 import com.jean.vocabs.shared.domain.FormatoCaptura
 import com.jean.vocabs.shared.domain.StatusCaptura
 import com.jean.vocabs.ui.components.AvisoDuplicata
@@ -55,7 +58,7 @@ import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.RotuloDeSecao
 import com.jean.vocabs.ui.components.SeletorDeTermos
 import com.jean.vocabs.ui.components.formatarDuracaoMs
-import com.jean.vocabs.ui.components.tempoRelativo
+import com.jean.vocabs.ui.components.tituloDaCaptura
 
 @Composable
 fun ProcessarScreen(
@@ -152,9 +155,12 @@ fun ProcessarScreen(
 
             if (trecho.isNotBlank()) {
                 RotuloDeSecao("Selecione o que chamou atenção", Modifier.padding(top = 18.dp, bottom = 9.dp))
-                SeletorDeTermos(trecho) { alvo ->
-                    if (selecoes.none { it.inicio == alvo.inicio && it.fim == alvo.fim }) selecoes += alvo
-                }
+                SeletorDeTermos(
+                    trecho = trecho,
+                    aoSelecionar = { alvo ->
+                        if (selecoes.none { it.inicio == alvo.inicio && it.fim == alvo.fim }) selecoes += alvo
+                    },
+                )
                 Text(
                     "Toque numa palavra ou arraste por várias.",
                     style = MaterialTheme.typography.bodySmall,
@@ -188,13 +194,6 @@ fun ProcessarScreen(
         }
         Spacer(Modifier.navigationBarsPadding().height(40.dp))
     }
-}
-
-/** "Áudio · 0:12", "Foto · há 1h" — o mesmo nome que a linha de Pendentes deu a ela. */
-private fun tituloDaCaptura(captura: Captura): String = when (captura.formato) {
-    FormatoCaptura.AUDIO -> captura.duracaoMs?.let { "Áudio · ${formatarDuracaoMs(it)}" } ?: "Áudio"
-    FormatoCaptura.FOTO -> "Foto · ${tempoRelativo(captura.criadoEm)}"
-    FormatoCaptura.TEXTO -> "Texto · ${tempoRelativo(captura.criadoEm)}"
 }
 
 @Composable
@@ -237,19 +236,27 @@ private fun PlayerAudio(caminho: String, duracaoMs: Long?) {
 
 private val alturasDaOnda = listOf(0.40f, 0.70f, 1f, 0.55f, 0.80f, 0.35f, 0.65f, 0.45f, 0.90f, 0.30f)
 
+/**
+ * A onda desenhada, com barra de largura fixa em vez de dez barras esticadas.
+ *
+ * Repartir a largura disponível entre dez barras funciona na maquete de 340 px e
+ * vira dez comprimidos deitados num celular de verdade: o que dá a leitura de
+ * "áudio" é a barra fina repetida, não a contagem delas.
+ */
 @Composable
 private fun OndaDeAudio(modifier: Modifier = Modifier) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-        modifier = modifier.height(24.dp),
-    ) {
-        alturasDaOnda.forEach { fracao ->
-            Box(
-                Modifier
-                    .weight(1f)
-                    .height(24.dp * fracao)
-                    .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp)),
+    val cor = MaterialTheme.colorScheme.outlineVariant
+    Canvas(modifier = modifier.height(24.dp)) {
+        val largura = 3.dp.toPx()
+        val passo = largura * 2
+        val quantidade = (size.width / passo).toInt().coerceAtLeast(1)
+        repeat(quantidade) { indice ->
+            val altura = size.height * alturasDaOnda[indice % alturasDaOnda.size]
+            drawRoundRect(
+                color = cor,
+                topLeft = Offset(indice * passo, (size.height - altura) / 2f),
+                size = Size(largura, altura),
+                cornerRadius = CornerRadius(largura / 2f),
             )
         }
     }

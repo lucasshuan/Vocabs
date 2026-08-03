@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.NivelMemoria
-import com.jean.vocabs.shared.domain.ResumoRevisao
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +20,6 @@ data class HomeEstado(
     val busca: String = "",
     val total: Int = 0,
     val dominadas: Int = 0,
-    val revisao: ResumoRevisao? = null,
     val carregado: Boolean = false,
 )
 
@@ -32,10 +30,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     val estado: StateFlow<HomeEstado> = combine(
         repositorio.observarProntas(),
-        repositorio.observarResumoDeRevisao(),
         filtro,
         busca,
-    ) { prontas, revisao, filtroAtual, termo ->
+    ) { prontas, filtroAtual, termo ->
         val agora = System.currentTimeMillis()
         val procurado = termo.normalizado()
         HomeEstado(
@@ -56,7 +53,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             busca = termo,
             total = prontas.size,
             dominadas = prontas.count { it.retencao?.nivelEm(agora) == NivelMemoria.DOMINADA },
-            revisao = revisao,
             carregado = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeEstado())

@@ -117,10 +117,26 @@ fun InicioScreen(
             )
         }
 
+        val dias = estado.revisao?.diasSeguidos ?: 0
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            CartaoMetrica("${estado.totalPalavras}", "vocabulários", Modifier.weight(1f), aoClicar = aoAbrirPalavras)
-            CartaoMetrica("${estado.dominadas}", "dominadas", Modifier.weight(1f), destaque = true)
-            CartaoMetrica("${estado.revisao?.diasSeguidos ?: 0}", "dias seguidos", Modifier.weight(1f), destaque = true)
+            CartaoMetrica(
+                valor = "${estado.totalPalavras}",
+                rotulo = if (estado.totalPalavras == 1) "vocabulário" else "vocabulários",
+                modifier = Modifier.weight(1f),
+                aoClicar = aoAbrirPalavras,
+            )
+            CartaoMetrica(
+                valor = "${estado.dominadas}",
+                rotulo = if (estado.dominadas == 1) "dominada" else "dominadas",
+                modifier = Modifier.weight(1f),
+                destaque = true,
+            )
+            CartaoMetrica(
+                valor = "$dias",
+                rotulo = if (dias == 1) "dia seguido" else "dias seguidos",
+                modifier = Modifier.weight(1f),
+                destaque = true,
+            )
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {

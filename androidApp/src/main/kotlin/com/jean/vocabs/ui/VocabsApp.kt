@@ -94,10 +94,7 @@ fun VocabsApp() {
                 )
             }
             composable(Rotas.PALAVRAS) {
-                HomeScreen(
-                    aoAbrirFicha = { nav.navigate(Rotas.ficha(it)) },
-                    aoRevisar = { nav.navigate(Rotas.REVISAO) },
-                )
+                HomeScreen(aoAbrirFicha = { nav.navigate(Rotas.ficha(it)) })
             }
             composable(Rotas.PENDENTES) {
                 PendentesScreen(

@@ -148,12 +148,6 @@ object Icones {
         icone("expandir", "M7.41,8.59L12,13.17l4.59,-4.58L18,10l-6,6 -6,-6z")
     }
 
-    /**
-     * Relógio para a aba de Pendentes.
-     *
-     * A bandeja de "inbox" dizia de onde as capturas vêm; o relógio diz o que
-     * elas estão fazendo — esperando você. É o significado que importa na aba.
-     */
     val Lapis: ImageVector by lazy {
         icone(
             "lapis",
@@ -161,6 +155,12 @@ object Icones {
         )
     }
 
+    /**
+     * Relógio para a aba de Pendentes.
+     *
+     * A bandeja de "inbox" dizia de onde as capturas vêm; o relógio diz o que
+     * elas estão fazendo — esperando você. É o significado que importa na aba.
+     */
     val Relogio: ImageVector by lazy {
         icone(
             "relogio",

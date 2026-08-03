@@ -3,6 +3,7 @@
 ## Base implementada
 
 - [x] Marca pública Tagarara, tema claro/escuro, logo, fontes, splash e launcher.
+- [x] Oito telas conforme o handoff, sobre uma camada de componentes compartilhados.
 - [x] Captura-pai com múltiplas entradas, inclusive intervalos sobrepostos.
 - [x] Migração preservando IDs, fichas, erros, retenção e histórico.
 - [x] Seleção local palavra/expressão e aviso não bloqueante de duplicata.

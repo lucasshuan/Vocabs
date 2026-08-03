@@ -38,7 +38,6 @@ import com.jean.vocabs.ui.components.textoDaProximaRevisao
 @Composable
 fun HomeScreen(
     aoAbrirFicha: (Long) -> Unit,
-    aoRevisar: () -> Unit,
     vm: HomeViewModel = viewModel(),
 ) {
     val estado by vm.estado.collectAsStateWithLifecycle()
@@ -69,7 +68,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 12.dp),
             ) {
                 FiltroMemoria.entries.forEach { filtro ->
-                    PilulaSelecionavel(filtro.rotulo, estado.filtro == filtro) { vm.filtrar(filtro) }
+                    PilulaSelecionavel(filtro.rotulo, estado.filtro == filtro, aoClicar = { vm.filtrar(filtro) })
                 }
             }
         }
@@ -96,7 +95,7 @@ private fun CartaoPalavra(entrada: Entrada, aoClicar: () -> Unit) {
     val nivel = entrada.retencao?.nivelEm(agora) ?: NivelMemoria.NOVA
     val pontos = entrada.retencao?.pontosEm(agora) ?: 0.0
     val proxima = textoDaProximaRevisao(entrada.retencao, agora)
-    val naFila = proxima == "revisar agora"
+    val naFila = entrada.precisaRevisar(agora)
 
     CartaoDaTela(modifier = Modifier.fillMaxWidth(), aoClicar = aoClicar) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -116,11 +115,13 @@ private fun CartaoPalavra(entrada: Entrada, aoClicar: () -> Unit) {
                 color = corDoRotuloDoNivel(nivel),
                 modifier = Modifier.padding(start = 9.dp).weight(1f),
             )
-            Text(
-                text = proxima,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (naFila) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            proxima?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (naFila) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

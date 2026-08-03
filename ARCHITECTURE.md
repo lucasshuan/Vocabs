@@ -13,6 +13,12 @@ sem perder dados.
 :server      endpoint Ktor e chamada estruturada à IA
 ```
 
+Dentro de `:androidApp`, cada tela é uma pasta com `Screen` e `ViewModel`, e
+`ui/components` guarda o que se repete entre elas — cartão, linha de lista,
+métrica, pílula, seletor de termos, bandeiras. Nada de estilo mora numa tela só
+por já estar ali: o mesmo elemento em dois lugares vira componente antes de
+divergir num terceiro. A tabela está em `docs/INTERFACE.md`.
+
 ## Captura e fichas
 
 ```text

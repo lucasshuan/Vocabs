@@ -18,7 +18,6 @@ import kotlinx.coroutines.launch
 data class PerfilEstado(
     val totalPalavras: Int = 0,
     val dominadas: Int = 0,
-    val pendentes: Int = 0,
     val diasSeguidos: Int = 0,
     val acertos: Int = 0,
     val respondidas: Int = 0,
@@ -32,7 +31,6 @@ data class PerfilEstado(
 private data class PerfilBase(
     val total: Int,
     val dominadas: Int,
-    val pendentes: Int,
     val dias: Int,
     val acertos: Int,
     val respondidas: Int,
@@ -45,14 +43,11 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
     private val base = combine(
         repositorio.observarProntas(),
         repositorio.observarResumoDeRevisao(),
-        repositorio.observarCapturasPendentes(),
-        repositorio.observarInbox(),
-    ) { prontas, revisao, capturas, fichasPendentes ->
+    ) { prontas, revisao ->
         val agora = System.currentTimeMillis()
         PerfilBase(
             prontas.size,
             prontas.count { it.retencao?.nivelEm(agora) == NivelMemoria.DOMINADA },
-            capturas.size + fichasPendentes.size,
             revisao.diasSeguidos,
             prontas.sumOf { it.retencao?.acertos ?: 0 },
             prontas.sumOf { it.retencao?.respondidas ?: 0 },
@@ -65,7 +60,7 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
         repositorio.observarUsoIa(),
         exportando,
     ) { base, atividade, usoIa, estaExportando ->
-        PerfilEstado(base.total, base.dominadas, base.pendentes, base.dias, base.acertos, base.respondidas, atividade, usoIa, estaExportando)
+        PerfilEstado(base.total, base.dominadas, base.dias, base.acertos, base.respondidas, atividade, usoIa, estaExportando)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PerfilEstado())
 
     fun exportar(aoPronto: (File) -> Unit, aoErro: (String) -> Unit) {

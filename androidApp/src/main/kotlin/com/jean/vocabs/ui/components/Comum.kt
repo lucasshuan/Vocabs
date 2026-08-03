@@ -26,7 +26,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.shared.domain.Captura
 import com.jean.vocabs.shared.domain.Entrada
+import com.jean.vocabs.shared.domain.FormatoCaptura
 import com.jean.vocabs.shared.domain.NivelMemoria
 import com.jean.vocabs.shared.domain.Retencao
 import com.jean.vocabs.shared.domain.StatusEntrada
@@ -168,6 +170,22 @@ fun formatarDuracaoMs(duracaoMs: Long): String {
 fun formatarDuracao(segundos: Long): String = formatarDuracaoMs(segundos * 1_000L)
 
 /**
+ * Como chamar uma captura crua: "Áudio · 0:12", "Foto do Kindle", "Texto".
+ *
+ * A lista de Pendentes e o cabeçalho da transcrição precisam do mesmo nome —
+ * quem toca numa linha tem que reconhecer a tela que abriu. É também o único
+ * lugar onde `origem` aparece, o que a torna útil de preencher.
+ */
+fun tituloDaCaptura(captura: Captura): String {
+    val origem = captura.origem?.takeIf { it.isNotBlank() }
+    return when (captura.formato) {
+        FormatoCaptura.AUDIO -> captura.duracaoMs?.let { "Áudio · ${formatarDuracaoMs(it)}" } ?: "Áudio"
+        FormatoCaptura.FOTO -> origem?.let { "Foto do $it" } ?: "Foto"
+        FormatoCaptura.TEXTO -> origem?.let { "Texto do $it" } ?: "Texto"
+    }
+}
+
+/**
  * A ameixa identifica a marca/ações; a menta fica reservada para progresso.
  */
 @Composable
@@ -197,9 +215,14 @@ fun rotuloDoNivel(nivel: NivelMemoria): String = when (nivel) {
     NivelMemoria.DOMINADA -> "dominada"
 }
 
-/** "revisar agora" quando já cruzou o limiar; senão "em 2d 4h". */
-fun textoDaProximaRevisao(retencao: Retencao?, agora: Long): String {
-    val falta = retencao?.proximaRevisaoEm(agora) ?: return "revisar agora"
+/**
+ * "revisar agora" quando já cruzou o limiar, senão "em 2d 4h".
+ *
+ * Nulo quando não há retenção: sem ficha pronta não existe revisão marcada, e
+ * dizer "revisar agora" nesse caso mandaria a pessoa a uma fila vazia.
+ */
+fun textoDaProximaRevisao(retencao: Retencao?, agora: Long): String? {
+    val falta = retencao?.proximaRevisaoEm(agora) ?: return null
     return if (falta <= 0L) "revisar agora" else tempoAte(falta)
 }
 

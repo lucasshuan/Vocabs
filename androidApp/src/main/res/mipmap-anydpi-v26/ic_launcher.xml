@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  O foreground é o logo redondo de `docs/marca/logo-app-externo.png`, gerado
+  cobrindo 76 dp da tela de 108 dp.
+
+  Maior que os 72 dp que o launcher recorta, de propósito: assim a máscara corta
+  o próprio disco e não sobra fundo em volta. Era daí que vinham os anéis — a
+  arte terminando dentro do recorte deixava aparecer a borda verde do papagaio e,
+  atrás dela, o `background` de ameixa.
+
+  minSdk 26 torna o adaptive icon universal aqui, então não existe variante
+  legada do ícone.
+
+  O lint pede para tirar o -v26 da pasta por isso mesmo (ObsoleteSdkInt), e está
+  errado: sem o qualificador o AAPT não aceita `mipmap-anydpi` como match e falha
+  com "resource mipmap/ic_launcher not found". Já foi tentado — não tente de novo.
+-->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/tagarara_icon_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground_image" />

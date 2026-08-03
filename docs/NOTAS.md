@@ -11,9 +11,10 @@ o que está torto e o que talvez valha a pena. Uma linha cada.
 
 ## Inconsistências conhecidas
 
-- `PendentesViewModel.tentarDeNovo` existe e não é chamado por ninguém.
-- Origem quase nunca é preenchida em captura de foto/áudio: o campo fica abaixo dos botões de mídia, e você já saiu da tela.
-- Uma palavra acertada uma vez só já aparece como "Dominada" por algumas horas — é verdade que a memória está fresca, mas o rótulo soa forte cedo demais.
+- Não há tela para preencher `origem`. Ela já é exibida ("Foto do Kindle", "Seu contexto" da ficha) e não tem por onde entrar — o campo foi retirado da captura por quase nunca ser preenchido, e nada tomou o lugar dele.
+- Uma palavra acertada uma vez só já aparece como "dominada" por algumas horas — é verdade que a memória está fresca, mas o rótulo soa forte cedo demais.
+- O botão da captura diz "Guardar 2 capturas" porque é o texto do handoff, mas o que 2 seleções criam é 1 captura e 2 entradas. O handoff se contradiz aqui: a nota dele diz "uma captura pode render várias fichas". Vale decidir o nome antes de traduzir a interface.
+- A onda do player da transcrição é fixa: dez barras de altura decorativa, não a amplitude do áudio.
 
 ## Ideias
 
