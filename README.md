@@ -35,10 +35,59 @@ APP_TOKEN=token-de-teste-local
 Variáveis de ambiente, se definidas, têm precedência sobre o arquivo — é assim que
 CI e produção sobrescrevem sem depender dele.
 
+São dois processos que ficam ocupando o terminal — o emulador e o servidor — e um
+comando que roda e devolve o prompt, a instalação do app. Três abas do PowerShell,
+nesta ordem:
+
+**1. Subir o emulador.** `emulator` e `adb` não entram no PATH junto com o
+`ANDROID_HOME`, então vão pelo caminho completo. `vocabs` é o AVD já criado nesta
+máquina:
+
+```powershell
+& "$env:ANDROID_HOME\emulator\emulator.exe" -list-avds    # ver o que existe
+& "$env:ANDROID_HOME\emulator\emulator.exe" -avd vocabs
+```
+
+Sem terminal dá no mesmo: Android Studio → **Device Manager** → ▶ no `vocabs`.
+
+**2. Subir o servidor.**
+
 ```powershell
 .\gradlew.bat :server:run               # backend em localhost:8080
+```
+
+**3. Compilar e instalar o app no dispositivo.**
+
+```powershell
 .\gradlew.bat :androidApp:installDebug
 ```
+
+`installDebug` compila o APK de debug e **instala em todo aparelho que já
+estiver conectado** — emulador, celular físico por USB, ou os dois ao mesmo
+tempo. Ele não sobe emulador e não abre o app — o ícone da Tagarara aparece na
+gaveta. (`:androidApp:assembleDebug` é o irmão que só compila e para no `.apk`,
+sem instalar em lugar nenhum.) Para abrir sem tocar na tela:
+
+```powershell
+& "$env:ANDROID_HOME\platform-tools\adb.exe" shell am start -n com.jean.vocabs/.MainActivity
+```
+
+Pra instalar no **celular físico** em vez do emulador (ou além dele): ativar
+"Depuração USB" em Opções do desenvolvedor, conectar por cabo e aceitar o
+popup de autorização que aparece na tela do aparelho. `adb devices -l` então
+lista o celular junto com qualquer emulador aberto.
+
+> **`installDebug` falhando com `No connected devices!`** é o passo 1 faltando —
+> é a causa de praticamente toda falha dele. Confira com
+> `& "$env:ANDROID_HOME\platform-tools\adb.exe" devices`: precisa haver uma linha
+> terminada em `device`. Lista vazia = nenhum aparelho; `offline` = o emulador
+> ainda está terminando de subir, espere e repita.
+>
+> **Falhando com `INSTALL_FAILED_USER_RESTRICTED: Install canceled by user`** no
+> celular físico é trava do fabricante, não do Gradle. Em aparelhos Xiaomi/MIUI:
+> Configurações → Configurações adicionais → Opções do desenvolvedor → ativar
+> **"Instalação via USB"**. Se o toggle estiver bloqueado, o MIUI exige conta Mi
+> logada e internet ativa no momento de ligar — depois disso ele libera.
 
 Se os acentos saírem tortos no console (`Vari├ível`), o terminal está em code page
 legada: `chcp 65001` resolve na sessão.
