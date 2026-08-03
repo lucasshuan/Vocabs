@@ -1,7 +1,5 @@
 package com.jean.vocabs.ui.perfil
 
-import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,7 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -32,9 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.ResumoCurso
@@ -42,12 +38,12 @@ import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.CaixaTracejada
 import com.jean.vocabs.ui.components.CartaoDaTela
 import com.jean.vocabs.ui.components.ChevronDeLinha
+import com.jean.vocabs.ui.components.DiscoDeIcone
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.LinhaDeLista
 import com.jean.vocabs.ui.components.LinhaDeUsoDeIa
 import com.jean.vocabs.ui.components.RotuloDeSecao
 import com.jean.vocabs.ui.idiomas.idiomaDe
-import java.io.File
 
 /**
  * Tela 07 do handoff — "Você".
@@ -69,7 +65,6 @@ fun PerfilScreen(
     vm: PerfilViewModel = viewModel(),
 ) {
     val estado by vm.estado.collectAsStateWithLifecycle()
-    val contexto = LocalContext.current
     val nativo = idiomaDe(estado.par.nativo)
 
     Column(
@@ -119,6 +114,8 @@ fun PerfilScreen(
             aoAdicionar = aoAbrirNovoIdioma,
         )
 
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
         LinhaDeLista(
             aoClicar = aoTrocarIdiomaNativo,
             inicio = { BandeiraCircular(nativo, tamanho = 26.dp) },
@@ -130,21 +127,11 @@ fun PerfilScreen(
 
         LinhaDeUsoDeIa(usadas = estado.usoIa.usadas, limite = estado.usoIa.limite)
 
-        LinhaDeLista(titulo = "Configurações", aoClicar = aoAbrirConfiguracoes, fim = { ChevronDeLinha() })
-
         LinhaDeLista(
-            titulo = "Exportar meus dados",
-            detalhe = if (estado.exportando) "preparando ZIP…" else null,
-            aoClicar = {
-                vm.exportar(
-                    aoPronto = { arquivo -> compartilhar(contexto, arquivo) },
-                    aoErro = { Toast.makeText(contexto, it, Toast.LENGTH_LONG).show() },
-                )
-            },
-            fim = {
-                if (estado.exportando) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                else ChevronDeLinha()
-            },
+            titulo = "Configurações",
+            aoClicar = aoAbrirConfiguracoes,
+            inicio = { DiscoDeIcone(Icones.Engrenagem, null, cor = MaterialTheme.colorScheme.onSurfaceVariant, fundo = MaterialTheme.colorScheme.surfaceVariant) },
+            fim = { ChevronDeLinha() },
         )
         Spacer(Modifier.navigationBarsPadding().height(110.dp))
     }
@@ -153,9 +140,9 @@ fun PerfilScreen(
 /**
  * A lista de cursos numa caixa com rolagem própria.
  *
- * Sem o teto de altura, quem estuda seis idiomas empurraria "Meu idioma",
- * "Configurações" e "Exportar" para fora da primeira tela — e essas três linhas
- * são justamente as que ninguém procura rolando, porque não mudam nunca.
+ * Sem o teto de altura, quem estuda seis idiomas empurraria "Meu idioma" e
+ * "Configurações" para fora da primeira tela — e essas linhas são justamente as
+ * que ninguém procura rolando, porque não mudam nunca.
  */
 @Composable
 private fun ProgressoPorIdioma(
@@ -290,13 +277,3 @@ private fun DivisorVertical() {
 
 /** Três linhas e meia: a meia diz que há mais, e o rodapé de conta continua na tela. */
 private val ALTURA_MAXIMA_DA_LISTA = 232.dp
-
-private fun compartilhar(contexto: android.content.Context, arquivo: File) {
-    val uri = FileProvider.getUriForFile(contexto, "${contexto.packageName}.fileprovider", arquivo)
-    val intent = Intent(Intent.ACTION_SEND).apply {
-        type = "application/zip"
-        putExtra(Intent.EXTRA_STREAM, uri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    contexto.startActivity(Intent.createChooser(intent, "Exportar dados da Tagarara"))
-}

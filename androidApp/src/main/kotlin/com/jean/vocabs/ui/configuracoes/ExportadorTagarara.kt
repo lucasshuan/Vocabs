@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.perfil
+package com.jean.vocabs.ui.configuracoes
 
 import android.content.Context
 import com.jean.vocabs.shared.domain.DadosExportacao

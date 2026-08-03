@@ -222,11 +222,13 @@ fun CabecalhoDeDentro(
  */
 @Composable
 fun LinhaDeUsoDeIa(usadas: Int, limite: Int, modifier: Modifier = Modifier) {
+    val cores = MaterialTheme.colorScheme
     val fracao = (usadas.toFloat() / limite.coerceAtLeast(1)).coerceIn(0f, 1f)
     LinhaDeLista(
         titulo = "Gerações por IA",
         detalhe = "$usadas de $limite este mês",
         modifier = modifier,
+        inicio = { DiscoDeIcone(Icones.Brilho, null, cor = cores.primary, fundo = cores.primaryContainer) },
         fim = {
             Box(
                 Modifier

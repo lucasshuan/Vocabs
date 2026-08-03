@@ -8,14 +8,11 @@ import com.jean.vocabs.shared.domain.Escopo
 import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.ResumoCurso
 import com.jean.vocabs.shared.domain.UsoIa
-import java.io.File
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 /**
  * A tela Você: o total primeiro, a quebra por idioma depois.
@@ -30,7 +27,6 @@ data class PerfilEstado(
     val cursos: List<ResumoCurso> = emptyList(),
     val diasSeguidos: Int = 0,
     val usoIa: UsoIa = UsoIa("", 0),
-    val exportando: Boolean = false,
 ) {
     val totalDeFichas: Int get() = cursos.sumOf { it.total }
     val totalDeDominadas: Int get() = cursos.sumOf { it.dominadas }
@@ -39,7 +35,6 @@ data class PerfilEstado(
 class PerfilViewModel(app: Application) : AndroidViewModel(app) {
     private val repositorio = AppContainer.repositorio(app)
     private val preferencias = AppContainer.preferencias(app)
-    private val exportando = MutableStateFlow(false)
 
     /**
      * A faixa vem da preferência, e não do que existe no banco.
@@ -66,14 +61,12 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
         // idioma, e é o único número desta tela que já era assim antes.
         repositorio.observarResumoDeRevisao(Escopo.Todos),
         repositorio.observarUsoIa(),
-        exportando,
-    ) { listaDeCursos, par, revisao, usoIa, estaExportando ->
+    ) { listaDeCursos, par, revisao, usoIa ->
         PerfilEstado(
             par = par,
             cursos = listaDeCursos,
             diasSeguidos = revisao.diasSeguidos,
             usoIa = usoIa,
-            exportando = estaExportando,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PerfilEstado())
 
@@ -81,15 +74,4 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
     val disponiveis: StateFlow<Int> = preferencias.observarCursos()
         .map { matriculados -> com.jean.vocabs.contracts.Idiomas.CATALOGO.count { it.codigo !in matriculados } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
-
-    fun exportar(aoPronto: (File) -> Unit, aoErro: (String) -> Unit) {
-        if (exportando.value) return
-        viewModelScope.launch {
-            exportando.value = true
-            runCatching {
-                ExportadorTagarara.criar(getApplication(), repositorio.dadosParaExportacao())
-            }.onSuccess(aoPronto).onFailure { aoErro(it.message ?: "Não foi possível exportar os dados.") }
-            exportando.value = false
-        }
-    }
 }

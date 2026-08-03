@@ -141,9 +141,6 @@ fun InicioScreen(
             paginas.getOrNull(indice)?.let { pagina ->
                 PaginaDeCurso(
                     pagina = pagina,
-                    indice = indice,
-                    total = paginas.size,
-                    mostrarPontos = estado.temCarrossel,
                     aoRevisar = aoRevisar,
                     aoCapturar = aoCapturar,
                 )
@@ -157,6 +154,16 @@ fun InicioScreen(
             aoClicar = aoAbrirPendentes,
             modifier = Modifier.padding(horizontal = 20.dp),
         )
+
+        // Fora do pager e depois do aviso de fila, de propósito: aqui os pontos
+        // não pertencem a nenhuma página nem a nenhum cartão, e ficam no mesmo
+        // lugar não importa o que muda acima — inclusive o aviso de fila
+        // aparecendo ou sumindo conforme o curso aberto.
+        PontosDePagina(
+            total = paginas.size,
+            atual = pager.currentPage,
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 10.dp),
+        )
         Spacer(Modifier.navigationBarsPadding().height(ESPACO_DA_BARRA))
     }
 }
@@ -164,9 +171,6 @@ fun InicioScreen(
 @Composable
 private fun PaginaDeCurso(
     pagina: PaginaDoInicio,
-    indice: Int,
-    total: Int,
-    mostrarPontos: Boolean,
     aoRevisar: () -> Unit,
     aoCapturar: () -> Unit,
 ) {
@@ -207,10 +211,6 @@ private fun PaginaDeCurso(
             } else {
                 LinhaDoQueVem(pagina, Modifier.padding(top = 15.dp))
             }
-        }
-
-        if (mostrarPontos) {
-            PontosDePagina(total, indice, Modifier.align(Alignment.CenterHorizontally))
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {

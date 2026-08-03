@@ -108,11 +108,6 @@ fun FolhaDeCaptura(
                     )
                 }
             }
-            Text(
-                text = "o último usado já vem marcado",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.outline,
-            )
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
@@ -238,10 +233,28 @@ private fun CartaoDeFormato(
     }
 }
 
+/**
+ * Frases de exemplo pro campo de texto: um trecho plausível, não uma instrução.
+ * "Digite ou cole o trecho" já está dito no rótulo da seção — repetir no
+ * placeholder é a mesma informação duas vezes e não mostra o que a IA espera:
+ * uma frase inteira, com uma expressão capturável dentro dela.
+ */
+private val ExemplosDeTrecho = listOf(
+    "She rolled her eyes and told him to knock it off.",
+    "The password was hidden inside a broken vending machine.",
+    "He's been dragging his feet on this decision for weeks.",
+    "Something about the hallway felt off the moment she stepped in.",
+    "I can't believe you pulled that off without any backup.",
+    "The recipe calls for a pinch of saffron and a splash of lemon.",
+    "He shrugged it off like it was no big deal.",
+    "The storm rolled in just as they reached the summit.",
+)
+
 @Composable
 private fun BlocoDeTexto(trecho: String, aoMudar: (String) -> Unit, aoContinuar: () -> Unit) {
     val prancheta = LocalClipboard.current
     val escopo = rememberCoroutineScope()
+    val exemplo = remember { ExemplosDeTrecho.random() }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -262,7 +275,7 @@ private fun BlocoDeTexto(trecho: String, aoMudar: (String) -> Unit, aoContinuar:
         OutlinedTextField(
             value = trecho,
             onValueChange = aoMudar,
-            placeholder = { Text("The plan went haywire when the power cut out.") },
+            placeholder = { Text(exemplo) },
             minLines = 2,
             shape = MaterialTheme.shapes.medium,
             modifier = Modifier.fillMaxWidth(),
@@ -313,7 +326,7 @@ private fun BotaoColar(aoClicar: () -> Unit) {
 private fun BlocoDeAudio(idioma: String, gravando: Boolean, segundos: Long, aoAlternar: () -> Unit) {
     BlocoDeAcao(
         formato = FormatoCaptura.AUDIO,
-        titulo = if (gravando) "Gravando ${formatarDuracao(segundos)}" else "Toque para gravar em $idioma",
+        titulo = if (gravando) "Gravando ${formatarDuracao(segundos)}" else "Toque para gravar",
         detalhe = "Segure o + na barra para gravar direto, sem passar por aqui.",
         acao = if (gravando) "Parar e guardar" else "Começar gravação",
         aoClicar = aoAlternar,
