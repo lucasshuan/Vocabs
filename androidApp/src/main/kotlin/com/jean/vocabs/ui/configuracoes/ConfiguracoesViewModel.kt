@@ -20,6 +20,17 @@ class ConfiguracoesViewModel(app: Application) : AndroidViewModel(app) {
     val tema: StateFlow<PreferenciaDeTema> = preferencias.observarTema()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferencias.tema)
 
+    /**
+     * O idioma-base, observado e não lido uma vez.
+     *
+     * Trocá-lo abre a tela de escolha por cima desta e volta para cá: sem o
+     * fluxo, a linha continuaria mostrando o idioma antigo até a Configurações
+     * ser recriada — e a única prova de que a troca pegou é justamente essa
+     * linha.
+     */
+    val nativo: StateFlow<String> = preferencias.observarNativo()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferencias.nativo)
+
     private val _exportando = MutableStateFlow(false)
     val exportando: StateFlow<Boolean> = _exportando.asStateFlow()
 

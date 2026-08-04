@@ -174,8 +174,11 @@ do gesto: ela cobrava um toque em toda captura para acertar as poucas em que o
 curso não era o que estava na tela, e a correção já existia em Pendentes, onde o
 erro é visível e desfazer custa um toque.
 
-A troca de curso saiu do perfil; lá ficaram só adicionar, remover
-(`Preferencias.desmatricular`, que nunca esvazia a lista) e o idioma-base.
+A troca de curso saiu do perfil; lá ficaram só adicionar e remover
+(`Preferencias.desmatricular`, que nunca esvazia a lista). O idioma-base foi para
+Configurações, junto com o tema e a portabilidade: ele vale para o app inteiro, e
+não para um curso — ao pé de uma lista em que cada linha abre um curso, ele lia-se
+como mais uma delas.
 
 ## Estados
 

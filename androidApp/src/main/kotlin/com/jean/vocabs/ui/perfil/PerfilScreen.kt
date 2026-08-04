@@ -23,7 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,19 +54,19 @@ import com.jean.vocabs.ui.idiomas.idiomaDe
  * semana, quota e estoque próprios — e sem trocar o curso aberto por baixo de
  * quem só queria olhar.
  *
- * A troca de idioma saiu daqui: ela agora é o deslize da Início. O que sobrou
- * desse assunto nesta tela é adicionar, remover e o idioma-base.
+ * A troca de idioma saiu daqui: ela agora é o deslize da Início. O idioma-base
+ * saiu depois, para Configurações — ele não é sobre curso nenhum, e ao pé de uma
+ * lista em que cada linha abre um curso ele lia-se como mais uma delas. O que
+ * sobrou desse assunto nesta tela é adicionar e remover.
  */
 @Composable
 fun PerfilScreen(
     aoAbrirProgresso: (String) -> Unit,
     aoAbrirConfiguracoes: () -> Unit,
     aoAbrirNovoIdioma: () -> Unit,
-    aoTrocarIdiomaNativo: () -> Unit,
     vm: PerfilViewModel = viewModel(),
 ) {
     val estado by vm.estado.collectAsStateWithLifecycle()
-    val nativo = idiomaDe(estado.par.nativo)
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -121,15 +120,6 @@ fun PerfilScreen(
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        LinhaDeLista(
-            aoClicar = aoTrocarIdiomaNativo,
-            inicio = { BandeiraCircular(nativo, tamanho = 26.dp) },
-            fim = { PilulaTrocar() },
-        ) {
-            Text("Meu idioma", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(nativo.nome, style = MaterialTheme.typography.titleSmall)
-        }
-
         LinhaDeUsoDeIa(usadas = estado.usoIa.usadas, limite = estado.usoIa.limite)
 
         LinhaDeLista(
@@ -145,7 +135,7 @@ fun PerfilScreen(
 /**
  * A lista de cursos numa caixa com rolagem própria.
  *
- * Sem o teto de altura, quem estuda seis idiomas empurraria "Meu idioma" e
+ * Sem o teto de altura, quem estuda seis idiomas empurraria "Gerações por IA" e
  * "Configurações" para fora da primeira tela — e essas linhas são justamente as
  * que ninguém procura rolando, porque não mudam nunca.
  */
@@ -238,28 +228,6 @@ private fun LinhaDeCurso(curso: ResumoCurso, aoClicar: () -> Unit) {
                     .fillMaxWidth(fracao)
                     .height(6.dp)
                     .background(cores.tertiary, CircleShape),
-            )
-        }
-    }
-}
-
-@Composable
-private fun PilulaTrocar() {
-    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 11.dp, end = 7.dp, top = 7.dp, bottom = 7.dp),
-        ) {
-            Text(
-                text = "trocar",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Icon(
-                imageVector = Icones.Avancar,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(14.dp),
             )
         }
     }

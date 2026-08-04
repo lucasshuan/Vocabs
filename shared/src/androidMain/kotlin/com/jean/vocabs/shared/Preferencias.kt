@@ -149,7 +149,7 @@ class Preferencias(context: Context) {
 
     fun observarGruposRecolhidos(): Flow<Set<String>> = observar(RECOLHIDOS) { gruposRecolhidos }
 
-    /** O nativo sozinho, para a linha "Meu idioma" da tela Você. */
+    /** O nativo sozinho, para a linha "Meu idioma" da tela Configurações. */
     fun observarNativo(): Flow<String> = observarPar().map { it.nativo }
 
     private companion object {

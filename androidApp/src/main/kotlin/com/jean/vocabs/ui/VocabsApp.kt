@@ -193,7 +193,7 @@ fun VocabsApp() {
     Box(Modifier.fillMaxSize()) {
         NavHost(
             navController = nav,
-            startDestination = Rotas.INICIO,
+            startDestination = Rotas.CONFIGURACOES,
             modifier = Modifier
                 .fillMaxSize()
                 // Enquanto o hub tem a tela, o que está atrás sai do alcance do
@@ -241,7 +241,6 @@ fun VocabsApp() {
                     aoAbrirProgresso = { nav.navigate(Rotas.progresso(it)) },
                     aoAbrirConfiguracoes = { nav.navigate(Rotas.CONFIGURACOES) },
                     aoAbrirNovoIdioma = { nav.navigate(Rotas.NOVO_IDIOMA) },
-                    aoTrocarIdiomaNativo = { nav.navigate(Rotas.IDIOMA_NATIVO) },
                 )
             }
             composable(Rotas.PROGRESSO, arguments = listOf(navArgument("alvo") { type = NavType.StringType })) { entrada ->
@@ -271,7 +270,10 @@ fun VocabsApp() {
                 )
             }
             composable(Rotas.CONFIGURACOES) {
-                ConfiguracoesScreen(aoVoltar = { nav.popBackStack() })
+                ConfiguracoesScreen(
+                    aoVoltar = { nav.popBackStack() },
+                    aoTrocarIdiomaNativo = { nav.navigate(Rotas.IDIOMA_NATIVO) },
+                )
             }
             composable(Rotas.NOVO_IDIOMA, enterTransition = { subir() }, popExitTransition = { descer() }) {
                 NovoIdiomaScreen(aoVoltar = { nav.popBackStack() })
