@@ -70,10 +70,13 @@ import com.jean.vocabs.ui.components.RotuloDeSecao
 import com.jean.vocabs.ui.components.SeletorDeTermos
 import com.jean.vocabs.ui.components.contornoDeCartao
 import com.jean.vocabs.ui.components.coresDoFormato
+import com.jean.vocabs.ui.components.encolheAoTocar
 import com.jean.vocabs.ui.components.formatarDuracaoMs
+import com.jean.vocabs.ui.components.lembrarToque
 import com.jean.vocabs.ui.components.rotuloDoFormato
 import com.jean.vocabs.ui.components.tempoRelativo
 import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.theme.LocalTemaEscuro
 
 /**
  * Telas 09/10 do handoff — "O que chamou atenção?".
@@ -235,12 +238,56 @@ fun SelecionarScreen(
             )
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                TextButton(onClick = { confirmarExclusao = true }) {
-                    Text("Descartar captura", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
-                }
+                BotaoDeDescartarCaptura { confirmarExclusao = true }
             }
         }
         Spacer(Modifier.navigationBarsPadding().height(24.dp))
+    }
+}
+
+/**
+ * "Descartar captura" — vermelho suave e com a lixeira.
+ *
+ * Ele era um `TextButton` em `outline`, que no claro é um lilás de 1 px de
+ * contraste: a única saída para quem abriu a captura por engano estava escrita
+ * na cor das bordas. Discrição de mais vira invisibilidade, e um botão que não se
+ * acha não é secundário — é ausente.
+ *
+ * Agora ele é uma pílula de fundo avermelhado claro com o texto no vermelho de
+ * erro: continua atrás da ação principal em peso — não tem a largura inteira, não
+ * é preenchido de cor forte, não fica no caminho do polegar —, mas se acha de
+ * relance e diz o que faz antes de ser lido, pela cor e pelo ícone. É a mesma
+ * dupla (recipiente claro + tinta de erro) que o arrasto de exclusão em Pendentes
+ * usa antes do limiar, e a repetição é de propósito: no app inteiro, este par
+ * significa "isto apaga, e ainda dá para voltar atrás".
+ *
+ * O que ele abre continua sendo a confirmação — aqui não há desfazer, porque sair
+ * da tela leva a captura junto.
+ */
+@Composable
+private fun BotaoDeDescartarCaptura(aoClicar: () -> Unit) {
+    val cores = MaterialTheme.colorScheme
+    // No escuro o `errorContainer` do Material é um vinho quase opaco, pesado
+    // demais para uma ação de apoio. O vermelho claro do tema a 14% dá o mesmo
+    // recado sobre o fundo escuro sem virar um bloco vermelho no rodapé.
+    val fundo = if (LocalTemaEscuro.current) cores.error.copy(alpha = 0.14f) else cores.errorContainer
+    val toque = lembrarToque()
+    Surface(
+        onClick = aoClicar,
+        shape = CircleShape,
+        color = fundo,
+        contentColor = cores.error,
+        interactionSource = toque,
+        modifier = Modifier.encolheAoTocar(toque, minimo = 0.94f),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 11.dp),
+        ) {
+            Icon(Icones.Lixeira, contentDescription = null, tint = cores.error, modifier = Modifier.size(18.dp))
+            Text("Descartar captura", style = MaterialTheme.typography.labelLarge, color = cores.error)
+        }
     }
 }
 

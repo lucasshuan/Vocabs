@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Captura
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.StatusEntrada
+import com.jean.vocabs.ui.components.ArrastarParaExcluir
 import com.jean.vocabs.ui.components.CartaoDaTela
 import com.jean.vocabs.ui.components.DiscoDeCategoria
 import com.jean.vocabs.ui.components.EstadoVazio
@@ -53,6 +55,13 @@ import com.jean.vocabs.ui.idiomas.idiomaDe
  * Em toda linha o subtexto é o idioma. O estado de transcrição saiu dali porque
  * o disco colorido à esquerda já diz se aquilo é áudio, foto ou texto — e o
  * idioma, que é decidido na gravação, não aparecia em lugar nenhum.
+ *
+ * Todo cartão daqui sai arrastando para o lado. É a única tela do app em que
+ * isso vale, e por um motivo: fila é a coisa que se limpa. Descartar era, até
+ * aqui, uma viagem de ida e volta — abrir a captura, achar o botão, confirmar —
+ * para dizer "isto não era nada", e uma fila que custa isso para encolher é uma
+ * fila que ninguém encolhe. O gesto se explica em [ArrastarParaExcluir]; a
+ * segunda chance, em [FaixaDeDesfazer].
  */
 @Composable
 fun PendentesScreen(
@@ -81,6 +90,7 @@ fun PendentesScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 3.dp),
             )
+            if (estado.total > 0) DicaDeArrastar()
         }
 
         if (idiomas.size > 1) {
@@ -120,34 +130,74 @@ fun PendentesScreen(
         }
 
         items(capturas, key = { "c${it.id}" }) { captura ->
-            LinhaDeLista(
-                modifier = Modifier.animateItem(),
-                aoClicar = { aoAbrirCaptura(captura) },
-                inicio = { DiscoDeCategoria(captura.formato) },
-                fim = {
-                    Text(
-                        text = tempoRelativo(captura.criadoEm),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                },
+            ArrastarParaExcluir(
+                aoExcluir = { vm.excluirCaptura(captura) },
+                descricaoDaAcao = "Excluir captura",
+                modifier = Modifier.animateItem().fillMaxWidth(),
             ) {
-                Text(tituloDaCaptura(captura), style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                MarcaDeIdioma(idiomaDe(captura.par.alvo), Modifier.padding(top = 3.dp))
+                LinhaDeLista(
+                    aoClicar = { aoAbrirCaptura(captura) },
+                    inicio = { DiscoDeCategoria(captura.formato) },
+                    fim = {
+                        Text(
+                            text = tempoRelativo(captura.criadoEm),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    },
+                ) {
+                    Text(tituloDaCaptura(captura), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                    MarcaDeIdioma(idiomaDe(captura.par.alvo), Modifier.padding(top = 3.dp))
+                }
             }
         }
 
         if (fichas.isNotEmpty()) {
             item(key = "secao-fichas") { RotuloDeSecao("Fichas sendo geradas", Modifier.padding(top = 10.dp)) }
             items(fichas, key = { "e${it.id}" }) { entrada ->
-                CartaoEntrada(
-                    entrada = entrada,
-                    modifier = Modifier.animateItem(),
-                    aoClicar = { aoAbrirFicha(entrada) },
-                    tentar = { vm.tentarDeNovo(entrada.id) },
-                )
+                ArrastarParaExcluir(
+                    aoExcluir = { vm.excluirFicha(entrada) },
+                    descricaoDaAcao = "Excluir ficha",
+                    modifier = Modifier.animateItem().fillMaxWidth(),
+                ) {
+                    CartaoEntrada(
+                        entrada = entrada,
+                        aoClicar = { aoAbrirFicha(entrada) },
+                        tentar = { vm.tentarDeNovo(entrada.id) },
+                    )
+                }
             }
         }
+    }
+}
+
+/**
+ * A linha que ensina o gesto.
+ *
+ * Um gesto que só existe embaixo do dedo é um gesto que metade das pessoas nunca
+ * encontra: não há seta, sombra ou borda que anuncie um arrasto. A frase fica —
+ * não é um balão de primeira visita — porque ela custa uma linha de 12 sp em
+ * cinza e resolve a única pergunta que a tela deixaria em aberto. Some junto com
+ * a fila: numa tela vazia não há cartão nenhum para arrastar.
+ */
+@Composable
+private fun DicaDeArrastar() {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.padding(top = 7.dp),
+    ) {
+        Icon(
+            imageVector = Icones.Lixeira,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(14.dp),
+        )
+        Text(
+            text = "Arraste um cartão para o lado para excluir",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

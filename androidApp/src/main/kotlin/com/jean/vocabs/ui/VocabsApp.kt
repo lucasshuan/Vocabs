@@ -60,6 +60,7 @@ import com.jean.vocabs.ui.home.HomeScreen
 import com.jean.vocabs.ui.idiomas.NovoIdiomaScreen
 import com.jean.vocabs.ui.idiomas.idiomaDe
 import com.jean.vocabs.ui.inicio.InicioScreen
+import com.jean.vocabs.ui.pendentes.FaixaDeDesfazer
 import com.jean.vocabs.ui.pendentes.PendentesScreen
 import com.jean.vocabs.ui.pendentes.PendentesViewModel
 import com.jean.vocabs.ui.perfil.PerfilScreen
@@ -122,9 +123,13 @@ fun VocabsApp() {
     val rota = pilha?.destination?.route
     val escopo = rememberCoroutineScope()
 
+    // A mesma instância que a tela de Pendentes usa, e não a dela por baixo: o
+    // selo da aba e a lista precisam concordar sobre o que já foi arrastado para
+    // fora, e é este ViewModel que segura a exclusão em suspenso.
     val pendentesVm: PendentesViewModel = viewModel()
     val capturaVm: CapturaViewModel = viewModel()
     val totalPendentes by pendentesVm.total.collectAsStateWithLifecycle()
+    val exclusaoPendente by pendentesVm.exclusao.collectAsStateWithLifecycle()
     val captura by capturaVm.estado.collectAsStateWithLifecycle()
 
     val barraVisivel = rota !in Rotas.telaCheia
@@ -228,6 +233,7 @@ fun VocabsApp() {
                 PendentesScreen(
                     aoAbrirCaptura = { nav.navigate(Rotas.selecionar(it.id)) },
                     aoAbrirFicha = { nav.navigate(Rotas.ficha(it.id)) },
+                    vm = pendentesVm,
                 )
             }
             composable(Rotas.PERFIL) {
@@ -340,6 +346,17 @@ fun VocabsApp() {
                     nav.navigate(Rotas.selecionar(id))
                 },
                 aoExpirar = { chave -> if (aviso?.chave == chave) aviso = null },
+                modifier = Modifier.padding(horizontal = 14.dp).padding(bottom = 8.dp),
+            )
+
+            // O desfazer da exclusão vive aqui em cima, e não dentro de
+            // Pendentes, por duas razões: encostado na barra ele não briga com o
+            // aviso de captura por espaço — os dois se empilham —, e trocar de
+            // aba não tira a segunda chance da mão de quem acabou de arrastar
+            // sem querer. Só some nas telas cheias, onde o rodapé já tem dono.
+            FaixaDeDesfazer(
+                exclusao = exclusaoPendente.takeIf { barraVisivel },
+                aoDesfazer = pendentesVm::desfazer,
                 modifier = Modifier.padding(horizontal = 14.dp).padding(bottom = 8.dp),
             )
             AnimatedVisibility(
