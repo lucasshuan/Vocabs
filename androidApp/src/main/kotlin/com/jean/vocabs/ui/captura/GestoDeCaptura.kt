@@ -1,11 +1,10 @@
 package com.jean.vocabs.ui.captura
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.shared.domain.FormatoCaptura
-import kotlin.math.abs
-import kotlin.math.atan2
 
 /**
  * Onde o dedo está, do ponto de vista do gesto de captura.
@@ -13,14 +12,15 @@ import kotlin.math.atan2
  * As três posições são exaustivas e é isso que faz o gesto ser reversível: não
  * existe um estado "quase escolheu" nem um alvo que continua marcado depois que
  * o dedo saiu dele. Soltar sempre executa exatamente o que a tela está mostrando
- * no instante em que o dedo sobe.
+ * no instante em que o dedo sobe — e **só** soltar executa: entrar no alvo pinta,
+ * não dispara.
  */
 sealed interface AlvoDoGesto {
 
-    /** Em cima do `+`, de onde o gesto saiu — soltar aqui desfaz. */
+    /** Em cima do `+`, de onde o gesto saiu. */
     data object Origem : AlvoDoGesto
 
-    /** Fora do leque: nem origem nem alvo. Soltar aqui não faz nada. */
+    /** Nem origem nem alvo. Soltar aqui não faz nada. */
     data object Fora : AlvoDoGesto
 
     data class Modo(val formato: FormatoCaptura) : AlvoDoGesto
@@ -29,90 +29,63 @@ sealed interface AlvoDoGesto {
 /**
  * A posição dos três alvos em volta do `+`, em dp e a partir do centro dele.
  *
- * O áudio fica **no eixo**, e não numa das laterais, por ser o alvo mais provável
- * de longe: é o modo que existe para o momento em que a frase está passando. Os
- * outros dois ficam a ±100 dp, dentro do arco que o polegar cobre sem o aparelho
- * sair da mão.
+ * Um arco de verdade: os três estão à **mesma distância** do `+` — 152 dp —, o
+ * áudio no eixo por ser o alvo mais provável e os outros dois a ±54°. Nenhum dos
+ * três custa mais dedo que o outro, e é literalmente um arco: o polegar varre a
+ * mesma curva sem esticar nem recolher.
+ *
+ * A abertura é larga de propósito. Com os laterais mais altos e mais para dentro
+ * os três discos se acotovelavam, e a terra de ninguém entre um e outro — o que
+ * garante que atravessar o leque não marque nada por acidente — ficava estreita
+ * demais para ser sentida. Descê-los e jogá-los para as bordas separa os vizinhos
+ * em ~137 dp de centro a centro, quase 50 dp de folga entre as áreas de toque.
  */
-val DESLOCAMENTO_DO_AUDIO = DpOffset(0.dp, (-166).dp)
-val DESLOCAMENTO_DO_TEXTO = DpOffset((-98).dp, (-118).dp)
-val DESLOCAMENTO_DA_FOTO = DpOffset(98.dp, (-118).dp)
+val DESLOCAMENTO_DO_AUDIO = DpOffset(0.dp, (-152).dp)
+val DESLOCAMENTO_DO_TEXTO = DpOffset((-122).dp, (-90).dp)
+val DESLOCAMENTO_DA_FOTO = DpOffset(122.dp, (-90).dp)
 
-/** O diâmetro de cada alvo. O do meio é maior porque é o que se acerta sem olhar. */
-val DIAMETRO_DO_ALVO_CENTRAL = 78.dp
-val DIAMETRO_DO_ALVO_LATERAL = 62.dp
+/**
+ * Os três alvos nascem iguais.
+ *
+ * Nenhum é maior nem preenchido antes de ser alcançado: o áudio deixou de ser o
+ * disco grande e verde porque um alvo já pintado antes do dedo chegar promete que
+ * alguma coisa está em curso — e nada está. [DIAMETRO_DO_ALVO_MARCADO] é o
+ * tamanho do que está sob o dedo, e é o único sinal de escolha que existe.
+ */
+val DIAMETRO_DO_ALVO = 68.dp
+val DIAMETRO_DO_ALVO_MARCADO = 76.dp
+
+/**
+ * O quanto o dedo pode passar perto de um alvo e ainda contar como estando nele.
+ *
+ * 44 dp de raio dão uma área de toque de 88 dp — bem acima do mínimo de 48 dp do
+ * Material e maior que o próprio disco de 68 dp, para o alvo ser mais fácil de
+ * acertar do que de ver. Entre dois alvos vizinhos sobram ~27 dp de terra de
+ * ninguém, e é ali que o gesto não escolhe nada: um alvo que se marcasse por
+ * proximidade relativa marcaria alguma coisa em toda a metade de cima da tela.
+ */
+val RAIO_DO_ALVO = 44.dp
 
 /**
  * O raio em volta do `+` onde o gesto ainda não escolheu nada.
  *
- * É a zona de cancelamento e a de "só toquei": abaixo dela nenhum alvo está
- * marcado, em cima ou fora dela a escolha já vale.
+ * É a zona de "só toquei": soltar aqui abre o texto, que é o que quem encostou no
+ * botão devagar estava pedindo.
  */
 val RAIO_DE_ORIGEM = 56.dp
-
-/** Além disto o dedo saiu do leque — arrastar para o outro canto da tela não escolhe nada. */
-val ALCANCE_DO_LEQUE = 320.dp
-
-/** O leque só abre para cima: fora deste arco, nenhum alvo. */
-private const val ABERTURA_EM_GRAUS = 62f
-
-/**
- * A fronteira entre o setor do áudio e os laterais, na metade do caminho entre
- * os ângulos em que os três alvos são desenhados (0° e ±40°).
- */
-private const val FRONTEIRA_EM_GRAUS = 20f
 
 /** Depois disto o toque virou pressão e o leque abre mesmo sem o dedo ter andado. */
 const val ABERTURA_DO_LEQUE_MS = 180L
 
 /**
- * Que alvo um deslocamento a partir do `+` escolhe.
+ * O realce do alvo persegue o dedo, e por isso é mais curto que qualquer duração
+ * do vocabulário de movimento do app.
  *
- * **A escolha é por ângulo, não por acerto do círculo desenhado.** Um menu radial
- * em que é preciso alcançar fisicamente um disco a 160 dp de distância obriga a
- * mão a se reposicionar no meio do gesto, e é assim que um atalho de um gesto só
- * vira dois. Aqui basta apontar: passou do raio de origem, o setor em que o dedo
- * está já marca o alvo, e o disco correspondente cresce para confirmar. Quem
- * quiser percorrer os 160 dp inteiros também acerta — o alvo desenhado está
- * dentro do próprio setor.
- *
- * Todas as medidas chegam em pixels porque quem chama está dentro de um
- * `PointerInputScope`, onde as posições são pixels e a densidade está à mão.
+ * `Movimento.RAPIDO` (150 ms) é a reação de um chip que troca de cor depois de um
+ * toque que já terminou. Aqui o dedo ainda está andando: 90 ms é o teto para o
+ * realce chegar antes de a mão duvidar se aquele alvo é mesmo o que está marcado.
  */
-fun alvoPara(
-    desloc: Offset,
-    raioDeOrigemPx: Float,
-    alcancePx: Float,
-): AlvoDoGesto {
-    val distancia = desloc.getDistance()
-    if (distancia < raioDeOrigemPx) return AlvoDoGesto.Origem
-    if (distancia > alcancePx) return AlvoDoGesto.Fora
-
-    // 0° é para cima; negativo é para a esquerda. O eixo Y da tela cresce para
-    // baixo, daí o sinal invertido.
-    val graus = Math.toDegrees(atan2(desloc.x.toDouble(), -desloc.y.toDouble())).toFloat()
-    if (abs(graus) > ABERTURA_EM_GRAUS) return AlvoDoGesto.Fora
-
-    return AlvoDoGesto.Modo(
-        when {
-            graus < -FRONTEIRA_EM_GRAUS -> FormatoCaptura.TEXTO
-            graus > FRONTEIRA_EM_GRAUS -> FormatoCaptura.FOTO
-            else -> FormatoCaptura.AUDIO
-        },
-    )
-}
-
-/**
- * Durante a gravação o leque some e só restam duas respostas.
- *
- * Enquanto grava, a tela mostra um alvo de áudio e um `+` virado em `×`, e mais
- * nada — trocar de modo no meio de uma gravação não é uma coisa que alguém
- * queira fazer, e oferecer isso só criaria a chance de perder o áudio por um
- * desvio de dedo. A pergunta vira binária: voltou para a origem, descarta;
- * qualquer outro lugar, guarda.
- */
-fun voltouParaOrigem(desloc: Offset, raioDeOrigemPx: Float): Boolean =
-    desloc.getDistance() < raioDeOrigemPx
+const val REALCE_DO_ALVO_MS = 90
 
 /** O deslocamento de cada modo, para quem desenha os alvos. */
 fun deslocamentoDe(formato: FormatoCaptura): DpOffset = when (formato) {
@@ -120,3 +93,38 @@ fun deslocamentoDe(formato: FormatoCaptura): DpOffset = when (formato) {
     FormatoCaptura.AUDIO -> DESLOCAMENTO_DO_AUDIO
     FormatoCaptura.FOTO -> DESLOCAMENTO_DA_FOTO
 }
+
+/** Os mesmos três deslocamentos em pixels, prontos para comparar com o dedo. */
+fun Density.alvosEmPixels(): List<Pair<FormatoCaptura, Offset>> =
+    FormatoCaptura.entries.map { formato ->
+        val destino = deslocamentoDe(formato)
+        formato to Offset(destino.x.toPx(), destino.y.toPx())
+    }
+
+/**
+ * Que alvo um deslocamento a partir do `+` escolhe.
+ *
+ * **É preciso alcançar o alvo.** A versão anterior escolhia por ângulo — apontar
+ * bastava, e o disco desenhado era só a ilustração de um setor — o que economizava
+ * dedo e cobrava o preço em outro lugar: com o alvo do áudio ocupando todo o setor
+ * central, um deslize curto para cima já marcava "gravar", e o que era para ser
+ * ponteiro virava gatilho. Agora o alvo é uma coisa no lugar dela: o dedo chega
+ * nele, ele se pinta, e soltar ali executa. Os três estão a ~150 dp, dentro do
+ * arco do polegar, e o raio de 44 dp perdoa a mira.
+ *
+ * Todas as medidas chegam em pixels porque quem chama está dentro de um
+ * `PointerInputScope`, onde as posições são pixels e a densidade está à mão.
+ */
+fun alvoPara(
+    desloc: Offset,
+    alvos: List<Pair<FormatoCaptura, Offset>>,
+    raioDoAlvoPx: Float,
+    raioDeOrigemPx: Float,
+): AlvoDoGesto {
+    val maisProximo = alvos.minByOrNull { (_, centro) -> (desloc - centro).getDistanceSquared() }
+    if (maisProximo != null && (desloc - maisProximo.second).getDistance() <= raioDoAlvoPx) {
+        return AlvoDoGesto.Modo(maisProximo.first)
+    }
+    return if (desloc.getDistance() < raioDeOrigemPx) AlvoDoGesto.Origem else AlvoDoGesto.Fora
+}
+

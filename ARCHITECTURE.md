@@ -32,11 +32,12 @@ Duas convenções globais que o handoff de idiomas trouxe:
 - **Uma cor por tipo de captura** (`ui/components/Categorias.kt`): texto é
   ameixa, áudio é menta, foto é o vermelho do papagaio. A tripla aparece nos alvos
   do leque do `+` e nos discos de Pendentes, e é o que forma a associação no ato
-  da captura. O vermelho é categoria, nunca erro. A única exceção é `corDeDescarte`
-  — o `+` vermelho de "solte aqui para descartar" —, e ela se paga porque só existe
-  **durante a gravação**, quando o alvo da foto já recolheu: os dois sentidos nunca
-  dividem a tela. Um segundo vermelho vindo do `error` do tema seria quase igual ao
-  primeiro, que é o jeito garantido de tornar os dois ilegíveis.
+  da captura. O vermelho é categoria, nunca erro. A única exceção é o botão de
+  descartar da gravação — o salmão de "isto some" —, e ela se paga
+  porque só existe **dentro da tela de gravação**, onde não há alvo de foto nenhum:
+  os dois sentidos nunca dividem a tela. Um segundo vermelho vindo do `error` do
+  tema seria quase igual ao primeiro, que é o jeito garantido de tornar os dois
+  ilegíveis.
 - **Toda bandeira da faixa tem selo** (`ui/components/FaixaDeIdiomas.kt`): número
   em ameixa quando há o que revisar, tique em menta quando está em dia, ampulheta
   cinza quando o curso ainda não tem nada agendado. Nunca vazio, nunca um "0"
@@ -63,27 +64,43 @@ lazy, onde o certo é `animateItem`), `fracaoAnimada` (devolve `State` para que 
 senão o atraso vira placar).
 
 O fluxo de captura começa num **gesto**, não numa tela, e cada passo já é
-durável. `ui/captura/` guarda as quatro peças: `GestoDeCaptura.kt` é a geometria
+durável. `ui/captura/` guarda as cinco peças: `GestoDeCaptura.kt` é a geometria
 pura — onde ficam os três alvos e que alvo um deslocamento escolhe;
-`HubDeCaptura.kt` é o `+`, o leque, o véu e a gravação, tudo num overlay de tela
-cheia que não intercepta toque nenhum além do próprio botão; `GavetaDeTexto.kt` é
-o campo que o toque solto abre; `AvisoDeCaptura.kt` é o cartão de 5 s que confirma
-e oferece o atalho. Depois disso a seleção marca os termos (`Selecionar`) e a
-confirmação mostra o que entrou enquanto a IA trabalha (`Guardado`).
+`HubDeCaptura.kt` é o `+`, o leque e o véu, num overlay de tela cheia que fora do
+gesto não intercepta toque nenhum além do próprio botão; `TelaDeGravacao.kt` é a
+tela opaca que a gravação abre, com o relógio, a onda e as duas ações de encerrar;
+`GavetaDeTexto.kt` é o campo que o toque solto abre; `AvisoDeCaptura.kt` é o cartão de 5 s que confirma e oferece o atalho.
+Depois disso a seleção marca os termos (`Selecionar`) e a confirmação mostra o que
+entrou enquanto a IA trabalha (`Guardado`).
 
-Três regras do gesto, e todas se pagam:
+Quatro regras do gesto, e todas se pagam:
 
-- **A escolha do alvo é por ângulo, não por acerto do disco.** Passou de 56 dp do
-  `+`, o setor em que o dedo está já marca o alvo e o disco correspondente cresce.
-  Um menu radial que exija alcançar fisicamente um alvo a 166 dp obriga a mão a se
-  reposicionar no meio do gesto, e é assim que um atalho de um gesto só vira dois.
-- **A gravação começa ao entrar no alvo, não ao soltar** — o áudio do instante em
-  que o dedo chega já está no arquivo. `MINIMO_DE_GRAVACAO_MS` (0,8 s) descarta o
-  toque que passou do limiar por acidente, e mede em milissegundos: comparado
+- **Soltar é a única confirmação, e vale para os três alvos.** Enquanto o dedo se
+  move nada foi escolhido e nada foi iniciado — nem gravação, nem câmera. Entrar
+  no alvo pinta; sair dele desfaz o destaque na hora; soltar fora fecha sem
+  capturar nada e sem aviso.
+- **É preciso alcançar o alvo.** O raio de 44 dp em volta do centro de cada disco
+  é o que marca, e não o setor angular em que o dedo está. Apontar bastava e saía
+  mais barato em dedo, mas com o alvo do áudio ocupando todo o setor central um
+  deslize curto para cima já marcava "gravar": o que era ponteiro virava gatilho.
+  Os três estão à mesma distância — 152 dp, num arco de ±54° —, dentro do que o
+  polegar varre sem esticar, e o raio perdoa a mira.
+- **Os três alvos nascem iguais** — 68 dp, no tom claro da própria ação, e crescem
+  para 76 dp com a cor cheia só quando alcançados. O áudio deixou de ser o disco
+  grande e verde: um alvo já pintado antes de o dedo chegar promete que alguma
+  coisa está em curso, e nada está.
+- **A gravação tem tela própria, e encerrar é um toque.** Ela começa quando o dedo
+  sai da tela, e daí em diante a mão está livre: dá para apoiar o telefone,
+  aproximá-lo de quem fala ou trocar de mão. Os dois destinos ficam à vista o
+  tempo todo e custam um toque cada — guardar preenchido e ocupando o que sobra da
+  largura, descartar estreito e só de contorno. **A assimetria é o que separa um
+  do outro**, e não a cor: dois alvos do mesmo tamanho na base de uma tela que se
+  olha de relance convidam ao toque errado, e quase toda gravação é para ficar. Um
+  deslize lateral chegou a ocupar essa base e saiu: lembrava atender uma chamada e
+  cobrava aprendizado no pior momento para cobrar. `MINIMO_DE_GRAVACAO_MS` (0,8 s)
+  descarta o que foi engano e não captura, e mede em milissegundos: comparado
   contra um contador de segundos inteiros, o corte descartava toda gravação curta
   e nenhuma outra.
-- **Não existe botão de parar.** O dedo não sai da tela entre abrir o leque e
-  guardar, e voltar ao `+` desfaz pelo mesmo caminho que fez.
 
 ## Captura e fichas
 

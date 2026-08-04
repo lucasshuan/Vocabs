@@ -89,8 +89,9 @@ class CapturaRapida internal constructor() {
     fun guardarAudio() = aoEncerrar(true)
 
     /**
-     * Encerra sem guardar — o dedo voltou ao `+` e soltou ali. Uma fila cheia de
-     * áudios de meio segundo custaria mais para limpar do que o gesto economiza.
+     * Encerra sem guardar — o botão de descartar da tela de gravação. Uma fila
+     * cheia de áudios de meio segundo custaria mais para limpar do que o gesto
+     * economiza.
      */
     fun cancelarAudio() = aoEncerrar(false)
 
@@ -100,11 +101,12 @@ class CapturaRapida internal constructor() {
 }
 
 /**
- * Abaixo disto a gravação foi um deslize do dedo, e não uma captura.
+ * Abaixo disto a gravação foi um engano, e não uma captura.
  *
- * O gesto abre o leque em [ABERTURA_DO_LEQUE_MS] e a gravação começa assim que o
- * dedo entra no alvo — quem só quis tocar no `+` e demorou a soltar produz um
- * áudio de alguns décimos, e é esse que este número joga fora.
+ * A gravação começa ao soltar no alvo do áudio e termina num toque; o caminho
+ * mais curto entre os dois é alguém que soltou no alvo errado e foi direto
+ * desfazer. O áudio de alguns décimos que sai daí é o que este número joga fora,
+ * e é por isso que ele mede em milissegundos.
  */
 const val MINIMO_DE_GRAVACAO_MS = 800L
 
@@ -160,7 +162,7 @@ fun rememberCapturaRapida(
     ) { concedida ->
         estado.temPermissaoDeAudio = concedida
         aoRecado(
-            if (concedida) "Microfone liberado. Segure o + e arraste para cima."
+            if (concedida) "Microfone liberado. Segure o + e arraste até o microfone."
             else "Sem microfone não dá para gravar. Dá para capturar por texto ou foto.",
         )
     }
@@ -197,7 +199,7 @@ fun rememberCapturaRapida(
         val curta = duracao < MINIMO_DE_GRAVACAO_MS
         if (!guardar || curta) {
             gravador.cancelar()
-            if (guardar && curta) aoRecado("Curto demais. Segure enquanto fala.")
+            if (guardar && curta) aoRecado("Curto demais para guardar.")
         } else {
             gravador.parar()?.let { arquivo ->
                 aoGuardar(FormatoCaptura.AUDIO, arquivo.absolutePath, duracao, alvoDaGravacao)

@@ -1,11 +1,12 @@
 package com.jean.vocabs.ui.captura
 
-import android.app.Activity
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
@@ -15,10 +16,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -45,21 +42,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -67,33 +64,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.jean.vocabs.contracts.Idioma
 import com.jean.vocabs.shared.domain.FormatoCaptura
 import com.jean.vocabs.ui.components.ALTURA_DA_BARRA
-import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.Movimento
-import com.jean.vocabs.ui.components.corDeDescarte
 import com.jean.vocabs.ui.components.coresDoFormato
-import com.jean.vocabs.ui.components.formatarDuracao
 import com.jean.vocabs.ui.components.iconeDoFormato
 import com.jean.vocabs.ui.components.movimentoReduzido
 import com.jean.vocabs.ui.components.rotuloDoFormato
-import androidx.core.view.WindowCompat
-import com.jean.vocabs.contracts.Idioma
-import com.jean.vocabs.ui.theme.LocalTemaEscuro
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlin.math.pow
 
 /**
  * O `+` e tudo que sai dele.
  *
  * O handoff troca dois toques por um gesto: **arrastar do `+`**. Segurar abre um
- * leque de três alvos, o dedo aponta para um e soltar executa. O áudio começa a
- * gravar no instante em que o dedo entra no alvo — não ao soltar — e soltar
- * encerra. O dedo nunca sai da tela entre abrir e guardar, e não existe botão de
- * parar em lugar nenhum.
+ * leque de três alvos, o dedo alcança um e soltar executa.
+ *
+ * Uma regra só governa os três alvos: **soltar é a única confirmação**. Enquanto o
+ * dedo se move nada foi escolhido e nada foi iniciado — nem gravação, nem câmera,
+ * nem campo de texto. Os três nascem iguais e neutros, no tom claro da própria
+ * ação, e cada um ganha a cor cheia apenas quando o dedo chega nele. Foi o áudio
+ * quem mais mudou: ele deixou de ser o alvo grande e verde que já estava gravando
+ * quando o dedo passou por cima. Um alvo que dispara ao ser tocado transforma o
+ * caminho até os outros dois num campo minado.
  *
  * Três decisões sustentam o fluxo, e as três estão aqui:
  *
@@ -106,10 +101,11 @@ import kotlin.math.pow
  *    qualquer decisão. Transcrição e ficha correm em segundo plano.
  * 3. **Selecionar agora é atalho, nunca etapa** — o que o aviso de 5 s oferece.
  *
- * O hub ocupa a tela inteira porque o leque, o véu e a gravação precisam desenhar
- * por cima da barra e do conteúdo. Nada aqui intercepta toque além do próprio
+ * O hub ocupa a tela inteira porque o leque e o véu precisam desenhar por cima da
+ * barra e do conteúdo. Fora de um gesto nada aqui intercepta toque além do próprio
  * botão: um `Box` sem `pointerInput` não consome nada, e a barra de baixo
- * continua clicável através dele.
+ * continua clicável através dele. A gravação, essa sim, tem tela própria —
+ * [TelaDeGravacao] —, e é ela quem toma a tela quando o áudio começa.
  */
 @Composable
 fun HubDeCaptura(
@@ -126,9 +122,12 @@ fun HubDeCaptura(
     var aberto by remember { mutableStateOf(false) }
     var alvo by remember { mutableStateOf<AlvoDoGesto>(AlvoDoGesto.Origem) }
     val gravando = captura.gravando
-    val emGesto = aberto || gravando
-    val sobreCancelar = gravando && alvo == AlvoDoGesto.Origem
 
+    // "O hub tomou a tela": o que está atrás desfoca e sai do alcance do leitor de
+    // tela. Vale para o leque e para a gravação — a tela de gravação é opaca, mas
+    // o conteúdo continua composto por baixo dela, e um `+` alcançável pelo
+    // TalkBack debaixo de uma tela que já não é aquela é uma armadilha.
+    val emGesto = aberto || gravando
     LaunchedEffect(emGesto) { aoMudarDeFase(emGesto) }
 
     // Rede de segurança: o hub sai de cena quando uma tela cheia abre, e sair de
@@ -142,43 +141,17 @@ fun HubDeCaptura(
         }
     }
 
-    // A gravação apaga a tela inteira, e o app desenha atrás da barra de status.
-    // No tema claro os ícones do sistema são escuros: sobre o véu de 96% eles
-    // sumiriam. Vira o relógio e a bateria para o claro enquanto durar, e devolve
-    // ao que o tema pede quando o dedo sobe.
-    val vista = LocalView.current
-    val temaEscuro = LocalTemaEscuro.current
-    DisposableEffect(gravando, temaEscuro) {
-        val controle = (vista.context as? Activity)
-            ?.window
-            ?.let { WindowCompat.getInsetsController(it, vista) }
-        controle?.isAppearanceLightStatusBars = !gravando && !temaEscuro
-        onDispose { controle?.isAppearanceLightStatusBars = !temaEscuro }
-    }
+    // Leque e gravação continuam compostos por um instante depois de fechar, para
+    // a saída poder ser animada. Sem isto os alvos desapareceriam no quadro em que
+    // o dedo sobe, e o gesto terminaria num corte seco.
+    val desenhandoLeque = aindaNaTela(aberto)
+    val desenhandoGravacao = aindaNaTela(gravando)
 
-    // O leque continua composto por um instante depois de fechar, para a saída
-    // poder ser animada. Sem isto os alvos desapareceriam no quadro em que o
-    // dedo sobe, e o gesto terminaria num corte seco.
-    var desenhando by remember { mutableStateOf(false) }
-    LaunchedEffect(emGesto) {
-        if (emGesto) {
-            desenhando = true
-        } else {
-            delay(Movimento.PADRAO.toLong() + 80)
-            desenhando = false
-        }
-    }
-
-    // Um véu só, com dois destinos: o do leque deixa o conteúdo legível por trás
-    // (a pessoa está decidindo, e o app é o contexto da decisão), o da gravação
-    // apaga tudo — não há nada para ler enquanto se fala.
+    // O véu do leque deixa o conteúdo legível por trás: a pessoa está decidindo, e
+    // o app é o contexto da decisão.
     val veu = animateFloatAsState(
-        targetValue = when {
-            gravando -> 0.96f
-            aberto -> 0.46f
-            else -> 0f
-        },
-        animationSpec = tween(if (gravando) Movimento.PADRAO else Movimento.RAPIDO, easing = FastOutSlowInEasing),
+        targetValue = if (aberto) 0.46f else 0f,
+        animationSpec = tween(Movimento.RAPIDO, easing = FastOutSlowInEasing),
         label = "veu",
     )
 
@@ -189,19 +162,6 @@ fun HubDeCaptura(
                 .drawBehind { if (veu.value > 0.001f) drawRect(NOITE, alpha = veu.value) },
         )
 
-        // O relógio e a onda são da tela, não do botão: ancorá-los ao `+` os
-        // jogaria para fora em aparelho baixo e os deixaria perdidos no meio em
-        // aparelho alto. Eles pertencem ao centro da tela, que é para onde o
-        // olho vai quando o resto apaga.
-        if (desenhando) {
-            PainelDeGravacao(
-                captura = captura,
-                idioma = idioma,
-                gravando = gravando,
-                modifier = Modifier.align(Alignment.Center).offset(y = (-48).dp),
-            )
-        }
-
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -209,57 +169,56 @@ fun HubDeCaptura(
                 .navigationBarsPadding()
                 .fillMaxWidth()
                 .height(ALTURA_DA_ANCORA)
+                // O `+` fica debaixo da tela de gravação, que é opaca. Deixá-lo
+                // no alcance do leitor de tela ofereceria "Capturar" no meio de
+                // uma gravação em curso.
+                .then(if (gravando) Modifier.clearAndSetSemantics {} else Modifier)
                 // A âncora é alta para caber o leque inteiro sem apertar as
                 // medidas de ninguém, e desce até o centro dela coincidir com o
                 // centro do botão. Daí em diante todo alvo é um `offset` puro a
                 // partir do `+`, que é como o handoff descreve as posições.
                 .offset(y = ALTURA_DA_ANCORA / 2 - ALTURA_DA_BARRA / 2 - ELEVACAO_DO_BOTAO),
         ) {
-            if (desenhando) {
-                GuiaAteOAlvo(alvo, gravando)
+            if (desenhandoLeque) {
+                GuiaAteOAlvo(alvo, aberto)
                 FormatoCaptura.entries.forEach { formato ->
                     AlvoDoLeque(
                         formato = formato,
                         marcado = alvo == AlvoDoGesto.Modo(formato),
-                        visivel = if (gravando) formato == FormatoCaptura.AUDIO else aberto,
+                        visivel = aberto,
                         atraso = ATRASO_DE_ENTRADA.getValue(formato),
                         reduzido = reduzido,
                     )
                 }
-                SaidasDoGesto(alvo, aberto, gravando, sobreCancelar)
+                DicaDoGesto(alvo, aberto)
             }
 
             BotaoDoHub(
                 aberto = aberto,
                 gravando = gravando,
-                sobreCancelar = sobreCancelar,
                 reduzido = reduzido,
                 modifier = Modifier
                     .offset(y = -ELEVACAO_DO_BOTAO)
                     .semantics {
-                        contentDescription = if (gravando) "Gravando. Toque para guardar." else "Capturar"
+                        contentDescription = "Capturar"
                         // O arrasto não tem equivalente para quem navega por
-                        // leitor de tela: as três saídas do leque viram ações
-                        // do próprio botão, e a gravação iniciada por aqui é
-                        // encerrada por um toque em vez de por uma soltura.
+                        // leitor de tela: as três saídas do leque viram ações do
+                        // próprio botão, e a gravação aberta por aqui é encerrada
+                        // pelas ações da tela de gravação.
                         customActions = listOf(
                             CustomAccessibilityAction("Escrever") { abrirTexto(); true },
                             CustomAccessibilityAction("Fotografar") { captura.tirarFoto(); true },
-                            CustomAccessibilityAction(
-                                if (captura.gravando) "Parar e guardar" else "Gravar áudio",
-                            ) {
-                                when {
-                                    captura.gravando -> captura.guardarAudio()
-                                    captura.temPermissaoDeAudio -> captura.gravarAudio()
-                                    else -> captura.pedirPermissaoDeAudio()
-                                }
+                            CustomAccessibilityAction("Gravar áudio") {
+                                if (captura.temPermissaoDeAudio) captura.gravarAudio()
+                                else captura.pedirPermissaoDeAudio()
                                 true
                             },
                         )
                     }
                     .pointerInput(Unit) {
+                        val alvos = alvosEmPixels()
+                        val raioDoAlvoPx = RAIO_DO_ALVO.toPx()
                         val raioDeOrigemPx = RAIO_DE_ORIGEM.toPx()
-                        val alcancePx = ALCANCE_DO_LEQUE.toPx()
                         val folga = viewConfiguration.touchSlop
 
                         awaitEachGesture {
@@ -286,10 +245,7 @@ fun HubDeCaptura(
                             }
 
                             if (soltouCedo != null) {
-                                // Toque solto no `+`. Se houver gravação em
-                                // curso — só acontece pela ação de
-                                // acessibilidade — o mesmo toque encerra.
-                                if (captura.gravando) captura.guardarAudio() else abrirTexto()
+                                abrirTexto()
                                 return@awaitEachGesture
                             }
 
@@ -297,27 +253,26 @@ fun HubDeCaptura(
                             haptico.performHapticFeedback(HapticFeedbackType.LongPress)
 
                             var atual: AlvoDoGesto = AlvoDoGesto.Origem
-                            var faltouMicrofone = false
                             var soltou = false
 
                             while (true) {
                                 val mudanca = proximaMudanca(primeiro) ?: break
-                                val desloc = mudanca.position - centro
-
-                                val novo = if (captura.gravando) {
-                                    if (voltouParaOrigem(desloc, raioDeOrigemPx)) AlvoDoGesto.Origem
-                                    else AlvoDoGesto.Modo(FormatoCaptura.AUDIO)
-                                } else {
-                                    alvoPara(desloc, raioDeOrigemPx, alcancePx)
-                                }
+                                val novo = alvoPara(
+                                    desloc = mudanca.position - centro,
+                                    alvos = alvos,
+                                    raioDoAlvoPx = raioDoAlvoPx,
+                                    raioDeOrigemPx = raioDeOrigemPx,
+                                )
 
                                 if (novo != atual) {
                                     atual = novo
                                     alvo = novo
-                                    haptico.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    if (novo == AlvoDoGesto.Modo(FormatoCaptura.AUDIO) && !captura.gravando) {
-                                        if (captura.temPermissaoDeAudio) captura.gravarAudio()
-                                        else faltouMicrofone = true
+                                    // Chegar num alvo tem toque tátil; sair dele
+                                    // não. O que a mão precisa sentir é o encaixe,
+                                    // e um segundo pulso na saída transformaria
+                                    // atravessar o leque numa vibração contínua.
+                                    if (novo is AlvoDoGesto.Modo) {
+                                        haptico.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     }
                                 }
 
@@ -329,12 +284,42 @@ fun HubDeCaptura(
 
                             aberto = false
                             alvo = AlvoDoGesto.Origem
-                            concluir(captura, atual, soltou, faltouMicrofone, haptico, abrirTexto)
+                            concluir(captura, atual, soltou, haptico, abrirTexto)
                         }
                     },
             )
         }
+
+        // Por último no `Box`, portanto por cima de tudo — inclusive do `+`, que
+        // some atrás dela em vez de continuar clicável debaixo de uma tela opaca.
+        if (desenhandoGravacao) {
+            TelaDeGravacao(
+                captura = captura,
+                idioma = idioma,
+                gravando = gravando,
+            )
+        }
     }
+}
+
+/**
+ * Se algo que já saiu ainda precisa estar composto para terminar de sair.
+ *
+ * Entra no mesmo quadro em que [ativo] vira verdadeiro e só desaparece depois de
+ * a animação de saída ter tido tempo de correr.
+ */
+@Composable
+private fun aindaNaTela(ativo: Boolean, sobra: Long = Movimento.PADRAO.toLong() + 80): Boolean {
+    var presente by remember { mutableStateOf(ativo) }
+    LaunchedEffect(ativo) {
+        if (ativo) {
+            presente = true
+        } else {
+            delay(sobra)
+            presente = false
+        }
+    }
+    return presente || ativo
 }
 
 /**
@@ -353,42 +338,43 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.pro
 }
 
 /**
- * O que soltar o dedo significa.
+ * O que soltar o dedo significa — e é o único lugar do gesto onde alguma coisa
+ * acontece.
  *
  * [soltou] separa o dedo que subiu do gesto que o sistema cancelou — outro
  * ponteiro, a tela apagando, o app indo para trás. Um cancelamento tratado como
- * soltura guardaria um áudio que ninguém terminou de gravar.
+ * soltura abriria a câmera sozinho no meio de uma ligação.
  */
 private fun concluir(
     captura: CapturaRapida,
     alvo: AlvoDoGesto,
     soltou: Boolean,
-    faltouMicrofone: Boolean,
     haptico: HapticFeedback,
     abrirTexto: () -> Unit,
 ) {
-    if (captura.gravando) {
-        if (soltou && alvo != AlvoDoGesto.Origem) captura.guardarAudio() else captura.cancelarAudio()
-        haptico.performHapticFeedback(HapticFeedbackType.LongPress)
-        return
-    }
     if (!soltou) return
-    when {
-        faltouMicrofone -> captura.pedirPermissaoDeAudio()
-        alvo == AlvoDoGesto.Modo(FormatoCaptura.TEXTO) -> abrirTexto()
-        alvo == AlvoDoGesto.Modo(FormatoCaptura.FOTO) -> captura.tirarFoto()
+    when (alvo) {
+        is AlvoDoGesto.Modo -> {
+            haptico.performHapticFeedback(HapticFeedbackType.LongPress)
+            when (alvo.formato) {
+                FormatoCaptura.TEXTO -> abrirTexto()
+                FormatoCaptura.FOTO -> captura.tirarFoto()
+                FormatoCaptura.AUDIO ->
+                    if (captura.temPermissaoDeAudio) captura.gravarAudio()
+                    else captura.pedirPermissaoDeAudio()
+            }
+        }
         // O leque abriu por tempo e o dedo nunca saiu do `+`. Isso é um toque
         // devagar, não uma desistência: quem só encostou no botão fica com o
-        // caminho do texto em vez de com um gesto que não fez nada. O handoff
-        // manda fechar sem aviso, mas ali "soltar fora" quer dizer soltar longe,
-        // e é isso que o `else` cobre.
-        alvo == AlvoDoGesto.Origem -> abrirTexto()
-        else -> Unit
+        // caminho do texto em vez de com um gesto que não fez nada.
+        AlvoDoGesto.Origem -> abrirTexto()
+        // Soltar fora fecha sem capturar nada e sem aviso.
+        AlvoDoGesto.Fora -> Unit
     }
 }
 
 /** Cor única do véu e do fundo da gravação: ameixa quase preta, nos dois temas. */
-private val NOITE = Color(0xFF17111F)
+internal val NOITE = Color(0xFF17111F)
 
 /** O quanto o botão sobe em relação ao centro da fileira de ícones da barra. */
 private val ELEVACAO_DO_BOTAO = 10.dp
@@ -408,8 +394,8 @@ val DIAMETRO_DO_BOTAO = 76.dp
 /**
  * Alta o bastante para o leque inteiro caber dentro dela.
  *
- * Meia-altura de 260 dp contra 205 dp do topo do alvo mais distante e 238 dp da
- * dica que vai acima dele.
+ * Meia-altura de 260 dp contra 194 dp do topo do alvo mais alto e 238 dp da dica
+ * que vai acima dele.
  */
 private val ALTURA_DA_ANCORA = 520.dp
 
@@ -421,78 +407,57 @@ private val ATRASO_DE_ENTRADA = mapOf(
 )
 
 /**
- * O `+`, em quatro estados.
+ * O `+`, em dois estados.
  *
- * Em repouso é um disco cheio de ameixa com o halo respirando. Com o leque
- * aberto vira contorno: deixou de ser botão e passou a ser a origem do gesto, e
- * um disco cheio ali competiria com os alvos. Gravando, o mesmo contorno fica
- * vermelho e o `+` gira 45° — o alvo que fez a coisa é o que a desfaz, e o giro
- * é o que liga uma forma à outra. Com o dedo em cima dele durante a gravação ele
- * enche: descartar deixou de ser ameaça e virou o que vai acontecer.
+ * Em repouso é um disco cheio de ameixa com o halo respirando. Com o leque aberto
+ * vira contorno: deixou de ser botão e passou a ser a origem do gesto, e um disco
+ * cheio ali competiria com os alvos.
+ *
+ * Não há mais um terceiro estado vermelho: descartar a gravação virou o lado
+ * esquerdo do controle da tela de gravação, e o `+` não precisa mais dizer duas
+ * coisas.
  */
 @Composable
 private fun BotaoDoHub(
     aberto: Boolean,
     gravando: Boolean,
-    sobreCancelar: Boolean,
     reduzido: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val cores = MaterialTheme.colorScheme
-    val descarte = corDeDescarte()
-    val vazio = aberto || gravando
 
     val fundo by animateColorAsState(
-        targetValue = when {
-            sobreCancelar -> descarte
-            gravando -> descarte.copy(alpha = 0.18f)
-            aberto -> Color.Transparent
-            else -> cores.primary
-        },
+        targetValue = if (aberto) Color.Transparent else cores.primary,
         animationSpec = tween(Movimento.RAPIDO),
         label = "fundoDoBotao",
     )
     val contorno by animateColorAsState(
-        targetValue = when {
-            sobreCancelar -> Color.Transparent
-            gravando -> descarte
-            aberto -> Color.White.copy(alpha = 0.38f)
-            else -> Color.Transparent
-        },
+        targetValue = if (aberto) Color.White.copy(alpha = 0.38f) else Color.Transparent,
         animationSpec = tween(Movimento.RAPIDO),
         label = "contornoDoBotao",
     )
     val tinta by animateColorAsState(
-        targetValue = when {
-            sobreCancelar -> Color.White
-            gravando -> descarte
-            aberto -> Color.White.copy(alpha = 0.5f)
-            else -> cores.onPrimary
-        },
+        targetValue = if (aberto) Color.White.copy(alpha = 0.5f) else cores.onPrimary,
         animationSpec = tween(Movimento.RAPIDO),
         label = "tintaDoBotao",
     )
     val escala = animateFloatAsState(
-        targetValue = when {
-            sobreCancelar -> 1.08f
-            vazio -> 0.94f
-            else -> 1f
-        },
+        targetValue = if (aberto) 0.94f else 1f,
         animationSpec = Movimento.molaDeGesto(),
         label = "escalaDoBotao",
-    )
-    val giro = animateFloatAsState(
-        targetValue = if (gravando) 45f else 0f,
-        animationSpec = Movimento.mola(),
-        label = "giroDoBotao",
     )
     // A sombra vale para o botão sólido. Sobre o véu ela não separa nada de nada
     // e só borra o contorno tracejado.
     val sombra = animateFloatAsState(
-        targetValue = if (vazio) 0f else 1f,
+        targetValue = if (aberto) 0f else 1f,
         animationSpec = tween(Movimento.RAPIDO),
         label = "sombraDoBotao",
     )
+
+    // Nada respira enquanto o leque está aberto nem por trás da tela de gravação:
+    // uma animação infinita rodando debaixo de uma superfície opaca é bateria
+    // gasta em quadro nenhum.
+    val emRepouso = !aberto && !gravando && !reduzido
 
     Box(
         contentAlignment = Alignment.Center,
@@ -506,8 +471,8 @@ private fun BotaoDoHub(
                 spotShadowColor = cores.primary
             }
             .size(DIAMETRO_DO_BOTAO)
-            .halo(ativo = !vazio && !reduzido, cor = cores.primary)
-            .respiroDoHub(ativo = !vazio && !reduzido)
+            .halo(ativo = emRepouso, cor = cores.primary)
+            .respiroDoHub(ativo = emRepouso)
             .background(fundo, CircleShape)
             .contornoCircularTracejado { contorno },
     ) {
@@ -515,9 +480,7 @@ private fun BotaoDoHub(
             imageVector = Icones.Mais,
             contentDescription = null,
             tint = tinta,
-            modifier = Modifier
-                .size(30.dp)
-                .graphicsLayer { rotationZ = giro.value },
+            modifier = Modifier.size(30.dp),
         )
     }
 }
@@ -594,6 +557,10 @@ private fun Modifier.contornoCircularTracejado(cor: () -> Color): Modifier = dra
     )
 }
 
+/** O quanto o alvo cresce ao ser alcançado: de 68 dp para 76 dp. */
+private val CRESCIMENTO_DO_REALCE =
+    DIAMETRO_DO_ALVO_MARCADO.value / DIAMETRO_DO_ALVO.value - 1f
+
 /**
  * Um dos três alvos, saindo de dentro do `+`.
  *
@@ -601,6 +568,12 @@ private fun Modifier.contornoCircularTracejado(cor: () -> Color): Modifier = dra
  * que aquilo saiu daqui e que o caminho de volta desfaz. A posição é interpolada
  * dentro do `graphicsLayer`, na fase de desenho — três alvos animando posição por
  * layout obrigariam a âncora inteira a remedir a cada quadro do gesto.
+ *
+ * Em repouso o disco é o tom claro da própria ação com o ícone na cor cheia; sob
+ * o dedo ele inverte — enche de cor, ganha o anel por fora, cresce 12% e engrossa
+ * o rótulo. Tudo isso sai de **um** valor animado, lido na fase de desenho: o
+ * realce persegue o dedo, e um alvo que recompusesse a cada quadro para trocar
+ * quatro propriedades chegaria atrasado.
  */
 @Composable
 private fun AlvoDoLeque(
@@ -610,10 +583,7 @@ private fun AlvoDoLeque(
     atraso: Long,
     reduzido: Boolean,
 ) {
-    val cores = MaterialTheme.colorScheme
     val paleta = coresDoFormato(formato)
-    val principal = formato == FormatoCaptura.AUDIO
-    val diametro = if (principal) DIAMETRO_DO_ALVO_CENTRAL else DIAMETRO_DO_ALVO_LATERAL
     val destino: DpOffset = deslocamentoDe(formato)
 
     val avanco = remember { Animatable(0f) }
@@ -628,93 +598,118 @@ private fun AlvoDoLeque(
 
     val realce = animateFloatAsState(
         targetValue = if (marcado) 1f else 0f,
-        animationSpec = Movimento.molaDeGesto(),
+        animationSpec = tween(REALCE_DO_ALVO_MS, easing = LinearOutSlowInEasing),
         label = "realceDoAlvo",
     )
+    val tinta by animateColorAsState(
+        targetValue = if (marcado) Color.White else paleta.cor,
+        animationSpec = tween(REALCE_DO_ALVO_MS),
+        label = "tintaDoAlvo",
+    )
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+    // O rótulo pendura **fora** da caixa do disco, e não dentro de uma coluna com
+    // ele: numa coluna o que se centraliza no destino é o conjunto disco+rótulo, e
+    // o disco desenhado subiria uns 13 dp acima do ponto que o dedo testa. Com
+    // seleção por proximidade essa diferença é a distância entre o alvo que se vê
+    // e o alvo que existe.
+    Box(
+        contentAlignment = Alignment.Center,
         modifier = Modifier
-            .requiredWidth(112.dp)
+            .requiredSize(DIAMETRO_DO_ALVO)
             .graphicsLayer {
                 val f = avanco.value
                 translationX = destino.x.toPx() * f
                 translationY = destino.y.toPx() * f
                 alpha = f.coerceIn(0f, 1f)
-                val crescimento = 0.62f + 0.38f * f + 0.09f * realce.value
+                val crescimento = (0.62f + 0.38f * f) * (1f + CRESCIMENTO_DO_REALCE * realce.value)
                 scaleX = crescimento
                 scaleY = crescimento
+            }
+            .drawBehind {
+                val r = realce.value
+                val raio = size.minDimension / 2f
+                // O anel fica por fora do disco: confirma a escolha sem disputar
+                // espaço com o ícone que está sendo apontado.
+                if (r > 0.01f) {
+                    drawCircle(color = paleta.cor, radius = raio + 7.dp.toPx() * r, alpha = 0.26f * r)
+                }
+                drawCircle(color = lerp(paleta.fundo, paleta.cor, r), radius = raio)
             },
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .requiredSize(diametro)
-                // O anel do alvo marcado fica por fora do disco: confirma a
-                // escolha sem mexer no tamanho do que está sendo apontado.
-                .drawBehind {
-                    if (realce.value > 0.01f) {
-                        drawCircle(
-                            color = paleta.cor,
-                            radius = size.minDimension / 2f + 7.dp.toPx() * realce.value,
-                            alpha = 0.32f * realce.value,
-                        )
-                    }
-                }
-                .background(if (principal) paleta.cor else cores.surface, CircleShape),
-        ) {
-            Icon(
-                imageVector = iconeDoFormato(formato),
-                contentDescription = null,
-                tint = if (principal) Color.White else paleta.cor,
-                modifier = Modifier.size(if (principal) 30.dp else 23.dp),
-            )
-        }
+        Icon(
+            imageVector = iconeDoFormato(formato),
+            contentDescription = null,
+            tint = tinta,
+            modifier = Modifier.size(26.dp),
+        )
         Text(
             text = rotuloDoFormato(formato),
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
             fontWeight = if (marcado) FontWeight.Bold else FontWeight.Medium,
             textAlign = TextAlign.Center,
-            modifier = Modifier.graphicsLayer { alpha = 0.72f + 0.28f * realce.value },
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .requiredWidth(112.dp)
+                .offset(y = DIAMETRO_DO_ALVO + 9.dp)
+                .graphicsLayer { alpha = 0.78f + 0.22f * realce.value },
         )
     }
 }
 
+/** O comprimento do toco que aponta para cima enquanto nenhum alvo está marcado. */
+private val TOCO_DA_GUIA = 46.dp
+
 /**
- * A linha pontilhada do `+` até o alvo marcado.
+ * A linha pontilhada do `+` até o alvo.
  *
  * O gesto precisa de um trilho visível: sem nada ligando as pontas, três discos
- * flutuando sobre um véu não dizem que saíram do botão nem que o caminho de
- * volta desfaz. Ela some quando nenhum alvo está marcado — uma linha apontando
- * para o nada seria pior que linha nenhuma.
+ * flutuando sobre um véu não dizem que saíram do botão nem que o caminho de volta
+ * desfaz. Com nada marcado ela é um toco apontando para cima — a única instrução
+ * que falta a quem acabou de abrir o leque é *para onde* —, e ela se estica até o
+ * alvo quando o dedo escolhe um.
+ *
+ * A ponta é um `Animatable<Offset>` lido na fase de desenho: a linha acompanha a
+ * troca de alvo com a mesma mola dos discos, sem recompor ninguém.
  */
 @Composable
-private fun GuiaAteOAlvo(alvo: AlvoDoGesto, gravando: Boolean) {
-    val destino = (alvo as? AlvoDoGesto.Modo)?.formato?.let(::deslocamentoDe)
-        ?: DESLOCAMENTO_DO_AUDIO.takeIf { gravando }
-    var ultimo by remember { mutableStateOf(DESLOCAMENTO_DO_AUDIO) }
-    LaunchedEffect(destino) { if (destino != null) ultimo = destino }
+private fun GuiaAteOAlvo(alvo: AlvoDoGesto, aberto: Boolean) {
+    val densidade = LocalDensity.current
+    val marcado = (alvo as? AlvoDoGesto.Modo)?.formato
+    val destino = with(densidade) {
+        val ponto = marcado?.let(::deslocamentoDe) ?: DpOffset(0.dp, -(RAIO_DE_ORIGEM + TOCO_DA_GUIA))
+        Offset(ponto.x.toPx(), ponto.y.toPx())
+    }
 
-    val forca = animateFloatAsState(
-        targetValue = if (destino != null) 1f else 0f,
+    val ponta = remember { Animatable(destino, Offset.VectorConverter) }
+    LaunchedEffect(destino) { ponta.animateTo(destino, Movimento.molaDeGesto()) }
+
+    val presenca = animateFloatAsState(
+        targetValue = if (aberto) 1f else 0f,
         animationSpec = tween(Movimento.RAPIDO),
         label = "guia",
+    )
+    val realce = animateFloatAsState(
+        targetValue = if (marcado != null) 1f else 0f,
+        animationSpec = tween(REALCE_DO_ALVO_MS),
+        label = "realceDaGuia",
     )
 
     Box(
         Modifier.requiredSize(1.dp).drawBehind {
-            if (forca.value < 0.01f) return@drawBehind
-            val fim = Offset(ultimo.x.toPx(), ultimo.y.toPx())
-            val inicio = fim * (RAIO_DE_ORIGEM.toPx() / fim.getDistance())
+            val forca = presenca.value
+            if (forca < 0.01f) return@drawBehind
+            val fim = ponta.value
+            val distancia = fim.getDistance()
+            if (distancia < 1f) return@drawBehind
+            val inicio = fim * (RAIO_DE_ORIGEM.toPx() / distancia)
             drawLine(
                 color = Color.White,
                 start = center + inicio,
-                end = center + fim * forca.value,
+                end = center + fim * forca,
                 strokeWidth = 2.5.dp.toPx(),
                 cap = StrokeCap.Round,
-                alpha = 0.42f * forca.value,
+                alpha = (0.26f + 0.18f * realce.value) * forca,
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 7.dp.toPx())),
             )
         },
@@ -725,33 +720,28 @@ private fun GuiaAteOAlvo(alvo: AlvoDoGesto, gravando: Boolean) {
  * A frase que muda conforme o dedo anda.
  *
  * "arraste e solte no alvo" só serve enquanto nada está marcado; assim que há um
- * alvo sob o dedo, a frase útil é o que **soltar** vai fazer. É o que ensina o
- * leque na primeira vez sem ninguém explicar — e, na gravação, é o que ensina
- * que voltar ao `+` descarta, porque a frase troca sozinha quando o dedo chega
- * lá.
+ * alvo sob o dedo, a frase útil é o que **soltar** vai fazer — e a pílula veste a
+ * cor daquele alvo, que é o segundo lugar em que a associação cor→modo se forma.
+ * É o que ensina o leque na primeira vez sem ninguém explicar.
  */
 @Composable
-private fun SaidasDoGesto(
-    alvo: AlvoDoGesto,
-    aberto: Boolean,
-    gravando: Boolean,
-    sobreCancelar: Boolean,
-) {
-    val descarte = corDeDescarte()
-    val texto = when {
-        sobreCancelar -> "solte para descartar"
-        gravando -> "solte para guardar"
-        alvo is AlvoDoGesto.Modo -> when (alvo.formato) {
-            FormatoCaptura.TEXTO -> "solte para escrever"
-            FormatoCaptura.AUDIO -> "solte para gravar"
-            FormatoCaptura.FOTO -> "solte para fotografar"
-        }
-        else -> "arraste e solte no alvo"
+private fun DicaDoGesto(alvo: AlvoDoGesto, aberto: Boolean) {
+    val marcado = (alvo as? AlvoDoGesto.Modo)?.formato
+    val texto = when (marcado) {
+        FormatoCaptura.TEXTO -> "solte para escrever"
+        FormatoCaptura.AUDIO -> "solte para gravar"
+        FormatoCaptura.FOTO -> "solte para fotografar"
+        null -> "arraste e solte no alvo"
     }
+    val fundo by animateColorAsState(
+        targetValue = marcado?.let { coresDoFormato(it).cor } ?: NOITE.copy(alpha = 0.82f),
+        animationSpec = tween(REALCE_DO_ALVO_MS),
+        label = "fundoDaDica",
+    )
     val presenca = animateFloatAsState(
-        targetValue = if (aberto || gravando) 1f else 0f,
+        targetValue = if (aberto) 1f else 0f,
         animationSpec = tween(Movimento.RAPIDO),
-        label = "saidas",
+        label = "dica",
     )
 
     Box(
@@ -759,140 +749,17 @@ private fun SaidasDoGesto(
         modifier = Modifier
             .offset(y = (-238).dp)
             .graphicsLayer { alpha = presenca.value }
-            .background(NOITE.copy(alpha = 0.82f), CircleShape)
+            // A frase troca de tamanho junto com o alvo: sem isto a pílula daria
+            // um salto de largura a cada vez que o dedo entra num disco.
+            .animateContentSize(tween(REALCE_DO_ALVO_MS, easing = LinearOutSlowInEasing))
+            .background(fundo, CircleShape)
             .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {
         Text(
             text = texto,
             style = MaterialTheme.typography.labelMedium,
-            color = if (sobreCancelar) descarte else Color.White,
-        )
-    }
-
-    // O lembrete do caminho de volta mora entre o alvo e o `+`, que é o trecho
-    // que o dedo percorre para desfazer. Some quando o dedo já chegou lá: nesse
-    // ponto quem fala é o próprio botão, vermelho e cheio.
-    Text(
-        text = "arraste de volta para descartar",
-        style = MaterialTheme.typography.bodySmall,
-        color = descarte,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-            .requiredWidth(240.dp)
-            .offset(y = (-96).dp)
-            .graphicsLayer { alpha = if (gravando && !sobreCancelar) presenca.value else 0f },
-    )
-}
-
-/**
- * O relógio, a onda e o idioma de destino.
- *
- * Não é uma tela nova: é o mesmo hub com o véu fechado. O alvo do áudio continua
- * exatamente onde estava quando o dedo chegou nele e os outros dois recolhem
- * para dentro do `+`. Trocar isto por uma tela custaria uma transição inteira no
- * meio de um gesto em curso — e faria o alvo saltar de lugar debaixo do dedo.
- */
-@Composable
-private fun PainelDeGravacao(
-    captura: CapturaRapida,
-    idioma: Idioma,
-    gravando: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val presenca = animateFloatAsState(
-        targetValue = if (gravando) 1f else 0f,
-        animationSpec = tween(Movimento.PADRAO, easing = FastOutSlowInEasing),
-        label = "painelDeGravacao",
-    )
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(15.dp),
-        modifier = modifier.graphicsLayer {
-            alpha = presenca.value
-            translationY = 18.dp.toPx() * (1f - presenca.value)
-        },
-    ) {
-        Text(
-            text = formatarDuracao(captura.segundos),
-            style = MaterialTheme.typography.displaySmall.copy(fontSize = 44.sp, lineHeight = 48.sp),
             color = Color.White,
+            fontWeight = if (marcado != null) FontWeight.Bold else FontWeight.Medium,
         )
-        OndaDoMicrofone(gravando) { captura.nivelAgora() }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-        ) {
-            BandeiraCircular(idioma, tamanho = 16.dp)
-            // O handoff escreve "o idioma sai da fala". Não sai: não há detector
-            // de idioma no app, e o que existe é a regra de fallback do próprio
-            // handoff — cai no curso aberto no hub. A frase diz o que de fato
-            // acontece, e é ela que precisa mudar no dia em que houver detecção.
-            Text(
-                text = "gravando",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.78f),
-            )
-        }
     }
-}
-
-/** Quantas barras a onda tem, e de quanto em quanto tempo entra uma nova. */
-private const val BARRAS_DA_ONDA = 22
-private const val INTERVALO_DA_ONDA = 70L
-
-/**
- * A onda: o pico real do microfone, uma barra a cada 70 ms.
- *
- * A barra nova entra pela direita e empurra a fila. É o desenho de um gravador
- * de verdade, e responde à única pergunta de quem está falando: *está pegando?*
- * A raiz aplicada ao pico é perceptual e não estética — a fala normal vive na
- * parte de baixo da escala linear, e sem ela a onda passaria a gravação inteira
- * rente ao chão.
- *
- * O histórico é um `FloatArray` cru com um cursor observável. Só o cursor é
- * estado do Compose, e ele é lido dentro do `drawBehind`: catorze quadros por
- * segundo invalidam o desenho de um retângulo e nada mais.
- */
-@Composable
-private fun OndaDoMicrofone(gravando: Boolean, nivel: () -> Float) {
-    val historico = remember { FloatArray(BARRAS_DA_ONDA) }
-    var cursor by remember { mutableIntStateOf(0) }
-    val cor = MaterialTheme.colorScheme.tertiary
-
-    LaunchedEffect(gravando) {
-        if (!gravando) return@LaunchedEffect
-        historico.fill(0f)
-        cursor = 0
-        while (true) {
-            historico[cursor % BARRAS_DA_ONDA] = nivel()
-            cursor++
-            delay(INTERVALO_DA_ONDA)
-        }
-    }
-
-    Box(
-        Modifier
-            .requiredSize(width = 208.dp, height = 52.dp)
-            .drawBehind {
-                val posicao = cursor
-                val largura = 4.dp.toPx()
-                val vao = 5.5.dp.toPx()
-                val minima = 4.dp.toPx()
-                for (i in 0 until BARRAS_DA_ONDA) {
-                    // A mais recente à direita, as antigas caminhando à esquerda.
-                    val indice = ((posicao - 1 - i) % BARRAS_DA_ONDA + BARRAS_DA_ONDA) % BARRAS_DA_ONDA
-                    val altura = minima + (size.height - minima) * historico[indice].coerceIn(0f, 1f).pow(0.42f)
-                    val x = size.width - largura - i * vao
-                    if (x < 0) break
-                    drawRoundRect(
-                        color = cor,
-                        topLeft = Offset(x, (size.height - altura) / 2f),
-                        size = Size(largura, altura),
-                        cornerRadius = CornerRadius(largura / 2f),
-                        alpha = 1f - 0.5f * (i.toFloat() / BARRAS_DA_ONDA),
-                    )
-                }
-            },
-    )
 }

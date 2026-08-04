@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -190,6 +191,11 @@ fun VocabsApp() {
             startDestination = Rotas.INICIO,
             modifier = Modifier
                 .fillMaxSize()
+                // Enquanto o hub tem a tela, o que está atrás sai do alcance do
+                // leitor de tela: o conteúdo continua composto debaixo do leque e
+                // da gravação, e sem isto o TalkBack andaria por uma tela que a
+                // pessoa não está mais vendo.
+                .then(if (emGesto) Modifier.clearAndSetSemantics {} else Modifier)
                 .then(
                     if (desfocando && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         Modifier.graphicsLayer {
@@ -315,7 +321,12 @@ fun VocabsApp() {
             }
         }
 
-        Column(modifier = Modifier.align(Alignment.BottomCenter), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .then(if (emGesto) Modifier.clearAndSetSemantics {} else Modifier),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             // O aviso flutua sobre o conteúdo, encostado na barra: nada na tela
             // se move para acomodá-lo, e o indicador de página continua onde
             // estava, por baixo dele.

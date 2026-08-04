@@ -38,20 +38,6 @@ fun coresDoFormato(formato: FormatoCaptura): CoresDeCategoria {
     }
 }
 
-/**
- * O vermelho de descartar — o mesmo do papagaio, e é de propósito.
- *
- * A regra do app é que este vermelho é categoria e nunca erro nem ação, para que
- * uma foto na fila não pareça uma foto com problema. O gesto de captura abre uma
- * exceção estreita e a paga: o `+` só fica vermelho **durante a gravação**, e
- * nesse estado o alvo da foto já recolheu — os dois sentidos nunca dividem a
- * tela. Puxar o `error` do tema para cá criaria um segundo vermelho quase igual
- * ao primeiro, que é o jeito garantido de tornar os dois ilegíveis.
- */
-@Composable
-fun corDeDescarte(): Color =
-    if (LocalTemaEscuro.current) VocabuColors.PapagaioEscuro else VocabuColors.Papagaio
-
 fun iconeDoFormato(formato: FormatoCaptura): ImageVector = when (formato) {
     FormatoCaptura.TEXTO -> Icones.Lapis
     FormatoCaptura.AUDIO -> Icones.Microfone
