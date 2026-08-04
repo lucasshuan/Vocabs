@@ -25,8 +25,20 @@ import kotlinx.coroutines.flow.map
  */
 class Preferencias(context: Context) {
 
+    /**
+     * `"tagarara"` é o **nome do arquivo em disco**, e não o nome do app.
+     *
+     * Ele fica pela mesma razão que `applicationId`, namespace e `vocabs.db`
+     * ficam: renomeá-lo não migra nada, cria um arquivo vazio ao lado do antigo.
+     * Quem já tem o app instalado abriria a versão nova sem idioma nativo, sem os
+     * cursos em que se matriculou, no curso padrão e no tema padrão — com o banco
+     * de palavras intacto e nenhuma tela sabendo em que língua exibi-lo.
+     *
+     * Se um dia precisar mudar, mude junto com uma migração que leia o arquivo
+     * antigo e copie os cinco valores. Sozinho, o nome novo é perda de dados.
+     */
     private val prefs: SharedPreferences =
-        context.applicationContext.getSharedPreferences("Vocabu", Context.MODE_PRIVATE)
+        context.applicationContext.getSharedPreferences("tagarara", Context.MODE_PRIVATE)
 
     // ---- idiomas ------------------------------------------------------------
 

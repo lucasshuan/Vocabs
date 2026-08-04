@@ -1,8 +1,16 @@
 # Arquitetura da Vocabu
 
-O nome público é **Vocabu**. `applicationId`, namespace, nome do banco e rotas
-internas continuam `com.jean.vocabs`/Vocabs para atualizar instalações existentes
-sem perder dados.
+O nome público é **Vocabu**. `applicationId`, namespace, nome do banco
+(`vocabs.db`), o arquivo de preferências (`"tagarara"`) e as rotas internas
+continuam com os nomes antigos para atualizar instalações existentes sem perder
+dados.
+
+**Identificador de armazenamento não é marca.** Trocar o nome do app é find and
+replace; trocar qualquer um dos nomes acima não migra nada — cria um lugar vazio
+ao lado do que já existe. Um `getSharedPreferences` renomeado abre a versão nova
+sem idioma nativo, sem os cursos em que a pessoa se matriculou e no tema padrão,
+com o banco de palavras intacto e nenhuma tela sabendo em que língua exibi-lo. Se
+algum deles precisar mudar, muda junto com uma migração que leia o antigo.
 
 ## Módulos
 
