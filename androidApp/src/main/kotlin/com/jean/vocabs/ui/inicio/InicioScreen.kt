@@ -104,8 +104,8 @@ fun InicioScreen(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 14.dp),
         ) {
-            Image(painterResource(R.drawable.logo_tagarara), stringResource(R.string.logo_description), Modifier.size(34.dp))
-            Text("TAGARARA", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 9.dp))
+            Image(painterResource(R.drawable.logo_Vocabu), stringResource(R.string.logo_description), Modifier.size(34.dp))
+            Text("Vocabu", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 9.dp))
             Spacer(Modifier.weight(1f))
             Surface(onClick = aoAbrirPerfil, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp)) {

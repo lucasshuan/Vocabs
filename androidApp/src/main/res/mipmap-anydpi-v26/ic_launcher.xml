@@ -16,6 +16,6 @@
   com "resource mipmap/ic_launcher not found". Já foi tentado — não tente de novo.
 -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/tagarara_icon_background" />
+    <background android:drawable="@color/Vocabu_icon_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground_image" />
 </adaptive-icon>

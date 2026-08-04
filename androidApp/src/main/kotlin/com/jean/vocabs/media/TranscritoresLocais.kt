@@ -123,7 +123,7 @@ class TranscritorDeAudio(private val context: Context) {
                 reconhecedor.destroy()
             }
 
-            thread(name = "tagarara-stt", isDaemon = true) {
+            thread(name = "Vocabu-stt", isDaemon = true) {
                 runCatching {
                     FileInputStream(caminho).use { entrada ->
                         entrada.skip(GravadorDeAudio.CABECALHO_WAV.toLong())

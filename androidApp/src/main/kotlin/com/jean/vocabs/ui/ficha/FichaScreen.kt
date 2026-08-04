@@ -113,7 +113,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                         onClick = {
                             menu = false
                             entrada?.let { item ->
-                                val texto = "${item.titulo} — ${item.ficha?.traducao.orEmpty()}\n${item.trecho.orEmpty()}\nTagarara"
+                                val texto = "${item.titulo} — ${item.ficha?.traducao.orEmpty()}\n${item.trecho.orEmpty()}\nVocabu"
                                 contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, texto)
@@ -144,7 +144,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                     // dele, e falar alemão com voz portuguesa seria pior ainda.
                     tts?.let { voz ->
                         Surface(
-                            onClick = { voz.speak(item.titulo, TextToSpeech.QUEUE_FLUSH, null, "tagarara-ficha") },
+                            onClick = { voz.speak(item.titulo, TextToSpeech.QUEUE_FLUSH, null, "Vocabu-ficha") },
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceVariant,
                         ) {

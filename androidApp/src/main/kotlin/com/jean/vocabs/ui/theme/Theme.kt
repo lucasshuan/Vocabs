@@ -21,7 +21,7 @@ import com.jean.vocabs.R
 import com.jean.vocabs.shared.PreferenciaDeTema
 
 /** Cores semânticas que não têm um papel próprio no ColorScheme do Material. */
-object TagararaColors {
+object VocabuColors {
     val Mint = Color(0xFF8FDC5E)
     val MintDark = Color(0xFF3F8A22)
 
@@ -58,7 +58,7 @@ private val LightColors = lightColorScheme(
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFF1EBF8),
     onSecondaryContainer = Color(0xFF33273F),
-    tertiary = TagararaColors.MintDark,
+    tertiary = VocabuColors.MintDark,
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFDDF3D1),
     onTertiaryContainer = Color(0xFF19430A),
@@ -85,7 +85,7 @@ private val DarkColors = darkColorScheme(
     onSecondary = Color(0xFF271F30),
     secondaryContainer = Color(0xFF332A40),
     onSecondaryContainer = Color(0xFFE6DDF0),
-    tertiary = TagararaColors.Mint,
+    tertiary = VocabuColors.Mint,
     onTertiary = Color(0xFF183109),
     tertiaryContainer = Color(0xFF294B1A),
     onTertiaryContainer = Color(0xFFD9F4CA),

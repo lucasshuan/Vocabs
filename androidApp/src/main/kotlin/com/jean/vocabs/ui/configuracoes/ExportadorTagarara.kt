@@ -12,12 +12,12 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 
-object ExportadorTagarara {
+object ExportadorVocabu {
     suspend fun criar(context: Context, dados: DadosExportacao): File = withContext(Dispatchers.IO) {
         val pasta = File(context.cacheDir, "exportacoes").apply { mkdirs() }
-        val destino = File(pasta, "tagarara-${System.currentTimeMillis()}.zip")
+        val destino = File(pasta, "Vocabu-${System.currentTimeMillis()}.zip")
         ZipOutputStream(FileOutputStream(destino)).use { zip ->
-            zip.putNextEntry(ZipEntry("tagarara.json"))
+            zip.putNextEntry(ZipEntry("Vocabu.json"))
             zip.write(json(dados).toString(2).toByteArray(Charsets.UTF_8))
             zip.closeEntry()
 
@@ -36,7 +36,7 @@ object ExportadorTagarara {
         // 2: `ipa` virou `pronuncia` e o par de idiomas deixou de ser um valor
         // fixo do arquivo para ser uma propriedade de cada captura.
         put("schemaVersion", 2)
-        put("app", "Tagarara")
+        put("app", "Vocabu")
         put("exportadoEm", System.currentTimeMillis())
         put("usoIa", JSONObject().put("mes", dados.usoIa.mes).put("geracoes", dados.usoIa.usadas))
         put("capturas", JSONArray().apply {

@@ -1,11 +1,11 @@
-# Tagarara
+# Vocabu
 
-Tagarara é um app de vocabulário que captura palavras e expressões em inglês no momento em que
+Vocabu é um app de vocabulário que captura palavras e expressões em inglês no momento em que
 elas aparecem — jogando, lendo, assistindo — e transforma cada captura numa ficha gerada por IA.
 
 Os dados ficam no aparelho. O servidor só intermedia a chamada de IA.
 
-**Estado:** identidade Tagarara e fluxo local-first implementados. Uma captura pode gerar várias
+**Estado:** identidade Vocabu e fluxo local-first implementados. Uma captura pode gerar várias
 fichas; foto usa OCR local, áudio tenta transcrição local no Android 13+, e ambos mantêm edição
 manual. A revisão é um cloze digitado, o perfil mostra 84 dias de atividade e a exportação gera um
 ZIP versionado com JSON e mídias.
@@ -60,7 +60,7 @@ Sem terminal dá no mesmo: Android Studio → **Device Manager** → ▶ no `voc
 ```
 
 `installDebug` compila o APK de debug e **instala em todo aparelho conectado** — emulador, celular
-físico por USB, ou os dois. Ele não sobe emulador e não abre o app: o ícone da Tagarara aparece na
+físico por USB, ou os dois. Ele não sobe emulador e não abre o app: o ícone da Vocabu aparece na
 gaveta.
 
 Para o **celular físico**: ativar "Depuração USB" em Opções do desenvolvedor, conectar por cabo e
@@ -122,7 +122,7 @@ publicado**):
 
 ```powershell
 & "$env:JAVA_HOME\bin\keytool.exe" -genkeypair -v `
-  -keystore $HOME\tagarara-release.jks -alias tagarara `
+  -keystore $HOME\Vocabu-release.jks -alias Vocabu `
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
@@ -131,8 +131,8 @@ versão instalada, visível em `$env:ANDROID_HOME\build-tools`):
 
 ```powershell
 & "$env:ANDROID_HOME\build-tools\37.0.0\apksigner.bat" sign `
-  --ks $HOME\tagarara-release.jks --ks-key-alias tagarara `
-  --out tagarara.apk `
+  --ks $HOME\Vocabu-release.jks --ks-key-alias Vocabu `
+  --out Vocabu.apk `
   androidApp\build\outputs\apk\release\androidApp-release-unsigned.apk
 ```
 

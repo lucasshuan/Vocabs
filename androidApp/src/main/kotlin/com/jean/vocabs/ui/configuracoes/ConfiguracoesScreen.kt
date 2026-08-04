@@ -122,7 +122,7 @@ private fun compartilhar(contexto: android.content.Context, arquivo: File) {
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    contexto.startActivity(Intent.createChooser(intent, "Exportar dados da Tagarara"))
+    contexto.startActivity(Intent.createChooser(intent, "Exportar dados da Vocabu"))
 }
 
 private fun rotuloDoTema(tema: PreferenciaDeTema): String = when (tema) {

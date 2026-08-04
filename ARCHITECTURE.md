@@ -1,6 +1,6 @@
-# Arquitetura da Tagarara
+# Arquitetura da Vocabu
 
-O nome público é **Tagarara**. `applicationId`, namespace, nome do banco e rotas
+O nome público é **Vocabu**. `applicationId`, namespace, nome do banco e rotas
 internas continuam `com.jean.vocabs`/Vocabs para atualizar instalações existentes
 sem perder dados.
 
@@ -170,7 +170,7 @@ empacotado do ML Kit. Áudio é WAV PCM 16 kHz mono. Em API 33+ o arquivo PCM é
 entregue ao `SpeechRecognizer` local; sem API/modelo ou em caso de falha, a
 captura passa para edição manual.
 
-O ZIP de exportação é criado em `cacheDir/exportacoes`, contém `tagarara.json`
+O ZIP de exportação é criado em `cacheDir/exportacoes`, contém `Vocabu.json`
 com `schemaVersion` e as mídias referenciadas, e é compartilhado por
 `FileProvider` com permissão temporária de leitura.
 

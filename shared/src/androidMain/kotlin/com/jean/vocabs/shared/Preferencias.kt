@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.map
 class Preferencias(context: Context) {
 
     private val prefs: SharedPreferences =
-        context.applicationContext.getSharedPreferences("tagarara", Context.MODE_PRIVATE)
+        context.applicationContext.getSharedPreferences("Vocabu", Context.MODE_PRIVATE)
 
     // ---- idiomas ------------------------------------------------------------
 

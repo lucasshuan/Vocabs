@@ -69,7 +69,7 @@ class GravadorDeAudio(private val context: Context) {
             audioRecord = gravador
             arquivo = destino
             nivel = 0f
-            trabalhador = thread(name = "tagarara-wav", isDaemon = true) {
+            trabalhador = thread(name = "Vocabu-wav", isDaemon = true) {
                 FileOutputStream(destino, true).use { saida ->
                     val buffer = ByteArray(tamanho)
                     while (escrevendo) {

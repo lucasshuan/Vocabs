@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.shared.domain.FormatoCaptura
 import com.jean.vocabs.ui.theme.LocalTemaEscuro
-import com.jean.vocabs.ui.theme.TagararaColors
+import com.jean.vocabs.ui.theme.VocabuColors
 
 /**
  * Uma cor por tipo de captura, e a mesma tripla em todos os lugares.
@@ -31,9 +31,9 @@ fun coresDoFormato(formato: FormatoCaptura): CoresDeCategoria {
         FormatoCaptura.TEXTO -> CoresDeCategoria(cores.primary, cores.secondaryContainer)
         FormatoCaptura.AUDIO -> CoresDeCategoria(cores.tertiary, cores.tertiaryContainer)
         FormatoCaptura.FOTO -> if (escuro) {
-            CoresDeCategoria(TagararaColors.PapagaioEscuro, TagararaColors.PapagaioContainerEscuro)
+            CoresDeCategoria(VocabuColors.PapagaioEscuro, VocabuColors.PapagaioContainerEscuro)
         } else {
-            CoresDeCategoria(TagararaColors.Papagaio, TagararaColors.PapagaioContainer)
+            CoresDeCategoria(VocabuColors.Papagaio, VocabuColors.PapagaioContainer)
         }
     }
 }
@@ -50,7 +50,7 @@ fun coresDoFormato(formato: FormatoCaptura): CoresDeCategoria {
  */
 @Composable
 fun corDeDescarte(): Color =
-    if (LocalTemaEscuro.current) TagararaColors.PapagaioEscuro else TagararaColors.Papagaio
+    if (LocalTemaEscuro.current) VocabuColors.PapagaioEscuro else VocabuColors.Papagaio
 
 fun iconeDoFormato(formato: FormatoCaptura): ImageVector = when (formato) {
     FormatoCaptura.TEXTO -> Icones.Lapis

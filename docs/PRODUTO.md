@@ -1,6 +1,6 @@
-# Produto: Tagarara
+# Produto: Vocabu
 
-Tagarara transforma termos encontrados em jogos, livros, séries e conversas em
+Vocabu transforma termos encontrados em jogos, livros, séries e conversas em
 fichas ligadas ao contexto pessoal. Não há currículo fixo: o conteúdo nasce da
 vida da pessoa.
 

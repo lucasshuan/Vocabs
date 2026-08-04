@@ -32,7 +32,7 @@ class ConfiguracoesViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _exportando.value = true
             runCatching {
-                ExportadorTagarara.criar(getApplication(), repositorio.dadosParaExportacao())
+                ExportadorVocabu.criar(getApplication(), repositorio.dadosParaExportacao())
             }.onSuccess(aoPronto).onFailure { aoErro(it.message ?: "Não foi possível exportar os dados.") }
             _exportando.value = false
         }
