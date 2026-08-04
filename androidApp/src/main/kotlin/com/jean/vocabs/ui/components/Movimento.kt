@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.components
 
+import android.provider.Settings
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.Spring
@@ -21,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -79,6 +81,38 @@ object Movimento {
 
     /** A mola do que comemora — o tique de "Guardado", o selo que aparece. */
     fun <T> molaElastica() = spring<T>(dampingRatio = 0.52f, stiffness = Spring.StiffnessMediumLow)
+
+    /**
+     * A mola de quem sai do lugar sob o dedo — os alvos do leque de captura.
+     *
+     * Mais dura que [mola] porque a distância é grande e o gesto está em curso:
+     * um alvo que leva 300 ms para chegar ao lugar é um alvo que ainda está
+     * viajando quando o dedo já decidiu para onde vai.
+     */
+    fun <T> molaDeGesto() = spring<T>(dampingRatio = 0.72f, stiffness = Spring.StiffnessMedium)
+}
+
+/**
+ * Se o aparelho está com as animações desligadas.
+ *
+ * "Reduzir movimento" no Android é a escala de duração dos animadores em zero,
+ * nas opções de acessibilidade e nas de desenvolvedor. Quem liga isso não quer o
+ * halo do botão de captura respirando no canto da tela para sempre — e a regra
+ * do handoff é que, nesse caso, o botão simplesmente fica parado.
+ *
+ * Lido uma vez por composição e não observado: a chave vive em Configurações do
+ * sistema, e voltar para o app recompõe tudo de qualquer jeito.
+ */
+@Composable
+fun movimentoReduzido(): Boolean {
+    val contexto = LocalContext.current
+    return remember(contexto) {
+        Settings.Global.getFloat(
+            contexto.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f,
+        ) == 0f
+    }
 }
 
 /**

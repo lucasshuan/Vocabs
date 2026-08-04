@@ -62,10 +62,17 @@ class CapturaViewModel(app: Application) : AndroidViewModel(app) {
      * `viewModelScope`, o cancelamento da tela deixaria a captura para sempre em
      * TRANSCREVENDO.
      */
-    fun salvarMidia(formato: FormatoCaptura, caminho: String, duracaoMs: Long?, alvo: String) {
+    fun salvarMidia(
+        formato: FormatoCaptura,
+        caminho: String,
+        duracaoMs: Long?,
+        alvo: String,
+        aoIdentificar: (Long) -> Unit = {},
+    ) {
         val par = ParIdiomas(nativo = estado.value.par.nativo, alvo = alvo)
         AppContainer.escopo.launch {
             val id = repositorio.capturarMidia(formato, caminho, duracaoMs, par)
+            aoIdentificar(id)
             val resultado = when (formato) {
                 FormatoCaptura.FOTO -> transcritorFoto.transcrever(caminho)
                 FormatoCaptura.AUDIO -> transcritorAudio.transcrever(caminho)

@@ -22,20 +22,29 @@ dois lugares vira componente antes de divergir num terceiro.
 Duas convenções globais que o handoff de idiomas trouxe:
 
 - **Uma cor por tipo de captura** (`ui/components/Categorias.kt`): texto é
-  ameixa, áudio é menta, foto é o vermelho do papagaio. A tripla aparece na folha
-  do `+` e nos discos de Pendentes, e é o que forma a associação no ato da
-  captura. O vermelho é categoria, nunca erro nem ação.
+  ameixa, áudio é menta, foto é o vermelho do papagaio. A tripla aparece nos alvos
+  do leque do `+` e nos discos de Pendentes, e é o que forma a associação no ato
+  da captura. O vermelho é categoria, nunca erro. A única exceção é `corDeDescarte`
+  — o `+` vermelho de "solte aqui para descartar" —, e ela se paga porque só existe
+  **durante a gravação**, quando o alvo da foto já recolheu: os dois sentidos nunca
+  dividem a tela. Um segundo vermelho vindo do `error` do tema seria quase igual ao
+  primeiro, que é o jeito garantido de tornar os dois ilegíveis.
 - **Toda bandeira da faixa tem selo** (`ui/components/FaixaDeIdiomas.kt`): número
   em ameixa quando há o que revisar, tique em menta quando está em dia, ampulheta
   cinza quando o curso ainda não tem nada agendado. Nunca vazio, nunca um "0"
   escrito — o zero é a boa notícia da faixa. A ordem é fixa: o deslize do
   carrossel depende de a posição não mudar.
-- **Três durações e duas molas** (`ui/components/Movimento.kt`): toda animação sai
+- **Três durações e três molas** (`ui/components/Movimento.kt`): toda animação sai
   de `Movimento`. `RAPIDO` (150 ms) para o que só reage, `PADRAO` (240 ms) para o
   que entra e sai, `AMPLO` (620 ms) só para o que se lê enquanto corre — o arco do
   anel, a barra da quota, um número contando. A regra que decide entre eles:
   **nada pelo que se espera passa de `PADRAO`**. Entradas são sempre mais longas
   que saídas, porque quem fecha já decidiu sair.
+
+A terceira mola é `molaDeGesto`, mais dura que as outras duas: ela move os alvos
+do leque, e um alvo que leva 300 ms para chegar ao lugar ainda está viajando
+quando o dedo já decidiu para onde vai. `movimentoReduzido()` lê a escala de
+animação do sistema — com ela em zero o halo do `+` some e o botão fica parado.
 
 Do vocabulário de movimento saem quatro peças que as telas reusam: `encolheAoTocar`
 (o cartão cede sob o dedo — está dentro de `CartaoDaTela`, não em cada chamada),
@@ -45,9 +54,28 @@ lazy, onde o certo é `animateItem`), `fracaoAnimada` (devolve `State` para que 
 `contagemAnimada` (só para conquista acumulada; fila e dívida não contam do zero,
 senão o atraso vira placar).
 
-O fluxo de captura são três telas, e cada passo já é durável: a folha guarda o
-trecho (`Capturar`), a seleção marca os termos (`Selecionar`) e a confirmação
-mostra o que entrou enquanto a IA trabalha (`Guardado`).
+O fluxo de captura começa num **gesto**, não numa tela, e cada passo já é
+durável. `ui/captura/` guarda as quatro peças: `GestoDeCaptura.kt` é a geometria
+pura — onde ficam os três alvos e que alvo um deslocamento escolhe;
+`HubDeCaptura.kt` é o `+`, o leque, o véu e a gravação, tudo num overlay de tela
+cheia que não intercepta toque nenhum além do próprio botão; `GavetaDeTexto.kt` é
+o campo que o toque solto abre; `AvisoDeCaptura.kt` é o cartão de 5 s que confirma
+e oferece o atalho. Depois disso a seleção marca os termos (`Selecionar`) e a
+confirmação mostra o que entrou enquanto a IA trabalha (`Guardado`).
+
+Três regras do gesto, e todas se pagam:
+
+- **A escolha do alvo é por ângulo, não por acerto do disco.** Passou de 56 dp do
+  `+`, o setor em que o dedo está já marca o alvo e o disco correspondente cresce.
+  Um menu radial que exija alcançar fisicamente um alvo a 166 dp obriga a mão a se
+  reposicionar no meio do gesto, e é assim que um atalho de um gesto só vira dois.
+- **A gravação começa ao entrar no alvo, não ao soltar** — o áudio do instante em
+  que o dedo chega já está no arquivo. `MINIMO_DE_GRAVACAO_MS` (0,8 s) descarta o
+  toque que passou do limiar por acidente, e mede em milissegundos: comparado
+  contra um contador de segundos inteiros, o corte descartava toda gravação curta
+  e nenhuma outra.
+- **Não existe botão de parar.** O dedo não sai da tela entre abrir o leque e
+  guardar, e voltar ao `+` desfaz pelo mesmo caminho que fez.
 
 ## Captura e fichas
 
@@ -108,13 +136,18 @@ O filtro é aplicado em memória, e não em SQL: o curso aberto é um fluxo de
 preferência, e uma consulta parametrizada por ele reabriria o cursor a cada
 deslize do carrossel.
 
-O idioma é decidido **no ato da gravação**, não no da seleção: a folha do `+`
-pede o destino antes de capturar, com o curso aberto já marcado, e
-`capturarTexto`/`capturarTrecho`/`capturarMidia` aceitam o par escolhido. Por
-isso toda linha de Pendentes tem idioma no subtexto, e por isso um texto colado
-que nunca chegou ao "Guardar" fica na fila com a língua certa em vez de se
-perder. `alterarIdiomaDaCaptura` conserta a escolha enquanto a captura não virou
-fichas — depois disso existem entradas nascidas nesse par.
+O idioma é decidido **no ato da gravação**, não no da seleção, e **não é
+perguntado**: a captura vai para o curso aberto no hub, congelado no instante em
+que o dedo desce, e `capturarTexto`/`capturarTrecho`/`capturarMidia` aceitam o
+par escolhido. Por isso toda linha de Pendentes tem idioma no subtexto, e por
+isso um texto colado que nunca chegou ao "Guardar" fica na fila com a língua
+certa em vez de se perder. `alterarIdiomaDaCaptura` conserta a escolha enquanto a
+captura não virou fichas — depois disso existem entradas nascidas nesse par.
+
+A folha que pedia o destino antes de deixar capturar foi removida com o handoff
+do gesto: ela cobrava um toque em toda captura para acertar as poucas em que o
+curso não era o que estava na tela, e a correção já existia em Pendentes, onde o
+erro é visível e desfazer custa um toque.
 
 A troca de curso saiu do perfil; lá ficaram só adicionar, remover
 (`Preferencias.desmatricular`, que nunca esvazia a lista) e o idioma-base.
