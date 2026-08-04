@@ -1,10 +1,5 @@
 package com.jean.vocabs.ui.inicio
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -66,13 +61,12 @@ import com.jean.vocabs.ui.idiomas.idiomaDe
  * palavras sumirem sem que ninguém tivesse pedido.
  *
  * Deslizar não é só navegar — é trocar o curso aberto. Por isso o botão de
- * revisar, a folha do `+` e a fila de revisão seguem a página visível sem que
- * nenhuma delas precise saber que existe um carrossel.
+ * revisar e a folha do `+` seguem a página visível sem que nenhum dos dois
+ * precise saber que existe um carrossel.
  */
 @Composable
 fun InicioScreen(
     aoCapturar: () -> Unit,
-    aoAbrirPendentes: () -> Unit,
     aoRevisar: () -> Unit,
     aoAbrirPerfil: () -> Unit,
     aoAdicionarIdioma: () -> Unit,
@@ -149,18 +143,9 @@ fun InicioScreen(
             }
         }
 
-        RodapeDaFila(
-            total = estado.capturasNaFila,
-            noCurso = estado.paginaAtiva?.capturasNaFila ?: 0,
-            idioma = idiomaDe(estado.ativo).nome,
-            aoClicar = aoAbrirPendentes,
-            modifier = Modifier.padding(horizontal = 20.dp),
-        )
-
-        // Fora do pager e depois do aviso de fila, de propósito: aqui os pontos
-        // não pertencem a nenhuma página nem a nenhum cartão, e ficam no mesmo
-        // lugar não importa o que muda acima — inclusive o aviso de fila
-        // aparecendo ou sumindo conforme o curso aberto.
+        // Fora do pager, de propósito: aqui os pontos não pertencem a nenhuma
+        // página nem a nenhum cartão, e ficam no mesmo lugar não importa o que
+        // muda acima.
         PontosDePagina(
             total = paginas.size,
             atual = pager.currentPage,
@@ -335,60 +320,6 @@ private fun ConviteDeCaptura(idioma: String, aoClicar: () -> Unit) {
             aoClicar = aoClicar,
             modifier = Modifier.padding(top = 12.dp),
         )
-    }
-}
-
-/**
- * O rodapé da fila, fora do carrossel.
- *
- * A fila é de todos os idiomas e não muda quando a página muda — o que muda é
- * quanto dela pertence ao curso aberto. Trocar só a segunda linha, com um
- * `AnimatedContent` curto, é o que diz isso sem sugerir que a fila inteira
- * pertence à página.
- */
-@Composable
-private fun RodapeDaFila(
-    total: Int,
-    noCurso: Int,
-    idioma: String,
-    aoClicar: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (total == 0) return
-    val cores = MaterialTheme.colorScheme
-    CaixaTracejada(modifier = modifier.fillMaxWidth(), aoClicar = aoClicar) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            DiscoDeIcone(
-                icone = Icones.Relogio,
-                descricao = null,
-                cor = cores.tertiary,
-                fundo = cores.tertiaryContainer,
-                tamanho = 34.dp,
-            )
-            Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(
-                    text = "$total ${if (total == 1) "captura na fila" else "capturas na fila"}",
-                    style = MaterialTheme.typography.titleSmall,
-                )
-                AnimatedContent(
-                    targetState = noCurso,
-                    transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(100)) },
-                    label = "filaDoCurso",
-                ) { quantas ->
-                    Text(
-                        text = when {
-                            quantas == 0 -> "de todos os idiomas"
-                            quantas == total -> "todas do ${idioma.lowercase()}"
-                            quantas == 1 -> "1 delas é do ${idioma.lowercase()}"
-                            else -> "$quantas delas são do ${idioma.lowercase()}"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = cores.onSurfaceVariant,
-                    )
-                }
-            }
-            Icon(Icones.Avancar, null, tint = cores.onSurfaceVariant, modifier = Modifier.size(20.dp))
-        }
     }
 }
 

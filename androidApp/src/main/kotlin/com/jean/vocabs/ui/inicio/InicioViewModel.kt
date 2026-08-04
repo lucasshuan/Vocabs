@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.domain.Captura
 import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.Escopo
@@ -33,8 +32,6 @@ data class PaginaDoInicio(
     /** Quantas vencem ainda nas próximas 24h — o "Próximas 5 em 19h". */
     val proximasEm24h: Int,
     val capturadasHoje: List<Entrada>,
-    /** Capturas cruas deste curso, dentro da fila que é de todos. */
-    val capturasNaFila: Int,
 ) {
     val par: ParIdiomas get() = resumo.par
 }
@@ -43,15 +40,11 @@ data class InicioEstado(
     val paginas: List<PaginaDoInicio> = emptyList(),
     val ativo: String = "",
     val nativo: String = "",
-    /** A fila inteira, de todos os idiomas — Pendentes nunca é recortada por curso. */
-    val capturasNaFila: Int = 0,
     val carregado: Boolean = false,
 ) {
     val cursos: List<ResumoCurso> get() = paginas.map { it.resumo }
 
     val indiceAtivo: Int get() = paginas.indexOfFirst { it.par.alvo == ativo }.coerceAtLeast(0)
-
-    val paginaAtiva: PaginaDoInicio? get() = paginas.getOrNull(indiceAtivo)
 
     /** Com um curso só não há faixa nem carrossel: não há para onde deslizar. */
     val temCarrossel: Boolean get() = paginas.size > 1
@@ -73,26 +66,22 @@ class InicioViewModel(app: Application) : AndroidViewModel(app) {
         preferencias.observarPar(),
         preferencias.observarCursos(),
         repositorio.observarProntas(Escopo.Todos),
-        repositorio.observarCapturasPendentes(Escopo.Todos),
-    ) { par, matriculados, prontas, capturas ->
+    ) { par, matriculados, prontas ->
         val agora = System.currentTimeMillis()
         val hoje = LocalDate.now()
         val porCurso = prontas.groupBy { it.par.alvo }
-        val capturasPorCurso = capturas.groupBy { it.par.alvo }
 
         InicioEstado(
             paginas = matriculados.map { alvo ->
                 pagina(
                     par = ParIdiomas(nativo = par.nativo, alvo = alvo),
                     entradas = porCurso[alvo].orEmpty(),
-                    capturas = capturasPorCurso[alvo].orEmpty(),
                     agora = agora,
                     hoje = hoje,
                 )
             },
             ativo = par.alvo,
             nativo = par.nativo,
-            capturasNaFila = capturas.size,
             carregado = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InicioEstado())
@@ -100,7 +89,6 @@ class InicioViewModel(app: Application) : AndroidViewModel(app) {
     private fun pagina(
         par: ParIdiomas,
         entradas: List<Entrada>,
-        capturas: List<Captura>,
         agora: Long,
         hoje: LocalDate,
     ): PaginaDoInicio {
@@ -121,7 +109,6 @@ class InicioViewModel(app: Application) : AndroidViewModel(app) {
             capturadasHoje = entradas
                 .filter { Instant.ofEpochMilli(it.criadoEm).atZone(ZoneId.systemDefault()).toLocalDate() == hoje }
                 .take(3),
-            capturasNaFila = capturas.size,
         )
     }
 

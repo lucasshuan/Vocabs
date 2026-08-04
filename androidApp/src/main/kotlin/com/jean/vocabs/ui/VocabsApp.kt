@@ -174,7 +174,6 @@ fun VocabsApp() {
             composable(Rotas.INICIO) {
                 InicioScreen(
                     aoCapturar = { abrirFolha() },
-                    aoAbrirPendentes = { nav.irParaAba(Rotas.PENDENTES) },
                     aoRevisar = { nav.navigate(Rotas.REVISAO) },
                     aoAbrirPerfil = { nav.irParaAba(Rotas.PERFIL) },
                     aoAdicionarIdioma = { nav.navigate(Rotas.NOVO_IDIOMA) },
