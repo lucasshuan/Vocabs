@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.media.lembrarFoto
+import com.jean.vocabs.media.lembrarPerfilDeOnda
+import com.jean.vocabs.media.picoDaBarra
 import com.jean.vocabs.media.rememberReprodutor
 import com.jean.vocabs.shared.domain.AlvoSelecionado
 import com.jean.vocabs.shared.domain.FormatoCaptura
@@ -364,7 +366,7 @@ private fun PreviaFoto(caminho: String) {
  */
 @Composable
 private fun PlayerAudio(caminho: String, duracaoMs: Long?, corrigindo: Boolean, aoCorrigir: () -> Unit) {
-    val player by rememberReprodutor(caminho)
+    val player = rememberReprodutor(caminho)
     val paleta = coresDoFormato(FormatoCaptura.AUDIO)
     CartaoDaTela(recheio = PaddingValues(14.dp), modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
@@ -378,9 +380,17 @@ private fun PlayerAudio(caminho: String, duracaoMs: Long?, corrigindo: Boolean, 
                     )
                 }
             }
-            OndaDeAudio(paleta.cor, Modifier.weight(1f))
+            OndaDeAudio(
+                caminho = caminho,
+                cor = paleta.cor,
+                progresso = player.progresso,
+                modifier = Modifier.weight(1f),
+            )
             Text(
-                text = duracaoMs?.let(::formatarDuracaoMs).orEmpty(),
+                // Tocando, o número anda junto com a onda: quem está ouvindo quer
+                // saber quanto falta, não quanto o arquivo tem.
+                text = if (player.tocando) formatarDuracaoMs(player.posicaoMs)
+                else duracaoMs?.let(::formatarDuracaoMs).orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -430,7 +440,11 @@ private fun AvisoDeErro(texto: String) {
     }
 }
 
-private val alturasDaOnda = listOf(0.40f, 0.70f, 1f, 0.55f, 0.80f, 0.35f, 0.65f, 0.45f, 0.90f, 0.30f)
+/** O que a barra mais baixa ainda ocupa, para o silêncio virar linha e não sumiço. */
+private val ALTURA_MINIMA_DA_ONDA = 3.dp
+
+/** Quanto a barra ainda não tocada se apaga em relação à já ouvida. */
+private const val OPACIDADE_POR_TOCAR = 0.3f
 
 /**
  * A onda desenhada, com barra de largura fixa em vez de dez barras esticadas.
@@ -438,20 +452,35 @@ private val alturasDaOnda = listOf(0.40f, 0.70f, 1f, 0.55f, 0.80f, 0.35f, 0.65f,
  * Repartir a largura disponível entre dez barras funciona na maquete de 340 px e
  * vira dez comprimidos deitados num celular de verdade: o que dá a leitura de
  * "áudio" é a barra fina repetida, não a contagem delas.
+ *
+ * O relevo vem do arquivo, e o preenchimento vem da agulha: o que já passou fica
+ * na cor cheia e o que falta fica apagado. Enquanto o perfil não chegou — ou se o
+ * arquivo não for legível — todas as barras ficam na altura mínima; uma onda
+ * inventada diria sobre a gravação uma coisa que ninguém mediu.
  */
 @Composable
-private fun OndaDeAudio(cor: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.height(24.dp)) {
+private fun OndaDeAudio(
+    caminho: String,
+    cor: androidx.compose.ui.graphics.Color,
+    progresso: Float,
+    modifier: Modifier = Modifier,
+) {
+    val perfil by lembrarPerfilDeOnda(caminho)
+    Canvas(modifier = modifier.height(26.dp)) {
         val largura = 3.dp.toPx()
         val passo = largura * 2
+        val minima = ALTURA_MINIMA_DA_ONDA.toPx()
         val quantidade = (size.width / passo).toInt().coerceAtLeast(1)
+        val agulha = size.width * progresso
         repeat(quantidade) { indice ->
-            val altura = size.height * alturasDaOnda[indice % alturasDaOnda.size]
+            val altura = minima + (size.height - minima) * perfil.picoDaBarra(indice, quantidade)
+            val x = indice * passo
             drawRoundRect(
-                color = cor.copy(alpha = 0.45f),
-                topLeft = Offset(indice * passo, (size.height - altura) / 2f),
+                color = cor,
+                topLeft = Offset(x, (size.height - altura) / 2f),
                 size = Size(largura, altura),
                 cornerRadius = CornerRadius(largura / 2f),
+                alpha = if (x + largura <= agulha) 1f else OPACIDADE_POR_TOCAR,
             )
         }
     }

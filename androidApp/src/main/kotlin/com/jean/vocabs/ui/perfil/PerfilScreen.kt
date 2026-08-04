@@ -122,8 +122,12 @@ fun PerfilScreen(
 
         LinhaDeUsoDeIa(usadas = estado.usoIa.usadas, limite = estado.usoIa.limite)
 
+        // O subtexto não é enfeite: o idioma-base era uma linha desta tela e agora
+        // está um toque mais fundo. Sem citá-lo aqui, quem o procura onde ele
+        // estava não tem nenhuma pista de para onde olhar.
         LinhaDeLista(
             titulo = "Configurações",
+            detalhe = "meu idioma, tema e meus dados",
             aoClicar = aoAbrirConfiguracoes,
             inicio = { DiscoDeIcone(Icones.Engrenagem, null, cor = MaterialTheme.colorScheme.onSurfaceVariant, fundo = MaterialTheme.colorScheme.surfaceVariant) },
             fim = { ChevronDeLinha() },

@@ -52,7 +52,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -250,9 +249,11 @@ private fun Secao(
         modifier = Modifier.entradaSuave(indice).fillMaxWidth().padding(top = 4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // O ícone do tema troca conforme a escolha, e a troca é um giro curto:
-            // é o retorno mais barato possível para quem acabou de tocar em
-            // "Escuro" e ainda não olhou para o resto da tela.
+            // Três dos quatro ícones nunca mudam, e para eles isto não anima
+            // nada. O de Aparência é o que se move: ele acompanha a escolha —
+            // sol, lua, meio disco — e o estouro da mola é a confirmação que
+            // sobra para quem tocou em "Escuro" com o dedo em cima do segmentado
+            // e não viu a pastilha deslizar por baixo dele.
             AnimatedContent(
                 targetState = icone,
                 transitionSpec = {
@@ -379,27 +380,25 @@ private fun PilulaTrocar() {
     }
 }
 
-/** O rodapé da tela: a marca e a versão instalada, centralizadas e discretas. */
+/**
+ * O rodapé da tela: a marca e a versão instalada.
+ *
+ * Alinhado à esquerda, como as linhas de Dados, e não centralizado. É a última
+ * coisa da coluna, e o que fica no fim desta tela cai debaixo do `+` de captura,
+ * que flutua no centro da base: uma assinatura centralizada some atrás dele
+ * justamente quando a rolagem chega ao fim.
+ */
 @Composable
 private fun Assinatura() {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+    LinhaDeLista(
+        inicio = { Image(painterResource(R.drawable.logo_vocabu), null, Modifier.size(34.dp)) },
     ) {
-        Image(painterResource(R.drawable.logo_vocabu), null, Modifier.size(30.dp))
+        Text("Vocabu", style = MaterialTheme.typography.titleSmall)
         Text(
-            text = "Vocabu · versão ${BuildConfig.VERSION_NAME}",
+            text = "versão ${BuildConfig.VERSION_NAME}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Text(
-            text = "As palavras são suas: elas ficam no aparelho e saem inteiras pelo botão de exportar.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.outline,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(top = 2.dp),
         )
     }
 }

@@ -193,7 +193,7 @@ fun VocabsApp() {
     Box(Modifier.fillMaxSize()) {
         NavHost(
             navController = nav,
-            startDestination = Rotas.CONFIGURACOES,
+            startDestination = Rotas.INICIO,
             modifier = Modifier
                 .fillMaxSize()
                 // Enquanto o hub tem a tela, o que está atrás sai do alcance do
