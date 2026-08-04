@@ -1,9 +1,14 @@
 package com.jean.vocabs.ui.progresso
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,69 +24,107 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.shared.domain.Degraus
+import com.jean.vocabs.shared.domain.QuotaDoDia
+import com.jean.vocabs.shared.domain.ResumoCurso
 import com.jean.vocabs.ui.components.AcaoSecundaria
 import com.jean.vocabs.ui.components.AnelDeProgresso
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.BarraDeFaixas
 import com.jean.vocabs.ui.components.CabecalhoDeDentro
+import com.jean.vocabs.ui.components.CaixaTracejada
 import com.jean.vocabs.ui.components.CartaoDaTela
-import com.jean.vocabs.ui.components.CartaoMetrica
 import com.jean.vocabs.ui.components.DiaDaSemana
 import com.jean.vocabs.ui.components.FaixaDaSemana
 import com.jean.vocabs.ui.components.Icones
-import com.jean.vocabs.ui.components.LinhaDeUsoDeIa
+import com.jean.vocabs.ui.components.Movimento
 import com.jean.vocabs.ui.components.contagemAnimada
 import com.jean.vocabs.ui.components.contornoDeCartao
+import com.jean.vocabs.ui.components.contornoTracejado
+import com.jean.vocabs.ui.components.encolheAoTocar
 import com.jean.vocabs.ui.components.fracaoAnimada
+import com.jean.vocabs.ui.components.lembrarToque
 import com.jean.vocabs.ui.idiomas.idiomaDe
+import kotlinx.coroutines.launch
 
 /**
  * Tela 08 do handoff — "Seu progresso", de um curso.
  *
- * Página de dentro, aberta por uma linha da tela Você. A bandeira no topo diz de
- * qual curso ela é, e a mesma tela se repete para cada idioma com os números
- * daquele. Três blocos: a semana com a quota, o estoque de palavras e os números
- * de apoio. Cada um dos dois primeiros é a porta de uma tela mais funda.
+ * Dois blocos, sempre os mesmos: a semana com a quota do dia e o estoque de
+ * palavras. Cada um é a porta de uma tela mais funda, e os dois chevrons são as
+ * únicas saídas. A tela não tem porcentagem de acerto, palavras por dia nem
+ * melhor sequência — os dias marcados na semana são o único registro de
+ * frequência que ela guarda.
+ *
+ * Sem palavra nenhuma no idioma a estrutura não muda: os mesmos dois cartões
+ * ficam tracejados, com os rótulos no lugar e nenhum número inventado. Um
+ * esqueleto mostra onde as coisas vão ficar; um "0 de 10" diria que já se
+ * falhou em alguma coisa.
+ *
+ * A pastilha da bandeira é o único indicador de curso e também o botão de troca:
+ * um toque abre a gaveta, escolher fecha e recarrega os dois cartões. Trocar
+ * aqui **não** troca o curso aberto do app — quem só quis olhar o francês não
+ * deve encontrar o `+` e a revisão mudados de idioma depois.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProgressoScreen(
     alvo: String?,
     aoVoltar: () -> Unit,
-    aoAbrirDiaADia: () -> Unit,
-    aoAbrirOQueFalta: () -> Unit,
+    aoAbrirDiaADia: (String) -> Unit,
+    aoAbrirOQueFalta: (String) -> Unit,
+    aoAdicionarIdioma: () -> Unit,
     vm: ProgressoViewModel = viewModel(),
 ) {
     LaunchedEffect(alvo) { vm.abrir(alvo) }
     val estado by vm.estado.collectAsStateWithLifecycle()
+    val cursos by vm.cursos.collectAsStateWithLifecycle()
     val podeRemover by vm.podeRemover.collectAsStateWithLifecycle()
     val cores = MaterialTheme.colorScheme
+    val escopo = rememberCoroutineScope()
     var confirmarRemocao by remember { mutableStateOf(false) }
+    var gavetaAberta by remember { mutableStateOf(false) }
+    val estadoDaGaveta = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    /** O curso olhado agora — o da rota, o escolhido na gaveta, ou o aberto. */
+    val olhado = estado.par.alvo
+    val vazio = estado.total == 0
+
+    fun fecharGaveta() {
+        escopo.launch { estadoDaGaveta.hide() }.invokeOnCompletion { gavetaAberta = false }
+    }
 
     if (confirmarRemocao) {
         AlertDialog(
             onDismissRequest = { confirmarRemocao = false },
-            title = { Text("Sair do ${idiomaDe(estado.par.alvo).nome.lowercase()}?") },
+            title = { Text("Sair do ${idiomaDe(olhado).nome.lowercase()}?") },
             text = { Text("As fichas continuam guardadas — o idioma volta com tudo se você matricular de novo.") },
             confirmButton = {
                 TextButton(onClick = {
                     confirmarRemocao = false
-                    vm.removerCurso(estado.par.alvo)
+                    vm.removerCurso(olhado)
                     aoVoltar()
                 }) { Text("Remover", color = cores.error) }
             },
@@ -98,191 +141,392 @@ fun ProgressoScreen(
             .padding(horizontal = 20.dp),
     ) {
         CabecalhoDeDentro("Seu progresso", aoVoltar, Modifier.padding(top = 8.dp)) {
-            PilulaDoCurso(estado.par.alvo)
+            PilulaDoCurso(alvo = olhado, aberta = gavetaAberta, aoClicar = { gavetaAberta = true })
         }
 
-        CartaoDaTela(aoClicar = aoAbrirDiaADia, recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${estado.mes} · esta semana",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = cores.onSurfaceVariant,
-                    )
-                    Icon(
-                        imageVector = Icones.Avancar,
-                        contentDescription = null,
-                        tint = cores.outline,
-                        modifier = Modifier.size(16.dp).padding(start = 2.dp),
-                    )
-                }
-                Text(
-                    text = rotuloDeSequencia(estado.diasSeguidos),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = cores.tertiary,
-                )
-            }
+        CartaoDaSemana(estado = estado, vazio = vazio, aoAbrir = { aoAbrirDiaADia(olhado) })
 
-            FaixaDaSemana(
-                dias = estado.semana.mapIndexed { indice, dia ->
-                    DiaDaSemana(
-                        sigla = SIGLAS_DA_SEMANA[indice],
-                        numero = dia.data.dayOfMonth,
-                        revisoes = dia.revisoes,
-                        hoje = dia.hoje,
-                        futuro = dia.futuro,
-                    )
-                },
-                modifier = Modifier.padding(top = 13.dp),
-            )
-
-            Box(Modifier.fillMaxWidth().padding(vertical = 13.dp).height(1.dp).background(cores.outlineVariant))
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = "Quota de hoje no ${idiomaDe(estado.par.alvo).nome.lowercase()}",
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = "${estado.quota.feita} de ${estado.quota.total} ${if (estado.quota.total == 1) "revisão" else "revisões"}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = cores.onSurfaceVariant,
-                    )
-                }
-                val avancoDaQuota by fracaoAnimada(estado.quota.fracao, "fracaoDaQuota")
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .background(cores.outlineVariant, RoundedCornerShape(4.dp)),
-                ) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth(avancoDaQuota)
-                            .height(8.dp)
-                            .background(cores.tertiary, RoundedCornerShape(4.dp)),
-                    )
-                }
-                Text(
-                    text = textoDaQuota(estado.quota.batida, estado.quota.naFila, estado.total),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = cores.onSurfaceVariant,
-                )
-            }
-        }
-
-        CartaoDaTela(aoClicar = aoAbrirOQueFalta, recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                AnelDeProgresso(
-                    fracao = if (estado.total == 0) 0f else estado.dominadas.toFloat() / estado.total,
-                    tamanho = 78.dp,
-                    espessura = 9.dp,
-                ) {
-                    // Conta do zero junto com o arco: é a contagem de conquista
-                    // acumulada que `contagemAnimada` existe para servir.
-                    Text(
-                        text = "${contagemAnimada(estado.dominadas, "dominadas")}",
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                    Text(
-                        text = "de ${estado.total}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = cores.onSurfaceVariant,
-                    )
-                }
-                Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
-                    Text(tituloDoEstoque(estado.dominadas), style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        text = textoDoQuePertoDeVirar(estado.pertoDeVirar.size),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = cores.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 5.dp),
-                    )
-                }
-                Icon(Icones.Avancar, null, tint = cores.outline, modifier = Modifier.size(20.dp))
-            }
-
-            BarraDeFaixas(
-                faixas = listOf(
-                    estado.dominadas to cores.tertiary,
-                    estado.familiares to cores.tertiary.copy(alpha = 0.55f),
-                    estado.aprendendo to cores.outlineVariant,
-                ),
-                modifier = Modifier.padding(top = 14.dp),
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-            ) {
-                LegendaDaFaixa("${estado.dominadas} dominadas", cores.tertiary)
-                LegendaDaFaixa("${estado.familiares} familiares", cores.tertiary.copy(alpha = 0.55f))
-                LegendaDaFaixa("${estado.aprendendo} aprendendo", cores.outlineVariant)
-            }
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            CartaoMetrica(
-                valor = estado.taxaDeAcerto?.let { "${(it * 100).toInt()}%" } ?: "—",
-                rotulo = "de acerto",
-                modifier = Modifier.weight(1f),
-            )
-            CartaoMetrica(
-                valor = estado.palavrasPorDia?.let { formatarComVirgula(it) } ?: "—",
-                rotulo = "palavras/dia",
-                modifier = Modifier.weight(1f),
-            )
-            CartaoMetrica(
-                valor = "${estado.melhorSequencia}",
-                rotulo = "melhor sequência",
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        LinhaDeUsoDeIa(usadas = estado.usoIa.usadas, limite = estado.usoIa.limite)
+        CartaoDoEstoque(estado = estado, vazio = vazio, aoAbrir = { aoAbrirOQueFalta(olhado) })
 
         if (podeRemover) {
             AcaoSecundaria(
-                texto = "Remover o ${idiomaDe(estado.par.alvo).nome.lowercase()} da faixa",
+                texto = "Remover o ${idiomaDe(olhado).nome.lowercase()} da faixa",
                 aoClicar = { confirmarRemocao = true },
             )
         }
 
         Spacer(Modifier.navigationBarsPadding().height(110.dp))
     }
-}
 
-/** A bandeira do curso no cabeçalho: sem ela, três telas iguais e nenhum jeito de dizer qual é qual. */
-@Composable
-private fun PilulaDoCurso(alvo: String) {
-    val idioma = idiomaDe(alvo)
-    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface, border = contornoDeCartao()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-            modifier = Modifier.padding(start = 5.dp, end = 11.dp, top = 5.dp, bottom = 5.dp),
-        ) {
-            BandeiraCircular(idioma, tamanho = 20.dp)
-            Text(
-                text = idioma.nome,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+    if (gavetaAberta) {
+        ModalBottomSheet(onDismissRequest = { gavetaAberta = false }, sheetState = estadoDaGaveta) {
+            GavetaDeCursos(
+                cursos = cursos,
+                olhado = olhado,
+                aoEscolher = {
+                    vm.abrir(it)
+                    fecharGaveta()
+                },
+                aoAdicionar = {
+                    fecharGaveta()
+                    aoAdicionarIdioma()
+                },
             )
         }
     }
 }
 
+/**
+ * O primeiro bloco: a semana e a quota de hoje, no mesmo cartão.
+ *
+ * Os dois estão juntos porque respondem a mesma pergunta em dois prazos —
+ * "andei esta semana?" e "andei hoje?". Separá-los faria a quota parecer uma
+ * meta à parte, e ela é só o dia de hoje da faixa logo acima.
+ */
 @Composable
-private fun LegendaDaFaixa(texto: String, cor: androidx.compose.ui.graphics.Color) {
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-        Surface(shape = RoundedCornerShape(3.dp), color = cor, modifier = Modifier.size(8.dp)) {}
-        Text(
-            text = texto,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+private fun CartaoDaSemana(estado: ProgressoEstado, vazio: Boolean, aoAbrir: () -> Unit) {
+    val cores = MaterialTheme.colorScheme
+    val conteudo: @Composable ColumnScope.() -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "${estado.mes} · esta semana",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (vazio) cores.outline else cores.onSurfaceVariant,
+            )
+            if (!vazio) {
+                Icon(
+                    imageVector = Icones.Avancar,
+                    contentDescription = null,
+                    tint = cores.outline,
+                    modifier = Modifier.size(16.dp).padding(start = 2.dp),
+                )
+            }
+        }
+
+        FaixaDaSemana(
+            dias = estado.semana.mapIndexed { indice, dia ->
+                DiaDaSemana(
+                    sigla = SIGLAS_DA_SEMANA[indice],
+                    numero = dia.data.dayOfMonth,
+                    revisoes = dia.revisoes,
+                    hoje = dia.hoje,
+                    futuro = dia.futuro,
+                )
+            },
+            tracejada = vazio,
+            modifier = Modifier.padding(top = 13.dp),
         )
+
+        Box(Modifier.fillMaxWidth().padding(vertical = 13.dp).height(1.dp).background(cores.outlineVariant))
+
+        Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Quota de hoje no ${idiomaDe(estado.par.alvo).nome.lowercase()}",
+                style = MaterialTheme.typography.titleSmall,
+                color = if (vazio) cores.onSurfaceVariant else cores.onSurface,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = textoDaQuota(estado.quota),
+                style = MaterialTheme.typography.bodySmall,
+                color = if (vazio) cores.outline else cores.onSurfaceVariant,
+            )
+        }
+
+        // Sem barra no vazio: uma trilha cinza de ponta a ponta é uma promessa de
+        // que existe alguma coisa para preencher hoje, e não existe ainda.
+        if (!vazio) {
+            val avanco by fracaoAnimada(estado.quota.fracao, "fracaoDaQuota")
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .height(8.dp)
+                    .background(cores.outlineVariant, RoundedCornerShape(4.dp)),
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(avanco)
+                        .height(8.dp)
+                        .background(cores.tertiary, RoundedCornerShape(4.dp)),
+                )
+            }
+        }
+    }
+
+    if (vazio) {
+        CaixaTracejada(
+            modifier = Modifier.fillMaxWidth(),
+            raio = 22.dp,
+            recheio = PaddingValues(16.dp),
+            conteudo = conteudo,
+        )
+    } else {
+        CartaoDaTela(
+            aoClicar = aoAbrir,
+            recheio = PaddingValues(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+            conteudo = conteudo,
+        )
+    }
+}
+
+/**
+ * O segundo bloco: quanto do estoque já é seu.
+ *
+ * Vazio, ele não mostra "0 de 0" nem um anel zerado — mostra o lugar do anel e
+ * diz quando ele começa a existir. A promessa é datada: quatro revisões certas,
+ * que é literalmente a escada de [Degraus] do primeiro degrau ao último.
+ */
+@Composable
+private fun CartaoDoEstoque(estado: ProgressoEstado, vazio: Boolean, aoAbrir: () -> Unit) {
+    val cores = MaterialTheme.colorScheme
+
+    if (vazio) {
+        CaixaTracejada(modifier = Modifier.fillMaxWidth(), raio = 22.dp, recheio = PaddingValues(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Box(Modifier.size(78.dp).contornoTracejado(cores.outline, raio = 39.dp, espessura = 2.dp))
+                Column(Modifier.weight(1f).padding(start = 14.dp)) {
+                    Text(
+                        text = "Palavras que já são suas",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = cores.onSurfaceVariant,
+                    )
+                    Text(
+                        text = textoDeQuandoAparece(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = cores.outline,
+                        modifier = Modifier.padding(top = 3.dp),
+                    )
+                }
+            }
+            LegendaDoEstoque(
+                rotulos = listOf("dominadas", "familiares", "aprendendo"),
+                cor = cores.outline,
+                modifier = Modifier.padding(top = 14.dp),
+            )
+        }
+        return
+    }
+
+    CartaoDaTela(aoClicar = aoAbrir, recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            AnelDeProgresso(
+                fracao = estado.dominadas.toFloat() / estado.total,
+                tamanho = 78.dp,
+                espessura = 9.dp,
+            ) {
+                // Conta do zero junto com o arco: é a contagem de conquista
+                // acumulada que `contagemAnimada` existe para servir.
+                Text(
+                    text = "${contagemAnimada(estado.dominadas, "dominadas")}",
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+                Text(
+                    text = "de ${estado.total}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = cores.onSurfaceVariant,
+                )
+            }
+            Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
+                Text(tituloDoEstoque(estado.dominadas), style = MaterialTheme.typography.titleLarge)
+                Text(
+                    text = textoDoQuePertoDeVirar(estado.pertoDeVirar.size),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cores.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 5.dp),
+                )
+            }
+            Icon(Icones.Avancar, null, tint = cores.outline, modifier = Modifier.size(20.dp))
+        }
+
+        BarraDeFaixas(
+            faixas = listOf(
+                estado.dominadas to cores.tertiary,
+                estado.familiares to cores.tertiary.copy(alpha = 0.55f),
+                estado.aprendendo to cores.outlineVariant,
+            ),
+            modifier = Modifier.padding(top = 14.dp),
+        )
+
+        LegendaDoEstoque(
+            rotulos = listOf(
+                "${estado.dominadas} dominadas",
+                "${estado.familiares} familiares",
+                "${estado.aprendendo} aprendendo",
+            ),
+            cor = cores.onSurfaceVariant,
+            modifier = Modifier.padding(top = 10.dp),
+        )
+    }
+}
+
+/**
+ * Os três nomes das faixas, espalhados na largura do cartão.
+ *
+ * Sem quadradinho de cor: a barra logo acima já está na mesma ordem, e um
+ * marcador por rótulo repetiria o que ela diz melhor. No estado vazio os mesmos
+ * três nomes ficam sozinhos, sem número — é o rótulo do lugar, não um placar.
+ */
+@Composable
+private fun LegendaDoEstoque(rotulos: List<String>, cor: Color, modifier: Modifier = Modifier) {
+    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = modifier.fillMaxWidth()) {
+        rotulos.forEach { rotulo ->
+            Text(text = rotulo, style = MaterialTheme.typography.bodySmall, color = cor)
+        }
+    }
+}
+
+/**
+ * A bandeira do curso no cabeçalho — e o botão que troca de curso.
+ *
+ * Sem ela seriam telas iguais e nenhum jeito de dizer qual é qual; sem o chevron
+ * ela seria só um rótulo, e trocar de idioma exigiria voltar até a tela Você.
+ * O chevron aponta para cima enquanto a gaveta está aberta, que é o que promete
+ * que outro toque a fecha.
+ */
+@Composable
+private fun PilulaDoCurso(alvo: String, aberta: Boolean, aoClicar: () -> Unit) {
+    val cores = MaterialTheme.colorScheme
+    val idioma = idiomaDe(alvo)
+    val toque = lembrarToque()
+    val giro by animateFloatAsState(
+        targetValue = if (aberta) 180f else 0f,
+        animationSpec = tween(Movimento.PADRAO),
+        label = "giroDaPilula",
+    )
+
+    Surface(
+        onClick = aoClicar,
+        shape = CircleShape,
+        color = if (aberta) cores.secondaryContainer else cores.surface,
+        border = if (aberta) BorderStroke(1.5.dp, cores.primary) else contornoDeCartao(),
+        interactionSource = toque,
+        modifier = Modifier.encolheAoTocar(toque, minimo = 0.94f),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            modifier = Modifier.padding(start = 5.dp, end = 9.dp, top = 5.dp, bottom = 5.dp),
+        ) {
+            BandeiraCircular(idioma, tamanho = 20.dp)
+            Text(
+                text = idioma.nome,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (aberta) cores.primary else cores.onSurfaceVariant,
+            )
+            Icon(
+                imageVector = Icones.Expandir,
+                contentDescription = "Trocar idioma",
+                tint = cores.primary,
+                modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = giro },
+            )
+        }
+    }
+}
+
+/**
+ * A gaveta da bandeira: os cursos matriculados, com o que cada um já rendeu.
+ *
+ * Cada linha traz o próprio "9 de 24" porque a pergunta que leva alguém a abrir
+ * a gaveta é justamente comparar — e obrigar a entrar em cada idioma para
+ * descobrir onde está o progresso seria pedir três viagens para uma resposta.
+ */
+@Composable
+private fun GavetaDeCursos(
+    cursos: List<ResumoCurso>,
+    olhado: String,
+    aoEscolher: (String) -> Unit,
+    aoAdicionar: () -> Unit,
+) {
+    val cores = MaterialTheme.colorScheme
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp),
+    ) {
+        Text(
+            text = "Ver progresso em",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 5.dp),
+        )
+
+        cursos.forEach { curso ->
+            LinhaDaGaveta(
+                curso = curso,
+                escolhido = curso.par.alvo == olhado,
+                aoClicar = { aoEscolher(curso.par.alvo) },
+            )
+        }
+
+        CaixaTracejada(
+            modifier = Modifier.fillMaxWidth(),
+            aoClicar = aoAdicionar,
+            recheio = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(32.dp).background(cores.surfaceVariant, CircleShape),
+                ) {
+                    Icon(Icones.Mais, null, tint = cores.primary, modifier = Modifier.size(18.dp))
+                }
+                Text("Adicionar idioma", style = MaterialTheme.typography.titleSmall, color = cores.primary)
+            }
+        }
+
+        Spacer(Modifier.navigationBarsPadding().height(14.dp))
+    }
+}
+
+@Composable
+private fun LinhaDaGaveta(curso: ResumoCurso, escolhido: Boolean, aoClicar: () -> Unit) {
+    val cores = MaterialTheme.colorScheme
+    val idioma = idiomaDe(curso.par.alvo)
+    val toque = lembrarToque()
+
+    Surface(
+        onClick = aoClicar,
+        shape = RoundedCornerShape(18.dp),
+        color = if (escolhido) cores.secondaryContainer else cores.surface,
+        border = if (escolhido) BorderStroke(1.5.dp, cores.primary) else contornoDeCartao(),
+        interactionSource = toque,
+        modifier = Modifier.fillMaxWidth().encolheAoTocar(toque),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+        ) {
+            BandeiraCircular(idioma, tamanho = 32.dp)
+            Column(Modifier.weight(1f)) {
+                Text(idioma.nome, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = resumoDoCurso(curso),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (escolhido) cores.primary else cores.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(22.dp)
+                    .then(
+                        if (escolhido) Modifier.background(cores.primary, CircleShape)
+                        else Modifier.border(2.dp, cores.outline, CircleShape),
+                    ),
+            ) {
+                if (escolhido) {
+                    Icon(Icones.Check, null, tint = cores.onPrimary, modifier = Modifier.size(13.dp))
+                }
+            }
+        }
     }
 }
 
@@ -290,17 +534,22 @@ internal fun rotuloDeSequencia(dias: Int): String =
     if (dias == 1) "1 dia seguido" else "$dias dias seguidos"
 
 /**
- * O texto sob a barra da quota.
+ * O número da quota, à direita do rótulo: "6 de 10".
  *
- * O caso de estoque vazio é separado do de quota batida: "o resto de hoje é
- * bônus" para quem ainda não tem ficha nenhuma seria uma comemoração de nada.
+ * Travessão quando o dia não pediu nada — seja porque não há palavra nenhuma,
+ * seja porque nenhuma venceu hoje. "0 de 0" seria um placar de uma partida que
+ * não houve.
  */
-internal fun textoDaQuota(batida: Boolean, naFila: Int, totalDePalavras: Int): String = when {
-    totalDePalavras == 0 -> "Nenhuma palavra ainda. Capture a primeira."
-    batida -> "Quota batida. O resto de hoje é bônus."
-    naFila == 1 -> "Falta 1 para bater a quota de hoje."
-    else -> "Faltam $naFila para bater a quota de hoje."
-}
+internal fun textoDaQuota(quota: QuotaDoDia): String =
+    if (quota.total == 0) "—" else "${quota.feita} de ${quota.total}"
+
+/** A linha do anel vazio: quando é que ele passa a existir. */
+internal fun textoDeQuandoAparece(): String =
+    "aparece depois de ${NUMEROS_POR_EXTENSO[Degraus.TOTAL - 1].lowercase()} revisões"
+
+/** "9 de 24 já são suas" — ou a falta delas, sem número inventado. */
+internal fun resumoDoCurso(curso: ResumoCurso): String =
+    if (curso.total == 0) "nenhuma palavra ainda" else "${curso.dominadas} de ${curso.total} já são suas"
 
 private val NUMEROS_POR_EXTENSO = listOf(
     "Nenhuma", "Uma", "Duas", "Três", "Quatro", "Cinco", "Seis", "Sete", "Oito", "Nove", "Dez",
@@ -323,10 +572,4 @@ internal fun textoDoQuePertoDeVirar(quantas: Int): String = when (quantas) {
     0 -> "Nenhuma está perto de virar."
     1 -> "1 está perto de virar."
     else -> "$quantas estão perto de virar."
-}
-
-/** Uma casa decimal, com vírgula — "4,2". */
-internal fun formatarComVirgula(valor: Double): String {
-    val arredondado = (valor * 10).toLong()
-    return "${arredondado / 10},${arredondado % 10}"
 }

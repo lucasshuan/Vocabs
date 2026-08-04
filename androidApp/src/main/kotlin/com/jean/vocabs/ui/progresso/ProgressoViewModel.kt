@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
+import com.jean.vocabs.shared.cursosMatriculados
 import com.jean.vocabs.shared.domain.AtividadeDiaria
 import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
@@ -12,7 +13,7 @@ import com.jean.vocabs.shared.domain.Evento
 import com.jean.vocabs.shared.domain.NivelMemoria
 import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.QuotaDoDia
-import com.jean.vocabs.shared.domain.UsoIa
+import com.jean.vocabs.shared.domain.ResumoCurso
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -36,16 +38,19 @@ import kotlinx.coroutines.flow.stateIn
  */
 data class ProgressoEstado(
     val par: ParIdiomas = ParIdiomas.PADRAO,
-    val semana: List<DiaDoProgresso> = emptyList(),
-    val mes: String = "",
+    /**
+     * A semana de hoje, vazia, enquanto o banco não responde.
+     *
+     * É o mesmo desenho do curso sem palavra nenhuma — e é por isso que ele pode
+     * ser o estado inicial: quem abre a tela vê o esqueleto tracejado no lugar
+     * certo e ele se preenche, em vez de ver "0 de 10" por dois quadros.
+     */
+    val semana: List<DiaDoProgresso> = semanaDe(LocalDate.now(), emptyList()),
+    val mes: String = nomeDoMes(LocalDate.now()),
     val diasSeguidos: Int = 0,
-    val melhorSequencia: Int = 0,
     val quota: QuotaDoDia = QuotaDoDia(feita = 0, naFila = 0),
     val palavras: List<Entrada> = emptyList(),
     val eventos: List<Evento> = emptyList(),
-    val acertos: Int = 0,
-    val respondidas: Int = 0,
-    val usoIa: UsoIa = UsoIa("", 0),
 ) {
     val total: Int get() = palavras.size
 
@@ -62,22 +67,6 @@ data class ProgressoEstado(
         get() = palavras.filter { entrada ->
             val degrau = entrada.degrau
             Degraus.acertosParaSubirDeNivel(degrau) == 1
-        }
-
-    val taxaDeAcerto: Double? get() = if (respondidas == 0) null else acertos.toDouble() / respondidas
-
-    /**
-     * Palavras por dia desde a primeira captura.
-     *
-     * Nulo enquanto não houver ao menos um dia inteiro de uso: no primeiro dia a
-     * conta seria "tudo o que capturei dividido por um", e uma tarde animada
-     * viraria uma média de 12 palavras/dia que nunca mais se repete.
-     */
-    val palavrasPorDia: Double?
-        get() {
-            val primeira = palavras.minOfOrNull { it.criadoEm } ?: return null
-            val dias = (System.currentTimeMillis() - primeira) / 86_400_000.0
-            return if (dias < 1.0) null else total / dias
         }
 }
 
@@ -123,7 +112,6 @@ class ProgressoViewModel(app: Application) : AndroidViewModel(app) {
                 // curso. São perguntas diferentes: hábito é da pessoa, carga é
                 // da matéria.
                 diasSeguidos = revisao.diasSeguidos,
-                melhorSequencia = revisao.melhorSequencia,
                 quota = revisao.quota,
             )
         }
@@ -132,23 +120,44 @@ class ProgressoViewModel(app: Application) : AndroidViewModel(app) {
             semanaEQuota,
             repositorio.observarProntas(recorte),
             repositorio.observarEventos(84, recorte),
-            repositorio.observarUsoIa(),
             preferencias.observarPar(),
-        ) { base, prontas, eventos, usoIa, par ->
+        ) { base, prontas, eventos, par ->
             base.copy(
-                par = ParIdiomas(nativo = par.nativo, alvo = (recorte as? Escopo.Curso)?.alvo ?: par.alvo),
+                par = parDe(recorte, par),
                 palavras = prontas,
                 eventos = eventos,
-                acertos = prontas.sumOf { it.retencao?.acertos ?: 0 },
-                respondidas = prontas.sumOf { it.retencao?.respondidas ?: 0 },
-                usoIa = usoIa,
             )
         }
+            // Trocar de curso zera a tela antes de o banco responder.
+            //
+            // Sem isto, escolher o espanhol na gaveta deixaria os números do
+            // inglês debaixo da bandeira espanhola pelo tempo de uma consulta —
+            // e o rótulo "Quota de hoje no espanhol" sobre o "6 de 10" do inglês
+            // é uma frase errada, não uma frase atrasada. O esqueleto é o único
+            // estado honesto enquanto a resposta não chega.
+            .onStart { emit(ProgressoEstado(par = parDe(recorte, preferencias.par))) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressoEstado())
 
+    /** O curso do recorte, com o nativo de quem lê — [Escopo.CursoAberto] cai no aberto. */
+    private fun parDe(recorte: Escopo, aberto: ParIdiomas) = ParIdiomas(
+        nativo = aberto.nativo,
+        alvo = (recorte as? Escopo.Curso)?.alvo ?: aberto.alvo,
+    )
+
+    /**
+     * Trocar o curso **olhado**, e não o aberto.
+     *
+     * É o que a gaveta da bandeira faz, e é a mesma porta por onde a rota entra:
+     * daí ela recarregar os dois cartões sem mexer na página da Início nem no
+     * destino do `+`.
+     */
     fun abrir(alvo: String?) {
         curso.value = alvo?.takeIf { it.isNotBlank() }
     }
+
+    /** Os cursos da gaveta: todos os matriculados, inclusive os que ainda não têm ficha. */
+    val cursos: StateFlow<List<ResumoCurso>> = cursosMatriculados(repositorio, preferencias)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Quantos cursos existem — remover o último deixaria o app sem página nenhuma. */
     val podeRemover: StateFlow<Boolean> = preferencias.observarCursos()

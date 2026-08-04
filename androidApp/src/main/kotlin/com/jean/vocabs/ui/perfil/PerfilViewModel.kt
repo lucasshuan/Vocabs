@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
+import com.jean.vocabs.shared.cursosMatriculados
 import com.jean.vocabs.shared.domain.Escopo
 import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.ResumoCurso
@@ -36,26 +37,8 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
     private val repositorio = AppContainer.repositorio(app)
     private val preferencias = AppContainer.preferencias(app)
 
-    /**
-     * A faixa vem da preferência, e não do que existe no banco.
-     *
-     * Um curso recém-criado não tem nenhuma palavra. Montar a lista a partir das
-     * fichas faria o idioma que a pessoa acabou de escolher desaparecer no
-     * instante seguinte — e ela ficaria sem por onde voltar.
-     */
-    private val cursos = combine(
-        preferencias.observarCursos(),
-        preferencias.observarPar(),
-        repositorio.observarCursos(),
-    ) { matriculados, par, comFichas ->
-        matriculados.map { alvo ->
-            val curso = ParIdiomas(nativo = par.nativo, alvo = alvo)
-            comFichas.firstOrNull { it.par == curso } ?: ResumoCurso(curso, total = 0, dominadas = 0)
-        }
-    }
-
     val estado: StateFlow<PerfilEstado> = combine(
-        cursos,
+        cursosMatriculados(repositorio, preferencias),
         preferencias.observarPar(),
         // De todos os cursos: a sequência de dias conta atividade em qualquer
         // idioma, e é o único número desta tela que já era assim antes.

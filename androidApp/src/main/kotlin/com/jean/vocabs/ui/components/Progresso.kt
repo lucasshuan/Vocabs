@@ -97,9 +97,17 @@ data class DiaDaSemana(
  * escalonamento aqui não é enfeite: ele desenha na tela a direção em que a semana
  * se lê, e como o passo é de 34 ms, o domingo chega 170 ms depois da segunda —
  * antes de a pessoa ter terminado de olhar para o primeiro quadrado.
+ *
+ * [tracejada] é a mesma semana de um curso que ainda não tem palavra nenhuma: a
+ * anatomia não muda, os quadrados é que ficam só com o contorno. Hoje continua
+ * marcado — é a única data que existe antes de haver histórico.
  */
 @Composable
-fun FaixaDaSemana(dias: List<DiaDaSemana>, modifier: Modifier = Modifier) {
+fun FaixaDaSemana(
+    dias: List<DiaDaSemana>,
+    modifier: Modifier = Modifier,
+    tracejada: Boolean = false,
+) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = modifier.fillMaxWidth()) {
         dias.forEachIndexed { indice, dia ->
             Column(
@@ -112,14 +120,32 @@ fun FaixaDaSemana(dias: List<DiaDaSemana>, modifier: Modifier = Modifier) {
                     style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
                     color = when {
                         dia.hoje -> MaterialTheme.colorScheme.primary
-                        dia.futuro -> MaterialTheme.colorScheme.outline
+                        tracejada || dia.futuro -> MaterialTheme.colorScheme.outline
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                 )
-                QuadradoDoDia(dia)
+                if (tracejada && !dia.hoje) QuadradoVazio() else QuadradoDoDia(dia)
             }
         }
     }
+}
+
+/**
+ * O dia de uma semana que ainda não tem histórico: contorno e mais nada.
+ *
+ * Sem o número, de propósito. Um "27" apagado dentro de um quadrado vazio é a
+ * data de um dia em que nada aconteceu, e sete deles em fileira se leem como uma
+ * semana perdida — que é justamente o que ninguém precisa ver ao abrir um curso
+ * que começou hoje.
+ */
+@Composable
+private fun QuadradoVazio() {
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .contornoTracejado(MaterialTheme.colorScheme.outline, raio = 12.dp),
+    )
 }
 
 @Composable

@@ -197,12 +197,15 @@ fun VocabsApp() {
                 )
             }
             composable(Rotas.PROGRESSO, arguments = listOf(navArgument("alvo") { type = NavType.StringType })) { entrada ->
-                val alvo = entrada.arguments?.getString("alvo")
                 ProgressoScreen(
-                    alvo = alvo,
+                    // O alvo da rota é só por onde a tela entra: a gaveta da
+                    // bandeira troca o curso olhado sem sair do destino, e é o
+                    // curso de agora que as telas de dentro precisam receber.
+                    alvo = entrada.arguments?.getString("alvo"),
                     aoVoltar = { nav.popBackStack() },
-                    aoAbrirDiaADia = { nav.navigate(Rotas.diaADia(alvo.orEmpty())) },
-                    aoAbrirOQueFalta = { nav.navigate(Rotas.oQueFalta(alvo.orEmpty())) },
+                    aoAbrirDiaADia = { nav.navigate(Rotas.diaADia(it)) },
+                    aoAbrirOQueFalta = { nav.navigate(Rotas.oQueFalta(it)) },
+                    aoAdicionarIdioma = { nav.navigate(Rotas.NOVO_IDIOMA) },
                 )
             }
             composable(Rotas.DIA_A_DIA, arguments = listOf(navArgument("alvo") { type = NavType.StringType })) { entrada ->
