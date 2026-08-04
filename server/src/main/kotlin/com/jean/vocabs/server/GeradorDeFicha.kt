@@ -170,10 +170,12 @@ class GeradorDeFicha(
                     ),
                     "exemplo" to mapOf("type" to "string"),
                     "pronuncia" to mapOf("type" to "string"),
+                    // Sem `minItems`/`maxItems`: o structured outputs da API só
+                    // aceita `minItems` 0 ou 1 e rejeita o resto com 400, o que
+                    // derrubaria toda ficha. A faixa de 3 a 6 fica no prompt, e o
+                    // teto é garantido de verdade em [aplicarDecisoesLocais].
                     "relacionadas" to mapOf(
                         "type" to "array",
-                        "minItems" to 3,
-                        "maxItems" to 6,
                         "items" to mapOf("type" to "string"),
                     ),
                 ),
