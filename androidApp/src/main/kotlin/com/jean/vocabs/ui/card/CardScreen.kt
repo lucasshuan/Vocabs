@@ -64,6 +64,7 @@ import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.TypeBadge
 import com.jean.vocabs.ui.components.cardOutline
+import com.jean.vocabs.ui.components.entryTitle
 import com.jean.vocabs.ui.components.levelLabel
 import com.jean.vocabs.ui.components.levelLabelColor
 import com.jean.vocabs.ui.components.relativeTime
@@ -77,6 +78,7 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
     val entryFlow = remember(id) { vm.observe(id) }
     val memoryFlow = remember(id) { vm.observeMemory(id) }
     val entry by entryFlow.collectAsStateWithLifecycle()
+    val title = entry?.let { entryTitle(it) }.orEmpty()
     val memory by memoryFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var menu by remember { mutableStateOf(false) }
@@ -114,7 +116,7 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
                         onClick = {
                             menu = false
                             entry?.let { item ->
-                                val text = "${item.title} — ${item.card?.translation.orEmpty()}\n${item.snippet.orEmpty()}\nVocabu"
+                                val text = "$title — ${item.card?.translation.orEmpty()}\n${item.snippet.orEmpty()}\nVocabu"
                                 context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, text)
@@ -139,13 +141,13 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 20.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(item.title, style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f, fill = false))
+                    Text(title, style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f, fill = false))
                     // With no voice installed for the card's language the button
                     // does not appear: a button that does nothing is worse than
                     // its absence, and German in a Portuguese voice is worse yet.
                     tts?.let { voice ->
                         Surface(
-                            onClick = { voice.speak(item.title, TextToSpeech.QUEUE_FLUSH, null, "Vocabu-ficha") },
+                            onClick = { voice.speak(title, TextToSpeech.QUEUE_FLUSH, null, "Vocabu-ficha") },
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceVariant,
                         ) {

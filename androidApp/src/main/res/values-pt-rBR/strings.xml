@@ -2,6 +2,10 @@
 <resources>
     <string name="logo_description">Papagaio da Vocabu</string>
 
+    <string name="entry_untitled_photo">Foto sem transcrição</string>
+    <string name="entry_untitled_audio">Áudio sem transcrição</string>
+    <string name="entry_untitled_text">Sem título</string>
+
     <!-- Configurações -->
     <string name="settings_section_language">Idioma</string>
     <string name="settings_app_language">Idioma do app</string>

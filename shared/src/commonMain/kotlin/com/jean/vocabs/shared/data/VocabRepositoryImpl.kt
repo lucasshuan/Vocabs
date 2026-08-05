@@ -50,6 +50,11 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
+/**
+ * The `require` messages here are plain English literals and stay that way: they
+ * describe a programming error to whoever reads the crash, and no screen renders
+ * them. Text a person is meant to read lives in `:androidApp`, in resources.
+ */
 class VocabRepositoryImpl(
     private val db: VocabsDatabase,
     private val api: CardApi,
@@ -248,9 +253,9 @@ class VocabRepositoryImpl(
         languagePair: LanguagePair?,
     ): List<Long> = withContext(io) {
         val text = snippet
-        require(text.isNotBlank()) { "O snippet é obrigatório." }
-        require(targets.isNotEmpty()) { "Selecione ao menos um target." }
-        require(targets.all { it.isValidIn(text) }) { "Há uma seleção fora do snippet current." }
+        require(text.isNotBlank()) { "snippet must not be blank" }
+        require(targets.isNotEmpty()) { "at least one target must be selected" }
+        require(targets.all { it.isValidIn(text) }) { "a selection falls outside the snippet" }
 
         val course = courseOfCapture(languagePair)
         queries.transactionWithResult {
@@ -265,7 +270,7 @@ class VocabRepositoryImpl(
     }
 
     override suspend fun captureSnippet(snippet: String, languagePair: LanguagePair?): Long = withContext(io) {
-        require(snippet.isNotBlank()) { "O snippet é obrigatório." }
+        require(snippet.isNotBlank()) { "snippet must not be blank" }
         val course = courseOfCapture(languagePair)
         queries.transactionWithResult {
             insertCapture(
@@ -283,7 +288,7 @@ class VocabRepositoryImpl(
         durationMs: Long?,
         languagePair: LanguagePair?,
     ): Long = withContext(io) {
-        require(format != CaptureFormat.TEXT) { "Míday precisa ser foto ou áudio." }
+        require(format != CaptureFormat.TEXT) { "media must be a photo or audio" }
         val course = courseOfCapture(languagePair)
         queries.transactionWithResult {
             insertCapture(
@@ -350,9 +355,9 @@ class VocabRepositoryImpl(
         targets: List<SelectedTarget>,
     ): List<Long> = withContext(io) {
         val text = snippet
-        require(text.isNotBlank()) { "O snippet é obrigatório." }
-        require(targets.isNotEmpty()) { "Selecione ao menos um target." }
-        require(targets.all { it.isValidIn(text) }) { "Há uma seleção fora do snippet current." }
+        require(text.isNotBlank()) { "snippet must not be blank" }
+        require(targets.isNotEmpty()) { "at least one target must be selected" }
+        require(targets.all { it.isValidIn(text) }) { "a selection falls outside the snippet" }
 
         queries.transactionWithResult {
             val existing = queries.listIdsOfCapture(id).executeAsList()

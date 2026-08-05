@@ -41,6 +41,7 @@ import com.jean.vocabs.ui.components.InnerHeader
 import com.jean.vocabs.ui.components.ListRow
 import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SelectablePill
+import com.jean.vocabs.ui.components.entryTitle
 import com.jean.vocabs.ui.components.levelLabel
 import com.jean.vocabs.ui.components.nextReviewText
 
@@ -138,7 +139,7 @@ private fun WordRow(entry: Entry, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(entry.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(entryTitle(entry), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             next?.let {
                 Text(
                     text = it,

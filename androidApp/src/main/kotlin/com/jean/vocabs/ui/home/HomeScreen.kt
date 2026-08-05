@@ -49,6 +49,7 @@ import com.jean.vocabs.ui.components.ProgressRing
 import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.animatedCount
+import com.jean.vocabs.ui.components.entryTitle
 import com.jean.vocabs.ui.components.smoothEntrance
 import com.jean.vocabs.ui.components.timeUntil
 import com.jean.vocabs.ui.languages.displayName
@@ -292,7 +293,7 @@ private fun CapturedRow(entry: Entry, modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(entry.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(entryTitle(entry), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(
                 text = entry.card?.translation.orEmpty(),
                 style = MaterialTheme.typography.bodySmall,

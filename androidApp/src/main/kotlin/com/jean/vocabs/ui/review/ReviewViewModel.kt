@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.isAnswerCorrect
+import com.jean.vocabs.ui.components.entryTitle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -86,7 +87,7 @@ class ReviewViewModel(app: Application) : AndroidViewModel(app) {
         if (respondidos.add(current.entry.id)) {
             if (correct) hits++ else {
                 misses++
-                wrong += current.entry.title
+                wrong += getApplication<Application>().entryTitle(current.entry)
             }
             AppContainer.scope.launch { repository.recordAnswer(current.entry.id, correct) }
         }

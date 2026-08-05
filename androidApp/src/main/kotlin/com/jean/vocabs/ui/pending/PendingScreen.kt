@@ -41,6 +41,7 @@ import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.SwipeToDelete
 import com.jean.vocabs.ui.components.captureTitle
+import com.jean.vocabs.ui.components.entryTitle
 import com.jean.vocabs.ui.components.relativeTime
 import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
@@ -224,7 +225,7 @@ private fun EntryCard(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).clickable(onClick = onClick)) {
-                Text(entry.title, style = MaterialTheme.typography.titleSmall)
+                Text(entryTitle(entry), style = MaterialTheme.typography.titleSmall)
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 3.dp)) {
                     LanguageMark(languageOf(entry.languagePair.target))
                     if (entry.status == EntryStatus.ERROR) {

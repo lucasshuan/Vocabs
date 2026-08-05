@@ -48,8 +48,9 @@ import com.jean.vocabs.ui.components.CircularFlag
 import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.PrimaryButton
 import com.jean.vocabs.ui.components.ScreenCard
-import com.jean.vocabs.ui.components.smoothEntrance
 import com.jean.vocabs.ui.components.breathing
+import com.jean.vocabs.ui.components.entryTitle
+import com.jean.vocabs.ui.components.smoothEntrance
 import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 import kotlinx.coroutines.delay
@@ -198,7 +199,7 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(entry.title, style = MaterialTheme.typography.titleMedium)
+                Text(entryTitle(entry), style = MaterialTheme.typography.titleMedium)
                 AnimatedContent(
                     targetState = entry.status,
                     transitionSpec = { fadeIn(tween(Motion.DEFAULT)) togetherWith fadeOut(tween(Motion.FAST)) },

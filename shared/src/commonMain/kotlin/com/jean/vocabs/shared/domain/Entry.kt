@@ -40,13 +40,6 @@ data class Entry(
     /** Which rung of the "What's left" ladder it is on. */
     val step: Int get() = Steps.of(retention)
 
-    /** What to show as a title while no target has been typed. */
-    val title: String
-        get() = target?.takeIf { it.isNotBlank() } ?: when (format) {
-            CaptureFormat.PHOTO -> "Foto sem transcrição"
-            CaptureFormat.AUDIO -> "Áudio sem transcrição"
-            CaptureFormat.TEXT -> "Sem título"
-    }
 }
 
 private val targetSpaces = Regex("\\s+")

@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.components
 
+import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -22,9 +24,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jean.vocabs.R
 import com.jean.vocabs.contracts.TargetType
 import com.jean.vocabs.shared.domain.Capture
 import com.jean.vocabs.shared.domain.CaptureFormat
@@ -105,8 +109,9 @@ fun DuplicateNotice(entry: Entry, modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
 private fun duplicateDetail(entry: Entry): String = buildString {
-    append(entry.title)
+    append(entryTitle(entry))
     append(" · ")
     append(duplicateStatusLabel(entry.status))
     append(" · ")
@@ -267,4 +272,26 @@ fun MemoryBar(
                 .background(levelColor(level), RoundedCornerShape(height / 2)),
         )
     }
+}
+
+/**
+ * What to name an entry before a target has been typed.
+ *
+ * This was a property on `Entry`, in `:shared`. It lives here because nothing
+ * below `:androidApp` should produce display text: a domain module has no
+ * resources, so a title decided there can only ever exist in one language.
+ */
+@Composable
+fun entryTitle(entry: Entry): String =
+    entry.target?.takeIf { it.isNotBlank() } ?: stringResource(untitledResOf(entry.format))
+
+/** The same, for the view models that have to name an entry outside composition. */
+fun Context.entryTitle(entry: Entry): String =
+    entry.target?.takeIf { it.isNotBlank() } ?: getString(untitledResOf(entry.format))
+
+@StringRes
+private fun untitledResOf(format: CaptureFormat): Int = when (format) {
+    CaptureFormat.PHOTO -> R.string.entry_untitled_photo
+    CaptureFormat.AUDIO -> R.string.entry_untitled_audio
+    CaptureFormat.TEXT -> R.string.entry_untitled_text
 }

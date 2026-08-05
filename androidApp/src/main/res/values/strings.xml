@@ -3,6 +3,11 @@
     <string name="app_name" translatable="false">Vocabu</string>
     <string name="logo_description">Vocabu\'s parrot</string>
 
+    <!-- Entries with no target typed yet -->
+    <string name="entry_untitled_photo">Photo, not transcribed</string>
+    <string name="entry_untitled_audio">Audio, not transcribed</string>
+    <string name="entry_untitled_text">Untitled</string>
+
     <!-- Settings -->
     <string name="settings_section_language">Language</string>
     <string name="settings_app_language">App language</string>

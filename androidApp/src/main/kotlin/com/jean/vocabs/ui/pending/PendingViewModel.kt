@@ -8,6 +8,7 @@ import com.jean.vocabs.shared.domain.Capture
 import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.Scope
 import com.jean.vocabs.ui.components.captureTitle
+import com.jean.vocabs.ui.components.entryTitle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -104,7 +105,7 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteCard(entry: Entry) {
-        schedule(PendingDeletion(System.nanoTime(), entry.id, isCapture = false, title = entry.title))
+        schedule(PendingDeletion(System.nanoTime(), entry.id, isCapture = false, title = getApplication<Application>().entryTitle(entry)))
     }
 
     /** The gesture was a mistake: the item returns and nothing reaches the database. */

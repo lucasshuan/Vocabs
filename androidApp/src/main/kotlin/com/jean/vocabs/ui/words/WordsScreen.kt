@@ -38,6 +38,7 @@ import com.jean.vocabs.ui.components.MemoryBar
 import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SelectablePill
 import com.jean.vocabs.ui.components.TypeBadge
+import com.jean.vocabs.ui.components.entryTitle
 import com.jean.vocabs.ui.components.levelLabel
 import com.jean.vocabs.ui.components.levelLabelColor
 import com.jean.vocabs.ui.components.nextReviewText
@@ -197,7 +198,7 @@ private fun WordCard(entry: Entry, modifier: Modifier = Modifier, onClick: () ->
 
     ScreenCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(entry.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
+            Text(entryTitle(entry), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
             TypeBadge(entry.type)
         }
         Text(
