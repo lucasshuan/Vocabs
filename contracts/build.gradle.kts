@@ -9,7 +9,7 @@ plugins {
 // É isso que faz o compilador reclamar nos dois lados quando o formato da ficha muda.
 kotlin {
     android {
-        namespace = "com.jean.vocabs.contracts"
+        namespace = "io.github.lucasshuan.vocabu.contracts"
         compileSdk = libs.versions.compileSdk.get().toInt()
         minSdk = libs.versions.minSdk.get().toInt()
     }

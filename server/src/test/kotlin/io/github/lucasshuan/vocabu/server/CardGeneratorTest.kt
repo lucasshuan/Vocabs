@@ -1,0 +1,91 @@
+package io.github.lucasshuan.vocabu.server
+
+import io.github.lucasshuan.vocabu.contracts.CardResponse
+import io.github.lucasshuan.vocabu.contracts.GenerateCardRequest
+import io.github.lucasshuan.vocabu.contracts.TargetType
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.descriptors.elementNames
+
+class GeradorDeFichaTest {
+    @Test
+    fun `the server injects the local type and caps related terms at six`() {
+        val request = GenerateCardRequest(
+            snippet = "He is on the fence",
+            target = "on the fence",
+            type = TargetType.PHRASE,
+            nativeLanguage = "pt-BR",
+            targetLanguage = "en",
+        )
+        val model = CardResponse(
+            type = TargetType.WORD,
+            translation = "indeciso",
+            definitions = listOf("Sem tomar uma decisão"),
+            example = "She remains on the fence.",
+            pronunciation = "ɒn ðə fens",
+            related = listOf(" undecided ", "hesitant", "uncertain", "hesitant", "wary", "doubtful", "unsure", "extra"),
+        )
+
+        val final = applyLocalDecisions(request, model)
+        assertEquals(TargetType.PHRASE, final.type)
+        assertEquals(listOf("undecided", "hesitant", "uncertain", "wary", "doubtful", "unsure"), final.related)
+    }
+
+    @Test
+    fun `pronunciation notation follows the target language, IPA by default`() {
+        assertEquals("IPA, without slashes", LanguagePairSpec.of("pt-BR", "en")!!.target.pronunciationNotation)
+        assertEquals("Hanyu Pinyin with tone marks", LanguagePairSpec.of("pt-BR", "zh")!!.target.pronunciationNotation)
+        assertEquals("Revised Romanization of Korean", LanguagePairSpec.of("pt-BR", "ko")!!.target.pronunciationNotation)
+        // A language with no entry of its own falls back to IPA, which serves most.
+        assertEquals("IPA, without slashes", LanguagePairSpec.of("pt-BR", "sv")!!.target.pronunciationNotation)
+    }
+
+    @Test
+    fun `an unknown language pair does not fall back to the default`() {
+        // Refusing is the point: falling back would return an English card for
+        // a German word, and the person would only find out by reading it.
+        assertNull(LanguagePairSpec.of("pt-BR", "klingon"))
+        assertNull(LanguagePairSpec.of("elfico", "en"))
+    }
+
+    @Test
+    fun `the prompt names both languages by their English name`() {
+        val prompt = CardGenerator.promptFor(LanguagePairSpec.of("pt-BR", "de")!!)
+        assertTrue(prompt.contains("Brazilian Portuguese"), prompt)
+        assertTrue(prompt.contains("German"), prompt)
+        assertTrue(prompt.contains("`pronunciation`"), prompt)
+    }
+
+    /**
+     * The schema is hand-written JSON mirroring a data class, and nothing but
+     * this test connects them. Drift does not fail to compile — it fails to
+     * decode, on every card, at runtime.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    @Test
+    fun `the JSON schema matches every field of CardResponse`() {
+        val fields = CardResponse.serializer().descriptor.elementNames.toSet()
+
+        @Suppress("UNCHECKED_CAST")
+        val properties = CardGenerator.SCHEMA_MAP["properties"] as Map<String, Any>
+        @Suppress("UNCHECKED_CAST")
+        val required = (CardGenerator.SCHEMA_MAP["required"] as List<String>).toSet()
+
+        assertEquals(fields, properties.keys, "schema properties drifted from CardResponse")
+        assertEquals(fields, required, "schema `required` drifted from CardResponse")
+    }
+
+    /** The app copies `type` through verbatim, so the two enums have to agree. */
+    @Test
+    fun `the schema enum matches TargetType`() {
+        @Suppress("UNCHECKED_CAST")
+        val properties = CardGenerator.SCHEMA_MAP["properties"] as Map<String, Map<String, Any>>
+        assertEquals(
+            TargetType.entries.map { it.name },
+            properties.getValue("type").getValue("enum"),
+        )
+    }
+}

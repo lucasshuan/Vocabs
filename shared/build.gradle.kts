@@ -7,7 +7,7 @@ plugins {
 
 kotlin {
     android {
-        namespace = "com.jean.vocabs.shared"
+        namespace = "io.github.lucasshuan.vocabu.shared"
         compileSdk = libs.versions.compileSdk.get().toInt()
         minSdk = libs.versions.minSdk.get().toInt()
         withHostTestBuilder {}.configure {}
@@ -38,7 +38,7 @@ kotlin {
 sqldelight {
     databases {
         create("VocabsDatabase") {
-            packageName.set("com.jean.vocabs.shared.db")
+            packageName.set("io.github.lucasshuan.vocabu.shared.db")
 
             // The committed snapshot is what the next migration gets checked
             // against. Verification replays the .sqm chain from empty and

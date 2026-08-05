@@ -69,11 +69,11 @@ val lanServer: String = fromEnv("SERVER_LAN")
 val appToken: String = fromEnv("APP_TOKEN") ?: "local-test-token"
 
 android {
-    namespace = "com.jean.vocabs"
+    namespace = "io.github.lucasshuan.vocabu"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.jean.vocabs"
+        applicationId = "io.github.lucasshuan.vocabu"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1

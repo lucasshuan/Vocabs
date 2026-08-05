@@ -2,19 +2,32 @@
 
 ## Names that are not brand
 
-`applicationId`, the namespace and the database filename (`vocabs.db`) are
-storage identifiers, not branding. Renaming the app is find-and-replace; renaming
-any of those migrates nothing — it creates an empty place beside what already
-exists. A renamed `getSharedPreferences` opens a fresh version with no native
-language, none of the courses the person enrolled in and the default theme, with
-the word database intact and no screen knowing which language to show it in.
+`applicationId` and the database filename (`vocabs.db`) are storage identifiers,
+not branding. Renaming the app is find-and-replace; renaming either of those
+migrates nothing — it creates an empty place beside what already exists. A
+renamed `getSharedPreferences` opens a fresh version with no native language,
+none of the courses the person enrolled in and the default theme, with the word
+database intact and no screen knowing which language to show it in.
 
-They were kept through the English rewrite for that reason, while the preference
-file, its keys, the media folders and the routes were all renamed freely — the
-database was being wiped anyway, so nothing had to be carried across. **If one of
-the three ever has to change, it changes together with a migration that reads the
-old one.** Routes are not on that list: nothing persists them, and they can be
-renamed on their own.
+Both were changed anyway during the English rewrite, along with the preference
+file, its keys, the media folders and the routes — because the data was being
+wiped, so nothing had to be carried across. **That window is closed.** From the
+first install anyone cares about, each of them changes only together with a
+migration that reads the old one, and `applicationId` not even then: once the app
+is published it is permanent, and a different one is a different listing with no
+upgrade path.
+
+Two consequences of having used that window:
+
+- The package is `io.github.lucasshuan.vocabu` — reverse-DNS of a namespace that
+  is actually controlled, rather than a claim on a domain that is not.
+- **`vocabs.db` keeps the old name on purpose.** The app is Vocabu; `vocabs` was
+  what it was called first. The filename stayed because renaming it buys nothing
+  and costs a migration the day there is data worth keeping. It is a legacy
+  identifier, not a second brand — do not "fix" it for consistency.
+
+Routes were never on this list: nothing persists them, so they can be renamed on
+their own.
 
 ## Modules
 

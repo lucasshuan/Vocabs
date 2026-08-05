@@ -32,7 +32,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.jean.vocabs.server.ApplicationKt")
+    mainClass.set("io.github.lucasshuan.vocabu.server.ApplicationKt")
 }
 
 // Desde o Java 18, System.out/err usam stdout.encoding/stderr.encoding, que sao
