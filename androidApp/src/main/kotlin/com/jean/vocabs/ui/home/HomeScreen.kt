@@ -1,225 +1,339 @@
 package com.jean.vocabs.ui.home
 
 import com.jean.vocabs.ui.displayName
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.R
 import com.jean.vocabs.shared.domain.Entry
-import com.jean.vocabs.shared.domain.MemoryLevel
-import com.jean.vocabs.ui.components.BandeiraCircular
-import com.jean.vocabs.ui.components.BarraDeMemoria
-import com.jean.vocabs.ui.components.CartaoDaTela
-import com.jean.vocabs.ui.components.EstadoVazio
-import com.jean.vocabs.ui.components.Icones
-import com.jean.vocabs.ui.components.PilulaSelecionavel
-import com.jean.vocabs.ui.components.TipoBadge
-import com.jean.vocabs.ui.components.corDoRotuloDoNivel
-import com.jean.vocabs.ui.components.rotuloDoNivel
-import com.jean.vocabs.ui.components.textoDaProximaRevisao
-import com.jean.vocabs.ui.languages.idiomaDe
+import com.jean.vocabs.ui.components.ProgressRing
+import com.jean.vocabs.ui.components.PrimaryButton
+import com.jean.vocabs.ui.components.DashedBox
+import com.jean.vocabs.ui.components.ScreenCard
+import com.jean.vocabs.ui.components.IconDisc
+import com.jean.vocabs.ui.components.LanguageStrip
+import com.jean.vocabs.ui.components.AppIcons
+import com.jean.vocabs.ui.components.PageDots
+import com.jean.vocabs.ui.components.SectionLabel
+import com.jean.vocabs.ui.components.animatedCount
+import com.jean.vocabs.ui.components.entradaSuave
+import com.jean.vocabs.ui.components.timeUntil
+import com.jean.vocabs.ui.languages.languageOf
 
 /**
- * Tela 06 do handoff — "Vocabulários", os três idiomas juntos.
+ * Tela 01/02 do handoff — a Início, uma página por curso.
  *
- * Os níveis continuam logo abaixo da busca, onde sempre estiveram. O que mudou é
- * o idioma: ele deixou de ser mais uma pílula na mesma fileira e virou cabeçalho
- * de grupo. Duas fileiras de filtro na mesma tela ensinariam que idioma e nível
- * são a mesma espécie de escolha, e eles não são — nível é um recorte, idioma é
- * uma divisão.
+ * É a **única** aba recortada por idioma, e a troca é um deslize. As outras três
+ * mostram sempre tudo: um filtro que continuasse ligado ao mudar de aba faria
+ * palavras sumirem sem que ninguém tivesse pedido.
+ *
+ * Deslizar não é só navegar — é trocar o curso aberto. Por isso o botão de
+ * revisar e a folha do `+` seguem a página visível sem que nenhum dos dois
+ * precise saber que existe um carrossel.
  */
 @Composable
 fun HomeScreen(
-    aoAbrirFicha: (Long) -> Unit,
+    aoCapturar: () -> Unit,
+    aoRevisar: () -> Unit,
+    aoAbrirPerfil: () -> Unit,
+    aoAdicionarIdioma: () -> Unit,
     vm: HomeViewModel = viewModel(),
 ) {
     val estado by vm.estado.collectAsStateWithLifecycle()
+    val paginas = estado.paginas
+    val pager = rememberPagerState(pageCount = { paginas.size })
 
-    LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 120.dp),
-        modifier = Modifier.fillMaxSize().statusBarsPadding(),
+    // Duas direções, e a ordem entre elas importa. O pager nasce na página 0, que
+    // quase nunca é o curso aberto — deixá-lo mandar antes de estar posicionado
+    // faria abrir o app no inglês trocar o curso para o inglês, em silêncio.
+    // Por isso ele só passa a mandar depois do primeiro posicionamento.
+    var posicionado by remember { mutableStateOf(false) }
+
+    LaunchedEffect(paginas.size, estado.ativo) {
+        if (paginas.isEmpty()) return@LaunchedEffect
+        if (!posicionado) {
+            pager.scrollToPage(estado.indiceAtivo)
+            posicionado = true
+        } else if (estado.indiceAtivo != pager.currentPage && !pager.isScrollInProgress) {
+            pager.animateScrollToPage(estado.indiceAtivo)
+        }
+    }
+
+    LaunchedEffect(posicionado) {
+        if (!posicionado) return@LaunchedEffect
+        snapshotFlow { pager.settledPage }.collect { indice ->
+            paginas.getOrNull(indice)?.let { vm.openCourse(it.languagePair.target) }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 14.dp),
+        ) {
+            Image(painterResource(R.drawable.logo_vocabu), stringResource(R.string.logo_description), Modifier.size(34.dp))
+            Text("Vocabu", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 9.dp))
+            Spacer(Modifier.weight(1f))
+            Surface(onClick = aoAbrirPerfil, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp)) {
+                    Icon(
+                        imageVector = AppIcons.Pessoa,
+                        contentDescription = "Você",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
+
+        if (estado.temCarrossel) {
+            LanguageStrip(
+                courses = estado.courses,
+                ativo = estado.ativo,
+                aoEscolher = vm::openCourse,
+                aoAdicionar = aoAdicionarIdioma,
+                modifier = Modifier.padding(bottom = 14.dp),
+            )
+        }
+
+        HorizontalPager(
+            state = pager,
+            beyondViewportPageCount = 1,
+            modifier = Modifier.weight(1f),
+        ) { indice ->
+            paginas.getOrNull(indice)?.let { pagina ->
+                CoursePage(
+                    pagina = pagina,
+                    aoRevisar = aoRevisar,
+                    aoCapturar = aoCapturar,
+                )
+            }
+        }
+
+        // Fora do pager, de propósito: aqui os pontos não pertencem a nenhuma
+        // página nem a nenhum cartão, e ficam no mesmo lugar não importa o que
+        // muda acima.
+        PageDots(
+            total = paginas.size,
+            current = pager.currentPage,
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 10.dp),
+        )
+        Spacer(Modifier.navigationBarsPadding().height(ESPACO_DA_BARRA))
+    }
+}
+
+@Composable
+private fun CoursePage(
+    pagina: HomePage,
+    aoRevisar: () -> Unit,
+    aoCapturar: () -> Unit,
+) {
+    val language = languageOf(pagina.languagePair.target)
+    val resumo = pagina.resumo
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp),
     ) {
-        item(key = "cabecalho") {
-            Text("Vocabulários", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
-            Text(
-                text = "${estado.total} ${if (estado.total == 1) "card" else "cards"} · ${estado.mastered} dominadas",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 3.dp),
-            )
-            OutlinedTextField(
-                value = estado.busca,
-                onValueChange = vm::buscar,
-                leadingIcon = { Icon(Icones.Lupa, null) },
-                placeholder = { Text("Buscar em todos os idiomas") },
-                singleLine = true,
-                shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
-            )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 12.dp),
-            ) {
-                FiltroMemoria.entries.forEach { filtro ->
-                    PilulaSelecionavel(filtro.rotulo, estado.filtro == filtro, aoClicar = { vm.filtrar(filtro) })
+        ScreenCard(
+            forma = MaterialTheme.shapes.extraLarge,
+            recheio = PaddingValues(18.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CourseRing(pagina)
+                Column(Modifier.weight(1f).padding(start = 15.dp)) {
+                    Text("Seu ${language.displayName.lowercase()}", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        text = courseDetail(resumo.total, resumo.mastered, resumo.inQueue),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+
+            if (resumo.inQueue > 0) {
+                PrimaryButton(
+                    text = "Revisar ${resumo.inQueue} ${if (resumo.inQueue == 1) "word" else "words"}",
+                    aoClicar = aoRevisar,
+                    modifier = Modifier.padding(top = 15.dp),
+                )
+            } else {
+                UpNextRow(pagina, Modifier.padding(top = 15.dp))
+            }
+        }
+
+        // As capturas do dia entram escalonadas, de cima para baixo. É a lista
+        // que cresce enquanto a pessoa usa o app, e é o único lugar do Início
+        // onde ela vê o próprio dia se acumulando — chegar montada faz três
+        // capturas parecerem um histórico velho em vez do que aconteceu hoje.
+        Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+            SectionLabel("Capturadas hoje em ${language.displayName.lowercase()}")
+            if (pagina.capturadasHoje.isEmpty()) {
+                CaptureInvite(language.displayName.lowercase(), aoCapturar)
+            } else {
+                pagina.capturadasHoje.forEachIndexed { indice, entry ->
+                    CapturedRow(entry, Modifier.entradaSuave(indice))
                 }
             }
         }
 
-        if (estado.carregado && estado.total == 0) {
-            item(key = "vazio") {
-                EstadoVazio(
-                    icone = Icones.Cartas,
-                    title = "Sua coleção começa aqui",
-                    detail = "Capture um trecho e escolha o que quer aprender.",
-                )
-            }
-        } else if (estado.carregado && estado.encontradas == 0) {
-            item(key = "sem-resultado") {
-                EstadoVazio(
-                    icone = Icones.Lupa,
-                    title = "Nenhuma ficha encontrada",
-                    detail = "Tente outra busca ou outro nível.",
-                )
-            }
-        }
-
-        // Busca sem resultado nenhum mostra só o vazio: repetir três cabeçalhos
-        // sem nada embaixo transformaria a resposta numa lista de nãos.
-        val comGrupos = estado.encontradas > 0
-
-        estado.grupos.forEach { grupo ->
-            if (grupo.total == 0 || !comGrupos || grupo.vazioPorFiltro) return@forEach
-
-            item(key = "g${grupo.languagePair.target}") {
-                CabecalhoDeIdioma(
-                    grupo = grupo,
-                    modifier = Modifier.animateItem(),
-                    aoAlternar = { vm.toggleGroup(grupo.languagePair.target) },
-                )
-            }
-            if (!grupo.recolhido) {
-                items(grupo.entries, key = { "e${it.id}" }) { entry ->
-                    CartaoPalavra(entry, Modifier.animateItem()) { aoAbrirFicha(entry.id) }
-                }
-            }
-        }
+        Spacer(Modifier.height(4.dp))
     }
 }
 
 /**
- * O cabeçalho de um idioma: bandeira, nome, o que há dentro e a chevron.
+ * O anel do curso: a força média por dentro, ou o tique quando não há fila.
  *
- * A chevron gira em vez de trocar de ícone — é o mesmo elemento mudando de
- * estado, e o giro de 90° diz para onde a lista foi sem exigir que ninguém
- * compare dois desenhos.
+ * Curso em dia repete no anel o mesmo tique que a bandeira mostra na faixa — é a
+ * confirmação de que o selo lá em cima não estava falando de outra coisa.
  */
 @Composable
-private fun CabecalhoDeIdioma(
-    grupo: GrupoDeIdioma,
-    aoAlternar: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun CourseRing(pagina: HomePage) {
     val cores = MaterialTheme.colorScheme
-    val aberto = !grupo.recolhido
-    val giro by animateFloatAsState(
-        targetValue = if (aberto) 90f else 0f,
-        animationSpec = tween(200),
-        label = "giroDoCabecalho",
-    )
-
-    Surface(
-        onClick = aoAlternar,
-        shape = RoundedCornerShape(12.dp),
-        color = if (aberto) cores.secondaryContainer else cores.surfaceVariant,
-        modifier = modifier.fillMaxWidth().padding(top = 6.dp),
+    val emDia = pagina.resumo.inQueue == 0 && pagina.resumo.total > 0
+    ProgressRing(
+        fracao = if (emDia) 1f else pagina.forcaMedia / 100f,
+        tamanho = 70.dp,
+        espessura = 8.dp,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-        ) {
-            BandeiraCircular(idiomaDe(grupo.languagePair.target), tamanho = 20.dp)
-            Text(
-                text = idiomaDe(grupo.languagePair.target).displayName,
-                style = MaterialTheme.typography.titleSmall,
-                color = if (aberto) cores.onSecondaryContainer else cores.onSurface,
-                modifier = Modifier.weight(1f),
-            )
-            Text(
-                text = if (grupo.inQueue > 0) "${grupo.total} · ${grupo.inQueue} para revisar" else "${grupo.total} · em dia",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (grupo.inQueue > 0) cores.primary else cores.onSurfaceVariant,
-            )
-            Icon(
-                imageVector = Icones.Avancar,
-                contentDescription = if (aberto) "Recolher" else "Expandir",
-                tint = if (aberto) cores.primary else cores.onSurfaceVariant,
-                modifier = Modifier.size(16.dp).rotate(giro),
-            )
+        if (emDia) {
+            Icon(AppIcons.Check, null, tint = cores.tertiary, modifier = Modifier.size(26.dp))
+        } else {
+            // A porcentagem sobe no mesmo tempo em que o arco corre: os dois são
+            // a mesma medida, e vê-los chegarem juntos é o que impede o anel de
+            // parecer decoração ao redor de um número.
+            Text("${animatedCount(pagina.forcaMedia, "forcaMedia")}%", style = MaterialTheme.typography.headlineSmall)
         }
     }
 }
 
+/** "Próximas 5 em 19h · nada a fazer hoje" — o cartão de um curso sem fila. */
 @Composable
-private fun CartaoPalavra(entry: Entry, modifier: Modifier = Modifier, aoClicar: () -> Unit) {
-    val now = System.currentTimeMillis()
-    val level = entry.retention?.levelAt(now) ?: MemoryLevel.NEW
-    val points = entry.retention?.pointsAt(now) ?: 0.0
-    val proxima = textoDaProximaRevisao(entry.retention, now)
-    val inQueue = entry.needsReview(now)
-
-    CartaoDaTela(modifier = modifier.fillMaxWidth(), aoClicar = aoClicar) {
+private fun UpNextRow(pagina: HomePage, modifier: Modifier = Modifier) {
+    val cores = MaterialTheme.colorScheme
+    val proxima = pagina.resumo.nextInMillis
+    ScreenCard(
+        forma = MaterialTheme.shapes.medium,
+        cor = cores.surfaceVariant,
+        recheio = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(entry.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
-            TipoBadge(entry.type)
-        }
-        Text(
-            text = entry.card?.translation.orEmpty(),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 9.dp),
-        )
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 11.dp)) {
-            BarraDeMemoria(points, level, Modifier.width(84.dp), altura = 6.dp)
-            Text(
-                text = rotuloDoNivel(level),
-                style = MaterialTheme.typography.bodySmall,
-                color = corDoRotuloDoNivel(level),
-                modifier = Modifier.padding(start = 9.dp).weight(1f),
+            IconDisc(
+                icon = if (proxima == null) AppIcons.Mais else AppIcons.Relogio,
+                descricao = null,
+                cor = cores.onSurfaceVariant,
+                fundo = cores.surface,
+                tamanho = 34.dp,
             )
-            proxima?.let {
+            Column(Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(
-                    text = it,
+                    text = when {
+                        proxima == null -> "Nada agendado ainda"
+                        pagina.proximasEm24h > 1 -> "Próximas ${pagina.proximasEm24h} ${timeUntil(proxima)}"
+                        else -> "Próxima ${timeUntil(proxima)}"
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    text = if (proxima == null) "capture algo para começar" else "nada a fazer hoje",
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (inQueue) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = cores.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 1.dp),
                 )
             }
         }
     }
 }
+
+@Composable
+private fun CapturedRow(entry: Entry, modifier: Modifier = Modifier) {
+    ScreenCard(
+        forma = MaterialTheme.shapes.small,
+        recheio = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(entry.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(
+                text = entry.card?.translation.orEmpty(),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Dia sem captura vira convite, e não tela vazia — o custo de capturar é o ponto do app. */
+@Composable
+private fun CaptureInvite(language: String, aoClicar: () -> Unit) {
+    DashedBox(
+        modifier = Modifier.fillMaxWidth(),
+        recheio = PaddingValues(18.dp),
+        aoClicar = aoClicar,
+    ) {
+        Text(
+            text = "Nada ainda. Ouviu alguma coisa hoje que valia guardar?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        PrimaryButton(
+            text = "Capturar em $language",
+            aoClicar = aoClicar,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+    }
+}
+
+private fun courseDetail(total: Int, mastered: Int, inQueue: Int): String {
+    val estoque = if (total == 0) "nenhuma ficha ainda" else "$total ${if (total == 1) "card" else "cards"} · $mastered ${if (mastered == 1) "dominada" else "mastered"}"
+    val fila = when {
+        total == 0 -> "capture a primeira"
+        inQueue == 0 -> "nada esfriou hoje"
+        inQueue == 1 -> "1 esfriou hoje"
+        else -> "$inQueue esfriaram hoje"
+    }
+    return "$estoque\n$fila"
+}
+
+/** A barra de baixo mais o vão do botão de captura, que passa dela para cima. */
+private val ESPACO_DA_BARRA = 92.dp

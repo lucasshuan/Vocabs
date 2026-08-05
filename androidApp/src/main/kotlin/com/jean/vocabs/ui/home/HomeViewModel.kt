@@ -9,111 +9,115 @@ import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.Scope
 import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.LanguagePair
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.jean.vocabs.shared.domain.CourseSummary
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
-enum class FiltroMemoria(val rotulo: String) { TODAS("Todas"), APRENDENDO("Aprendendo"), FAMILIAR("Familiar"), DOMINADA("Dominada") }
-
 /**
- * Um idioma como cabeçalho, e não como filtro.
+ * Uma página do carrossel — tudo o que a Início mostra de um curso.
  *
- * [total] e [naFila] são do curso inteiro, sem passar pela busca nem pelo nível:
- * o cabeçalho recolhido continua dizendo quanta coisa está ali dentro e quanto
- * dela pede revisão, e é isso que faz fechar um grupo não custar informação.
+ * O [resumo] é o mesmo objeto que alimenta o selo da faixa, e não uma segunda
+ * contagem: o número no chip do inglês e o "3 esfriaram hoje" do cartão do
+ * inglês são a mesma frase dita duas vezes, e discordarem seria pior que
+ * qualquer um dos dois faltar.
  */
-data class GrupoDeIdioma(
-    val languagePair: LanguagePair,
-    val entries: List<Entry>,
-    val total: Int,
-    val inQueue: Int,
-    val recolhido: Boolean,
+data class HomePage(
+    val resumo: CourseSummary,
+    val forcaMedia: Int,
+    /** Quantas vencem ainda nas próximas 24h — o "Próximas 5 em 19h". */
+    val proximasEm24h: Int,
+    val capturadasHoje: List<Entry>,
 ) {
-    val vazioPorFiltro: Boolean get() = total > 0 && entries.isEmpty()
+    val languagePair: LanguagePair get() = resumo.languagePair
 }
 
-data class HomeEstado(
-    val grupos: List<GrupoDeIdioma> = emptyList(),
-    val filtro: FiltroMemoria = FiltroMemoria.TODAS,
-    val busca: String = "",
-    val total: Int = 0,
-    val mastered: Int = 0,
+data class HomeState(
+    val paginas: List<HomePage> = emptyList(),
+    val ativo: String = "",
+    val native: String = "",
     val carregado: Boolean = false,
 ) {
-    val encontradas: Int get() = grupos.sumOf { it.entries.size }
+    val courses: List<CourseSummary> get() = paginas.map { it.resumo }
+
+    val indiceAtivo: Int get() = paginas.indexOfFirst { it.languagePair.target == ativo }.coerceAtLeast(0)
+
+    /** Com um curso só não há faixa nem carrossel: não há para onde deslizar. */
+    val temCarrossel: Boolean get() = paginas.size > 1
 }
 
-/**
- * Vocabulários mostra os três idiomas de uma vez.
- *
- * O idioma virou cabeçalho e deixou de ser filtro porque filtro é estado
- * escondido: quem deixasse "só espanhol" ligado e voltasse na semana seguinte
- * veria uma coleção que encolheu sozinha. Cabeçalho recolhido também esconde,
- * mas continua na tela dizendo o que esconde — e o estado dele é preferência,
- * não segredo.
- */
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
     private val preferences = AppContainer.preferences(app)
-    private val filtro = MutableStateFlow(FiltroMemoria.TODAS)
-    private val busca = MutableStateFlow("")
 
-    /** Em duas etapas: `combine` só tem sobrecarga tipada até cinco fluxos. */
-    private val recorte = combine(filtro, busca, ::Pair)
-
-    val estado: StateFlow<HomeEstado> = combine(
-        repository.observeReady(Scope.Todos),
-        preferences.observeCourses(),
+    /**
+     * Uma leitura só, de todos os cursos, repartida aqui.
+     *
+     * O carrossel mostra os três idiomas ao mesmo tempo — deslizar não pode
+     * disparar consulta nova. Ler tudo de uma vez e agrupar em memória é o que
+     * faz a troca de página ser instantânea, e é também o que garante que os
+     * três cartões estejam falando do mesmo instante.
+     */
+    val estado: StateFlow<HomeState> = combine(
         preferences.observeLanguagePair(),
-        preferences.observeCollapsedGroups(),
-        recorte,
-    ) { prontas, matriculados, languagePair, recolhidos, (filtroAtual, termo) ->
+        preferences.observeCourses(),
+        repository.observeReady(Scope.Todos),
+    ) { languagePair, matriculados, prontas ->
         val now = System.currentTimeMillis()
-        val procurado = termo.normalizado()
+        val today = LocalDate.now()
         val porCurso = prontas.groupBy { it.languagePair.target }
 
-        HomeEstado(
-            // A ordem é a da matrícula, e não a da quantidade de fichas: é a mesma
-            // ordem da faixa da Início, e trocá-la aqui faria as duas telas
-            // discordarem sobre onde fica o francês.
-            grupos = matriculados.map { target ->
-                val doCurso = porCurso[target].orEmpty()
-                GrupoDeIdioma(
+        HomeState(
+            paginas = matriculados.map { target ->
+                pagina(
                     languagePair = LanguagePair(native = languagePair.native, target = target),
-                    entries = doCurso.filter { cabe(it, filtroAtual, procurado, now) },
-                    total = doCurso.size,
-                    inQueue = doCurso.count { it.needsReview(now) },
-                    recolhido = target in recolhidos,
+                    entries = porCurso[target].orEmpty(),
+                    now = now,
+                    today = today,
                 )
             },
-            filtro = filtroAtual,
-            busca = termo,
-            total = prontas.size,
-            mastered = prontas.count { Steps.level(it.degrau) == MemoryLevel.MASTERED },
+            ativo = languagePair.target,
+            native = languagePair.native,
             carregado = true,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeEstado())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
 
-    private fun cabe(entry: Entry, filtro: FiltroMemoria, procurado: String, now: Long): Boolean {
-        val level = entry.retention?.levelAt(now) ?: MemoryLevel.NEW
-        val bateNivel = when (filtro) {
-            FiltroMemoria.TODAS -> true
-            FiltroMemoria.APRENDENDO -> level == MemoryLevel.NEW || level == MemoryLevel.LEARNING
-            FiltroMemoria.FAMILIAR -> level == MemoryLevel.FAMILIAR
-            FiltroMemoria.DOMINADA -> level == MemoryLevel.MASTERED
-        }
-        val bateBusca = procurado.isBlank() ||
-            entry.target.orEmpty().normalizado().contains(procurado) ||
-            entry.card?.translation.orEmpty().normalizado().contains(procurado)
-        return bateNivel && bateBusca
+    private fun pagina(
+        languagePair: LanguagePair,
+        entries: List<Entry>,
+        now: Long,
+        today: LocalDate,
+    ): HomePage {
+        val faltas = entries.mapNotNull { it.retention?.nextReviewIn(now) }
+        return HomePage(
+            resumo = CourseSummary(
+                languagePair = languagePair,
+                total = entries.size,
+                // Por degrau, como em toda tela de número: contar por força de
+                // memória faria o mesmo total aparecer diferente em cada uma,
+                // porque ela decai entre a leitura de uma e a da outra.
+                mastered = entries.count { Steps.level(it.degrau) == MemoryLevel.MASTERED },
+                inQueue = entries.count { it.needsReview(now) },
+                nextInMillis = faltas.filter { it > 0L }.minOrNull(),
+            ),
+            forcaMedia = entries.mapNotNull { it.retention?.pointsAt(now) }.mediaOuZero().toInt(),
+            proximasEm24h = faltas.count { it in 1..UM_DIA_EM_MILLIS },
+            capturadasHoje = entries
+                .filter { Instant.ofEpochMilli(it.createdAt).atZone(ZoneId.systemDefault()).toLocalDate() == today }
+                .take(3),
+        )
     }
 
-    fun filtrar(novo: FiltroMemoria) { filtro.value = novo }
-    fun buscar(text: String) { busca.value = text }
-    fun toggleGroup(target: String) = preferences.toggleGroup(target)
+    /** Deslizar o carrossel **é** trocar de curso: a revisão e o `+` seguem a página. */
+    fun openCourse(codigo: String) = preferences.openCourse(codigo)
+
+    private companion object {
+        const val UM_DIA_EM_MILLIS = 86_400_000L
+    }
 }
 
-private val espacos = Regex("\\s+")
-private fun String.normalizado() = trim().lowercase().replace(espacos, " ")
+private fun List<Double>.mediaOuZero(): Double = if (isEmpty()) 0.0 else average()

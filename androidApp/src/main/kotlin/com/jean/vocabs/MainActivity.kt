@@ -11,7 +11,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.ui.VocabsApp
 import com.jean.vocabs.ui.theme.VocabsTheme
-import com.jean.vocabs.ui.theme.escuroConforme
+import com.jean.vocabs.ui.theme.darkAccordingTo
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
             val theme by preferences.observeTheme()
                 .collectAsStateWithLifecycle(initialValue = preferences.theme)
 
-            VocabsTheme(temaEscuro = escuroConforme(theme)) {
+            VocabsTheme(temaEscuro = darkAccordingTo(theme)) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     VocabsApp()
                 }

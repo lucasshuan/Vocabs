@@ -67,7 +67,7 @@ import com.jean.vocabs.ui.theme.LocalTemaEscuro
  * sujaria a borda.
  */
 @Composable
-fun contornoDeCartao(): BorderStroke? =
+fun cardOutline(): BorderStroke? =
     if (LocalTemaEscuro.current) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 
 /**
@@ -100,7 +100,7 @@ fun Modifier.contornoTracejado(
 
 /** A caixa tracejada pronta: fundo do tema, contorno pontilhado, conteúdo livre. */
 @Composable
-fun CaixaTracejada(
+fun DashedBox(
     modifier: Modifier = Modifier,
     raio: Dp = 18.dp,
     cor: Color = MaterialTheme.colorScheme.outline,
@@ -109,7 +109,7 @@ fun CaixaTracejada(
     conteudo: @Composable ColumnScope.() -> Unit,
 ) {
     val forma = RoundedCornerShape(raio)
-    val toque = lembrarToque()
+    val toque = rememberHaptics()
     val base = modifier
         .then(if (aoClicar != null) Modifier.encolheAoTocar(toque) else Modifier)
         .clip(forma)
@@ -131,7 +131,7 @@ fun CaixaTracejada(
  * ele um a um.
  */
 @Composable
-fun CartaoDaTela(
+fun ScreenCard(
     modifier: Modifier = Modifier,
     forma: Shape = MaterialTheme.shapes.large,
     cor: Color = MaterialTheme.colorScheme.surface,
@@ -139,14 +139,14 @@ fun CartaoDaTela(
     aoClicar: (() -> Unit)? = null,
     conteudo: @Composable ColumnScope.() -> Unit,
 ) {
-    val contorno = contornoDeCartao()
+    val contorno = cardOutline()
     val interno: @Composable () -> Unit = {
         Column(modifier = Modifier.padding(recheio), content = conteudo)
     }
     if (aoClicar == null) {
         Surface(shape = forma, color = cor, border = contorno, modifier = modifier, content = interno)
     } else {
-        val toque = lembrarToque()
+        val toque = rememberHaptics()
         Surface(
             onClick = aoClicar,
             shape = forma,
@@ -166,7 +166,7 @@ fun CartaoDaTela(
  * antigo, que competia em peso com o próprio conteúdo que anunciava.
  */
 @Composable
-fun RotuloDeSecao(text: String, modifier: Modifier = Modifier) {
+fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
@@ -177,14 +177,14 @@ fun RotuloDeSecao(text: String, modifier: Modifier = Modifier) {
 
 /** O ladrilho de número grande: Início, Perfil e o resumo da revisão usam o mesmo. */
 @Composable
-fun CartaoMetrica(
+fun MetricCard(
     value: String,
     rotulo: String,
     modifier: Modifier = Modifier,
     destaque: Boolean = false,
     aoClicar: (() -> Unit)? = null,
 ) {
-    CartaoDaTela(
+    ScreenCard(
         modifier = modifier,
         forma = MaterialTheme.shapes.medium,
         recheio = PaddingValues(horizontal = 14.dp, vertical = 13.dp),
@@ -211,14 +211,14 @@ fun CartaoMetrica(
 
 /** A linha de lista com ícone/valor nas pontas — Pendentes, Perfil e o aviso do Início. */
 @Composable
-fun LinhaDeLista(
+fun ListRow(
     modifier: Modifier = Modifier,
     aoClicar: (() -> Unit)? = null,
     start: (@Composable () -> Unit)? = null,
     end: (@Composable () -> Unit)? = null,
     conteudo: @Composable ColumnScope.() -> Unit,
 ) {
-    CartaoDaTela(
+    ScreenCard(
         modifier = modifier.fillMaxWidth(),
         forma = MaterialTheme.shapes.medium,
         recheio = PaddingValues(horizontal = 15.dp, vertical = 14.dp),
@@ -240,7 +240,7 @@ fun LinhaDeLista(
 
 /** O caso comum de [LinhaDeLista]: título e uma linha de apoio. */
 @Composable
-fun LinhaDeLista(
+fun ListRow(
     title: String,
     modifier: Modifier = Modifier,
     detail: String? = null,
@@ -248,7 +248,7 @@ fun LinhaDeLista(
     start: (@Composable () -> Unit)? = null,
     end: (@Composable () -> Unit)? = null,
 ) {
-    LinhaDeLista(modifier = modifier, aoClicar = aoClicar, start = start, end = end) {
+    ListRow(modifier = modifier, aoClicar = aoClicar, start = start, end = end) {
         Text(title, style = MaterialTheme.typography.titleSmall)
         detail?.let {
             Text(
@@ -263,8 +263,8 @@ fun LinhaDeLista(
 
 /** O disco colorido que abre as linhas de Pendentes. */
 @Composable
-fun DiscoDeIcone(
-    icone: ImageVector,
+fun IconDisc(
+    icon: ImageVector,
     descricao: String?,
     cor: Color,
     fundo: Color,
@@ -274,15 +274,15 @@ fun DiscoDeIcone(
         contentAlignment = Alignment.Center,
         modifier = Modifier.size(tamanho).background(fundo, CircleShape),
     ) {
-        Icon(icone, descricao, tint = cor, modifier = Modifier.size(tamanho * 0.52f))
+        Icon(icon, descricao, tint = cor, modifier = Modifier.size(tamanho * 0.52f))
     }
 }
 
 /** A chevron de "isto abre outra tela", no cinza-lilás de informação de apoio. */
 @Composable
-fun ChevronDeLinha() {
+fun RowChevron() {
     Icon(
-        imageVector = Icones.Avancar,
+        imageVector = AppIcons.Avancar,
         contentDescription = null,
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.size(20.dp),
@@ -291,14 +291,14 @@ fun ChevronDeLinha() {
 
 /** A ação principal da tela: ameixa, largura inteira, cantos de 18. */
 @Composable
-fun BotaoPrincipal(
+fun PrimaryButton(
     text: String,
     aoClicar: () -> Unit,
     modifier: Modifier = Modifier,
     habilitado: Boolean = true,
     conteudoInicial: (@Composable RowScope.() -> Unit)? = null,
 ) {
-    val toque = lembrarToque()
+    val toque = rememberHaptics()
     // Menos que os cartões (0,97): este botão ocupa a largura da tela, e a mesma
     // proporção num alvo desse tamanho vira um solavanco em vez de um toque.
     Button(
@@ -316,7 +316,7 @@ fun BotaoPrincipal(
 
 /** A pílula de filtro de Palavras e a aba de formato da Capture são a mesma coisa. */
 @Composable
-fun PilulaSelecionavel(
+fun SelectablePill(
     rotulo: String,
     selecionada: Boolean,
     aoClicar: () -> Unit,
@@ -324,18 +324,18 @@ fun PilulaSelecionavel(
     forma: Shape = CircleShape,
 ) {
     val cores = MaterialTheme.colorScheme
-    val toque = lembrarToque()
+    val toque = rememberHaptics()
     // As cores transitam em vez de trocar de um quadro para o outro: numa fileira
     // de filtros, o corte seco faz duas pílulas piscarem ao mesmo tempo e nenhuma
     // das duas diz de onde a seleção veio.
     val fundo by animateColorAsState(
         targetValue = if (selecionada) cores.primary else cores.surface,
-        animationSpec = tween(Movimento.RAPIDO),
+        animationSpec = tween(Motion.RAPIDO),
         label = "fundoDaPilula",
     )
     val tinta by animateColorAsState(
         targetValue = if (selecionada) cores.onPrimary else cores.onSurfaceVariant,
-        animationSpec = tween(Movimento.RAPIDO),
+        animationSpec = tween(Motion.RAPIDO),
         label = "tintaDaPilula",
     )
     Surface(
@@ -343,7 +343,7 @@ fun PilulaSelecionavel(
         shape = forma,
         color = fundo,
         contentColor = tinta,
-        border = if (selecionada) null else contornoDeCartao(),
+        border = if (selecionada) null else cardOutline(),
         interactionSource = toque,
         modifier = modifier.encolheAoTocar(toque, minimo = 0.94f),
     ) {
@@ -360,7 +360,7 @@ fun PilulaSelecionavel(
  * palavra" de "isto faz alguma coisa".
  */
 @Composable
-fun Pilula(
+fun Pill(
     text: String,
     modifier: Modifier = Modifier,
     destaque: Boolean = false,
@@ -369,7 +369,7 @@ fun Pilula(
     val cores = MaterialTheme.colorScheme
     val fundo = if (destaque) cores.secondaryContainer else cores.surface
     val cor = if (destaque) cores.primary else cores.onSurface
-    val contorno = if (destaque) null else contornoDeCartao()
+    val contorno = if (destaque) null else cardOutline()
     val conteudo: @Composable () -> Unit = {
         Text(
             text = text,
@@ -381,7 +381,7 @@ fun Pilula(
     if (aoClicar == null) {
         Surface(shape = CircleShape, color = fundo, border = contorno, modifier = modifier, content = conteudo)
     } else {
-        val toque = lembrarToque()
+        val toque = rememberHaptics()
         Surface(
             onClick = aoClicar,
             shape = CircleShape,
@@ -403,8 +403,8 @@ fun Pilula(
  * desfecho bom que ela é.
  */
 @Composable
-fun EstadoVazio(
-    icone: ImageVector,
+fun EmptyState(
+    icon: ImageVector,
     title: String,
     detail: String,
     modifier: Modifier = Modifier,
@@ -414,7 +414,7 @@ fun EstadoVazio(
     LaunchedEffect(Unit) { chegou = true }
     val escala by animateFloatAsState(
         targetValue = if (chegou) 1f else 0.6f,
-        animationSpec = Movimento.molaElastica(),
+        animationSpec = Motion.molaElastica(),
         label = "escalaDoVazio",
     )
 
@@ -424,8 +424,8 @@ fun EstadoVazio(
         modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 60.dp),
     ) {
         Box(Modifier.graphicsLayer { scaleX = escala; scaleY = escala; alpha = if (chegou) 1f else 0f }) {
-            DiscoDeIcone(
-                icone = icone,
+            IconDisc(
+                icon = icon,
                 descricao = null,
                 cor = MaterialTheme.colorScheme.tertiary,
                 fundo = MaterialTheme.colorScheme.tertiaryContainer,
@@ -451,13 +451,13 @@ fun EstadoVazio(
 
 /** O botão redondo de cabeçalho (voltar, fechar, descartar). */
 @Composable
-fun BotaoCircular(
-    icone: ImageVector,
+fun CircularButton(
+    icon: ImageVector,
     descricao: String,
     aoClicar: () -> Unit,
     cor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
-    val toque = lembrarToque()
+    val toque = rememberHaptics()
     Surface(
         onClick = aoClicar,
         shape = CircleShape,
@@ -467,14 +467,14 @@ fun BotaoCircular(
         modifier = Modifier.encolheAoTocar(toque, minimo = 0.88f),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp)) {
-            Icon(icone, descricao, tint = cor, modifier = Modifier.size(24.dp))
+            Icon(icon, descricao, tint = cor, modifier = Modifier.size(24.dp))
         }
     }
 }
 
 /** Botão de texto discreto ("Não lembro"), centralizado sob a ação principal. */
 @Composable
-fun AcaoSecundaria(text: String, aoClicar: () -> Unit, modifier: Modifier = Modifier) {
+fun SecondaryAction(text: String, aoClicar: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         onClick = aoClicar,
         color = Color.Transparent,

@@ -148,7 +148,7 @@ private val Shapes = Shapes(
  * noite.
  */
 @Composable
-fun escuroConforme(preferencia: ThemePreference): Boolean = when (preferencia) {
+fun darkAccordingTo(preferencia: ThemePreference): Boolean = when (preferencia) {
     ThemePreference.LIGHT -> false
     ThemePreference.DARK -> true
     ThemePreference.SYSTEM -> isSystemInDarkTheme()

@@ -19,7 +19,7 @@ val Language.displayName: String
     get() = NOMES_TEMPORARIOS[code] ?: code
 
 /** Was the sentence the server used to send, before it sent a code. */
-fun textoTemporarioDoErro(code: ErrorCode?): String = when (code) {
+fun temporaryErrorText(code: ErrorCode?): String = when (code) {
     ErrorCode.UNKNOWN_LANGUAGE_PAIR -> "Este par de idiomas não é aceito."
     ErrorCode.MISSING_FIELDS -> "Faltou o trecho ou o alvo."
     ErrorCode.INVALID_TOKEN -> "O app não conseguiu se identificar no servidor."
