@@ -36,24 +36,24 @@ class GeradorDeFichaTest {
 
     @Test
     fun `a notacao de pronuncia segue o language target, com IPA como padrao`() {
-        assertEquals("IPA, without slashes", LanguagePairSpec.de("pt-BR", "en")!!.target.pronunciationNotation)
-        assertEquals("Hanyu Pinyin with tone marks", LanguagePairSpec.de("pt-BR", "zh")!!.target.pronunciationNotation)
-        assertEquals("Revised Romanization of Korean", LanguagePairSpec.de("pt-BR", "ko")!!.target.pronunciationNotation)
-        // Language sem entrada própria cai no IPA, que serve à maioria.
-        assertEquals("IPA, without slashes", LanguagePairSpec.de("pt-BR", "sv")!!.target.pronunciationNotation)
+        assertEquals("IPA, without slashes", LanguagePairSpec.of("pt-BR", "en")!!.target.pronunciationNotation)
+        assertEquals("Hanyu Pinyin with tone marks", LanguagePairSpec.of("pt-BR", "zh")!!.target.pronunciationNotation)
+        assertEquals("Revised Romanization of Korean", LanguagePairSpec.of("pt-BR", "ko")!!.target.pronunciationNotation)
+        // A language with no entry of its own falls back to IPA, which serves most.
+        assertEquals("IPA, without slashes", LanguagePairSpec.of("pt-BR", "sv")!!.target.pronunciationNotation)
     }
 
     @Test
     fun `languagePair desconhecido nao vira o languagePair padrao`() {
         // Refusing is the point: falling back would return an English card for
         // a German word, and the person would only find out by reading it.
-        assertNull(LanguagePairSpec.de("pt-BR", "klingon"))
-        assertNull(LanguagePairSpec.de("elfico", "en"))
+        assertNull(LanguagePairSpec.of("pt-BR", "klingon"))
+        assertNull(LanguagePairSpec.of("elfico", "en"))
     }
 
     @Test
     fun `o prompt cita os dois languages pelo name em ingles`() {
-        val prompt = CardGenerator.promptFor(LanguagePairSpec.de("pt-BR", "de")!!)
+        val prompt = CardGenerator.promptFor(LanguagePairSpec.of("pt-BR", "de")!!)
         assertTrue(prompt.contains("Brazilian Portuguese"), prompt)
         assertTrue(prompt.contains("German"), prompt)
         assertTrue(prompt.contains("`pronunciation`"), prompt)

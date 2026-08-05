@@ -33,9 +33,9 @@ object VocabuExporter {
     }
 
     private fun json(data: ExportData) = JSONObject().apply {
-        // 2: `ipa` virou `pronuncia` e o par de idiomas deixou de ser um valor
-        // fixo do arquivo para ser uma propriedade de cada captura.
-        put("schemaVersion", 3)
+        // Version 1 of the English export format. There is no importer and no
+        // shipped data, so there are no older readers to satisfy.
+        put("schemaVersion", 1)
         put("app", "Vocabu")
         put("exportedAt", System.currentTimeMillis())
         put("aiUsage", JSONObject().put("month", data.aiUsage.month).put("generations", data.aiUsage.used))

@@ -49,9 +49,9 @@ data class LanguagePairSpec(
          * would get an English card for a German word and only find out by
          * reading it. A 400 says what happened.
          */
-        fun de(codigoNativo: String, codigoAlvo: String): LanguagePairSpec? {
-            val native = Languages.of(codigoNativo) ?: return null
-            val target = Languages.of(codigoAlvo) ?: return null
+        fun of(nativeCode: String, targetCode: String): LanguagePairSpec? {
+            val native = Languages.of(nativeCode) ?: return null
+            val target = Languages.of(targetCode) ?: return null
             return LanguagePairSpec(native = native, target = targetOf(target))
         }
     }

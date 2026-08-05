@@ -368,10 +368,8 @@ private val BUTTON_ELEVATION = 10.dp
 val BUTTON_DIAMETER = 76.dp
 
 /**
- * Alta o bastante para o leque inteiro caber dentro dela.
- *
- * Meia-altura de 260 dp contra 194 dp do topo do alvo mais alto e 238 dp da dica
- * que vai acima dele.
+ * Tall enough for the whole fan: 260 dp of half-height against 194 dp to the top
+ * of the highest target and 238 dp to the hint above it.
  */
 private val ANCHOR_HEIGHT = 520.dp
 

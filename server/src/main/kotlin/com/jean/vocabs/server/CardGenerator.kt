@@ -51,7 +51,7 @@ class CardGenerator(
     private val prompts = ConcurrentHashMap<LanguagePairSpec, String>()
 
     fun gerar(request: GenerateCardRequest): CardResponse {
-        val languages = LanguagePairSpec.de(request.nativeLanguage, request.targetLanguage)
+        val languages = LanguagePairSpec.of(request.nativeLanguage, request.targetLanguage)
             ?: throw UnknownLanguagePair(request.nativeLanguage, request.targetLanguage)
 
         val params = MessageCreateParams.builder()
