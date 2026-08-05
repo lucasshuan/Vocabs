@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -55,7 +56,9 @@ fun TypeBadge(type: TargetType, modifier: Modifier = Modifier) {
     }
     Surface(shape = CircleShape, color = background, modifier = modifier) {
         Text(
-            text = if (type == TargetType.WORD) "palavra" else "expressão",
+            text = stringResource(
+                if (type == TargetType.WORD) R.string.type_word else R.string.type_phrase
+            ),
             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
             color = text,
             modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
@@ -94,7 +97,7 @@ fun DuplicateNotice(entry: Entry, modifier: Modifier = Modifier) {
                     .padding(start = 12.dp),
             ) {
                 Text(
-                    text = "Você já tem isso",
+                    text = stringResource(R.string.duplicate_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = colors.onSecondaryContainer,
                 )
@@ -113,7 +116,7 @@ fun DuplicateNotice(entry: Entry, modifier: Modifier = Modifier) {
 private fun duplicateDetail(entry: Entry): String = buildString {
     append(entryTitle(entry))
     append(" · ")
-    append(duplicateStatusLabel(entry.status))
+    append(stringResource(duplicateStatusRes(entry.status)))
     append(" · ")
     append(relativeTime(entry.createdAt))
     entry.source?.takeIf { it.isNotBlank() }?.let { source ->
@@ -122,24 +125,29 @@ private fun duplicateDetail(entry: Entry): String = buildString {
     }
 }
 
-private fun duplicateStatusLabel(status: EntryStatus): String = when (status) {
-    EntryStatus.READY -> "ficha pronta"
-    EntryStatus.GENERATING -> "gerando ficha"
-    EntryStatus.PENDING -> "na fila"
-    EntryStatus.ERROR -> "com erro"
+@StringRes
+private fun duplicateStatusRes(status: EntryStatus): Int = when (status) {
+    EntryStatus.READY -> R.string.duplicate_status_ready
+    EntryStatus.GENERATING -> R.string.duplicate_status_generating
+    EntryStatus.PENDING -> R.string.duplicate_status_pending
+    EntryStatus.ERROR -> R.string.duplicate_status_error
 }
 
 /** "now", "5m ago", "2h ago", "yesterday", "3d ago". */
-fun relativeTime(entao: Long, now: Long = System.currentTimeMillis()): String {
-    val minutes = ((now - entao) / 60_000L).coerceAtLeast(0)
+fun Context.relativeTime(instant: Long, now: Long = System.currentTimeMillis()): String {
+    val minutes = ((now - instant) / 60_000L).coerceAtLeast(0)
     return when {
-        minutes < 1 -> "agora"
-        minutes < 60 -> "há ${minutes}min"
-        minutes < 60 * 24 -> "há ${minutes / 60}h"
-        minutes < 60 * 48 -> "ontem"
-        else -> "há ${minutes / (60 * 24)}d"
+        minutes < 1 -> getString(R.string.time_now)
+        minutes < 60 -> getString(R.string.time_minutes_ago, minutes)
+        minutes < 60 * 24 -> getString(R.string.time_hours_ago, minutes / 60)
+        minutes < 60 * 48 -> getString(R.string.time_yesterday)
+        else -> getString(R.string.time_days_ago, minutes / (60 * 24))
     }
 }
+
+@Composable
+fun relativeTime(instant: Long, now: Long = System.currentTimeMillis()): String =
+    LocalContext.current.relativeTime(instant, now)
 
 /**
  * The forward-looking mirror of [relativeTime]: "now", "in 4h", "tomorrow".
@@ -149,16 +157,20 @@ fun relativeTime(entao: Long, now: Long = System.currentTimeMillis()): String {
  * source injected into the repository. Repeating that here would let the card's
  * bar and the home card disagree about what time it is.
  */
-fun timeUntil(millis: Long): String {
+fun Context.timeUntil(millis: Long): String {
     val minutes = (millis / 60_000L).coerceAtLeast(0)
+    val days = (minutes / (60 * 24)).toInt()
     return when {
-        minutes < 1 -> "agora"
-        minutes < 60 -> "em ${minutes}min"
-        minutes < 60 * 24 -> "em ${minutes / 60}h"
-        minutes < 60 * 48 -> "amanhã"
-        else -> "em ${minutes / (60 * 24)} dias"
+        minutes < 1 -> getString(R.string.time_now)
+        minutes < 60 -> getString(R.string.time_in_minutes, minutes)
+        minutes < 60 * 24 -> getString(R.string.time_in_hours, minutes / 60)
+        minutes < 60 * 48 -> getString(R.string.time_tomorrow)
+        else -> resources.getQuantityString(R.plurals.time_in_days, days, days)
     }
 }
+
+@Composable
+fun timeUntil(millis: Long): String = LocalContext.current.timeUntil(millis)
 
 /** "0:12", "1:03:20" — an audio duration, from millis. */
 fun formatDurationMs(durationMs: Long): String {
@@ -183,16 +195,24 @@ fun formatDuration(seconds: Long): String = formatDurationMs(seconds * 1_000L)
  * Pasted text shows its own snippet in quotes rather than the word "Text": in a
  * queue of five captures, "Text" three times distinguishes nothing.
  */
-fun captureTitle(capture: Capture): String {
+fun Context.captureTitle(capture: Capture): String {
     val source = capture.source?.takeIf { it.isNotBlank() }
     return when (capture.format) {
-        CaptureFormat.AUDIO -> capture.durationMs?.let { "Áudio · ${formatDurationMs(it)}" } ?: "Áudio"
-        CaptureFormat.PHOTO -> source?.let { "Foto do $it" } ?: "Foto"
-        CaptureFormat.TEXT -> capture.snippet?.takeIf { it.isNotBlank() }?.let { "“${summarize(it)}”" }
-            ?: source?.let { "Texto do $it" }
-            ?: "Texto"
+        CaptureFormat.AUDIO -> capture.durationMs
+            ?.let { getString(R.string.capture_audio_with_duration, formatDurationMs(it)) }
+            ?: getString(R.string.capture_audio)
+        CaptureFormat.PHOTO -> source
+            ?.let { getString(R.string.capture_photo_from, it) }
+            ?: getString(R.string.capture_photo)
+        CaptureFormat.TEXT -> capture.snippet?.takeIf { it.isNotBlank() }
+            ?.let { getString(R.string.capture_text_quoted, summarize(it)) }
+            ?: source?.let { getString(R.string.capture_text_from, it) }
+            ?: getString(R.string.capture_text)
     }
 }
+
+@Composable
+fun captureTitle(capture: Capture): String = LocalContext.current.captureTitle(capture)
 
 /** One line of snippet for a title, cut at the word rather than the letter. */
 fun summarize(text: String, limit: Int = 38): String {
@@ -223,12 +243,18 @@ fun levelLabelColor(level: MemoryLevel): Color =
     if (level == MemoryLevel.MASTERED) MaterialTheme.colorScheme.tertiary
     else MaterialTheme.colorScheme.onSurfaceVariant
 
-fun levelLabel(level: MemoryLevel): String = when (level) {
-    MemoryLevel.NEW -> "nova"
-    MemoryLevel.LEARNING -> "aprendendo"
-    MemoryLevel.FAMILIAR -> "familiar"
-    MemoryLevel.MASTERED -> "dominada"
+@StringRes
+fun levelLabelRes(level: MemoryLevel): Int = when (level) {
+    MemoryLevel.NEW -> R.string.level_new
+    MemoryLevel.LEARNING -> R.string.level_learning
+    MemoryLevel.FAMILIAR -> R.string.level_familiar
+    MemoryLevel.MASTERED -> R.string.level_mastered
 }
+
+@Composable
+fun levelLabel(level: MemoryLevel): String = stringResource(levelLabelRes(level))
+
+fun Context.levelLabel(level: MemoryLevel): String = getString(levelLabelRes(level))
 
 /**
  * "review now" once past the threshold, otherwise "in 2d 4h".
@@ -236,9 +262,10 @@ fun levelLabel(level: MemoryLevel): String = when (level) {
  * Null when there is no retention: with no card ready there is no scheduled
  * review, and "review now" would send someone to an empty queue.
  */
+@Composable
 fun nextReviewText(retention: Retention?, now: Long): String? {
     val missing = retention?.nextReviewIn(now) ?: return null
-    return if (missing <= 0L) "revisar agora" else timeUntil(missing)
+    return if (missing <= 0L) stringResource(R.string.review_now) else timeUntil(missing)
 }
 
 /**

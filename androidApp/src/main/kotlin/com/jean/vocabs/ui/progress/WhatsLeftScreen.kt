@@ -29,7 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
+import com.jean.vocabs.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Entry
@@ -208,7 +210,6 @@ private fun StepLadder(step: Int, modifier: Modifier = Modifier) {
     }
 }
 
-internal fun whatsLeftText(hits: Int, nextLevel: MemoryLevel): String {
-    val name = levelLabel(nextLevel)
-    return if (hits == 1) "1 acerto para $name" else "$hits acertos para $name"
-}
+@Composable
+internal fun whatsLeftText(hits: Int, nextLevel: MemoryLevel): String =
+    pluralStringResource(R.plurals.whats_left_hits, hits, hits, levelLabel(nextLevel))

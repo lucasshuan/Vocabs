@@ -24,7 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.jean.vocabs.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Capture
@@ -194,21 +197,22 @@ private fun SwipeHint() {
             modifier = Modifier.size(14.dp),
         )
         Text(
-            text = "Arraste um cartão para o lado para excluir",
+            text = stringResource(R.string.pending_swipe_hint),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
+@Composable
 private fun queueSummary(captures: Int, cards: Int, oldest: Long?): String = when {
-    captures > 0 -> buildString {
-        append(captures)
-        append(if (captures == 1) " captura crua" else " capturas cruas")
-        oldest?.let { append(" · a mais antiga ${relativeTime(it)}") }
+    captures > 0 -> {
+        val head = pluralStringResource(R.plurals.pending_raw_captures, captures, captures)
+        oldest?.let { stringResource(R.string.pending_summary_with_oldest, head, relativeTime(it)) }
+            ?: head
     }
-    cards > 0 -> "$cards ${if (cards == 1) "card em processing" else "cards em processing"}"
-    else -> "Suas capturas e fichas em processamento aparecem aqui."
+    cards > 0 -> pluralStringResource(R.plurals.pending_cards_generating, cards, cards)
+    else -> stringResource(R.string.pending_empty)
 }
 
 @Composable

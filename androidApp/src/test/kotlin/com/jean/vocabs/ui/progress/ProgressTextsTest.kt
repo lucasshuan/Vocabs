@@ -70,12 +70,9 @@ class ProgressTextsTest {
         assertEquals("3 estão perto de virar.", closeToLevelingText(3))
     }
 
-    @Test
-    fun `what's left names the next level`() {
-        assertEquals("1 acerto para familiar", whatsLeftText(1, MemoryLevel.FAMILIAR))
-        assertEquals("2 acertos para dominada", whatsLeftText(2, MemoryLevel.MASTERED))
-        assertEquals("0 acertos para aprendendo", whatsLeftText(0, MemoryLevel.LEARNING))
-    }
+    // `whatsLeftText` is now a plurals lookup in composition. Its count-to-form
+    // mapping belongs to CLDR and its two keys are covered by MissingTranslation
+    // and ImpliedQuantity, so there is nothing left here worth asserting.
 
     @Test
     fun `months come from the hand-written table`() {
@@ -92,28 +89,49 @@ class ProgressTextsTest {
         assertEquals("dom", WEEKDAY_LABELS.last())
     }
 
+    // The timeline row now picks a branch here and a resource in composition.
+    // These cover the branch choice, which is the part with logic in it.
+
     @Test
-    fun `an event with no review number loses the ordinal but keeps the outcome`() {
-        assertEquals("revisão certa", eventDescription(event(EventType.CORRECT, detail = null)))
-        assertEquals("revisão errada", eventDescription(event(EventType.INCORRECT, detail = "not-a-number")))
+    fun `an unparsable review number is treated as absent`() {
+        assertEquals(
+            EventDescription.Review(number = null, right = true),
+            describeEvent(event(EventType.CORRECT, detail = null)),
+        )
+        assertEquals(
+            EventDescription.Review(number = null, right = false),
+            describeEvent(event(EventType.INCORRECT, detail = "not-a-number")),
+        )
     }
 
     @Test
-    fun `an event with a number gets the feminine ordinal`() {
-        assertEquals("2ª revisão certa", eventDescription(event(EventType.CORRECT, detail = "2")))
-        assertEquals("3ª revisão errada", eventDescription(event(EventType.INCORRECT, detail = "3")))
+    fun `a review number is carried through as a number`() {
+        assertEquals(
+            EventDescription.Review(number = 2, right = true),
+            describeEvent(event(EventType.CORRECT, detail = "2")),
+        )
+        assertEquals(
+            EventDescription.Review(number = 3, right = false),
+            describeEvent(event(EventType.INCORRECT, detail = "3")),
+        )
     }
 
     @Test
-    fun `levelling up repeats the level label, and an unknown one falls back`() {
-        assertEquals("virou dominada", eventDescription(event(EventType.LEVELED_UP, detail = "MASTERED")))
-        assertEquals("virou aprendendo", eventDescription(event(EventType.LEVELED_UP, detail = "SEPIA")))
+    fun `an unknown level falls back rather than dropping the row`() {
+        assertEquals(
+            EventDescription.LeveledUp(MemoryLevel.MASTERED),
+            describeEvent(event(EventType.LEVELED_UP, detail = "MASTERED")),
+        )
+        assertEquals(
+            EventDescription.LeveledUp(MemoryLevel.LEARNING),
+            describeEvent(event(EventType.LEVELED_UP, detail = "SEPIA")),
+        )
     }
 
     @Test
     fun `capture and card-ready have no variants`() {
-        assertEquals("capturada", eventDescription(event(EventType.CAPTURED, detail = null)))
-        assertEquals("ficha pronta", eventDescription(event(EventType.CARD_READY, detail = null)))
+        assertEquals(EventDescription.Captured, describeEvent(event(EventType.CAPTURED, detail = null)))
+        assertEquals(EventDescription.CardReady, describeEvent(event(EventType.CARD_READY, detail = null)))
     }
 
     private fun event(type: EventType, detail: String?) = Event(

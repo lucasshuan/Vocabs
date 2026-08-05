@@ -8,6 +8,88 @@
     <string name="entry_untitled_audio">Audio, not transcribed</string>
     <string name="entry_untitled_text">Untitled</string>
 
+    <!-- Word vs phrase badge. Lower case: a classification, not a title. -->
+    <string name="type_word">word</string>
+    <string name="type_phrase">phrase</string>
+
+    <!-- Duplicate notice -->
+    <string name="duplicate_title">You already have this</string>
+    <string name="duplicate_status_ready">card ready</string>
+    <string name="duplicate_status_generating">generating card</string>
+    <string name="duplicate_status_pending">queued</string>
+    <string name="duplicate_status_error">failed</string>
+
+    <!--
+      Relative time, backwards and forwards. Compact on purpose: these sit
+      between middle dots in a one-line row, so "5 minutes ago" would not fit.
+    -->
+    <string name="time_now">now</string>
+    <string name="time_minutes_ago">%1$dm ago</string>
+    <string name="time_hours_ago">%1$dh ago</string>
+    <string name="time_yesterday">yesterday</string>
+    <string name="time_days_ago">%1$dd ago</string>
+    <string name="time_in_minutes">in %1$dm</string>
+    <string name="time_in_hours">in %1$dh</string>
+    <string name="time_tomorrow">tomorrow</string>
+    <plurals name="time_in_days">
+        <item quantity="one">in %1$d day</item>
+        <item quantity="other">in %1$d days</item>
+    </plurals>
+    <string name="review_now">review now</string>
+
+    <!--
+      Capture titles. Pasted text shows its own snippet rather than the word
+      "Text": in a queue of five captures, "Text" three times distinguishes
+      nothing. The quotation marks are a resource because they are typographic
+      and differ by language.
+    -->
+    <string name="capture_audio">Audio</string>
+    <string name="capture_audio_with_duration">Audio · %1$s</string>
+    <string name="capture_photo">Photo</string>
+    <string name="capture_photo_from">Photo from %1$s</string>
+    <string name="capture_text">Text</string>
+    <string name="capture_text_from">Text from %1$s</string>
+    <string name="capture_text_quoted">“%1$s”</string>
+
+    <!-- Memory levels -->
+    <string name="level_new">new</string>
+    <string name="level_learning">learning</string>
+    <string name="level_familiar">familiar</string>
+    <string name="level_mastered">mastered</string>
+
+    <!-- Pending -->
+    <string name="pending_swipe_hint">Swipe a card sideways to delete</string>
+    <string name="pending_empty">Your captures and cards in progress show up here.</string>
+    <string name="pending_summary_with_oldest">%1$s · oldest %2$s</string>
+    <plurals name="pending_raw_captures">
+        <item quantity="one">%1$d raw capture</item>
+        <item quantity="other">%1$d raw captures</item>
+    </plurals>
+    <plurals name="pending_cards_generating">
+        <item quantity="one">%1$d card generating</item>
+        <item quantity="other">%1$d cards generating</item>
+    </plurals>
+
+    <!--
+      Timeline rows. The review line carries its number as an argument rather
+      than building an ordinal in code: English wants "Review 2", Portuguese
+      wants "2ª", and only the resource knows which.
+    -->
+    <string name="event_captured">captured</string>
+    <string name="event_card_ready">card ready</string>
+    <string name="event_review_correct">Review %1$d · correct</string>
+    <string name="event_review_incorrect">Review %1$d · incorrect</string>
+    <string name="event_review_correct_unnumbered">review correct</string>
+    <string name="event_review_incorrect_unnumbered">review incorrect</string>
+    <!-- One key, not one per level: every level label is feminine in pt-BR. -->
+    <string name="event_leveled_up">became %1$s</string>
+
+    <!-- What's left -->
+    <plurals name="whats_left_hits">
+        <item quantity="one">%1$d correct answer to %2$s</item>
+        <item quantity="other">%1$d correct answers to %2$s</item>
+    </plurals>
+
     <!-- Settings -->
     <string name="settings_section_language">Language</string>
     <string name="settings_app_language">App language</string>

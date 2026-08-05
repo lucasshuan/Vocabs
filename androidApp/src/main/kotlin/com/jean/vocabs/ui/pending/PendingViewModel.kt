@@ -101,7 +101,14 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun deleteCapture(capture: Capture) {
-        schedule(PendingDeletion(System.nanoTime(), capture.id, isCapture = true, title = captureTitle(capture)))
+        schedule(
+            PendingDeletion(
+                System.nanoTime(),
+                capture.id,
+                isCapture = true,
+                title = getApplication<Application>().captureTitle(capture),
+            )
+        )
     }
 
     fun deleteCard(entry: Entry) {

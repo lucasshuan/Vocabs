@@ -6,6 +6,78 @@
     <string name="entry_untitled_audio">Áudio sem transcrição</string>
     <string name="entry_untitled_text">Sem título</string>
 
+    <string name="type_word">palavra</string>
+    <string name="type_phrase">expressão</string>
+
+    <string name="duplicate_title">Você já tem isso</string>
+    <string name="duplicate_status_ready">ficha pronta</string>
+    <string name="duplicate_status_generating">gerando ficha</string>
+    <string name="duplicate_status_pending">na fila</string>
+    <string name="duplicate_status_error">com erro</string>
+
+    <string name="time_now">agora</string>
+    <string name="time_minutes_ago">há %1$dmin</string>
+    <string name="time_hours_ago">há %1$dh</string>
+    <string name="time_yesterday">ontem</string>
+    <string name="time_days_ago">há %1$dd</string>
+    <string name="time_in_minutes">em %1$dmin</string>
+    <string name="time_in_hours">em %1$dh</string>
+    <string name="time_tomorrow">amanhã</string>
+    <!--
+      `many` é a categoria do CLDR para os milhões, onde o português pede "de":
+      "um milhão de dias". Nenhuma destas contagens chega lá, mas o lint exige a
+      forma, e a forma certa custa o mesmo que repetir `other`.
+    -->
+    <plurals name="time_in_days">
+        <item quantity="one">em %1$d dia</item>
+        <item quantity="many">em %1$d de dias</item>
+        <item quantity="other">em %1$d dias</item>
+    </plurals>
+    <string name="review_now">revisar agora</string>
+
+    <!-- "Foto do Kindle": o artigo contraído assume nome masculino, como em `origem`. -->
+    <string name="capture_audio">Áudio</string>
+    <string name="capture_audio_with_duration">Áudio · %1$s</string>
+    <string name="capture_photo">Foto</string>
+    <string name="capture_photo_from">Foto do %1$s</string>
+    <string name="capture_text">Texto</string>
+    <string name="capture_text_from">Texto do %1$s</string>
+    <string name="capture_text_quoted">“%1$s”</string>
+
+    <!-- Femininos: concordam com "palavra", que fica subentendida. -->
+    <string name="level_new">nova</string>
+    <string name="level_learning">aprendendo</string>
+    <string name="level_familiar">familiar</string>
+    <string name="level_mastered">dominada</string>
+
+    <string name="pending_swipe_hint">Arraste um cartão para o lado para excluir</string>
+    <string name="pending_empty">Suas capturas e fichas em processamento aparecem aqui.</string>
+    <string name="pending_summary_with_oldest">%1$s · a mais antiga %2$s</string>
+    <plurals name="pending_raw_captures">
+        <item quantity="one">%1$d captura crua</item>
+        <item quantity="many">%1$d de capturas cruas</item>
+        <item quantity="other">%1$d capturas cruas</item>
+    </plurals>
+    <plurals name="pending_cards_generating">
+        <item quantity="one">%1$d ficha em processamento</item>
+        <item quantity="many">%1$d de fichas em processamento</item>
+        <item quantity="other">%1$d fichas em processamento</item>
+    </plurals>
+
+    <string name="event_captured">capturada</string>
+    <string name="event_card_ready">ficha pronta</string>
+    <string name="event_review_correct">%1$dª revisão certa</string>
+    <string name="event_review_incorrect">%1$dª revisão errada</string>
+    <string name="event_review_correct_unnumbered">revisão certa</string>
+    <string name="event_review_incorrect_unnumbered">revisão errada</string>
+    <string name="event_leveled_up">virou %1$s</string>
+
+    <plurals name="whats_left_hits">
+        <item quantity="one">%1$d acerto para %2$s</item>
+        <item quantity="many">%1$d de acertos para %2$s</item>
+        <item quantity="other">%1$d acertos para %2$s</item>
+    </plurals>
+
     <!-- Configurações -->
     <string name="settings_section_language">Idioma</string>
     <string name="settings_app_language">Idioma do app</string>

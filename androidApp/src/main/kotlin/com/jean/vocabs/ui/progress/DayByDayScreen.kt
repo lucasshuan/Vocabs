@@ -30,7 +30,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.jean.vocabs.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Event
@@ -321,18 +323,35 @@ private fun dayTitle(day: Long, today: Long): String {
  * row would say only "review correct" and the timeline would lose the sense of
  * advancing it exists to show.
  */
-internal fun eventDescription(event: Event): String = when (event.type) {
-    EventType.CAPTURED -> "capturada"
-    EventType.CARD_READY -> "ficha pronta"
-    EventType.CORRECT -> reviewOrdinal(event.detail, right = true)
-    EventType.INCORRECT -> reviewOrdinal(event.detail, right = false)
-    EventType.LEVELED_UP -> "virou ${levelLabel(levelOf(event.detail))}"
+internal sealed interface EventDescription {
+    data object Captured : EventDescription
+    data object CardReady : EventDescription
+    /** [number] is null when the event predates review numbering or carries junk. */
+    data class Review(val number: Int?, val right: Boolean) : EventDescription
+    data class LeveledUp(val level: MemoryLevel) : EventDescription
 }
 
-private fun reviewOrdinal(detail: String?, right: Boolean): String {
-    val outcome = if (right) "certa" else "errada"
-    val number = detail?.toIntOrNull() ?: return "revisão $outcome"
-    return "${number}ª revisão $outcome"
+/** Kept free of resources so the branch choice stays testable without a device. */
+internal fun describeEvent(event: Event): EventDescription = when (event.type) {
+    EventType.CAPTURED -> EventDescription.Captured
+    EventType.CARD_READY -> EventDescription.CardReady
+    EventType.CORRECT -> EventDescription.Review(event.detail?.toIntOrNull(), right = true)
+    EventType.INCORRECT -> EventDescription.Review(event.detail?.toIntOrNull(), right = false)
+    EventType.LEVELED_UP -> EventDescription.LeveledUp(levelOf(event.detail))
+}
+
+@Composable
+internal fun eventDescription(event: Event): String = when (val it = describeEvent(event)) {
+    EventDescription.Captured -> stringResource(R.string.event_captured)
+    EventDescription.CardReady -> stringResource(R.string.event_card_ready)
+    is EventDescription.Review -> when {
+        it.number == null && it.right -> stringResource(R.string.event_review_correct_unnumbered)
+        it.number == null -> stringResource(R.string.event_review_incorrect_unnumbered)
+        it.right -> stringResource(R.string.event_review_correct, it.number)
+        else -> stringResource(R.string.event_review_incorrect, it.number)
+    }
+    is EventDescription.LeveledUp ->
+        stringResource(R.string.event_leveled_up, levelLabel(it.level))
 }
 
 private fun levelOf(detail: String?): MemoryLevel =
