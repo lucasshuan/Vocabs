@@ -1,7 +1,7 @@
 package com.jean.vocabs.shared.domain
 
 import com.jean.vocabs.contracts.FichaResponse
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
 
 /**
  * Um alvo confirmado dentro de uma captura e, quando pronta, sua ficha.
@@ -22,11 +22,11 @@ data class Entrada(
     val alvo: String?,
     val inicio: Int?,
     val fim: Int?,
-    val tipo: TipoAlvo,
+    val tipo: TargetType,
     val origem: String?,
     val criadoEm: Long,
-    val status: StatusEntrada,
-    val formato: FormatoCaptura,
+    val status: EntryStatus,
+    val formato: CaptureFormat,
     val midiaCaminho: String?,
     val ficha: FichaResponse?,
     val retencao: Retencao?,
@@ -42,9 +42,9 @@ data class Entrada(
     /** O que mostrar como título quando ainda não há alvo digitado. */
     val titulo: String
         get() = alvo?.takeIf { it.isNotBlank() } ?: when (formato) {
-            FormatoCaptura.FOTO -> "Foto sem transcrição"
-            FormatoCaptura.AUDIO -> "Áudio sem transcrição"
-            FormatoCaptura.TEXTO -> "Sem título"
+            CaptureFormat.PHOTO -> "Foto sem transcrição"
+            CaptureFormat.AUDIO -> "Áudio sem transcrição"
+            CaptureFormat.TEXT -> "Sem título"
     }
 }
 
@@ -72,11 +72,11 @@ fun duplicataDeAlvo(
 private fun normalizarAlvo(valor: String?): String =
     valor.orEmpty().trim().lowercase().replace(espacosDoAlvo, " ")
 
-private fun prioridadeDuplicata(status: StatusEntrada): Int = when (status) {
-    StatusEntrada.PRONTA -> 0
-    StatusEntrada.GERANDO -> 1
-    StatusEntrada.PENDENTE -> 2
-    StatusEntrada.ERRO -> 3
+private fun prioridadeDuplicata(status: EntryStatus): Int = when (status) {
+    EntryStatus.READY -> 0
+    EntryStatus.GENERATING -> 1
+    EntryStatus.PENDING -> 2
+    EntryStatus.ERROR -> 3
 }
 
 /**
@@ -86,32 +86,32 @@ private fun prioridadeDuplicata(status: StatusEntrada): Int = when (status) {
  * você não quer sair do jogo, lendo as mãos estão ocupadas. Foto e áudio existem
  * para capturar em segundos e resolver depois, não para serem processados na hora.
  */
-enum class FormatoCaptura {
-    TEXTO,
-    FOTO,
+enum class CaptureFormat {
+    TEXT,
+    PHOTO,
     AUDIO;
 
     companion object {
-        fun de(valor: String?): FormatoCaptura =
-            entries.firstOrNull { it.name == valor } ?: TEXTO
+        fun de(valor: String?): CaptureFormat =
+            entries.firstOrNull { it.name == valor } ?: TEXT
     }
 }
 
 /**
  * O que sustenta o critério de saída da Fase 1: a captura grava e volta na hora
- * (PENDENTE), e a geração da ficha acontece depois, em background.
+ * (PENDING), e a geração da ficha acontece depois, em background.
  *
  * O rascunho agora pertence a [Captura]; uma entrada só existe depois que um
  * alvo foi confirmado.
  */
-enum class StatusEntrada {
-    PENDENTE,
-    GERANDO,
-    PRONTA,
-    ERRO;
+enum class EntryStatus {
+    PENDING,
+    GENERATING,
+    READY,
+    ERROR;
 
     companion object {
-        fun de(valor: String): StatusEntrada =
-            entries.firstOrNull { it.name == valor } ?: PENDENTE
+        fun de(valor: String): EntryStatus =
+            entries.firstOrNull { it.name == valor } ?: PENDING
     }
 }

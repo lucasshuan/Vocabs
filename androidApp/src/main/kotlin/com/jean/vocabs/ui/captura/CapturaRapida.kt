@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.jean.vocabs.media.GravadorDeAudio
-import com.jean.vocabs.shared.domain.FormatoCaptura
+import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.shared.media.ArquivosDeMidia
 import kotlinx.coroutines.delay
 import java.io.File
@@ -120,7 +120,7 @@ const val MINIMO_DE_GRAVACAO_MS = 800L
 @Composable
 fun rememberCapturaRapida(
     alvo: String,
-    aoGuardar: (formato: FormatoCaptura, caminho: String, duracaoMs: Long?, alvo: String) -> Unit,
+    aoGuardar: (formato: CaptureFormat, caminho: String, duracaoMs: Long?, alvo: String) -> Unit,
     aoRecado: (String) -> Unit,
 ): CapturaRapida {
     val contexto = LocalContext.current
@@ -142,7 +142,7 @@ fun rememberCapturaRapida(
         val arquivo = fotoPendente
         fotoPendente = null
         if (deuCerto && arquivo != null) {
-            aoGuardar(FormatoCaptura.FOTO, arquivo.absolutePath, null, alvoDaFoto)
+            aoGuardar(CaptureFormat.PHOTO, arquivo.absolutePath, null, alvoDaFoto)
         } else {
             arquivo?.delete()
         }
@@ -202,7 +202,7 @@ fun rememberCapturaRapida(
             if (guardar && curta) aoRecado("Curto demais para guardar.")
         } else {
             gravador.parar()?.let { arquivo ->
-                aoGuardar(FormatoCaptura.AUDIO, arquivo.absolutePath, duracao, alvoDaGravacao)
+                aoGuardar(CaptureFormat.AUDIO, arquivo.absolutePath, duracao, alvoDaGravacao)
             }
         }
     }

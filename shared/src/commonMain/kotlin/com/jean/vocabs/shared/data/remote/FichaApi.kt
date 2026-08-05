@@ -3,7 +3,7 @@ package com.jean.vocabs.shared.data.remote
 import com.jean.vocabs.contracts.ErroResponse
 import com.jean.vocabs.contracts.FichaResponse
 import com.jean.vocabs.contracts.GerarFichaRequest
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
 import com.jean.vocabs.shared.domain.ParIdiomas
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -28,7 +28,7 @@ class FichaApi(
      * antiga depois de trocar de curso tem que devolvê-la no idioma em que ela
      * nasceu.
      */
-    suspend fun gerar(trecho: String, alvo: String, tipo: TipoAlvo, par: ParIdiomas): FichaResponse {
+    suspend fun gerar(trecho: String, alvo: String, tipo: TargetType, par: ParIdiomas): FichaResponse {
         val resposta = client.post("$baseUrl/v1/ficha") {
             contentType(ContentType.Application.Json)
             header(HttpHeaders.Authorization, "Bearer $token")

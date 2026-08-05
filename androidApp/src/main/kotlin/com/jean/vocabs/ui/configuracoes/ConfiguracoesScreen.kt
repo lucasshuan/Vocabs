@@ -59,7 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.BuildConfig
 import com.jean.vocabs.R
-import com.jean.vocabs.shared.PreferenciaDeTema
+import com.jean.vocabs.shared.ThemePreference
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.CabecalhoDeDentro
 import com.jean.vocabs.ui.components.CartaoDaTela
@@ -413,16 +413,16 @@ private fun compartilhar(contexto: android.content.Context, arquivo: File) {
     contexto.startActivity(Intent.createChooser(intent, "Exportar dados da Vocabu"))
 }
 
-private fun rotuloDoTema(tema: PreferenciaDeTema): String = when (tema) {
-    PreferenciaDeTema.CLARO -> "Claro"
-    PreferenciaDeTema.ESCURO -> "Escuro"
-    PreferenciaDeTema.AUTO -> "Auto"
+private fun rotuloDoTema(tema: ThemePreference): String = when (tema) {
+    ThemePreference.LIGHT -> "Claro"
+    ThemePreference.DARK -> "Escuro"
+    ThemePreference.SYSTEM -> "Auto"
 }
 
-private fun iconeDoTema(tema: PreferenciaDeTema): ImageVector = when (tema) {
-    PreferenciaDeTema.CLARO -> Icones.Sol
-    PreferenciaDeTema.ESCURO -> Icones.Lua
-    PreferenciaDeTema.AUTO -> Icones.MeioDisco
+private fun iconeDoTema(tema: ThemePreference): ImageVector = when (tema) {
+    ThemePreference.LIGHT -> Icones.Sol
+    ThemePreference.DARK -> Icones.Lua
+    ThemePreference.SYSTEM -> Icones.MeioDisco
 }
 
 /**
@@ -439,12 +439,12 @@ private fun iconeDoTema(tema: PreferenciaDeTema): ImageVector = when (tema) {
  */
 @Composable
 private fun SegmentadoDeTema(
-    selecionada: PreferenciaDeTema,
-    aoEscolher: (PreferenciaDeTema) -> Unit,
+    selecionada: ThemePreference,
+    aoEscolher: (ThemePreference) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val cores = MaterialTheme.colorScheme
-    val opcoes = PreferenciaDeTema.entries
+    val opcoes = ThemePreference.entries
     val forma = RoundedCornerShape(11.dp)
 
     Surface(

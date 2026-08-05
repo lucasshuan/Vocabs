@@ -21,11 +21,11 @@ class DegrausTest {
 
     @Test
     fun `os nomes dos degraus batem com o handoff`() {
-        assertEquals(NivelMemoria.APRENDENDO, Degraus.nivel(1))
-        assertEquals(NivelMemoria.APRENDENDO, Degraus.nivel(2))
-        assertEquals(NivelMemoria.APRENDENDO, Degraus.nivel(3))
-        assertEquals(NivelMemoria.FAMILIAR, Degraus.nivel(4))
-        assertEquals(NivelMemoria.DOMINADA, Degraus.nivel(5))
+        assertEquals(MemoryLevel.LEARNING, Degraus.nivel(1))
+        assertEquals(MemoryLevel.LEARNING, Degraus.nivel(2))
+        assertEquals(MemoryLevel.LEARNING, Degraus.nivel(3))
+        assertEquals(MemoryLevel.FAMILIAR, Degraus.nivel(4))
+        assertEquals(MemoryLevel.MASTERED, Degraus.nivel(5))
 
         // "haywire · degrau 3 de 5 · 1 acerto para familiar"
         assertEquals(1, Degraus.acertosParaSubirDeNivel(3))

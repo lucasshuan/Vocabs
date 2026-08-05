@@ -22,7 +22,7 @@ data class GerarFichaRequest(
     val trecho: String,
     val alvo: String,
     /** Classificado localmente: um token é palavra; vários, expressão. */
-    val tipo: TipoAlvo,
+    val tipo: TargetType,
     /** Código de [Idiomas]: em que língua a ficha é escrita. */
     val idiomaNativo: String,
     /** Código de [Idiomas]: que língua a ficha ensina. */
@@ -32,7 +32,7 @@ data class GerarFichaRequest(
 /** O que o servidor devolve: a ficha da Fase 1. */
 @Serializable
 data class FichaResponse(
-    val tipo: TipoAlvo,
+    val tipo: TargetType,
     val traducao: String,
     val definicoes: List<String>,
     val exemplo: String,
@@ -51,15 +51,15 @@ data class FichaResponse(
 
 /**
  * Palavra vs expressão é uma decisão de captura, não da IA: um token selecionado
- * vira PALAVRA e dois ou mais tokens contíguos viram EXPRESSAO.
+ * vira WORD e dois ou mais tokens contíguos viram PHRASE.
  */
 @Serializable
-enum class TipoAlvo {
-    @SerialName("PALAVRA")
-    PALAVRA,
+enum class TargetType {
+    @SerialName("WORD")
+    WORD,
 
-    @SerialName("EXPRESSAO")
-    EXPRESSAO,
+    @SerialName("PHRASE")
+    PHRASE,
 }
 
 /** Erro devolvido pelo servidor, para o app ter o que mostrar. */

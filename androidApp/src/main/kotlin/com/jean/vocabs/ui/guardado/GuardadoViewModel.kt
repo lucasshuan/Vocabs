@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.Escopo
-import com.jean.vocabs.shared.domain.StatusEntrada
+import com.jean.vocabs.shared.domain.EntryStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,7 +30,7 @@ data class GuardadoEstado(
 
     /** Enquanto houver ficha em construção há o que olhar, e a tela não se fecha sozinha. */
     val trabalhando: Boolean
-        get() = entradas.any { it.status == StatusEntrada.PENDENTE || it.status == StatusEntrada.GERANDO }
+        get() = entradas.any { it.status == EntryStatus.PENDING || it.status == EntryStatus.GENERATING }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

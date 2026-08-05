@@ -14,7 +14,7 @@ import org.json.JSONObject
 
 object ExportadorVocabu {
     suspend fun criar(context: Context, dados: DadosExportacao): File = withContext(Dispatchers.IO) {
-        val pasta = File(context.cacheDir, "exportacoes").apply { mkdirs() }
+        val pasta = File(context.cacheDir, "exports").apply { mkdirs() }
         val destino = File(pasta, "Vocabu-${System.currentTimeMillis()}.zip")
         ZipOutputStream(FileOutputStream(destino)).use { zip ->
             zip.putNextEntry(ZipEntry("Vocabu.json"))

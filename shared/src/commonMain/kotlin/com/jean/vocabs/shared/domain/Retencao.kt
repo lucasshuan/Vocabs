@@ -49,12 +49,12 @@ data class Retencao(
         return (pontos - taxa * dias).coerceIn(0.0, PONTOS_MAX)
     }
 
-    fun nivelEm(agora: Long): NivelMemoria = when {
-        revisoes == 0 -> NivelMemoria.NOVA
+    fun nivelEm(agora: Long): MemoryLevel = when {
+        revisoes == 0 -> MemoryLevel.NEW
         else -> when {
-            pontosEm(agora) < 30.0 -> NivelMemoria.APRENDENDO
-            pontosEm(agora) < 70.0 -> NivelMemoria.FAMILIAR
-            else -> NivelMemoria.DOMINADA
+            pontosEm(agora) < 30.0 -> MemoryLevel.LEARNING
+            pontosEm(agora) < 70.0 -> MemoryLevel.FAMILIAR
+            else -> MemoryLevel.MASTERED
         }
     }
 
@@ -147,11 +147,11 @@ data class Retencao(
 }
 
 /** 0-30 aprendendo · 30-70 familiar · 70-100 dominada, mais o caso de nunca revisada. */
-enum class NivelMemoria {
-    NOVA,
-    APRENDENDO,
+enum class MemoryLevel {
+    NEW,
+    LEARNING,
     FAMILIAR,
-    DOMINADA,
+    MASTERED,
 }
 
 data class Sequencia(

@@ -58,8 +58,8 @@ import com.jean.vocabs.media.lembrarPerfilDeOnda
 import com.jean.vocabs.media.picoDaBarra
 import com.jean.vocabs.media.rememberReprodutor
 import com.jean.vocabs.shared.domain.AlvoSelecionado
-import com.jean.vocabs.shared.domain.FormatoCaptura
-import com.jean.vocabs.shared.domain.StatusCaptura
+import com.jean.vocabs.shared.domain.CaptureFormat
+import com.jean.vocabs.shared.domain.CaptureStatus
 import com.jean.vocabs.ui.components.AvisoDuplicata
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.BotaoCircular
@@ -167,8 +167,8 @@ fun SelecionarScreen(
             modifier = Modifier.padding(horizontal = 20.dp).padding(top = 12.dp),
         ) {
             when (atual.formato) {
-                FormatoCaptura.FOTO -> atual.midiaCaminho?.let { PreviaFoto(it) }
-                FormatoCaptura.AUDIO -> atual.midiaCaminho?.let {
+                CaptureFormat.PHOTO -> atual.midiaCaminho?.let { PreviaFoto(it) }
+                CaptureFormat.AUDIO -> atual.midiaCaminho?.let {
                     PlayerAudio(
                         caminho = it,
                         duracaoMs = atual.duracaoMs,
@@ -176,11 +176,11 @@ fun SelecionarScreen(
                         aoCorrigir = { corrigindo = !corrigindo },
                     )
                 }
-                FormatoCaptura.TEXTO -> OrigemDoTexto(atual.criadoEm)
+                CaptureFormat.TEXT -> OrigemDoTexto(atual.criadoEm)
             }
 
             when {
-                atual.status == StatusCaptura.TRANSCREVENDO -> AvisoDeProcesso(
+                atual.status == CaptureStatus.TRANSCRIBING -> AvisoDeProcesso(
                     texto = "Transcrição local em andamento…",
                     comProgresso = true,
                 )
@@ -339,8 +339,8 @@ private fun SeletorDeIdioma(alvo: String, cursos: List<String>, aoEscolher: (Str
 @Composable
 private fun OrigemDoTexto(criadoEm: Long) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        DiscoDeCategoria(FormatoCaptura.TEXTO, tamanho = 22.dp)
-        RotuloDeSecao("${rotuloDoFormato(FormatoCaptura.TEXTO)} colado · ${tempoRelativo(criadoEm)}")
+        DiscoDeCategoria(CaptureFormat.TEXT, tamanho = 22.dp)
+        RotuloDeSecao("${rotuloDoFormato(CaptureFormat.TEXT)} colado · ${tempoRelativo(criadoEm)}")
     }
 }
 
@@ -367,7 +367,7 @@ private fun PreviaFoto(caminho: String) {
 @Composable
 private fun PlayerAudio(caminho: String, duracaoMs: Long?, corrigindo: Boolean, aoCorrigir: () -> Unit) {
     val player = rememberReprodutor(caminho)
-    val paleta = coresDoFormato(FormatoCaptura.AUDIO)
+    val paleta = coresDoFormato(CaptureFormat.AUDIO)
     CartaoDaTela(recheio = PaddingValues(14.dp), modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
             Surface(onClick = player::alternar, shape = CircleShape, color = paleta.cor) {

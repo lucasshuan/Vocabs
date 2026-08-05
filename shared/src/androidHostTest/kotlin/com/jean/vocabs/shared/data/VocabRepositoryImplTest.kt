@@ -4,13 +4,13 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.jean.vocabs.shared.data.remote.FichaApi
 import com.jean.vocabs.shared.db.VocabsDatabase
 import com.jean.vocabs.shared.domain.Escopo
-import com.jean.vocabs.shared.domain.FormatoCaptura
-import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.CaptureFormat
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.QuotaDoDia
 import com.jean.vocabs.shared.domain.SeloDeCurso
-import com.jean.vocabs.shared.domain.StatusEntrada
-import com.jean.vocabs.shared.domain.TipoEvento
+import com.jean.vocabs.shared.domain.EntryStatus
+import com.jean.vocabs.shared.domain.EventType
 import com.jean.vocabs.shared.domain.selecionarTokens
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -73,14 +73,14 @@ class VocabRepositoryImplTest {
         assertTrue(maximo.get() >= 2)
         assertEquals(2, repo.observarUsoIa().first().usadas)
         assertEquals(2, repo.observarProntas().first().size)
-        assertEquals(StatusEntrada.ERRO, repo.observarInbox().first().single().status)
+        assertEquals(EntryStatus.ERROR, repo.observarInbox().first().single().status)
     }
 
     @Test
     fun `excluir ficha preserva midia ate a ultima irma`() = runBlocking {
         val removidos = mutableListOf<String>()
         val repo = repositorio(remover = removidos::add)
-        val captura = repo.capturarMidia(FormatoCaptura.FOTO, "foto.jpg")
+        val captura = repo.capturarMidia(CaptureFormat.PHOTO, "foto.jpg")
         val trecho = "green fence"
         repo.registrarTranscricao(captura, trecho)
         val ids = repo.confirmarCaptura(
@@ -254,18 +254,18 @@ class VocabRepositoryImplTest {
         repo.registrarResposta(id, acertou = true)
 
         val tipos = repo.observarEventos(84).first().map { it.tipo }
-        assertTrue(TipoEvento.CAPTURADA in tipos)
-        assertTrue(TipoEvento.FICHA_PRONTA in tipos)
-        assertTrue(TipoEvento.ACERTO in tipos)
+        assertTrue(EventType.CAPTURED in tipos)
+        assertTrue(EventType.CARD_READY in tipos)
+        assertTrue(EventType.CORRECT in tipos)
 
-        val acerto = repo.observarEventos(84).first().first { it.tipo == TipoEvento.ACERTO }
+        val acerto = repo.observarEventos(84).first().first { it.tipo == EventType.CORRECT }
         assertEquals("1", acerto.detalhe)
         assertEquals("verdant", acerto.alvo)
 
         // Três acertos depois ela cruza para familiar, e só aí um SUBIU_NIVEL sai.
         repeat(3) { repo.registrarResposta(id, acertou = true) }
-        val subidas = repo.observarEventos(84).first().filter { it.tipo == TipoEvento.SUBIU_NIVEL }
-        assertEquals(listOf(NivelMemoria.DOMINADA.name, NivelMemoria.FAMILIAR.name), subidas.map { it.detalhe })
+        val subidas = repo.observarEventos(84).first().filter { it.tipo == EventType.LEVELED_UP }
+        assertEquals(listOf(MemoryLevel.MASTERED.name, MemoryLevel.FAMILIAR.name), subidas.map { it.detalhe })
     }
 
     private fun repositorio(
@@ -300,7 +300,7 @@ class VocabRepositoryImplTest {
 
     private companion object {
         const val FICHA = """{
-            "tipo":"PALAVRA",
+            "tipo":"WORD",
             "traducao":"verdejante",
             "definicoes":["Muito verde"],
             "exemplo":"A verdant field appeared.",

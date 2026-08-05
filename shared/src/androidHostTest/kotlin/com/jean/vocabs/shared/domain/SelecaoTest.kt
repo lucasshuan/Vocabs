@@ -1,6 +1,6 @@
 package com.jean.vocabs.shared.domain
 
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -20,9 +20,9 @@ class SelecaoTest {
         val palavra = assertNotNull(selecionarTokens(trecho, 4))
         val expressao = assertNotNull(selecionarTokens(trecho, 2, 4))
         assertEquals("fence", palavra.texto)
-        assertEquals(TipoAlvo.PALAVRA, palavra.tipo)
+        assertEquals(TargetType.WORD, palavra.tipo)
         assertEquals("on the fence", expressao.texto)
-        assertEquals(TipoAlvo.EXPRESSAO, expressao.tipo)
+        assertEquals(TargetType.PHRASE, expressao.tipo)
         // Os intervalos podem se sobrepor sem perder nenhuma seleção.
         assertTrue(palavra.inicio >= expressao.inicio && palavra.fim <= expressao.fim)
     }

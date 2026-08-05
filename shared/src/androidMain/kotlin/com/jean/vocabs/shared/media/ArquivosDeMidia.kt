@@ -12,9 +12,9 @@ import java.io.File
  */
 object ArquivosDeMidia {
 
-    private const val PASTA = "capturas"
+    private const val PASTA = "captures"
 
-    fun novaFoto(context: Context): File = novo(context, "foto", "jpg")
+    fun novaFoto(context: Context): File = novo(context, "photo", "jpg")
 
     fun novoAudio(context: Context): File = novo(context, "audio", "wav")
 

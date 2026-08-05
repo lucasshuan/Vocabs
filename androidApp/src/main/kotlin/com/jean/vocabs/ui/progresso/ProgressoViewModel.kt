@@ -10,7 +10,7 @@ import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.Escopo
 import com.jean.vocabs.shared.domain.Evento
-import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.QuotaDoDia
 import com.jean.vocabs.shared.domain.ResumoCurso
@@ -55,11 +55,11 @@ data class ProgressoEstado(
     val total: Int get() = palavras.size
 
     /** Contadas por degrau: é o número que não muda sozinho enquanto a pessoa dorme. */
-    val porNivel: Map<NivelMemoria, List<Entrada>>
+    val porNivel: Map<MemoryLevel, List<Entrada>>
         get() = palavras.groupBy { Degraus.nivel(it.degrau) }
 
-    val dominadas: Int get() = porNivel[NivelMemoria.DOMINADA]?.size ?: 0
-    val familiares: Int get() = porNivel[NivelMemoria.FAMILIAR]?.size ?: 0
+    val dominadas: Int get() = porNivel[MemoryLevel.MASTERED]?.size ?: 0
+    val familiares: Int get() = porNivel[MemoryLevel.FAMILIAR]?.size ?: 0
     val aprendendo: Int get() = total - dominadas - familiares
 
     /** As que estão a um acerto de mudar de nome — o "3 estão perto de virar". */

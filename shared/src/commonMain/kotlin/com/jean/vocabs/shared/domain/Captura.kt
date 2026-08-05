@@ -1,6 +1,6 @@
 package com.jean.vocabs.shared.domain
 
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
 
 /** O contexto bruto do qual podem nascer uma ou várias fichas. */
 data class Captura(
@@ -8,26 +8,26 @@ data class Captura(
     val trecho: String?,
     val origem: String?,
     val criadoEm: Long,
-    val status: StatusCaptura,
-    val formato: FormatoCaptura,
+    val status: CaptureStatus,
+    val formato: CaptureFormat,
     val midiaCaminho: String?,
     val duracaoMs: Long?,
     val erroTranscricao: String?,
     /** O curso em que ela nasceu. Um trecho está numa língua só. */
     val par: ParIdiomas = ParIdiomas.PADRAO,
 ) {
-    val aguardandoSelecao: Boolean get() = status == StatusCaptura.AGUARDANDO_SELECAO
-    val transcrevendo: Boolean get() = status == StatusCaptura.TRANSCREVENDO
+    val aguardandoSelecao: Boolean get() = status == CaptureStatus.AWAITING_SELECTION
+    val transcrevendo: Boolean get() = status == CaptureStatus.TRANSCRIBING
 }
 
-enum class StatusCaptura {
-    TRANSCREVENDO,
-    AGUARDANDO_SELECAO,
-    PROCESSADA;
+enum class CaptureStatus {
+    TRANSCRIBING,
+    AWAITING_SELECTION,
+    PROCESSED;
 
     companion object {
-        fun de(valor: String): StatusCaptura =
-            entries.firstOrNull { it.name == valor } ?: AGUARDANDO_SELECAO
+        fun de(valor: String): CaptureStatus =
+            entries.firstOrNull { it.name == valor } ?: AWAITING_SELECTION
     }
 }
 
@@ -36,7 +36,7 @@ data class AlvoSelecionado(
     val texto: String,
     val inicio: Int,
     val fim: Int,
-    val tipo: TipoAlvo,
+    val tipo: TargetType,
 )
 
 data class AtividadeDiaria(

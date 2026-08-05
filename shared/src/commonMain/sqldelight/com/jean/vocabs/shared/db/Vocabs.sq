@@ -1,246 +1,251 @@
--- Uma captura guarda o contexto e a mídia. Várias entradas podem apontar para
--- ela, inclusive seleções sobrepostas do mesmo trecho.
+-- A capture holds the context and the media. Several entries can point at one,
+-- including overlapping selections of the same snippet.
 --
--- O par de idiomas é dela, e não das entradas: um trecho está numa língua só, e
--- toda seleção dentro dele herda essa língua por construção.
-CREATE TABLE captura (
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    trecho            TEXT,
-    origem            TEXT,
-    criado_em         INTEGER NOT NULL,
-    status            TEXT NOT NULL, -- TRANSCREVENDO | AGUARDANDO_SELECAO | PROCESSADA
-    formato           TEXT NOT NULL, -- TEXTO | FOTO | AUDIO
-    midia_caminho     TEXT,
-    duracao_ms        INTEGER,
-    erro_transcricao  TEXT,
-    idioma_nativo     TEXT NOT NULL DEFAULT 'pt-BR',
-    idioma_alvo       TEXT NOT NULL DEFAULT 'en'
+-- The language pair belongs here rather than on the entries: a snippet is in one
+-- language, so every selection inside it inherits that language by construction.
+CREATE TABLE capture (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    snippet              TEXT,
+    source               TEXT,
+    created_at           INTEGER NOT NULL,
+    status               TEXT NOT NULL, -- TRANSCRIBING | AWAITING_SELECTION | PROCESSED
+    format               TEXT NOT NULL, -- TEXT | PHOTO | AUDIO
+    media_path           TEXT,
+    duration_ms          INTEGER,
+    transcription_error  TEXT,
+    native_language      TEXT NOT NULL DEFAULT 'pt-BR',
+    target_language      TEXT NOT NULL DEFAULT 'en'
 );
 
-CREATE INDEX captura_criado_em ON captura(criado_em DESC);
-CREATE INDEX captura_status ON captura(status);
-CREATE INDEX captura_idioma ON captura(idioma_alvo, idioma_nativo);
+CREATE INDEX capture_created_at ON capture(created_at DESC);
+CREATE INDEX capture_status ON capture(status);
+CREATE INDEX capture_language ON capture(target_language, native_language);
 
--- Uma entrada é um alvo confirmado e, quando pronta, sua ficha e retenção.
-CREATE TABLE entrada (
-    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
-    captura_id              INTEGER NOT NULL REFERENCES captura(id) ON DELETE CASCADE,
-    alvo                    TEXT NOT NULL,
-    inicio                  INTEGER,
-    fim                     INTEGER,
-    tipo                    TEXT NOT NULL, -- PALAVRA | EXPRESSAO, decidido localmente
-    status                  TEXT NOT NULL, -- PENDENTE | GERANDO | PRONTA | ERRO
-    traducao                TEXT,
-    definicoes_json         TEXT,
-    exemplo                 TEXT,
-    -- Na notação que o idioma alvo pede: IPA no inglês, pinyin no mandarim.
-    pronuncia               TEXT,
-    relacionadas_json       TEXT,
-    erro                    TEXT,
-    pontos                  REAL NOT NULL DEFAULT 100.0,
-    taxa_decaimento         REAL NOT NULL DEFAULT 40.0,
-    data_ultima_interacao   INTEGER NOT NULL DEFAULT 0,
-    revisoes                INTEGER NOT NULL DEFAULT 0,
-    acertos                 INTEGER NOT NULL DEFAULT 0,
-    erros                   INTEGER NOT NULL DEFAULT 0
+-- An entry is a confirmed target and, once ready, its card and retention.
+CREATE TABLE entry (
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    capture_id           INTEGER NOT NULL REFERENCES capture(id) ON DELETE CASCADE,
+    target               TEXT NOT NULL,
+    start_index          INTEGER,
+    end_index            INTEGER,
+    type                 TEXT NOT NULL, -- WORD | PHRASE, decided on the device
+    status               TEXT NOT NULL, -- PENDING | GENERATING | READY | ERROR
+    translation          TEXT,
+    definitions_json     TEXT,
+    example              TEXT,
+    -- In whatever notation the target language calls for: IPA for English,
+    -- pinyin for Mandarin. Not named `ipa` for that reason.
+    pronunciation        TEXT,
+    related_json         TEXT,
+    -- Split so the message can be localized on the way out: the code selects a
+    -- string resource, the detail carries untranslated text from the AI provider.
+    error_code           TEXT,
+    error_detail         TEXT,
+    points               REAL NOT NULL DEFAULT 100.0,
+    decay_rate           REAL NOT NULL DEFAULT 40.0,
+    last_interaction_at  INTEGER NOT NULL DEFAULT 0,
+    reviews              INTEGER NOT NULL DEFAULT 0,
+    correct_count        INTEGER NOT NULL DEFAULT 0,
+    incorrect_count      INTEGER NOT NULL DEFAULT 0
 );
 
-CREATE INDEX entrada_captura ON entrada(captura_id);
-CREATE INDEX entrada_status ON entrada(status);
+CREATE INDEX entry_capture ON entry(capture_id);
+CREATE INDEX entry_status ON entry(status);
 
-CREATE VIEW entrada_com_captura AS
+CREATE VIEW entry_with_capture AS
 SELECT
     e.id,
-    e.captura_id,
-    e.alvo,
-    e.inicio,
-    e.fim,
-    e.tipo,
+    e.capture_id,
+    e.target,
+    e.start_index,
+    e.end_index,
+    e.type,
     e.status,
-    e.traducao,
-    e.definicoes_json,
-    e.exemplo,
-    e.pronuncia,
-    e.relacionadas_json,
-    e.erro,
-    e.pontos,
-    e.taxa_decaimento,
-    e.data_ultima_interacao,
-    e.revisoes,
-    e.acertos,
-    e.erros,
-    c.trecho,
-    c.origem,
-    c.criado_em,
-    c.formato,
-    c.midia_caminho,
-    c.duracao_ms,
-    c.idioma_nativo,
-    c.idioma_alvo
-FROM entrada e
-JOIN captura c ON c.id = e.captura_id;
+    e.translation,
+    e.definitions_json,
+    e.example,
+    e.pronunciation,
+    e.related_json,
+    e.error_code,
+    e.error_detail,
+    e.points,
+    e.decay_rate,
+    e.last_interaction_at,
+    e.reviews,
+    e.correct_count,
+    e.incorrect_count,
+    c.snippet,
+    c.source,
+    c.created_at,
+    c.format,
+    c.media_path,
+    c.duration_ms,
+    c.native_language,
+    c.target_language
+FROM entry e
+JOIN capture c ON c.id = e.capture_id;
 
-CREATE TABLE dia_revisado (
-    dia      INTEGER NOT NULL PRIMARY KEY,
-    revisoes INTEGER NOT NULL DEFAULT 0
+CREATE TABLE reviewed_day (
+    day      INTEGER NOT NULL PRIMARY KEY,
+    reviews  INTEGER NOT NULL DEFAULT 0
 );
 
--- O que aconteceu em cada dia, para a tela Dia a dia.
+-- What happened on each day, for the Day-by-day screen.
 --
--- A retenção guarda só o estado de agora e responde "como está esta palavra";
--- não responde "o que eu fiz terça". Esta tabela é append-only e cada linha já
--- nasce com o dia local resolvido, na mesma escala de `dia_revisado`.
-CREATE TABLE evento (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    entrada_id INTEGER NOT NULL REFERENCES entrada(id) ON DELETE CASCADE,
-    dia        INTEGER NOT NULL,
-    instante   INTEGER NOT NULL,
-    tipo       TEXT NOT NULL, -- CAPTURADA | FICHA_PRONTA | ACERTO | ERRO | SUBIU_NIVEL
-    -- Número da revisão no ACERTO/ERRO, nível novo no SUBIU_NIVEL. Nulo no resto.
-    detalhe    TEXT
+-- Retention only holds the state of right now, answering "how is this word";
+-- it cannot answer "what did I do on Tuesday". This table is append-only and
+-- every row is born with the local day already resolved, on the same scale as
+-- reviewed_day.
+CREATE TABLE event (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    entry_id    INTEGER NOT NULL REFERENCES entry(id) ON DELETE CASCADE,
+    day         INTEGER NOT NULL,
+    occurred_at INTEGER NOT NULL,
+    type        TEXT NOT NULL, -- CAPTURED | CARD_READY | CORRECT | INCORRECT | LEVELED_UP
+    -- Review number on CORRECT/INCORRECT, new level on LEVELED_UP. Null otherwise.
+    detail      TEXT
 );
 
-CREATE INDEX evento_dia ON evento(dia DESC);
-CREATE INDEX evento_entrada ON evento(entrada_id);
+CREATE INDEX event_day ON event(day DESC);
+CREATE INDEX event_entry ON event(entry_id);
 
--- Contador local e informativo. Sem conta de usuário, ele não é uma quota de
--- segurança; registra apenas gerações concluídas pelo aparelho.
-CREATE TABLE uso_ia (
-    mes       TEXT NOT NULL PRIMARY KEY,
-    geracoes  INTEGER NOT NULL DEFAULT 0
+-- Local, informational counter. With no user account it is not a security quota;
+-- it records only generations this device completed.
+CREATE TABLE ai_usage (
+    month        TEXT NOT NULL PRIMARY KEY,
+    generations  INTEGER NOT NULL DEFAULT 0
 );
 
-buscarEntradaPorId:
-SELECT * FROM entrada_com_captura WHERE id = ?;
+findEntryById:
+SELECT * FROM entry_with_capture WHERE id = ?;
 
--- O punhado de entradas que a tela "Guardado" acompanha enquanto a IA trabalha.
-listarEntradasPorIds:
-SELECT * FROM entrada_com_captura WHERE id IN ? ORDER BY id;
+listEntriesByIds:
+SELECT * FROM entry_with_capture WHERE id IN ? ORDER BY id;
 
-listarProntas:
-SELECT * FROM entrada_com_captura WHERE status = 'PRONTA' ORDER BY criado_em DESC;
+listReady:
+SELECT * FROM entry_with_capture WHERE status = 'READY' ORDER BY created_at DESC;
 
-listarInbox:
-SELECT * FROM entrada_com_captura WHERE status != 'PRONTA' ORDER BY criado_em ASC;
+listInbox:
+SELECT * FROM entry_with_capture WHERE status != 'READY' ORDER BY created_at ASC;
 
-listarTodasEntradas:
-SELECT * FROM entrada_com_captura ORDER BY criado_em DESC, id DESC;
+listAllEntries:
+SELECT * FROM entry_with_capture ORDER BY created_at DESC, id DESC;
 
-buscarCapturaPorId:
-SELECT * FROM captura WHERE id = ?;
+findCaptureById:
+SELECT * FROM capture WHERE id = ?;
 
-listarCapturasPendentes:
-SELECT * FROM captura WHERE status != 'PROCESSADA' ORDER BY criado_em ASC;
+listPendingCaptures:
+SELECT * FROM capture WHERE status != 'PROCESSED' ORDER BY created_at ASC;
 
-listarTodasCapturas:
-SELECT * FROM captura ORDER BY criado_em DESC;
+listAllCaptures:
+SELECT * FROM capture ORDER BY created_at DESC;
 
-inserirCaptura:
-INSERT INTO captura (
-    trecho, origem, criado_em, status, formato, midia_caminho, duracao_ms, erro_transcricao,
-    idioma_nativo, idioma_alvo
+insertCapture:
+INSERT INTO capture (
+    snippet, source, created_at, status, format, media_path, duration_ms,
+    transcription_error, native_language, target_language
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
-ultimoIdInserido:
+lastInsertedId:
 SELECT last_insert_rowid();
 
-inserirEntrada:
-INSERT INTO entrada (captura_id, alvo, inicio, fim, tipo, status)
+insertEntry:
+INSERT INTO entry (capture_id, target, start_index, end_index, type, status)
 VALUES (?, ?, ?, ?, ?, ?);
 
-registrarTranscricao:
-UPDATE captura
-SET trecho = ?, status = 'AGUARDANDO_SELECAO', erro_transcricao = ?
+recordTranscription:
+UPDATE capture
+SET snippet = ?, status = 'AWAITING_SELECTION', transcription_error = ?
 WHERE id = ?;
 
-processarCaptura:
-UPDATE captura
-SET trecho = ?, status = 'PROCESSADA', erro_transcricao = NULL
+processCapture:
+UPDATE capture
+SET snippet = ?, status = 'PROCESSED', transcription_error = NULL
 WHERE id = ?;
 
--- Só vale enquanto a captura não virou fichas: depois disso o par está gravado
--- em entradas que nasceram nele.
-alterarIdiomaDaCaptura:
-UPDATE captura SET idioma_alvo = ? WHERE id = ? AND status != 'PROCESSADA';
+-- Only valid while the capture has not become cards: after that the pair is
+-- written into entries that were born in it.
+changeCaptureLanguage:
+UPDATE capture SET target_language = ? WHERE id = ? AND status != 'PROCESSED';
 
-marcarStatus:
-UPDATE entrada SET status = ?, erro = NULL WHERE id = ?;
+markStatus:
+UPDATE entry SET status = ?, error_code = NULL, error_detail = NULL WHERE id = ?;
 
-salvarFicha:
-UPDATE entrada
-SET status = ?, tipo = ?, traducao = ?, definicoes_json = ?, exemplo = ?, pronuncia = ?,
-    relacionadas_json = ?, erro = NULL
+saveCard:
+UPDATE entry
+SET status = ?, type = ?, translation = ?, definitions_json = ?, example = ?,
+    pronunciation = ?, related_json = ?, error_code = NULL, error_detail = NULL
 WHERE id = ?;
 
-marcarErro:
-UPDATE entrada SET status = ?, erro = ? WHERE id = ?;
+markError:
+UPDATE entry SET status = ?, error_code = ?, error_detail = ? WHERE id = ?;
 
-excluirEntrada:
-DELETE FROM entrada WHERE id = ?;
+deleteEntry:
+DELETE FROM entry WHERE id = ?;
 
-excluirEntradasDaCaptura:
-DELETE FROM entrada WHERE captura_id = ?;
+deleteEntriesOfCapture:
+DELETE FROM entry WHERE capture_id = ?;
 
-excluirCaptura:
-DELETE FROM captura WHERE id = ?;
+deleteCapture:
+DELETE FROM capture WHERE id = ?;
 
-contarEntradasDaCaptura:
-SELECT count(*) FROM entrada WHERE captura_id = ?;
+countEntriesOfCapture:
+SELECT count(*) FROM entry WHERE capture_id = ?;
 
-listarIdsDaCaptura:
-SELECT id FROM entrada WHERE captura_id = ? ORDER BY id;
+listIdsOfCapture:
+SELECT id FROM entry WHERE capture_id = ? ORDER BY id;
 
-salvarRetencao:
-UPDATE entrada
-SET pontos = ?, taxa_decaimento = ?, data_ultima_interacao = ?,
-    revisoes = ?, acertos = ?, erros = ?
+saveRetention:
+UPDATE entry
+SET points = ?, decay_rate = ?, last_interaction_at = ?,
+    reviews = ?, correct_count = ?, incorrect_count = ?
 WHERE id = ?;
 
-diaLocal:
-SELECT CAST(julianday((:instante + 0) / 1000, 'unixepoch', 'localtime') + 0.5 AS INTEGER);
+localDay:
+SELECT CAST(julianday((:instant + 0) / 1000, 'unixepoch', 'localtime') + 0.5 AS INTEGER);
 
-mesLocal:
-SELECT strftime('%Y-%m', (:instante + 0) / 1000, 'unixepoch', 'localtime');
+localMonth:
+SELECT strftime('%Y-%m', (:instant + 0) / 1000, 'unixepoch', 'localtime');
 
-abrirDia:
-INSERT OR IGNORE INTO dia_revisado (dia, revisoes) VALUES (?, 0);
+openDay:
+INSERT OR IGNORE INTO reviewed_day (day, reviews) VALUES (?, 0);
 
-somarRevisao:
-UPDATE dia_revisado SET revisoes = revisoes + 1 WHERE dia = ?;
+addReview:
+UPDATE reviewed_day SET reviews = reviews + 1 WHERE day = ?;
 
-listarDiasRevisados:
-SELECT dia FROM dia_revisado ORDER BY dia DESC LIMIT 400;
+listReviewedDays:
+SELECT day FROM reviewed_day ORDER BY day DESC LIMIT 400;
 
-listarAtividadeDesde:
-SELECT dia, revisoes FROM dia_revisado WHERE dia >= ? ORDER BY dia ASC;
+listActivitySince:
+SELECT day, reviews FROM reviewed_day WHERE day >= ? ORDER BY day ASC;
 
-abrirMesIa:
-INSERT OR IGNORE INTO uso_ia (mes, geracoes) VALUES (?, 0);
+openAiMonth:
+INSERT OR IGNORE INTO ai_usage (month, generations) VALUES (?, 0);
 
-somarGeracaoIa:
-UPDATE uso_ia SET geracoes = geracoes + 1 WHERE mes = ?;
+addAiGeneration:
+UPDATE ai_usage SET generations = generations + 1 WHERE month = ?;
 
-observarUsoIaDoMes:
-SELECT geracoes FROM uso_ia WHERE mes = ?;
+observeAiUsageOfMonth:
+SELECT generations FROM ai_usage WHERE month = ?;
 
-registrarEvento:
-INSERT INTO evento (entrada_id, dia, instante, tipo, detalhe) VALUES (?, ?, ?, ?, ?);
+recordEvent:
+INSERT INTO event (entry_id, day, occurred_at, type, detail) VALUES (?, ?, ?, ?, ?);
 
--- A linha do tempo já sai com o alvo e o idioma do lado: a tela mostra a palavra,
--- não o id, e filtra pelo curso aberto.
-listarEventosDesde:
+-- The timeline comes out with the target and language alongside: the screen shows
+-- the word, not the id, and filters by the open course.
+listEventsSince:
 SELECT
     ev.id,
-    ev.entrada_id,
-    ev.dia,
-    ev.instante,
-    ev.tipo,
-    ev.detalhe,
-    e.alvo,
-    c.idioma_nativo,
-    c.idioma_alvo
-FROM evento ev
-JOIN entrada e ON e.id = ev.entrada_id
-JOIN captura c ON c.id = e.captura_id
-WHERE ev.dia >= ?
-ORDER BY ev.dia DESC, ev.instante DESC, ev.id DESC;
+    ev.entry_id,
+    ev.day,
+    ev.occurred_at,
+    ev.type,
+    ev.detail,
+    e.target,
+    c.native_language,
+    c.target_language
+FROM event ev
+JOIN entry e ON e.id = ev.entry_id
+JOIN capture c ON c.id = e.capture_id
+WHERE ev.day >= ?
+ORDER BY ev.day DESC, ev.occurred_at DESC, ev.id DESC;

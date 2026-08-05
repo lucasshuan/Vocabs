@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jean.vocabs.R
-import com.jean.vocabs.shared.PreferenciaDeTema
+import com.jean.vocabs.shared.ThemePreference
 
 /** Cores semânticas que não têm um papel próprio no ColorScheme do Material. */
 object VocabuColors {
@@ -143,15 +143,15 @@ private val Shapes = Shapes(
 /**
  * Se o tema escuro está valendo, conforme a escolha da tela Configurações.
  *
- * `AUTO` é o padrão e o único valor que consulta o aparelho — `CLARO` e `ESCURO`
+ * `SYSTEM` é o padrão e o único valor que consulta o aparelho — `LIGHT` e `DARK`
  * são decisões da pessoa e não voltam atrás quando o sistema muda de humor à
  * noite.
  */
 @Composable
-fun escuroConforme(preferencia: PreferenciaDeTema): Boolean = when (preferencia) {
-    PreferenciaDeTema.CLARO -> false
-    PreferenciaDeTema.ESCURO -> true
-    PreferenciaDeTema.AUTO -> isSystemInDarkTheme()
+fun escuroConforme(preferencia: ThemePreference): Boolean = when (preferencia) {
+    ThemePreference.LIGHT -> false
+    ThemePreference.DARK -> true
+    ThemePreference.SYSTEM -> isSystemInDarkTheme()
 }
 
 @Composable

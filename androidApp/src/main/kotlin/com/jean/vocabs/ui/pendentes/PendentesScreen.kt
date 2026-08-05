@@ -29,7 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Captura
 import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.StatusEntrada
+import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.ui.components.ArrastarParaExcluir
 import com.jean.vocabs.ui.components.CartaoDaTela
 import com.jean.vocabs.ui.components.DiscoDeCategoria
@@ -228,7 +228,7 @@ private fun CartaoEntrada(
                 Text(entrada.titulo, style = MaterialTheme.typography.titleSmall)
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 3.dp)) {
                     MarcaDeIdioma(idiomaDe(entrada.par.alvo))
-                    if (entrada.status == StatusEntrada.ERRO) {
+                    if (entrada.status == EntryStatus.ERROR) {
                         Text(
                             text = " · ${entrada.erro ?: "falha na geração"}",
                             style = MaterialTheme.typography.bodySmall,
@@ -238,8 +238,8 @@ private fun CartaoEntrada(
                     }
                 }
             }
-            if (entrada.status == StatusEntrada.GERANDO) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-            if (entrada.status == StatusEntrada.ERRO) Pilula("tentar de novo", destaque = true, aoClicar = tentar)
+            if (entrada.status == EntryStatus.GENERATING) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            if (entrada.status == EntryStatus.ERROR) Pilula("tentar de novo", destaque = true, aoClicar = tentar)
         }
     }
 }

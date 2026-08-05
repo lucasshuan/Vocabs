@@ -1,6 +1,6 @@
 package com.jean.vocabs.shared.domain
 
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -21,24 +21,24 @@ class RetencaoEDuplicataTest {
 
     @Test
     fun `duplicata normaliza caixa e espacos sem bloquear`() {
-        val pronta = entrada(1, "on the fence", StatusEntrada.PRONTA)
-        val pendente = entrada(2, "ON  THE FENCE", StatusEntrada.PENDENTE)
+        val pronta = entrada(1, "on the fence", EntryStatus.READY)
+        val pendente = entrada(2, "ON  THE FENCE", EntryStatus.PENDING)
         assertSame(pronta, duplicataDeAlvo("  On the fence ", listOf(pendente, pronta)))
         assertNull(duplicataDeAlvo("fence", listOf(pronta)))
     }
 
-    private fun entrada(id: Long, alvo: String, status: StatusEntrada) = Entrada(
+    private fun entrada(id: Long, alvo: String, status: EntryStatus) = Entrada(
         id = id,
         capturaId = id,
         trecho = alvo,
         alvo = alvo,
         inicio = 0,
         fim = alvo.length,
-        tipo = TipoAlvo.EXPRESSAO,
+        tipo = TargetType.PHRASE,
         origem = null,
         criadoEm = id,
         status = status,
-        formato = FormatoCaptura.TEXTO,
+        formato = CaptureFormat.TEXT,
         midiaCaminho = null,
         ficha = null,
         retencao = null,

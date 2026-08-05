@@ -7,7 +7,7 @@ import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.Escopo
-import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.ParIdiomas
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -91,18 +91,18 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             filtro = filtroAtual,
             busca = termo,
             total = prontas.size,
-            dominadas = prontas.count { Degraus.nivel(it.degrau) == NivelMemoria.DOMINADA },
+            dominadas = prontas.count { Degraus.nivel(it.degrau) == MemoryLevel.MASTERED },
             carregado = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeEstado())
 
     private fun cabe(entrada: Entrada, filtro: FiltroMemoria, procurado: String, agora: Long): Boolean {
-        val nivel = entrada.retencao?.nivelEm(agora) ?: NivelMemoria.NOVA
+        val nivel = entrada.retencao?.nivelEm(agora) ?: MemoryLevel.NEW
         val bateNivel = when (filtro) {
             FiltroMemoria.TODAS -> true
-            FiltroMemoria.APRENDENDO -> nivel == NivelMemoria.NOVA || nivel == NivelMemoria.APRENDENDO
-            FiltroMemoria.FAMILIAR -> nivel == NivelMemoria.FAMILIAR
-            FiltroMemoria.DOMINADA -> nivel == NivelMemoria.DOMINADA
+            FiltroMemoria.APRENDENDO -> nivel == MemoryLevel.NEW || nivel == MemoryLevel.LEARNING
+            FiltroMemoria.FAMILIAR -> nivel == MemoryLevel.FAMILIAR
+            FiltroMemoria.DOMINADA -> nivel == MemoryLevel.MASTERED
         }
         val bateBusca = procurado.isBlank() ||
             entrada.alvo.orEmpty().normalizado().contains(procurado) ||

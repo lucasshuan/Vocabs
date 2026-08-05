@@ -61,7 +61,7 @@ object AppContainer {
      *
      * Não pode ser o viewModelScope da tela de captura: assim que ela é fechada
      * (o que acontece imediatamente após salvar, por design), o escopo seria
-     * cancelado e a entrada ficaria presa em PENDENTE para sempre.
+     * cancelado e a entrada ficaria presa em PENDING para sempre.
      */
     val escopo: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Evento
-import com.jean.vocabs.shared.domain.NivelMemoria
-import com.jean.vocabs.shared.domain.TipoEvento
+import com.jean.vocabs.shared.domain.MemoryLevel
+import com.jean.vocabs.shared.domain.EventType
 import com.jean.vocabs.ui.components.CabecalhoDeDentro
 import com.jean.vocabs.ui.components.CartaoDaTela
 import com.jean.vocabs.ui.components.DiaDaSemana
@@ -250,10 +250,10 @@ private fun CartaoDoEvento(evento: Evento, aoClicar: () -> Unit) {
  * menta no que avançou, vermelho no que caiu, cinza no que só aconteceu.
  */
 @Composable
-private fun corDoEvento(tipo: TipoEvento): Color = when (tipo) {
-    TipoEvento.SUBIU_NIVEL, TipoEvento.ACERTO -> MaterialTheme.colorScheme.tertiary
-    TipoEvento.ERRO -> MaterialTheme.colorScheme.error
-    TipoEvento.CAPTURADA, TipoEvento.FICHA_PRONTA -> MaterialTheme.colorScheme.onSurfaceVariant
+private fun corDoEvento(tipo: EventType): Color = when (tipo) {
+    EventType.LEVELED_UP, EventType.CORRECT -> MaterialTheme.colorScheme.tertiary
+    EventType.INCORRECT -> MaterialTheme.colorScheme.error
+    EventType.CAPTURED, EventType.CARD_READY -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
 /** O ponto do dia e a linha que desce dele ficam nesta coluna, à esquerda de tudo. */
@@ -325,11 +325,11 @@ private fun tituloDoDia(dia: Long, hoje: Long): String {
  * que ela existe para mostrar.
  */
 internal fun descricaoDoEvento(evento: Evento): String = when (evento.tipo) {
-    TipoEvento.CAPTURADA -> "capturada"
-    TipoEvento.FICHA_PRONTA -> "ficha pronta"
-    TipoEvento.ACERTO -> ordinalDaRevisao(evento.detalhe, certa = true)
-    TipoEvento.ERRO -> ordinalDaRevisao(evento.detalhe, certa = false)
-    TipoEvento.SUBIU_NIVEL -> "virou ${rotuloDoNivel(nivelDe(evento.detalhe))}"
+    EventType.CAPTURED -> "capturada"
+    EventType.CARD_READY -> "ficha pronta"
+    EventType.CORRECT -> ordinalDaRevisao(evento.detalhe, certa = true)
+    EventType.INCORRECT -> ordinalDaRevisao(evento.detalhe, certa = false)
+    EventType.LEVELED_UP -> "virou ${rotuloDoNivel(nivelDe(evento.detalhe))}"
 }
 
 private fun ordinalDaRevisao(detalhe: String?, certa: Boolean): String {
@@ -338,5 +338,5 @@ private fun ordinalDaRevisao(detalhe: String?, certa: Boolean): String {
     return "${numero}ª revisão $desfecho"
 }
 
-private fun nivelDe(detalhe: String?): NivelMemoria =
-    NivelMemoria.entries.firstOrNull { it.name == detalhe } ?: NivelMemoria.APRENDENDO
+private fun nivelDe(detalhe: String?): MemoryLevel =
+    MemoryLevel.entries.firstOrNull { it.name == detalhe } ?: MemoryLevel.LEARNING

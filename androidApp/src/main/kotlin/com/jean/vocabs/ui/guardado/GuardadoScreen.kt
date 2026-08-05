@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.StatusEntrada
+import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.BotaoPrincipal
 import com.jean.vocabs.ui.components.CartaoDaTela
@@ -190,8 +190,8 @@ private fun SeloDeConfirmacao() {
 @Composable
 private fun LinhaGuardada(entrada: Entrada, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
-    val pronta = entrada.status == StatusEntrada.PRONTA
-    val comErro = entrada.status == StatusEntrada.ERRO
+    val pronta = entrada.status == EntryStatus.READY
+    val comErro = entrada.status == EntryStatus.ERROR
 
     CartaoDaTela(
         forma = MaterialTheme.shapes.medium,
@@ -207,13 +207,13 @@ private fun LinhaGuardada(entrada: Entrada, modifier: Modifier = Modifier) {
                     label = "estadoDaLinha",
                 ) { status ->
                     when (status) {
-                        StatusEntrada.PRONTA -> Text(
+                        EntryStatus.READY -> Text(
                             text = entrada.ficha?.traducao.orEmpty(),
                             style = MaterialTheme.typography.bodySmall,
                             color = cores.onSurfaceVariant,
                             modifier = Modifier.padding(top = 3.dp),
                         )
-                        StatusEntrada.ERRO -> Text(
+                        EntryStatus.ERROR -> Text(
                             text = "não deu certo — dá para tentar de novo em Pendentes",
                             style = MaterialTheme.typography.bodySmall,
                             color = cores.error,

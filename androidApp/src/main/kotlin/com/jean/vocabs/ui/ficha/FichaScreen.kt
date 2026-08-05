@@ -54,7 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.RetencaoAgora
-import com.jean.vocabs.shared.domain.StatusEntrada
+import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.ui.components.BarraDeMemoria
 import com.jean.vocabs.ui.components.BotaoCircular
 import com.jean.vocabs.ui.components.CartaoDaTela
@@ -178,7 +178,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                 transitionSpec = { fadeIn(tween(Movimento.PADRAO)) togetherWith fadeOut(tween(Movimento.RAPIDO)) },
                 label = "corpoDaFicha",
             ) { status -> when (status) {
-                StatusEntrada.GERANDO, StatusEntrada.PENDENTE -> Surface(
+                EntryStatus.GENERATING, EntryStatus.PENDING -> Surface(
                     shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     modifier = Modifier.fillMaxWidth(),
@@ -188,7 +188,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                         Text("A ficha está sendo criada…", Modifier.padding(start = 12.dp))
                     }
                 }
-                StatusEntrada.ERRO -> Surface(
+                EntryStatus.ERROR -> Surface(
                     shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.errorContainer,
                     modifier = Modifier.fillMaxWidth(),
@@ -198,7 +198,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                         Button(onClick = vm::tentarDeNovo, modifier = Modifier.padding(top = 12.dp)) { Text("Tentar de novo") }
                     }
                 }
-                StatusEntrada.PRONTA -> FichaPronta(
+                EntryStatus.READY -> FichaPronta(
                     entrada = item,
                     memoria = memoria,
                     expandiu = expandiu,

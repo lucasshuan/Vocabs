@@ -2,11 +2,11 @@ package com.jean.vocabs.ui.progresso
 
 import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Evento
-import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.QuotaDoDia
 import com.jean.vocabs.shared.domain.ResumoCurso
-import com.jean.vocabs.shared.domain.TipoEvento
+import com.jean.vocabs.shared.domain.EventType
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -72,9 +72,9 @@ class TextosDeProgressoTest {
 
     @Test
     fun `what's left names the next level`() {
-        assertEquals("1 acerto para familiar", textoDoQueFalta(1, NivelMemoria.FAMILIAR))
-        assertEquals("2 acertos para dominada", textoDoQueFalta(2, NivelMemoria.DOMINADA))
-        assertEquals("0 acertos para aprendendo", textoDoQueFalta(0, NivelMemoria.APRENDENDO))
+        assertEquals("1 acerto para familiar", textoDoQueFalta(1, MemoryLevel.FAMILIAR))
+        assertEquals("2 acertos para dominada", textoDoQueFalta(2, MemoryLevel.MASTERED))
+        assertEquals("0 acertos para aprendendo", textoDoQueFalta(0, MemoryLevel.LEARNING))
     }
 
     @Test
@@ -94,29 +94,29 @@ class TextosDeProgressoTest {
 
     @Test
     fun `an event with no review number loses the ordinal but keeps the outcome`() {
-        assertEquals("revisão certa", descricaoDoEvento(evento(TipoEvento.ACERTO, detalhe = null)))
-        assertEquals("revisão errada", descricaoDoEvento(evento(TipoEvento.ERRO, detalhe = "not-a-number")))
+        assertEquals("revisão certa", descricaoDoEvento(evento(EventType.CORRECT, detalhe = null)))
+        assertEquals("revisão errada", descricaoDoEvento(evento(EventType.INCORRECT, detalhe = "not-a-number")))
     }
 
     @Test
     fun `an event with a number gets the feminine ordinal`() {
-        assertEquals("2ª revisão certa", descricaoDoEvento(evento(TipoEvento.ACERTO, detalhe = "2")))
-        assertEquals("3ª revisão errada", descricaoDoEvento(evento(TipoEvento.ERRO, detalhe = "3")))
+        assertEquals("2ª revisão certa", descricaoDoEvento(evento(EventType.CORRECT, detalhe = "2")))
+        assertEquals("3ª revisão errada", descricaoDoEvento(evento(EventType.INCORRECT, detalhe = "3")))
     }
 
     @Test
     fun `levelling up repeats the level label, and an unknown one falls back`() {
-        assertEquals("virou dominada", descricaoDoEvento(evento(TipoEvento.SUBIU_NIVEL, detalhe = "DOMINADA")))
-        assertEquals("virou aprendendo", descricaoDoEvento(evento(TipoEvento.SUBIU_NIVEL, detalhe = "SEPIA")))
+        assertEquals("virou dominada", descricaoDoEvento(evento(EventType.LEVELED_UP, detalhe = "MASTERED")))
+        assertEquals("virou aprendendo", descricaoDoEvento(evento(EventType.LEVELED_UP, detalhe = "SEPIA")))
     }
 
     @Test
     fun `capture and card-ready have no variants`() {
-        assertEquals("capturada", descricaoDoEvento(evento(TipoEvento.CAPTURADA, detalhe = null)))
-        assertEquals("ficha pronta", descricaoDoEvento(evento(TipoEvento.FICHA_PRONTA, detalhe = null)))
+        assertEquals("capturada", descricaoDoEvento(evento(EventType.CAPTURED, detalhe = null)))
+        assertEquals("ficha pronta", descricaoDoEvento(evento(EventType.CARD_READY, detalhe = null)))
     }
 
-    private fun evento(tipo: TipoEvento, detalhe: String?) = Evento(
+    private fun evento(tipo: EventType, detalhe: String?) = Evento(
         id = 1L,
         entradaId = 1L,
         dia = 2_460_000L,

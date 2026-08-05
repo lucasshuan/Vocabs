@@ -33,7 +33,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
 import com.jean.vocabs.shared.domain.AlvoSelecionado
 import com.jean.vocabs.shared.domain.selecionarTokens
 import com.jean.vocabs.shared.domain.tokenizarTrecho
@@ -176,7 +176,7 @@ private fun ChipDeSelecao(alvo: AlvoSelecionado, aoRemover: () -> Unit) {
                 style = MaterialTheme.typography.titleSmall.copy(fontFamily = Bricolage, fontWeight = FontWeight.Bold, fontSize = 15.sp),
             )
             Text(
-                text = if (alvo.tipo == TipoAlvo.PALAVRA) "PALAVRA" else "EXPRESSÃO",
+                text = if (alvo.tipo == TargetType.WORD) "PALAVRA" else "EXPRESSÃO",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.62f),
             )

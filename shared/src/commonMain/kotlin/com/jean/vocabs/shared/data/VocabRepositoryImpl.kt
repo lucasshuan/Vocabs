@@ -4,7 +4,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.jean.vocabs.contracts.FichaResponse
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
 import com.jean.vocabs.shared.data.remote.FichaApi
 import com.jean.vocabs.shared.db.VocabsDatabase
 import com.jean.vocabs.shared.domain.AlvoSelecionado
@@ -15,17 +15,17 @@ import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.Escopo
 import com.jean.vocabs.shared.domain.Evento
-import com.jean.vocabs.shared.domain.FormatoCaptura
-import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.CaptureFormat
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.QuotaDoDia
 import com.jean.vocabs.shared.domain.Retencao
 import com.jean.vocabs.shared.domain.RetencaoAgora
 import com.jean.vocabs.shared.domain.ResumoCurso
 import com.jean.vocabs.shared.domain.ResumoRevisao
-import com.jean.vocabs.shared.domain.StatusCaptura
-import com.jean.vocabs.shared.domain.StatusEntrada
-import com.jean.vocabs.shared.domain.TipoEvento
+import com.jean.vocabs.shared.domain.CaptureStatus
+import com.jean.vocabs.shared.domain.EntryStatus
+import com.jean.vocabs.shared.domain.EventType
 import com.jean.vocabs.shared.domain.UsoIa
 import com.jean.vocabs.shared.domain.VocabRepository
 import com.jean.vocabs.shared.domain.eValidoEm
@@ -45,8 +45,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
-import com.jean.vocabs.shared.db.Captura as CapturaRow
-import com.jean.vocabs.shared.db.Entrada_com_captura as EntradaRow
+import com.jean.vocabs.shared.db.Capture as CaptureRow
+import com.jean.vocabs.shared.db.Entry_with_capture as EntryRow
 
 class VocabRepositoryImpl(
     private val db: VocabsDatabase,
@@ -79,7 +79,7 @@ class VocabRepositoryImpl(
                     ResumoCurso(
                         par = par,
                         total = entradas.size,
-                        dominadas = entradas.count { Degraus.nivel(it.degrau) == NivelMemoria.DOMINADA },
+                        dominadas = entradas.count { Degraus.nivel(it.degrau) == MemoryLevel.MASTERED },
                         naFila = entradas.count { it.precisaRevisar(instante) },
                         proximaEmMillis = entradas
                             .mapNotNull { it.retencao?.proximaRevisaoEm(instante) }
@@ -89,17 +89,17 @@ class VocabRepositoryImpl(
         }
 
     private fun todasAsProntas(): Flow<List<Entrada>> =
-        queries.listarProntas().asFlow().mapToList(io).map { linhas -> linhas.map(::paraDominio) }
+        queries.listReady().asFlow().mapToList(io).map { linhas -> linhas.map(::paraDominio) }
 
     override fun observarProntas(escopo: Escopo): Flow<List<Entrada>> =
         todasAsProntas().no(escopo) { it.par }
 
     override fun observarInbox(escopo: Escopo): Flow<List<Entrada>> =
-        queries.listarInbox().asFlow().mapToList(io).map { linhas -> linhas.map(::paraDominio) }
+        queries.listInbox().asFlow().mapToList(io).map { linhas -> linhas.map(::paraDominio) }
             .no(escopo) { it.par }
 
     override fun observarCapturasPendentes(escopo: Escopo): Flow<List<Captura>> =
-        queries.listarCapturasPendentes().asFlow().mapToList(io)
+        queries.listPendingCaptures().asFlow().mapToList(io)
             .map { linhas -> linhas.map(::capturaParaDominio) }
             .no(escopo) { it.par }
 
@@ -122,17 +122,17 @@ class VocabRepositoryImpl(
     }
 
     override fun observarCapturaPorId(id: Long): Flow<Captura?> =
-        queries.buscarCapturaPorId(id).asFlow().mapToOneOrNull(io)
+        queries.findCaptureById(id).asFlow().mapToOneOrNull(io)
             .map { it?.let(::capturaParaDominio) }
 
     override fun observarPorId(id: Long): Flow<Entrada?> =
-        queries.buscarEntradaPorId(id).asFlow().mapToOneOrNull(io).map { it?.let(::paraDominio) }
+        queries.findEntryById(id).asFlow().mapToOneOrNull(io).map { it?.let(::paraDominio) }
 
     override fun observarEntradas(ids: List<Long>): Flow<List<Entrada>> {
         // `IN ()` não é SQL válido no SQLite, e uma lista vazia é o estado normal
         // da tela de confirmação enquanto o argumento de navegação não chegou.
         if (ids.isEmpty()) return flowOf(emptyList())
-        return queries.listarEntradasPorIds(ids).asFlow().mapToList(io)
+        return queries.listEntriesByIds(ids).asFlow().mapToList(io)
             .map { linhas -> linhas.map(::paraDominio) }
     }
 
@@ -146,7 +146,7 @@ class VocabRepositoryImpl(
 
     override fun observarResumoDeRevisao(escopo: Escopo): Flow<ResumoRevisao> = combine(
         observarProntas(escopo),
-        queries.listarDiasRevisados().asFlow().mapToList(io),
+        queries.listReviewedDays().asFlow().mapToList(io),
     ) { prontas, dias ->
         val instante = agora()
         val hoje = diaLocalDe(instante)
@@ -195,20 +195,20 @@ class VocabRepositoryImpl(
 
     override fun observarAtividade(dias: Int): Flow<List<AtividadeDiaria>> {
         val primeiroDia = diaLocalDe(agora()) - (dias.coerceAtLeast(1) - 1)
-        return queries.listarAtividadeDesde(primeiroDia) { dia, revisoes ->
+        return queries.listActivitySince(primeiroDia) { dia, revisoes ->
             AtividadeDiaria(dia = dia, revisoes = revisoes.toInt())
         }.asFlow().mapToList(io)
     }
 
     override fun observarEventos(dias: Int, escopo: Escopo): Flow<List<Evento>> {
         val primeiroDia = diaLocalDe(agora()) - (dias.coerceAtLeast(1) - 1)
-        return queries.listarEventosDesde(primeiroDia) { id, entradaId, dia, instante, tipo, detalhe, alvo, nativo, alvoIdioma ->
+        return queries.listEventsSince(primeiroDia) { id, entradaId, dia, instante, tipo, detalhe, alvo, nativo, alvoIdioma ->
             Evento(
                 id = id,
                 entradaId = entradaId,
                 dia = dia,
                 instante = instante,
-                tipo = TipoEvento.de(tipo),
+                tipo = EventType.de(tipo),
                 alvo = alvo,
                 par = ParIdiomas(nativo = nativo, alvo = alvoIdioma),
                 detalhe = detalhe,
@@ -218,7 +218,7 @@ class VocabRepositoryImpl(
 
     override fun observarUsoIa(): Flow<UsoIa> {
         val mes = mesLocalDe(agora())
-        return queries.observarUsoIaDoMes(mes).asFlow().mapToOneOrNull(io).map { geracoes ->
+        return queries.observeAiUsageOfMonth(mes).asFlow().mapToOneOrNull(io).map { geracoes ->
             UsoIa(mes = mes, usadas = geracoes?.toInt() ?: 0)
         }
     }
@@ -227,14 +227,14 @@ class VocabRepositoryImpl(
         val mes = mesLocalDe(agora())
         queries.transactionWithResult {
             DadosExportacao(
-                capturas = queries.listarTodasCapturas().executeAsList().map(::capturaParaDominio),
-                entradas = queries.listarTodasEntradas().executeAsList().map(::paraDominio),
-                atividade = queries.listarAtividadeDesde(Long.MIN_VALUE) { dia, revisoes ->
+                capturas = queries.listAllCaptures().executeAsList().map(::capturaParaDominio),
+                entradas = queries.listAllEntries().executeAsList().map(::paraDominio),
+                atividade = queries.listActivitySince(Long.MIN_VALUE) { dia, revisoes ->
                     AtividadeDiaria(dia, revisoes.toInt())
                 }.executeAsList(),
                 usoIa = UsoIa(
                     mes = mes,
-                    usadas = queries.observarUsoIaDoMes(mes).executeAsOneOrNull()?.toInt() ?: 0,
+                    usadas = queries.observeAiUsageOfMonth(mes).executeAsOneOrNull()?.toInt() ?: 0,
                 ),
             )
         }
@@ -254,8 +254,8 @@ class VocabRepositoryImpl(
         queries.transactionWithResult {
             val capturaId = inserirCaptura(
                 trecho = texto,
-                status = StatusCaptura.PROCESSADA,
-                formato = FormatoCaptura.TEXTO,
+                status = CaptureStatus.PROCESSED,
+                formato = CaptureFormat.TEXT,
                 curso = curso,
             )
             inserirAlvos(capturaId, alvos)
@@ -268,25 +268,25 @@ class VocabRepositoryImpl(
         queries.transactionWithResult {
             inserirCaptura(
                 trecho = trecho,
-                status = StatusCaptura.AGUARDANDO_SELECAO,
-                formato = FormatoCaptura.TEXTO,
+                status = CaptureStatus.AWAITING_SELECTION,
+                formato = CaptureFormat.TEXT,
                 curso = curso,
             )
         }
     }
 
     override suspend fun capturarMidia(
-        formato: FormatoCaptura,
+        formato: CaptureFormat,
         caminho: String,
         duracaoMs: Long?,
         par: ParIdiomas?,
     ): Long = withContext(io) {
-        require(formato != FormatoCaptura.TEXTO) { "Mídia precisa ser foto ou áudio." }
+        require(formato != CaptureFormat.TEXT) { "Mídia precisa ser foto ou áudio." }
         val curso = cursoDaCaptura(par)
         queries.transactionWithResult {
             inserirCaptura(
                 trecho = null,
-                status = StatusCaptura.TRANSCREVENDO,
+                status = CaptureStatus.TRANSCRIBING,
                 formato = formato,
                 curso = curso,
                 caminho = caminho,
@@ -296,30 +296,30 @@ class VocabRepositoryImpl(
     }
 
     override suspend fun alterarIdiomaDaCaptura(id: Long, alvo: String): Unit = withContext(io) {
-        queries.alterarIdiomaDaCaptura(idioma_alvo = alvo, id = id)
+        queries.changeCaptureLanguage(target_language = alvo, id = id)
     }
 
     private fun inserirCaptura(
         trecho: String?,
-        status: StatusCaptura,
-        formato: FormatoCaptura,
+        status: CaptureStatus,
+        formato: CaptureFormat,
         curso: ParIdiomas,
         caminho: String? = null,
         duracaoMs: Long? = null,
     ): Long {
-        queries.inserirCaptura(
-            trecho = trecho,
-            origem = null,
-            criado_em = agora(),
+        queries.insertCapture(
+            snippet = trecho,
+            source = null,
+            created_at = agora(),
             status = status.name,
-            formato = formato.name,
-            midia_caminho = caminho,
-            duracao_ms = duracaoMs,
-            erro_transcricao = null,
-            idioma_nativo = curso.nativo,
-            idioma_alvo = curso.alvo,
+            format = formato.name,
+            media_path = caminho,
+            duration_ms = duracaoMs,
+            transcription_error = null,
+            native_language = curso.nativo,
+            target_language = curso.alvo,
         )
-        return queries.ultimoIdInserido().executeAsOne()
+        return queries.lastInsertedId().executeAsOne()
     }
 
     /**
@@ -333,9 +333,9 @@ class VocabRepositoryImpl(
 
     override suspend fun registrarTranscricao(id: Long, trecho: String?, erro: String?) {
         withContext(io) {
-            queries.registrarTranscricao(
-                trecho = trecho?.trim()?.ifBlank { null },
-                erro_transcricao = erro?.trim()?.ifBlank { null },
+            queries.recordTranscription(
+                snippet = trecho?.trim()?.ifBlank { null },
+                transcription_error = erro?.trim()?.ifBlank { null },
                 id = id,
             )
         }
@@ -352,25 +352,25 @@ class VocabRepositoryImpl(
         require(alvos.all { it.eValidoEm(texto) }) { "Há uma seleção fora do trecho atual." }
 
         queries.transactionWithResult {
-            val existentes = queries.listarIdsDaCaptura(id).executeAsList()
+            val existentes = queries.listIdsOfCapture(id).executeAsList()
             if (existentes.isNotEmpty()) return@transactionWithResult existentes
-            queries.processarCaptura(trecho = texto, id = id)
+            queries.processCapture(snippet = texto, id = id)
             inserirAlvos(id, alvos)
         }
     }
 
     private fun inserirAlvos(capturaId: Long, alvos: List<AlvoSelecionado>): List<Long> =
         alvos.distinctBy { it.inicio to it.fim }.map { alvo ->
-            queries.inserirEntrada(
-                captura_id = capturaId,
-                alvo = alvo.texto.trim(),
-                inicio = alvo.inicio.toLong(),
-                fim = alvo.fim.toLong(),
-                tipo = alvo.tipo.name,
-                status = StatusEntrada.PENDENTE.name,
+            queries.insertEntry(
+                capture_id = capturaId,
+                target = alvo.texto.trim(),
+                start_index = alvo.inicio.toLong(),
+                end_index = alvo.fim.toLong(),
+                type = alvo.tipo.name,
+                status = EntryStatus.PENDING.name,
             )
-            val id = queries.ultimoIdInserido().executeAsOne()
-            anotar(id, TipoEvento.CAPTURADA)
+            val id = queries.lastInsertedId().executeAsOne()
+            anotar(id, EventType.CAPTURED)
             id
         }
 
@@ -378,70 +378,73 @@ class VocabRepositoryImpl(
      * Uma linha na linha do tempo. Sempre dentro da transação de quem chamou —
      * um evento sem o fato que ele descreve seria pior que evento nenhum.
      */
-    private fun anotar(entradaId: Long, tipo: TipoEvento, detalhe: String? = null) {
+    private fun anotar(entradaId: Long, tipo: EventType, detalhe: String? = null) {
         val instante = agora()
-        queries.registrarEvento(
-            entrada_id = entradaId,
-            dia = diaLocalDe(instante),
-            instante = instante,
-            tipo = tipo.name,
-            detalhe = detalhe,
+        queries.recordEvent(
+            entry_id = entradaId,
+            day = diaLocalDe(instante),
+            occurred_at = instante,
+            type = tipo.name,
+            detail = detalhe,
         )
     }
 
     override suspend fun gerarFicha(id: Long): Boolean = withContext(io) {
-        val linha = queries.buscarEntradaPorId(id).executeAsOneOrNull() ?: return@withContext false
-        val trecho = linha.trecho?.takeIf { it.isNotBlank() } ?: return@withContext false
-        val alvo = linha.alvo.takeIf { it.isNotBlank() } ?: return@withContext false
-        val tipo = tipoDe(linha.tipo)
-        val jaEraPronta = StatusEntrada.de(linha.status) == StatusEntrada.PRONTA
+        val linha = queries.findEntryById(id).executeAsOneOrNull() ?: return@withContext false
+        val trecho = linha.snippet?.takeIf { it.isNotBlank() } ?: return@withContext false
+        val alvo = linha.target.takeIf { it.isNotBlank() } ?: return@withContext false
+        val tipo = tipoDe(linha.type)
+        val jaEraPronta = EntryStatus.de(linha.status) == EntryStatus.READY
 
-        queries.marcarStatus(status = StatusEntrada.GERANDO.name, id = id)
+        queries.markStatus(status = EntryStatus.GENERATING.name, id = id)
         try {
             val ficha = api.gerar(
                 trecho = trecho,
                 alvo = alvo,
                 tipo = tipo,
-                par = ParIdiomas(nativo = linha.idioma_nativo, alvo = linha.idioma_alvo),
+                par = ParIdiomas(nativo = linha.native_language, alvo = linha.target_language),
             )
             queries.transaction {
-                queries.salvarFicha(
-                    status = StatusEntrada.PRONTA.name,
-                    tipo = tipo.name,
-                    traducao = ficha.traducao,
-                    definicoes_json = json.encodeToString(ficha.definicoes),
-                    exemplo = ficha.exemplo,
-                    pronuncia = ficha.pronuncia,
-                    relacionadas_json = json.encodeToString(ficha.relacionadas),
+                queries.saveCard(
+                    status = EntryStatus.READY.name,
+                    type = tipo.name,
+                    translation = ficha.traducao,
+                    definitions_json = json.encodeToString(ficha.definicoes),
+                    example = ficha.exemplo,
+                    pronunciation = ficha.pronuncia,
+                    related_json = json.encodeToString(ficha.relacionadas),
                     id = id,
                 )
                 if (!jaEraPronta) {
                     val inicial = Retencao.inicial(agora())
-                    queries.salvarRetencao(
-                        pontos = inicial.pontos,
-                        taxa_decaimento = inicial.taxa,
-                        data_ultima_interacao = inicial.ultimaInteracao,
-                        revisoes = inicial.revisoes.toLong(),
-                        acertos = inicial.acertos.toLong(),
-                        erros = inicial.erros.toLong(),
+                    queries.saveRetention(
+                        points = inicial.pontos,
+                        decay_rate = inicial.taxa,
+                        last_interaction_at = inicial.ultimaInteracao,
+                        reviews = inicial.revisoes.toLong(),
+                        correct_count = inicial.acertos.toLong(),
+                        incorrect_count = inicial.erros.toLong(),
                         id = id,
                     )
                     // Só na primeira vez: regerar uma ficha que já existia não é
                     // um acontecimento do dia, é conserto.
-                    anotar(id, TipoEvento.FICHA_PRONTA)
+                    anotar(id, EventType.CARD_READY)
                 }
                 val mes = mesLocalDe(agora())
-                queries.abrirMesIa(mes)
-                queries.somarGeracaoIa(mes)
+                queries.openAiMonth(mes)
+                queries.addAiGeneration(mes)
             }
             true
         } catch (cancelamento: CancellationException) {
-            queries.marcarStatus(status = StatusEntrada.PENDENTE.name, id = id)
+            queries.markStatus(status = EntryStatus.PENDING.name, id = id)
             throw cancelamento
         } catch (falha: Exception) {
-            queries.marcarErro(
-                status = StatusEntrada.ERRO.name,
-                erro = falha.message ?: "Falha ao gerar a ficha.",
+            queries.markError(
+                status = EntryStatus.ERROR.name,
+                // error_code stays null until the server sends one; the message
+                // is still free text at this point.
+                error_code = null,
+                error_detail = falha.message ?: "Falha ao gerar a ficha.",
                 id = id,
             )
             false
@@ -455,28 +458,28 @@ class VocabRepositoryImpl(
         }
 
     override suspend fun registrarResposta(id: Long, acertou: Boolean) = withContext(io) {
-        val linha = queries.buscarEntradaPorId(id).executeAsOneOrNull() ?: return@withContext
+        val linha = queries.findEntryById(id).executeAsOneOrNull() ?: return@withContext
         val instante = agora()
         val anterior = montarRetencao(linha)
         val nova = anterior.apos(acertou = acertou, agora = instante)
         val dia = diaLocalDe(instante)
 
         queries.transaction {
-            queries.salvarRetencao(
-                pontos = nova.pontos,
-                taxa_decaimento = nova.taxa,
-                data_ultima_interacao = nova.ultimaInteracao,
-                revisoes = nova.revisoes.toLong(),
-                acertos = nova.acertos.toLong(),
-                erros = nova.erros.toLong(),
+            queries.saveRetention(
+                points = nova.pontos,
+                decay_rate = nova.taxa,
+                last_interaction_at = nova.ultimaInteracao,
+                reviews = nova.revisoes.toLong(),
+                correct_count = nova.acertos.toLong(),
+                incorrect_count = nova.erros.toLong(),
                 id = id,
             )
-            queries.abrirDia(dia)
-            queries.somarRevisao(dia)
+            queries.openDay(dia)
+            queries.addReview(dia)
 
             anotar(
                 entradaId = id,
-                tipo = if (acertou) TipoEvento.ACERTO else TipoEvento.ERRO,
+                tipo = if (acertou) EventType.CORRECT else EventType.INCORRECT,
                 detalhe = nova.revisoes.toString(),
             )
             // A mudança de nível é o que a linha do tempo chama de "virou
@@ -484,19 +487,19 @@ class VocabRepositoryImpl(
             // gravado, o antes some.
             val subiu = Degraus.nivel(Degraus.de(nova))
             if (subiu != Degraus.nivel(Degraus.de(anterior))) {
-                anotar(entradaId = id, tipo = TipoEvento.SUBIU_NIVEL, detalhe = subiu.name)
+                anotar(entradaId = id, tipo = EventType.LEVELED_UP, detalhe = subiu.name)
             }
         }
     }
 
     override suspend fun excluir(id: Long) = withContext(io) {
         val caminho = queries.transactionWithResult {
-            val linha = queries.buscarEntradaPorId(id).executeAsOneOrNull()
+            val linha = queries.findEntryById(id).executeAsOneOrNull()
                 ?: return@transactionWithResult null
-            queries.excluirEntrada(id)
-            if (queries.contarEntradasDaCaptura(linha.captura_id).executeAsOne() == 0L) {
-                queries.excluirCaptura(linha.captura_id)
-                linha.midia_caminho
+            queries.deleteEntry(id)
+            if (queries.countEntriesOfCapture(linha.capture_id).executeAsOne() == 0L) {
+                queries.deleteCapture(linha.capture_id)
+                linha.media_path
             } else {
                 null
             }
@@ -506,79 +509,79 @@ class VocabRepositoryImpl(
     }
 
     override suspend fun excluirCaptura(id: Long) = withContext(io) {
-        val caminho = queries.buscarCapturaPorId(id).executeAsOneOrNull()?.midia_caminho
+        val caminho = queries.findCaptureById(id).executeAsOneOrNull()?.media_path
         queries.transaction {
-            queries.excluirEntradasDaCaptura(id)
-            queries.excluirCaptura(id)
+            queries.deleteEntriesOfCapture(id)
+            queries.deleteCapture(id)
         }
         caminho?.let(removerArquivo)
         Unit
     }
 
-    private fun diaLocalDe(instante: Long): Long = queries.diaLocal(instante).executeAsOne()
+    private fun diaLocalDe(instante: Long): Long = queries.localDay(instante).executeAsOne()
 
-    private fun mesLocalDe(instante: Long): String = queries.mesLocal(instante).executeAsOne()
+    private fun mesLocalDe(instante: Long): String = queries.localMonth(instante).executeAsOne()
 
-    private fun capturaParaDominio(linha: CapturaRow) = Captura(
+    private fun capturaParaDominio(linha: CaptureRow) = Captura(
         id = linha.id,
-        trecho = linha.trecho,
-        origem = linha.origem,
-        criadoEm = linha.criado_em,
-        status = StatusCaptura.de(linha.status),
-        formato = FormatoCaptura.de(linha.formato),
-        midiaCaminho = linha.midia_caminho,
-        duracaoMs = linha.duracao_ms,
-        erroTranscricao = linha.erro_transcricao,
-        par = ParIdiomas(nativo = linha.idioma_nativo, alvo = linha.idioma_alvo),
+        trecho = linha.snippet,
+        origem = linha.source,
+        criadoEm = linha.created_at,
+        status = CaptureStatus.de(linha.status),
+        formato = CaptureFormat.de(linha.format),
+        midiaCaminho = linha.media_path,
+        duracaoMs = linha.duration_ms,
+        erroTranscricao = linha.transcription_error,
+        par = ParIdiomas(nativo = linha.native_language, alvo = linha.target_language),
     )
 
-    private fun paraDominio(linha: EntradaRow): Entrada {
-        val status = StatusEntrada.de(linha.status)
-        val tipo = tipoDe(linha.tipo)
+    private fun paraDominio(linha: EntryRow): Entrada {
+        val status = EntryStatus.de(linha.status)
+        val tipo = tipoDe(linha.type)
         return Entrada(
             id = linha.id,
-            capturaId = linha.captura_id,
-            trecho = linha.trecho,
-            alvo = linha.alvo,
-            inicio = linha.inicio?.toInt(),
-            fim = linha.fim?.toInt(),
+            capturaId = linha.capture_id,
+            trecho = linha.snippet,
+            alvo = linha.target,
+            inicio = linha.start_index?.toInt(),
+            fim = linha.end_index?.toInt(),
             tipo = tipo,
-            origem = linha.origem,
-            criadoEm = linha.criado_em,
+            origem = linha.source,
+            criadoEm = linha.created_at,
             status = status,
-            formato = FormatoCaptura.de(linha.formato),
-            midiaCaminho = linha.midia_caminho,
-            ficha = if (status == StatusEntrada.PRONTA) montarFicha(linha, tipo) else null,
-            retencao = if (status == StatusEntrada.PRONTA) montarRetencao(linha) else null,
-            erro = linha.erro,
-            par = ParIdiomas(nativo = linha.idioma_nativo, alvo = linha.idioma_alvo),
+            formato = CaptureFormat.de(linha.format),
+            midiaCaminho = linha.media_path,
+            ficha = if (status == EntryStatus.READY) montarFicha(linha, tipo) else null,
+            retencao = if (status == EntryStatus.READY) montarRetencao(linha) else null,
+            erro = linha.error_detail,
+            par = ParIdiomas(nativo = linha.native_language, alvo = linha.target_language),
         )
     }
 
-    private fun montarRetencao(linha: EntradaRow) = Retencao(
-        pontos = linha.pontos,
-        taxa = linha.taxa_decaimento,
-        ultimaInteracao = linha.data_ultima_interacao,
-        revisoes = linha.revisoes.toInt(),
-        acertos = linha.acertos.toInt(),
-        erros = linha.erros.toInt(),
+    private fun montarRetencao(linha: EntryRow) = Retencao(
+        pontos = linha.points,
+        taxa = linha.decay_rate,
+        ultimaInteracao = linha.last_interaction_at,
+        revisoes = linha.reviews.toInt(),
+        acertos = linha.correct_count.toInt(),
+        erros = linha.incorrect_count.toInt(),
     )
 
-    private fun montarFicha(linha: EntradaRow, tipo: TipoAlvo) = FichaResponse(
+    private fun montarFicha(linha: EntryRow, tipo: TargetType) = FichaResponse(
         tipo = tipo,
-        traducao = linha.traducao.orEmpty(),
-        definicoes = linha.definicoes_json.listaJson(),
-        exemplo = linha.exemplo.orEmpty(),
-        pronuncia = linha.pronuncia.orEmpty(),
-        relacionadas = linha.relacionadas_json.listaJson(),
+        traducao = linha.translation.orEmpty(),
+        definicoes = linha.definitions_json.listaJson(),
+        exemplo = linha.example.orEmpty(),
+        pronuncia = linha.pronunciation.orEmpty(),
+        relacionadas = linha.related_json.listaJson(),
     )
 
     private fun String?.listaJson(): List<String> = this
         ?.let { runCatching { json.decodeFromString<List<String>>(it) }.getOrNull() }
         ?: emptyList()
 
-    private fun tipoDe(valor: String): TipoAlvo =
-        runCatching { TipoAlvo.valueOf(valor) }.getOrDefault(TipoAlvo.PALAVRA)
+    private fun tipoDe(valor: String): TargetType =
+        runCatching { TargetType.valueOf(valor) }.getOrDefault(TargetType.WORD)
 
     private companion object {
         const val DOIS_DIAS_EM_MILLIS = 2 * 86_400_000L

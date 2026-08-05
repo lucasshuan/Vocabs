@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.BarraDeMemoria
 import com.jean.vocabs.ui.components.CartaoDaTela
@@ -189,7 +189,7 @@ private fun CabecalhoDeIdioma(
 @Composable
 private fun CartaoPalavra(entrada: Entrada, modifier: Modifier = Modifier, aoClicar: () -> Unit) {
     val agora = System.currentTimeMillis()
-    val nivel = entrada.retencao?.nivelEm(agora) ?: NivelMemoria.NOVA
+    val nivel = entrada.retencao?.nivelEm(agora) ?: MemoryLevel.NEW
     val pontos = entrada.retencao?.pontosEm(agora) ?: 0.0
     val proxima = textoDaProximaRevisao(entrada.retencao, agora)
     val naFila = entrada.precisaRevisar(agora)

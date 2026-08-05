@@ -112,7 +112,7 @@ class GeradorDeFicha(
          * independentes: o modelo lê inglês e escreve a tradução em português
          * porque a instrução manda, não porque a instrução esteja em português.
          * E manter uma cópia traduzida do prompt por idioma nativo seria manter N
-         * versões de uma prosa calibrada — o teste de PALAVRA vs EXPRESSAO é a
+         * versões de uma prosa calibrada — o teste de WORD vs PHRASE é a
          * parte mais sutil da ficha, e traduzir é recalibrar sem querer.
          *
          * Os nomes dos campos e os valores do enum ficam como estão: são o
@@ -129,7 +129,7 @@ class GeradorDeFicha(
                 Your job is to build the study card for that target.
 
                 `tipo` is supplied by the app. Copy it exactly; never classify or
-                change it. It is PALAVRA for one selected token and EXPRESSAO for
+                change it. It is WORD for one selected token and PHRASE for
                 two or more selected tokens.
 
                 The other fields:
@@ -150,9 +150,13 @@ class GeradorDeFicha(
         /**
          * Espelha [FichaResponse]. `additionalProperties: false` e todos os campos
          * em `required` são exigidos pelo structured outputs da API.
+         *
+         * Kept as a plain map, not inlined into [SCHEMA], so a test can compare
+         * its keys against [FichaResponse]'s serial names. Nothing else connects
+         * the two — a field renamed on one side and not the other does not fail
+         * to compile, it fails to decode, on every card.
          */
-        val SCHEMA: JsonValue = JsonValue.from(
-            mapOf(
+        internal val SCHEMA_MAP: Map<String, Any> = mapOf(
                 "type" to "object",
                 "additionalProperties" to false,
                 "required" to listOf(
@@ -161,7 +165,7 @@ class GeradorDeFicha(
                 "properties" to mapOf(
                     "tipo" to mapOf(
                         "type" to "string",
-                        "enum" to listOf("PALAVRA", "EXPRESSAO"),
+                        "enum" to listOf("WORD", "PHRASE"),
                     ),
                     "traducao" to mapOf("type" to "string"),
                     "definicoes" to mapOf(
@@ -179,8 +183,9 @@ class GeradorDeFicha(
                         "items" to mapOf("type" to "string"),
                     ),
                 ),
-            )
         )
+
+        val SCHEMA: JsonValue = JsonValue.from(SCHEMA_MAP)
     }
 }
 

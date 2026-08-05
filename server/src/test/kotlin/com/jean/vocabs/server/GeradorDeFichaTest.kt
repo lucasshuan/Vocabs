@@ -2,7 +2,9 @@ package com.jean.vocabs.server
 
 import com.jean.vocabs.contracts.FichaResponse
 import com.jean.vocabs.contracts.GerarFichaRequest
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.descriptors.elementNames
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -14,12 +16,12 @@ class GeradorDeFichaTest {
         val pedido = GerarFichaRequest(
             trecho = "He is on the fence",
             alvo = "on the fence",
-            tipo = TipoAlvo.EXPRESSAO,
+            tipo = TargetType.PHRASE,
             idiomaNativo = "pt-BR",
             idiomaAlvo = "en",
         )
         val modelo = FichaResponse(
-            tipo = TipoAlvo.PALAVRA,
+            tipo = TargetType.WORD,
             traducao = "indeciso",
             definicoes = listOf("Sem tomar uma decisão"),
             exemplo = "She remains on the fence.",
@@ -28,7 +30,7 @@ class GeradorDeFichaTest {
         )
 
         val final = aplicarDecisoesLocais(pedido, modelo)
-        assertEquals(TipoAlvo.EXPRESSAO, final.tipo)
+        assertEquals(TargetType.PHRASE, final.tipo)
         assertEquals(listOf("undecided", "hesitant", "uncertain", "wary", "doubtful", "unsure"), final.relacionadas)
     }
 
@@ -55,5 +57,35 @@ class GeradorDeFichaTest {
         assertTrue(prompt.contains("Brazilian Portuguese"), prompt)
         assertTrue(prompt.contains("German"), prompt)
         assertTrue(prompt.contains("`pronuncia`"), prompt)
+    }
+
+    /**
+     * The schema is hand-written JSON mirroring a data class, and nothing but
+     * this test connects them. Drift does not fail to compile — it fails to
+     * decode, on every card, at runtime.
+     */
+    @OptIn(ExperimentalSerializationApi::class)
+    @Test
+    fun `the JSON schema matches every field of FichaResponse`() {
+        val fields = FichaResponse.serializer().descriptor.elementNames.toSet()
+
+        @Suppress("UNCHECKED_CAST")
+        val properties = GeradorDeFicha.SCHEMA_MAP["properties"] as Map<String, Any>
+        @Suppress("UNCHECKED_CAST")
+        val required = (GeradorDeFicha.SCHEMA_MAP["required"] as List<String>).toSet()
+
+        assertEquals(fields, properties.keys, "schema properties drifted from FichaResponse")
+        assertEquals(fields, required, "schema `required` drifted from FichaResponse")
+    }
+
+    /** The app copies `tipo` through verbatim, so the two enums have to agree. */
+    @Test
+    fun `the schema enum matches TargetType`() {
+        @Suppress("UNCHECKED_CAST")
+        val properties = GeradorDeFicha.SCHEMA_MAP["properties"] as Map<String, Map<String, Any>>
+        assertEquals(
+            TargetType.entries.map { it.name },
+            properties.getValue("tipo").getValue("enum"),
+        )
     }
 }

@@ -25,13 +25,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
 import com.jean.vocabs.shared.domain.Captura
 import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.FormatoCaptura
-import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.CaptureFormat
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.Retencao
-import com.jean.vocabs.shared.domain.StatusEntrada
+import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.ui.theme.LocalTemaEscuro
 
 /**
@@ -42,16 +42,16 @@ import com.jean.vocabs.ui.theme.LocalTemaEscuro
  * — é classificação, não título.
  */
 @Composable
-fun TipoBadge(tipo: TipoAlvo, modifier: Modifier = Modifier) {
+fun TipoBadge(tipo: TargetType, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
     val escuro = LocalTemaEscuro.current
     val (fundo, texto) = when (tipo) {
-        TipoAlvo.EXPRESSAO -> cores.secondaryContainer to if (escuro) cores.onSurface else cores.primary
-        TipoAlvo.PALAVRA -> cores.surfaceVariant to cores.onSurfaceVariant
+        TargetType.PHRASE -> cores.secondaryContainer to if (escuro) cores.onSurface else cores.primary
+        TargetType.WORD -> cores.surfaceVariant to cores.onSurfaceVariant
     }
     Surface(shape = CircleShape, color = fundo, modifier = modifier) {
         Text(
-            text = if (tipo == TipoAlvo.PALAVRA) "palavra" else "expressão",
+            text = if (tipo == TargetType.WORD) "palavra" else "expressão",
             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
             color = texto,
             modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
@@ -117,11 +117,11 @@ private fun detalheDuplicata(entrada: Entrada): String = buildString {
     }
 }
 
-private fun rotuloStatusDuplicata(status: StatusEntrada): String = when (status) {
-    StatusEntrada.PRONTA -> "ficha pronta"
-    StatusEntrada.GERANDO -> "gerando ficha"
-    StatusEntrada.PENDENTE -> "na fila"
-    StatusEntrada.ERRO -> "com erro"
+private fun rotuloStatusDuplicata(status: EntryStatus): String = when (status) {
+    EntryStatus.READY -> "ficha pronta"
+    EntryStatus.GENERATING -> "gerando ficha"
+    EntryStatus.PENDING -> "na fila"
+    EntryStatus.ERROR -> "com erro"
 }
 
 /** "agora", "há 5min", "há 2h", "ontem", "há 3d". */
@@ -183,9 +183,9 @@ fun formatarDuracao(segundos: Long): String = formatarDuracaoMs(segundos * 1_000
 fun tituloDaCaptura(captura: Captura): String {
     val origem = captura.origem?.takeIf { it.isNotBlank() }
     return when (captura.formato) {
-        FormatoCaptura.AUDIO -> captura.duracaoMs?.let { "Áudio · ${formatarDuracaoMs(it)}" } ?: "Áudio"
-        FormatoCaptura.FOTO -> origem?.let { "Foto do $it" } ?: "Foto"
-        FormatoCaptura.TEXTO -> captura.trecho?.takeIf { it.isNotBlank() }?.let { "“${resumir(it)}”" }
+        CaptureFormat.AUDIO -> captura.duracaoMs?.let { "Áudio · ${formatarDuracaoMs(it)}" } ?: "Áudio"
+        CaptureFormat.PHOTO -> origem?.let { "Foto do $it" } ?: "Foto"
+        CaptureFormat.TEXT -> captura.trecho?.takeIf { it.isNotBlank() }?.let { "“${resumir(it)}”" }
             ?: origem?.let { "Texto do $it" }
             ?: "Texto"
     }
@@ -203,11 +203,11 @@ fun resumir(texto: String, limite: Int = 38): String {
  * A ameixa identifica a marca/ações; a menta fica reservada para progresso.
  */
 @Composable
-fun corDoNivel(nivel: NivelMemoria): Color = when (nivel) {
-    NivelMemoria.NOVA -> MaterialTheme.colorScheme.onSurfaceVariant
-    NivelMemoria.APRENDENDO -> MaterialTheme.colorScheme.primary
-    NivelMemoria.FAMILIAR -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.72f)
-    NivelMemoria.DOMINADA -> MaterialTheme.colorScheme.tertiary
+fun corDoNivel(nivel: MemoryLevel): Color = when (nivel) {
+    MemoryLevel.NEW -> MaterialTheme.colorScheme.onSurfaceVariant
+    MemoryLevel.LEARNING -> MaterialTheme.colorScheme.primary
+    MemoryLevel.FAMILIAR -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.72f)
+    MemoryLevel.MASTERED -> MaterialTheme.colorScheme.tertiary
 }
 
 /**
@@ -218,15 +218,15 @@ fun corDoNivel(nivel: NivelMemoria): Color = when (nivel) {
  * coisa fariam "familiar" parecer uma conquista.
  */
 @Composable
-fun corDoRotuloDoNivel(nivel: NivelMemoria): Color =
-    if (nivel == NivelMemoria.DOMINADA) MaterialTheme.colorScheme.tertiary
+fun corDoRotuloDoNivel(nivel: MemoryLevel): Color =
+    if (nivel == MemoryLevel.MASTERED) MaterialTheme.colorScheme.tertiary
     else MaterialTheme.colorScheme.onSurfaceVariant
 
-fun rotuloDoNivel(nivel: NivelMemoria): String = when (nivel) {
-    NivelMemoria.NOVA -> "nova"
-    NivelMemoria.APRENDENDO -> "aprendendo"
-    NivelMemoria.FAMILIAR -> "familiar"
-    NivelMemoria.DOMINADA -> "dominada"
+fun rotuloDoNivel(nivel: MemoryLevel): String = when (nivel) {
+    MemoryLevel.NEW -> "nova"
+    MemoryLevel.LEARNING -> "aprendendo"
+    MemoryLevel.FAMILIAR -> "familiar"
+    MemoryLevel.MASTERED -> "dominada"
 }
 
 /**
@@ -250,7 +250,7 @@ fun textoDaProximaRevisao(retencao: Retencao?, agora: Long): String? {
 @Composable
 fun BarraDeMemoria(
     pontos: Double,
-    nivel: NivelMemoria,
+    nivel: MemoryLevel,
     modifier: Modifier = Modifier,
     altura: Dp = 8.dp,
 ) {

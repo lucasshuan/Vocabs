@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.jean.vocabs.shared.domain.FormatoCaptura
+import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.ui.theme.LocalTemaEscuro
 import com.jean.vocabs.ui.theme.VocabuColors
 
@@ -24,13 +24,13 @@ import com.jean.vocabs.ui.theme.VocabuColors
 data class CoresDeCategoria(val cor: Color, val fundo: Color)
 
 @Composable
-fun coresDoFormato(formato: FormatoCaptura): CoresDeCategoria {
+fun coresDoFormato(formato: CaptureFormat): CoresDeCategoria {
     val cores = MaterialTheme.colorScheme
     val escuro = LocalTemaEscuro.current
     return when (formato) {
-        FormatoCaptura.TEXTO -> CoresDeCategoria(cores.primary, cores.secondaryContainer)
-        FormatoCaptura.AUDIO -> CoresDeCategoria(cores.tertiary, cores.tertiaryContainer)
-        FormatoCaptura.FOTO -> if (escuro) {
+        CaptureFormat.TEXT -> CoresDeCategoria(cores.primary, cores.secondaryContainer)
+        CaptureFormat.AUDIO -> CoresDeCategoria(cores.tertiary, cores.tertiaryContainer)
+        CaptureFormat.PHOTO -> if (escuro) {
             CoresDeCategoria(VocabuColors.PapagaioEscuro, VocabuColors.PapagaioContainerEscuro)
         } else {
             CoresDeCategoria(VocabuColors.Papagaio, VocabuColors.PapagaioContainer)
@@ -38,10 +38,10 @@ fun coresDoFormato(formato: FormatoCaptura): CoresDeCategoria {
     }
 }
 
-fun iconeDoFormato(formato: FormatoCaptura): ImageVector = when (formato) {
-    FormatoCaptura.TEXTO -> Icones.Lapis
-    FormatoCaptura.AUDIO -> Icones.Microfone
-    FormatoCaptura.FOTO -> Icones.Camera
+fun iconeDoFormato(formato: CaptureFormat): ImageVector = when (formato) {
+    CaptureFormat.TEXT -> Icones.Lapis
+    CaptureFormat.AUDIO -> Icones.Microfone
+    CaptureFormat.PHOTO -> Icones.Camera
 }
 
 /**
@@ -49,15 +49,15 @@ fun iconeDoFormato(formato: FormatoCaptura): ImageVector = when (formato) {
  * formatos, e um segundo enum com os mesmos três nomes só criaria a chance de um
  * ganhar um caso a mais que o outro não tem.
  */
-fun rotuloDoFormato(formato: FormatoCaptura): String = when (formato) {
-    FormatoCaptura.TEXTO -> "Texto"
-    FormatoCaptura.AUDIO -> "Áudio"
-    FormatoCaptura.FOTO -> "Foto"
+fun rotuloDoFormato(formato: CaptureFormat): String = when (formato) {
+    CaptureFormat.TEXT -> "Texto"
+    CaptureFormat.AUDIO -> "Áudio"
+    CaptureFormat.PHOTO -> "Foto"
 }
 
 /** O disco da categoria, já com as cores certas — o começo de toda linha de Pendentes. */
 @Composable
-fun DiscoDeCategoria(formato: FormatoCaptura, tamanho: Dp = 38.dp) {
+fun DiscoDeCategoria(formato: CaptureFormat, tamanho: Dp = 38.dp) {
     val paleta = coresDoFormato(formato)
     DiscoDeIcone(
         icone = iconeDoFormato(formato),

@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Só a pasta das capturas fica exposta ao FileProvider, e só ela.
+  Only the capture folder is exposed to the FileProvider, and only it.
 
-  O app da câmera é outro processo: ele precisa de permissão para escrever no
-  arquivo de destino. O FileProvider concede isso para um caminho específico,
-  em vez de a gente sair passando file:// (que o Android bloqueia desde a
-  versão 7 com FileUriExposedException).
+  The camera app is another process and needs permission to write to the
+  destination file. FileProvider grants that for one specific path, instead of
+  passing a file:// URI around (which Android has blocked since 7 with
+  FileUriExposedException).
+
+  These paths must match ArquivosDeMidia.PASTA and the export folder in
+  ExportadorVocabu; a mismatch throws on the first photo capture.
 -->
 <paths>
-    <files-path name="capturas" path="capturas/" />
-    <cache-path name="exportacoes" path="exportacoes/" />
+    <files-path name="captures" path="captures/" />
+    <cache-path name="exports" path="exports/" />
 </paths>

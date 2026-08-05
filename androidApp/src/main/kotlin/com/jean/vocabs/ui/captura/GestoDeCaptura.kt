@@ -4,7 +4,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import com.jean.vocabs.shared.domain.FormatoCaptura
+import com.jean.vocabs.shared.domain.CaptureFormat
 
 /**
  * Onde o dedo está, do ponto de vista do gesto de captura.
@@ -23,7 +23,7 @@ sealed interface AlvoDoGesto {
     /** Nem origem nem alvo. Soltar aqui não faz nada. */
     data object Fora : AlvoDoGesto
 
-    data class Modo(val formato: FormatoCaptura) : AlvoDoGesto
+    data class Modo(val formato: CaptureFormat) : AlvoDoGesto
 }
 
 /**
@@ -88,15 +88,15 @@ const val ABERTURA_DO_LEQUE_MS = 180L
 const val REALCE_DO_ALVO_MS = 90
 
 /** O deslocamento de cada modo, para quem desenha os alvos. */
-fun deslocamentoDe(formato: FormatoCaptura): DpOffset = when (formato) {
-    FormatoCaptura.TEXTO -> DESLOCAMENTO_DO_TEXTO
-    FormatoCaptura.AUDIO -> DESLOCAMENTO_DO_AUDIO
-    FormatoCaptura.FOTO -> DESLOCAMENTO_DA_FOTO
+fun deslocamentoDe(formato: CaptureFormat): DpOffset = when (formato) {
+    CaptureFormat.TEXT -> DESLOCAMENTO_DO_TEXTO
+    CaptureFormat.AUDIO -> DESLOCAMENTO_DO_AUDIO
+    CaptureFormat.PHOTO -> DESLOCAMENTO_DA_FOTO
 }
 
 /** Os mesmos três deslocamentos em pixels, prontos para comparar com o dedo. */
-fun Density.alvosEmPixels(): List<Pair<FormatoCaptura, Offset>> =
-    FormatoCaptura.entries.map { formato ->
+fun Density.alvosEmPixels(): List<Pair<CaptureFormat, Offset>> =
+    CaptureFormat.entries.map { formato ->
         val destino = deslocamentoDe(formato)
         formato to Offset(destino.x.toPx(), destino.y.toPx())
     }
@@ -117,7 +117,7 @@ fun Density.alvosEmPixels(): List<Pair<FormatoCaptura, Offset>> =
  */
 fun alvoPara(
     desloc: Offset,
-    alvos: List<Pair<FormatoCaptura, Offset>>,
+    alvos: List<Pair<CaptureFormat, Offset>>,
     raioDoAlvoPx: Float,
     raioDeOrigemPx: Float,
 ): AlvoDoGesto {

@@ -1,6 +1,6 @@
 package com.jean.vocabs.shared.domain
 
-import com.jean.vocabs.contracts.TipoAlvo
+import com.jean.vocabs.contracts.TargetType
 
 data class TokenDoTrecho(
     val texto: String,
@@ -35,7 +35,7 @@ fun selecionarTokens(trecho: String, primeiro: Int, ultimo: Int = primeiro): Alv
         texto = trecho.substring(inicio, fim),
         inicio = inicio,
         fim = fim,
-        tipo = if (inicioIndice == fimIndice) TipoAlvo.PALAVRA else TipoAlvo.EXPRESSAO,
+        tipo = if (inicioIndice == fimIndice) TargetType.WORD else TargetType.PHRASE,
     )
 }
 

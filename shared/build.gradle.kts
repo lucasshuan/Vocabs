@@ -40,14 +40,13 @@ sqldelight {
         create("VocabsDatabase") {
             packageName.set("com.jean.vocabs.shared.db")
 
+            // The committed snapshot is what the next migration gets checked
+            // against. Verification replays the .sqm chain from empty and
+            // compares, so every migration from here has to be self-contained —
+            // the old chain was not, which is why it was replaced rather than
+            // extended.
             schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
-
-            // Off because the current .sqm chain cannot be replayed from empty:
-            // 1.sqm opens by dropping an index and renaming a table that only a
-            // long-replaced version of Vocabs.sq ever created. Verification
-            // starts from an empty database, so it could never have passed here.
-            // Turn on with the fresh schema, when the chain restarts at zero.
-            verifyMigrations.set(false)
+            verifyMigrations.set(true)
         }
     }
 }

@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.media.TranscritorDeAudio
 import com.jean.vocabs.media.TranscritorDeFoto
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.domain.FormatoCaptura
+import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.shared.domain.ParIdiomas
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -60,10 +60,10 @@ class CapturaViewModel(app: Application) : AndroidViewModel(app) {
      *
      * Roda no escopo de aplicação porque a folha fecha na hora: preso ao
      * `viewModelScope`, o cancelamento da tela deixaria a captura para sempre em
-     * TRANSCREVENDO.
+     * TRANSCRIBING.
      */
     fun salvarMidia(
-        formato: FormatoCaptura,
+        formato: CaptureFormat,
         caminho: String,
         duracaoMs: Long?,
         alvo: String,
@@ -74,9 +74,9 @@ class CapturaViewModel(app: Application) : AndroidViewModel(app) {
             val id = repositorio.capturarMidia(formato, caminho, duracaoMs, par)
             aoIdentificar(id)
             val resultado = when (formato) {
-                FormatoCaptura.FOTO -> transcritorFoto.transcrever(caminho)
-                FormatoCaptura.AUDIO -> transcritorAudio.transcrever(caminho)
-                FormatoCaptura.TEXTO -> return@launch
+                CaptureFormat.PHOTO -> transcritorFoto.transcrever(caminho)
+                CaptureFormat.AUDIO -> transcritorAudio.transcrever(caminho)
+                CaptureFormat.TEXT -> return@launch
             }
             repositorio.registrarTranscricao(id, resultado.texto, resultado.erro)
         }

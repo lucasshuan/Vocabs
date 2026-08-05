@@ -16,7 +16,7 @@ data class ResumoRevisao(
 /** A barra da ficha, já resolvida — depende do relógio, e o relógio mora no repositório. */
 data class RetencaoAgora(
     val pontos: Double,
-    val nivel: NivelMemoria,
+    val nivel: MemoryLevel,
     val proximaEmMillis: Long,
     val revisoes: Int,
     val acertos: Int,
@@ -97,7 +97,7 @@ interface VocabRepository {
      * antes de OCR/voz começar e sempre pode seguir para edição manual.
      */
     suspend fun capturarMidia(
-        formato: FormatoCaptura,
+        formato: CaptureFormat,
         caminho: String,
         duracaoMs: Long? = null,
         par: ParIdiomas? = null,

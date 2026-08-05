@@ -61,7 +61,7 @@ sealed interface SeloDeCurso {
 /**
  * A escada de cinco degraus da tela "O que falta".
  *
- * Não é a mesma coisa que [NivelMemoria], e a diferença é o ponto: força de
+ * Não é a mesma coisa que [MemoryLevel], e a diferença é o ponto: força de
  * memória responde "quanto você lembra **agora**" e por isso decai sozinha;
  * degrau responde "quão longe você chegou" e só se mexe quando você responde um
  * cartão. Uma tela chamada "O que falta" precisa da segunda pergunta — uma barra
@@ -93,14 +93,14 @@ object Degraus {
     }
 
     /**
-     * O nome do degrau. Coincide de propósito com os nomes de [NivelMemoria]:
+     * O nome do degrau. Coincide de propósito com os nomes de [MemoryLevel]:
      * duas escalas já são o limite do que uma pessoa aceita aprender; dois
      * vocabulários seriam demais.
      */
-    fun nivel(degrau: Int): NivelMemoria = when {
-        degrau >= TOTAL -> NivelMemoria.DOMINADA
-        degrau == TOTAL - 1 -> NivelMemoria.FAMILIAR
-        else -> NivelMemoria.APRENDENDO
+    fun nivel(degrau: Int): MemoryLevel = when {
+        degrau >= TOTAL -> MemoryLevel.MASTERED
+        degrau == TOTAL - 1 -> MemoryLevel.FAMILIAR
+        else -> MemoryLevel.LEARNING
     }
 
     /** Quantos acertos faltam para o degrau mudar de nome. Zero quando já é o topo. */
@@ -142,22 +142,22 @@ data class Evento(
     val entradaId: Long,
     val dia: Long,
     val instante: Long,
-    val tipo: TipoEvento,
+    val tipo: EventType,
     val alvo: String,
     val par: ParIdiomas,
-    /** Número da revisão em [TipoEvento.ACERTO]/[TipoEvento.ERRO], nível novo em [TipoEvento.SUBIU_NIVEL]. */
+    /** Número da revisão em [EventType.CORRECT]/[EventType.INCORRECT], nível novo em [EventType.LEVELED_UP]. */
     val detalhe: String?,
 )
 
-enum class TipoEvento {
-    CAPTURADA,
-    FICHA_PRONTA,
-    ACERTO,
-    ERRO,
-    SUBIU_NIVEL;
+enum class EventType {
+    CAPTURED,
+    CARD_READY,
+    CORRECT,
+    INCORRECT,
+    LEVELED_UP;
 
     companion object {
-        fun de(valor: String): TipoEvento = entries.firstOrNull { it.name == valor } ?: CAPTURADA
+        fun de(valor: String): EventType = entries.firstOrNull { it.name == valor } ?: CAPTURED
     }
 }
 

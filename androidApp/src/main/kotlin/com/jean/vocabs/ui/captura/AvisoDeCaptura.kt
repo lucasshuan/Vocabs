@@ -36,7 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.jean.vocabs.shared.domain.FormatoCaptura
+import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.Movimento
@@ -64,7 +64,7 @@ sealed interface Aviso {
      */
     data class Guardado(
         override val chave: Long,
-        val formato: FormatoCaptura,
+        val formato: CaptureFormat,
         val duracaoMs: Long?,
         val alvo: String,
         val capturaId: Long? = null,
@@ -233,7 +233,7 @@ private fun Disco(cor: androidx.compose.ui.graphics.Color, icone: androidx.compo
 }
 
 private fun tituloDoGuardado(aviso: Aviso.Guardado): String = when (aviso.formato) {
-    FormatoCaptura.AUDIO -> aviso.duracaoMs?.let { "Áudio ${formatarDuracaoMs(it)} guardado" } ?: "Áudio guardado"
-    FormatoCaptura.FOTO -> "Foto guardada"
-    FormatoCaptura.TEXTO -> "Trecho guardado"
+    CaptureFormat.AUDIO -> aviso.duracaoMs?.let { "Áudio ${formatarDuracaoMs(it)} guardado" } ?: "Áudio guardado"
+    CaptureFormat.PHOTO -> "Foto guardada"
+    CaptureFormat.TEXT -> "Trecho guardado"
 }

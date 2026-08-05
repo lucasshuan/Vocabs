@@ -7,7 +7,7 @@ import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
 import com.jean.vocabs.shared.domain.Escopo
-import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.ParIdiomas
 import com.jean.vocabs.shared.domain.ResumoCurso
 import java.time.Instant
@@ -100,7 +100,7 @@ class InicioViewModel(app: Application) : AndroidViewModel(app) {
                 // Por degrau, como em toda tela de número: contar por força de
                 // memória faria o mesmo total aparecer diferente em cada uma,
                 // porque ela decai entre a leitura de uma e a da outra.
-                dominadas = entradas.count { Degraus.nivel(it.degrau) == NivelMemoria.DOMINADA },
+                dominadas = entradas.count { Degraus.nivel(it.degrau) == MemoryLevel.MASTERED },
                 naFila = entradas.count { it.precisaRevisar(agora) },
                 proximaEmMillis = faltas.filter { it > 0L }.minOrNull(),
             ),

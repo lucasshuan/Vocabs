@@ -34,7 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Degraus
 import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.NivelMemoria
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.ui.components.CabecalhoDeDentro
 import com.jean.vocabs.ui.components.CartaoDaTela
 import com.jean.vocabs.ui.components.EstadoVazio
@@ -65,7 +65,7 @@ fun OQueFaltaScreen(
 
     val perto = estado.pertoDeVirar
     val lista = remember(estado.palavras, soPerto) {
-        val base = if (soPerto) perto else estado.palavras.filter { Degraus.nivel(it.degrau) != NivelMemoria.DOMINADA }
+        val base = if (soPerto) perto else estado.palavras.filter { Degraus.nivel(it.degrau) != MemoryLevel.MASTERED }
         base.sortedBy { it.degrau }
     }
     val dominadas = estado.dominadas
@@ -207,7 +207,7 @@ private fun EscadaDeDegraus(degrau: Int, modifier: Modifier = Modifier) {
     }
 }
 
-internal fun textoDoQueFalta(acertos: Int, proximoNivel: NivelMemoria): String {
+internal fun textoDoQueFalta(acertos: Int, proximoNivel: MemoryLevel): String {
     val nome = rotuloDoNivel(proximoNivel)
     return if (acertos == 1) "1 acerto para $nome" else "$acertos acertos para $nome"
 }

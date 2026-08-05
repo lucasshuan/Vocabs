@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.PreferenciaDeTema
+import com.jean.vocabs.shared.ThemePreference
 import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,7 +17,7 @@ class ConfiguracoesViewModel(app: Application) : AndroidViewModel(app) {
     private val preferencias = AppContainer.preferencias(app)
     private val repositorio = AppContainer.repositorio(app)
 
-    val tema: StateFlow<PreferenciaDeTema> = preferencias.observarTema()
+    val tema: StateFlow<ThemePreference> = preferencias.observarTema()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferencias.tema)
 
     /**
@@ -34,7 +34,7 @@ class ConfiguracoesViewModel(app: Application) : AndroidViewModel(app) {
     private val _exportando = MutableStateFlow(false)
     val exportando: StateFlow<Boolean> = _exportando.asStateFlow()
 
-    fun escolherTema(valor: PreferenciaDeTema) {
+    fun escolherTema(valor: ThemePreference) {
         preferencias.tema = valor
     }
 

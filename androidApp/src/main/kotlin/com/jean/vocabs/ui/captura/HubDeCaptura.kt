@@ -65,7 +65,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.contracts.Idioma
-import com.jean.vocabs.shared.domain.FormatoCaptura
+import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.ui.components.ALTURA_DA_BARRA
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.Movimento
@@ -181,7 +181,7 @@ fun HubDeCaptura(
         ) {
             if (desenhandoLeque) {
                 GuiaAteOAlvo(alvo, aberto)
-                FormatoCaptura.entries.forEach { formato ->
+                CaptureFormat.entries.forEach { formato ->
                     AlvoDoLeque(
                         formato = formato,
                         marcado = alvo == AlvoDoGesto.Modo(formato),
@@ -357,9 +357,9 @@ private fun concluir(
         is AlvoDoGesto.Modo -> {
             haptico.performHapticFeedback(HapticFeedbackType.LongPress)
             when (alvo.formato) {
-                FormatoCaptura.TEXTO -> abrirTexto()
-                FormatoCaptura.FOTO -> captura.tirarFoto()
-                FormatoCaptura.AUDIO ->
+                CaptureFormat.TEXT -> abrirTexto()
+                CaptureFormat.PHOTO -> captura.tirarFoto()
+                CaptureFormat.AUDIO ->
                     if (captura.temPermissaoDeAudio) captura.gravarAudio()
                     else captura.pedirPermissaoDeAudio()
             }
@@ -401,9 +401,9 @@ private val ALTURA_DA_ANCORA = 520.dp
 
 /** O áudio parte primeiro: é o alvo mais provável, e é dele que o olho precisa antes. */
 private val ATRASO_DE_ENTRADA = mapOf(
-    FormatoCaptura.AUDIO to 0L,
-    FormatoCaptura.TEXTO to 20L,
-    FormatoCaptura.FOTO to 40L,
+    CaptureFormat.AUDIO to 0L,
+    CaptureFormat.TEXT to 20L,
+    CaptureFormat.PHOTO to 40L,
 )
 
 /**
@@ -577,7 +577,7 @@ private val CRESCIMENTO_DO_REALCE =
  */
 @Composable
 private fun AlvoDoLeque(
-    formato: FormatoCaptura,
+    formato: CaptureFormat,
     marcado: Boolean,
     visivel: Boolean,
     atraso: Long,
@@ -728,9 +728,9 @@ private fun GuiaAteOAlvo(alvo: AlvoDoGesto, aberto: Boolean) {
 private fun DicaDoGesto(alvo: AlvoDoGesto, aberto: Boolean) {
     val marcado = (alvo as? AlvoDoGesto.Modo)?.formato
     val texto = when (marcado) {
-        FormatoCaptura.TEXTO -> "solte para escrever"
-        FormatoCaptura.AUDIO -> "solte para gravar"
-        FormatoCaptura.FOTO -> "solte para fotografar"
+        CaptureFormat.TEXT -> "solte para escrever"
+        CaptureFormat.AUDIO -> "solte para gravar"
+        CaptureFormat.PHOTO -> "solte para fotografar"
         null -> "arraste e solte no alvo"
     }
     val fundo by animateColorAsState(

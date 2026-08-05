@@ -26,19 +26,15 @@ import kotlinx.coroutines.flow.map
 class Preferencias(context: Context) {
 
     /**
-     * `"tagarara"` é o **nome do arquivo em disco**, e não o nome do app.
-     *
-     * Ele fica pela mesma razão que `applicationId`, namespace e `vocabs.db`
-     * ficam: renomeá-lo não migra nada, cria um arquivo vazio ao lado do antigo.
-     * Quem já tem o app instalado abriria a versão nova sem idioma nativo, sem os
-     * cursos em que se matriculou, no curso padrão e no tema padrão — com o banco
-     * de palavras intacto e nenhuma tela sabendo em que língua exibi-lo.
-     *
-     * Se um dia precisar mudar, mude junto com uma migração que leia o arquivo
-     * antigo e copie os cinco valores. Sozinho, o nome novo é perda de dados.
+     * The file name on disk. Renaming it does not migrate anything — it creates
+     * an empty file beside the old one, so an existing install comes back with
+     * no native language, no enrolled courses and the default theme, while the
+     * word database sits there intact and no screen knows what language to show
+     * it in. Changing it again means shipping a migration that reads the old
+     * file first.
      */
     private val prefs: SharedPreferences =
-        context.applicationContext.getSharedPreferences("tagarara", Context.MODE_PRIVATE)
+        context.applicationContext.getSharedPreferences("vocabu_prefs", Context.MODE_PRIVATE)
 
     // ---- idiomas ------------------------------------------------------------
 
@@ -114,8 +110,8 @@ class Preferencias(context: Context) {
 
     // ---- tema ---------------------------------------------------------------
 
-    var tema: PreferenciaDeTema
-        get() = PreferenciaDeTema.de(prefs.getString(TEMA, null))
+    var tema: ThemePreference
+        get() = ThemePreference.de(prefs.getString(TEMA, null))
         set(valor) = prefs.edit().putString(TEMA, valor.name).apply()
 
     // ---- observação ---------------------------------------------------------
@@ -145,7 +141,7 @@ class Preferencias(context: Context) {
 
     fun observarCursos(): Flow<List<String>> = observar(CURSOS) { cursos }
 
-    fun observarTema(): Flow<PreferenciaDeTema> = observar(TEMA) { tema }
+    fun observarTema(): Flow<ThemePreference> = observar(TEMA) { tema }
 
     fun observarGruposRecolhidos(): Flow<Set<String>> = observar(RECOLHIDOS) { gruposRecolhidos }
 
@@ -153,11 +149,11 @@ class Preferencias(context: Context) {
     fun observarNativo(): Flow<String> = observarPar().map { it.nativo }
 
     private companion object {
-        const val NATIVO = "idioma_nativo"
-        const val ALVO = "idioma_alvo"
-        const val CURSOS = "cursos"
-        const val TEMA = "tema"
-        const val RECOLHIDOS = "grupos_recolhidos"
+        const val NATIVO = "native_language"
+        const val ALVO = "target_language"
+        const val CURSOS = "courses"
+        const val TEMA = "theme"
+        const val RECOLHIDOS = "collapsed_groups"
 
         /** Vírgula não aparece em código de idioma nenhum do catálogo. */
         const val SEPARADOR = ","
@@ -165,12 +161,12 @@ class Preferencias(context: Context) {
 }
 
 /** Claro, escuro ou o que o aparelho mandar — o segmentado da tela Configurações. */
-enum class PreferenciaDeTema {
-    CLARO,
-    ESCURO,
-    AUTO;
+enum class ThemePreference {
+    LIGHT,
+    DARK,
+    SYSTEM;
 
     companion object {
-        fun de(valor: String?): PreferenciaDeTema = entries.firstOrNull { it.name == valor } ?: AUTO
+        fun de(valor: String?): ThemePreference = entries.firstOrNull { it.name == valor } ?: SYSTEM
     }
 }
