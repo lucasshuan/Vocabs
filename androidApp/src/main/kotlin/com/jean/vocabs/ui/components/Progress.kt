@@ -31,12 +31,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jean.vocabs.R
 
 /**
  * A fraction drawn as an arc, with the number inside.
@@ -101,7 +104,7 @@ fun WeekStrip(
                 modifier = Modifier.weight(1f).smoothEntrance(index, offset = 8.dp),
             ) {
                 Text(
-                    text = if (day.today) "hoje" else day.abbreviation,
+                    text = if (day.today) stringResource(R.string.week_today) else day.abbreviation,
                     style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
                     color = when {
                         day.today -> MaterialTheme.colorScheme.primary
@@ -152,6 +155,13 @@ private fun DaySquare(day: WeekDay) {
         else -> colors.onSurfaceVariant
     }
 
+    // Resolved out here because `semantics {}` is not a composable scope.
+    val description = when {
+        day.future -> stringResource(R.string.a11y_day_future, day.number)
+        day.reviews == 0 -> stringResource(R.string.a11y_day_no_reviews, day.number)
+        else -> pluralStringResource(R.plurals.a11y_day_reviews, day.reviews, day.number, day.reviews)
+    }
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -161,14 +171,7 @@ private fun DaySquare(day: WeekDay) {
             .then(
                 if (day.today) Modifier.border(2.dp, colors.primary, RoundedCornerShape(12.dp)) else Modifier,
             )
-            .semantics {
-                contentDescription = when {
-                    day.future -> "dia ${day.number}, ainda não chegou"
-                    day.reviews == 0 -> "dia ${day.number}, sem revisões"
-                    day.reviews == 1 -> "dia ${day.number}, 1 revisão"
-                    else -> "dia ${day.number}, ${day.reviews} revisões"
-                }
-            },
+            .semantics { contentDescription = description },
     ) {
         Text(
             text = day.number.toString(),
@@ -231,7 +234,7 @@ fun InnerHeader(
     ) {
         CircularButton(
             icon = AppIcons.Back,
-            contentDescription = "Voltar",
+            contentDescription = stringResource(R.string.back),
             onClick = onBack,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -256,8 +259,8 @@ fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
         label = "aiUsageFraction",
     )
     ListRow(
-        title = "Gerações por IA",
-        detail = "$used de $limit este mês",
+        title = stringResource(R.string.ai_usage_title),
+        detail = stringResource(R.string.ai_usage_detail, used, limit),
         modifier = modifier,
         start = { IconDisc(AppIcons.Brightness, null, color = colors.primary, background = colors.primaryContainer) },
         end = {

@@ -37,9 +37,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.jean.vocabs.R
 import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.shared.domain.CourseBadge
 import com.jean.vocabs.shared.domain.CourseSummary
@@ -93,7 +95,7 @@ fun LanguageStrip(
                 onClick = { onChoose(course.languagePair.target) },
             )
         }
-        item(key = "adicionar") { AddLanguageChip(onAdd) }
+        item(key = "add") { AddLanguageChip(onAdd) }
     }
 }
 
@@ -127,6 +129,7 @@ fun LanguageChip(
     // Hoisted: `semantics` is not a composable scope, so `stringResource` cannot
     // be called inside it.
     val name = language.displayName
+    val description = badgeDescription(name, badge)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -141,7 +144,7 @@ fun LanguageChip(
             )
             .clickable(interactionSource = touch, indication = ripple(), onClick = onClick)
             .padding(start = 8.dp, end = 10.dp)
-            .semantics { contentDescription = badgeDescription(name, badge) },
+            .semantics { contentDescription = description },
     ) {
         CircularFlag(language, size = 24.dp)
         Text(text = name, style = MaterialTheme.typography.titleSmall, color = text)
@@ -165,7 +168,7 @@ private fun CourseBadgeView(badge: CourseBadge, inverted: Boolean) {
         badge is CourseBadge.UpToDate -> colors.tertiaryContainer
         else -> colors.surfaceVariant
     }
-    val tinta = when {
+    val tint = when {
         badge is CourseBadge.Review && inverted -> colors.primary
         badge is CourseBadge.Review -> colors.primary
         badge is CourseBadge.UpToDate -> colors.tertiary
@@ -193,12 +196,12 @@ private fun CourseBadgeView(badge: CourseBadge, inverted: Boolean) {
                 Text(
                     text = count.coerceAtMost(99).toString(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = tinta,
+                    color = tint,
                     modifier = Modifier.padding(horizontal = 6.dp),
                 )
             }
-            CourseBadge.UpToDate -> Icon(AppIcons.Check, null, tint = tinta, modifier = Modifier.size(12.dp))
-            CourseBadge.Empty -> Icon(AppIcons.Hourglass, null, tint = tinta, modifier = Modifier.size(12.dp))
+            CourseBadge.UpToDate -> Icon(AppIcons.Check, null, tint = tint, modifier = Modifier.size(12.dp))
+            CourseBadge.Empty -> Icon(AppIcons.Hourglass, null, tint = tint, modifier = Modifier.size(12.dp))
         }
     }
 }
@@ -207,6 +210,7 @@ private fun CourseBadgeView(badge: CourseBadge, inverted: Boolean) {
 @Composable
 private fun AddLanguageChip(onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val addLabel = stringResource(R.string.a11y_add_language)
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -215,7 +219,7 @@ private fun AddLanguageChip(onClick: () -> Unit) {
             .clip(CircleShape)
             .clickable(onClick = onClick)
             .dashedOutline(colors.outline, radius = 19.dp)
-            .semantics { contentDescription = "Adicionar idioma" },
+            .semantics { contentDescription = addLabel },
     ) {
         Icon(AppIcons.Plus, null, tint = colors.primary, modifier = Modifier.size(20.dp))
     }
@@ -305,8 +309,9 @@ fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
     }
 }
 
+@Composable
 private fun badgeDescription(name: String, badge: CourseBadge): String = when (badge) {
-    is CourseBadge.Review -> "$name, ${badge.count} para revisar"
-    CourseBadge.UpToDate -> "$name, em dia"
-    CourseBadge.Empty -> "$name, nada agendado"
+    is CourseBadge.Review -> stringResource(R.string.a11y_course_review, name, badge.count)
+    CourseBadge.UpToDate -> stringResource(R.string.a11y_course_up_to_date, name)
+    CourseBadge.Empty -> stringResource(R.string.a11y_course_empty, name)
 }

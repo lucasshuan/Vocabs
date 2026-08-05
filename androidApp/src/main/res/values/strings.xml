@@ -57,6 +57,30 @@
     <string name="level_familiar">familiar</string>
     <string name="level_mastered">mastered</string>
 
+    <string name="back">Back</string>
+    <string name="week_today">today</string>
+
+    <!-- AI usage meter -->
+    <string name="ai_usage_title">AI generations</string>
+    <string name="ai_usage_detail">%1$d of %2$d this month</string>
+
+    <!--
+      Screen-reader text. Everything here describes something a sighted user
+      reads from colour or position, so it carries state the visible label does
+      not repeat.
+    -->
+    <string name="a11y_add_language">Add language</string>
+    <string name="a11y_day_future">day %1$d, not here yet</string>
+    <string name="a11y_day_no_reviews">day %1$d, no reviews</string>
+    <plurals name="a11y_day_reviews">
+        <item quantity="one">day %1$d, %2$d review</item>
+        <item quantity="other">day %1$d, %2$d reviews</item>
+    </plurals>
+    <!-- Not a plural: the count qualifies a verb, not a noun, in both languages. -->
+    <string name="a11y_course_review">%1$s, %2$d to review</string>
+    <string name="a11y_course_up_to_date">%1$s, up to date</string>
+    <string name="a11y_course_empty">%1$s, nothing scheduled</string>
+
     <!-- Pending -->
     <string name="pending_swipe_hint">Swipe a card sideways to delete</string>
     <string name="pending_empty">Your captures and cards in progress show up here.</string>

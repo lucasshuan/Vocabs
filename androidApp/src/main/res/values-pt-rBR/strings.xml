@@ -50,6 +50,24 @@
     <string name="level_familiar">familiar</string>
     <string name="level_mastered">dominada</string>
 
+    <string name="back">Voltar</string>
+    <string name="week_today">hoje</string>
+
+    <string name="ai_usage_title">Gerações por IA</string>
+    <string name="ai_usage_detail">%1$d de %2$d este mês</string>
+
+    <string name="a11y_add_language">Adicionar idioma</string>
+    <string name="a11y_day_future">dia %1$d, ainda não chegou</string>
+    <string name="a11y_day_no_reviews">dia %1$d, sem revisões</string>
+    <plurals name="a11y_day_reviews">
+        <item quantity="one">dia %1$d, %2$d revisão</item>
+        <item quantity="many">dia %1$d, %2$d de revisões</item>
+        <item quantity="other">dia %1$d, %2$d revisões</item>
+    </plurals>
+    <string name="a11y_course_review">%1$s, %2$d para revisar</string>
+    <string name="a11y_course_up_to_date">%1$s, em dia</string>
+    <string name="a11y_course_empty">%1$s, nada agendado</string>
+
     <string name="pending_swipe_hint">Arraste um cartão para o lado para excluir</string>
     <string name="pending_empty">Suas capturas e fichas em processamento aparecem aqui.</string>
     <string name="pending_summary_with_oldest">%1$s · a mais antiga %2$s</string>

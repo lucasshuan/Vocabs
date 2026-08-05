@@ -4,8 +4,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.jean.vocabs.R
 import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.ui.theme.LocalDarkTheme
 import com.jean.vocabs.ui.theme.VocabuColors
@@ -49,11 +51,14 @@ fun formatIcon(format: CaptureFormat): ImageVector = when (format) {
  * formats, and a second enum with the same three names would only create the
  * chance of one gaining a case the other lacks.
  */
-fun formatLabel(format: CaptureFormat): String = when (format) {
-    CaptureFormat.TEXT -> "Texto"
-    CaptureFormat.AUDIO -> "Áudio"
-    CaptureFormat.PHOTO -> "Foto"
-}
+@Composable
+fun formatLabel(format: CaptureFormat): String = stringResource(
+    when (format) {
+        CaptureFormat.TEXT -> R.string.capture_text
+        CaptureFormat.AUDIO -> R.string.capture_audio
+        CaptureFormat.PHOTO -> R.string.capture_photo
+    }
+)
 
 /** The category disc, with the right colors — the start of every Pending row. */
 @Composable
