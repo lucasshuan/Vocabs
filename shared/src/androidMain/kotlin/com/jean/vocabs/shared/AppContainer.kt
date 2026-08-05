@@ -33,7 +33,7 @@ object AppContainer {
     var lanServer: String = ""
 
     /** Must match the APP_TOKEN set in the server's environment. */
-    var token: String = "token-de-teste-local"
+    var token: String = "local-test-token"
 
     /**
      * Overrides URL and token when the cloud arrives — today only `androidApp`

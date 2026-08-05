@@ -13,19 +13,19 @@ import java.io.File
  */
 object Config {
 
-    private val doArquivo: Map<String, String> by lazy { readLocalFile() }
+    private val fromFile: Map<String, String> by lazy { readLocalFile() }
 
     // The takeIf on both sides matters: `APP_TOKEN=` in the file (or exported
     // empty) has to count as absent, otherwise the server comes up with an empty
     // token and accepts any request without a header.
     operator fun get(key: String): String? =
         System.getenv(key)?.takeIf { it.isNotBlank() }
-            ?: doArquivo[key]?.takeIf { it.isNotBlank() }
+            ?: fromFile[key]?.takeIf { it.isNotBlank() }
 
-    fun obrigatorio(key: String): String = get(key) ?: error(
-        "$key não definida. Use uma das duas opções:\n" +
-            "  1. \$env:$key = \"value\"   (só nesta sessão do terminal)\n" +
-            "  2. adicione a row  $key=value  no file .env na raiz do projeto",
+    fun required(key: String): String = get(key) ?: error(
+        "$key is not set. Use one of the two:\n" +
+            "  1. \$env:$key = \"value\"   (this terminal session only)\n" +
+            "  2. add the line  $key=value  to the .env file at the repository root",
     )
 
     /**

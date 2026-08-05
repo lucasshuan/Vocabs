@@ -33,7 +33,7 @@ class CardGenerator(
     // down at boot and you cannot even test /health or authentication.
     clientFactory: () -> AnthropicClient = {
         AnthropicOkHttpClient.builder()
-            .apiKey(Config.obrigatorio("ANTHROPIC_API_KEY"))
+            .apiKey(Config.required("ANTHROPIC_API_KEY"))
             .build()
     },
 ) {
@@ -95,7 +95,7 @@ class CardGenerator(
 
     // Configurable so models can be compared without recompiling. The default is
     // the most capable, for contextual definitions and related terms.
-    private val model: String = Config["MODELO"] ?: DEFAULT_MODEL
+    private val model: String = Config["MODEL"] ?: DEFAULT_MODEL
 
     /** Haiku 4.5 rejects `effort` with a 400; Opus and Sonnet accept it. */
     private val supportsEffort: Boolean = !model.startsWith("claude-haiku")

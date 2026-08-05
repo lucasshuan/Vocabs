@@ -3,27 +3,27 @@ import java.net.NetworkInterface
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    // AGP 9 tem Kotlin embutido: aplicar 'org.jetbrains.kotlin.android' aqui é erro.
+    // AGP 9 has Kotlin built in: applying 'org.jetbrains.kotlin.android' here is an error.
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
 
 /**
- * Lê uma chave do `.env` da raiz, com a variável de ambiente tendo precedência.
+ * Reads a key from the root `.env`, with the environment variable winning.
  *
- * Mesma semântica do `Config` do servidor, mas resolvida em tempo de compilação:
- * o celular não tem como ler o `.env` da sua máquina, então o valor precisa ser
- * assado no APK.
+ * Same semantics as the server's `Config`, but resolved at build time: a phone
+ * cannot read the `.env` on your machine, so the value has to be baked into the
+ * APK.
  */
-fun doEnv(chave: String): String? {
-    System.getenv(chave)?.takeIf { it.isNotBlank() }?.let { return it }
+fun fromEnv(key: String): String? {
+    System.getenv(key)?.takeIf { it.isNotBlank() }?.let { return it }
 
-    val arquivo = rootProject.file(".env")
-    if (!arquivo.isFile) return null
+    val file = rootProject.file(".env")
+    if (!file.isFile) return null
 
-    return arquivo.readLines()
+    return file.readLines()
         .map { it.trim() }
-        .firstOrNull { it.startsWith("$chave=") }
+        .firstOrNull { it.startsWith("$key=") }
         ?.substringAfter('=')
         ?.trim()
         ?.removeSurrounding("\"")
@@ -32,17 +32,17 @@ fun doEnv(chave: String): String? {
 }
 
 /**
- * O IP desta máquina na rede local, para o celular físico saber onde é o servidor.
+ * This machine's address on the local network, so a real phone can find the server.
  *
- * `isSiteLocalAddress` é o que faz o trabalho pesado: ele aceita só as faixas
- * privadas (10/8, 172.16/12, 192.168/16) e por isso descarta sozinho os adaptadores
- * de VPN, que costumam entregar endereços fora delas e são a causa clássica de o
- * app apontar para o lugar errado numa máquina com Radmin, Hamachi ou ZeroTier.
+ * `isSiteLocalAddress` does the heavy lifting: it accepts only the private ranges
+ * (10/8, 172.16/12, 192.168/16) and so discards VPN adapters on its own — those
+ * usually hand out addresses outside them, and are the classic reason the app
+ * points at the wrong place on a machine running Radmin, Hamachi or ZeroTier.
  *
- * Entre os candidatos, 192.168.x.x ganha por ser a faixa que quase todo roteador
- * doméstico usa.
+ * Among the candidates, 192.168.x.x wins because it is the range nearly every
+ * home router uses.
  */
-fun ipDaLan(): String? = runCatching {
+fun lanAddress(): String? = runCatching {
     NetworkInterface.getNetworkInterfaces()
         .asSequence()
         .filter { it.isUp && !it.isLoopback }
@@ -55,18 +55,18 @@ fun ipDaLan(): String? = runCatching {
 }.getOrNull()
 
 /**
- * Onde o servidor mora quando o app roda num aparelho de verdade.
+ * Where the server lives when the app runs on a real device.
  *
- * O padrão é detectado, não digitado: quem compila é a mesma máquina que roda o
- * `:server`, então o IP dela na LAN é a resposta certa quase sempre. `SERVIDOR_LAN`
- * no `.env` sobrescreve — é a saída para quando o servidor estiver noutro lugar.
+ * The default is detected, not typed: whoever builds is the same machine that
+ * runs `:server`, so its LAN address is almost always the right answer.
+ * `SERVER_LAN` in `.env` overrides — the way out when the server is elsewhere.
  */
-val lanServer: String = doEnv("SERVIDOR_LAN")
-    ?: ipDaLan()?.let { "$it:8080" }
+val lanServer: String = fromEnv("SERVER_LAN")
+    ?: lanAddress()?.let { "$it:8080" }
     ?: ""
 
-/** Precisa bater com o APP_TOKEN do servidor, e por isso sai da mesma fonte. */
-val appToken: String = doEnv("APP_TOKEN") ?: "token-de-teste-local"
+/** Has to match the server's APP_TOKEN, which is why it comes from the same place. */
+val appToken: String = fromEnv("APP_TOKEN") ?: "local-test-token"
 
 android {
     namespace = "com.jean.vocabs"
@@ -130,7 +130,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
-    // Modelo latino empacotado: OCR disponível offline desde o primeiro uso.
+    // Latin model bundled: OCR works offline from first launch.
     implementation(libs.mlkit.text.recognition)
 
     // JVM only, no Robolectric — these tests cover pure text-building functions.

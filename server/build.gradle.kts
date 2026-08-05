@@ -43,11 +43,11 @@ tasks.withType<JavaExec>().configureEach {
     defaultCharacterEncoding = "UTF-8"
     jvmArgs("-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8")
 
-    // Permite subir uma instância paralela sem tocar no .env:
-    //   .\gradlew.bat :server:run -PMODELO=claude-haiku-4-5 -PPORT=8081
-    // Vai por propriedade do Gradle e não por variável de ambiente porque o
-    // daemon tem o próprio environment — exportar no shell não chegaria aqui.
-    listOf("MODELO", "PORT").forEach { chave ->
-        providers.gradleProperty(chave).orNull?.let { environment(chave, it) }
+    // Lets a parallel instance start without touching .env:
+    //   .\gradlew.bat :server:run -PMODEL=claude-haiku-4-5 -PPORT=8081
+    // Goes through a Gradle property rather than an environment variable because
+    // the daemon has its own environment — exporting in the shell would not reach here.
+    listOf("MODEL", "PORT").forEach { key ->
+        providers.gradleProperty(key).orNull?.let { environment(key, it) }
     }
 }

@@ -35,7 +35,7 @@ fun Application.module() {
 
     // Failing at boot beats failing on the first capture: with no token every
     // request would be a 401, discovered with the phone already in hand.
-    val expectedToken = Config.obrigatorio("APP_TOKEN")
+    val expectedToken = Config.required("APP_TOKEN")
 
     val generator = CardGenerator()
 
