@@ -96,4 +96,20 @@ repository. Sign with `keytool` + `apksigner` (in `$env:ANDROID_HOME\build-tools
 | [NOTES.md](NOTES.md) | What is unproven, what is crooked, loose ideas |
 | [docs/PRODUCT.md](docs/PRODUCT.md) | Vision, principles, core loop, retention, monetisation |
 | [docs/EXERCISES-AND-METRICS.md](docs/EXERCISES-AND-METRICS.md) | Minigame catalogue and the metrics dashboard |
-| [docs/THIRD-PARTY.md](docs/THIRD-PARTY.md) | Dependencies and what each one is for |
+
+## Licences
+
+Bundled art and fonts. Code dependencies are in `gradle/libs.versions.toml`.
+
+| Resource | Used for | Licence |
+|---|---|---|
+| [circle-flags](https://github.com/HatScripts/circle-flags) | The 43 `drawable/flag_*.xml`, converted to VectorDrawable unchanged | MIT |
+| [Figtree](https://github.com/erikdkennedy/figtree) | Body text | OFL 1.1 |
+| [Bricolage Grotesque](https://github.com/ateliertriay/bricolage) | Titles, numbers, terms | OFL 1.1 |
+
+Both licences allow bundling and redistribution, and both require their notice to
+travel with the app. The APK carries none — there is no licences screen yet, which
+is a real obligation and not just tidiness. Tracked in [NOTES.md](NOTES.md).
+
+Vocabu itself has no licence file, so default copyright applies: all rights
+reserved. Add one before publishing or accepting contributions.

@@ -93,18 +93,19 @@ Pending shows both queues without mixing them: transcription belongs to the
 capture, generation to the entry. Nothing is discarded unasked — a lost
 connection leaves the capture in `AWAITING_SELECTION`, ready to resume.
 
-## :contracts
+## Contracts
 
-Wire DTOs and the 43-language catalogue. Shared because both sides need the same
+`:contracts` — wire DTOs and the 43-language catalogue. Shared because both sides need the same
 list for different reasons: the app shows a flag and a name from its own string
 resources, the prompt cites `englishName`, the database stores the code.
 
 `ErrorCode` travels as a `String` on the wire, not an enum — kotlinx.serialization
 throws on unknown values, so a newer server would crash older clients.
 
-## :shared
+## Shared
 
-Domain, persistence, retention and the HTTP client. Android is the only target.
+`:shared` — domain, persistence, retention and the HTTP client. Android is the
+only target.
 
 **Scope** — a parameter with a default on every sliceable read:
 
@@ -132,9 +133,9 @@ must replay from empty, which the old chain never could.
 
 The **daily quota** is not a goal: it is what went out today plus what is queued.
 
-## :androidApp
+## Android App
 
-One folder per screen (`Screen` + `ViewModel`). Fourteen screens; the shared
+`:androidApp` — one folder per screen (`Screen` + `ViewModel`). Fourteen screens; the shared
 pieces live in `ui/components`.
 
 | Component | Holds |
@@ -177,9 +178,9 @@ Export ZIP in `cacheDir/exports`, shared through `FileProvider`.
 category red. It pays for itself only because there is no photo target on that
 screen — the two meanings never share one.
 
-## :server
+## Server
 
-One Ktor endpoint. Holds the Anthropic key so the device never does.
+`:server` — one Ktor endpoint. Holds the Anthropic key so the device never does.
 
 The **prompt is English** regardless of the languages involved: instruction
 language and output language are independent, and one calibrated prompt beats N

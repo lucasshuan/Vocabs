@@ -15,6 +15,8 @@ proven, what is crooked, and what might be worth doing. One line each.
 
 ## Known inconsistencies
 
+- **The APK ships no licence notices.** MIT (circle-flags) and OFL 1.1 (both fonts) each require their notice to travel with the software, and the flags and fonts are bundled. There is no "Open source licences" screen, so the obligation is unmet the moment the APK leaves this machine. Attribution is in the README, which is not the distribution. Vocabu also has no licence of its own, so default copyright applies — all rights reserved.
+
 - There is no screen for filling in `source`. It is already displayed ("Photo from Kindle", the card's "Your context") and has no way in — the field was taken out of capture because it was almost never filled, and nothing took its place.
 - Two scales use the same three names. In Words and on the Card, "mastered" is memory strength: a word answered correctly once carries the label for a few hours, because the memory really is fresh. In the counts (Home, You, Progress, What's left) "mastered" is step 5, which takes four correct answers. Both are right for the question they answer, and the same word can still appear with different labels on two screens.
 - The capture button says "Save 2 captures", but what 2 selections create is 1 capture and 2 entries. The wording is inherited and contradicts the note that "one capture can yield several cards". Worth settling the name.
