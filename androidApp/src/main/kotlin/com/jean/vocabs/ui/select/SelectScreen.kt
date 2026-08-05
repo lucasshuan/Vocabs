@@ -50,9 +50,12 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.R
 import com.jean.vocabs.media.picoDaBarra
 import com.jean.vocabs.media.rememberPhoto
 import com.jean.vocabs.media.rememberPlayer
@@ -119,14 +122,14 @@ fun SelectScreen(
     if (confirmDeletion) {
         AlertDialog(
             onDismissRequest = { confirmDeletion = false },
-            title = { Text("Descartar captura?") },
-            text = { Text("A mídia será removida porque ainda não há fichas ligadas a ela.") },
+            title = { Text(stringResource(R.string.select_discard_title)) },
+            text = { Text(stringResource(R.string.select_discard_body)) },
             confirmButton = {
                 TextButton(onClick = { vm.delete(id); confirmDeletion = false; onBack() }) {
-                    Text("Descartar", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.select_discard), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmDeletion = false }) { Text("Manter") } },
+            dismissButton = { TextButton(onClick = { confirmDeletion = false }) { Text(stringResource(R.string.select_keep)) } },
         )
     }
 
@@ -142,9 +145,9 @@ fun SelectScreen(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(start = 8.dp, end = 14.dp, top = 8.dp),
         ) {
-            CircularButton(AppIcons.Back, "Voltar", onBack, MaterialTheme.colorScheme.onSurface)
+            CircularButton(AppIcons.Back, stringResource(R.string.back), onBack, MaterialTheme.colorScheme.onSurface)
             Text(
-                text = "O que chamou atenção?",
+                text = stringResource(R.string.select_question),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.weight(1f).padding(start = 4.dp),
             )
@@ -178,7 +181,7 @@ fun SelectScreen(
 
             when {
                 current.status == CaptureStatus.TRANSCRIBING -> ProcessNotice(
-                    text = "Transcrição local em andamento…",
+                    text = stringResource(R.string.select_transcribing),
                     withProgress = true,
                 )
                 current.transcriptionError != null -> ErrorNotice(current.transcriptionError.orEmpty())
@@ -186,17 +189,17 @@ fun SelectScreen(
 
             if (correcting || snippet.isBlank()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SectionLabel("Transcrição")
+                    SectionLabel(stringResource(R.string.select_transcription))
                     OutlinedTextField(
                         value = snippet,
                         onValueChange = { snippet = it; selections.clear() },
-                        placeholder = { Text("Digite o trecho manualmente") },
+                        placeholder = { Text(stringResource(R.string.select_type_manually)) },
                         minLines = 2,
                         shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     if (snippet.isNotBlank()) {
-                        PrimaryButton("Pronto, marcar termos", { correcting = false })
+                        PrimaryButton(stringResource(R.string.select_done_marking), { correcting = false })
                     }
                 }
             } else {
@@ -208,7 +211,7 @@ fun SelectScreen(
                         },
                     )
                     Text(
-                        text = "Toque ou arraste para marcar.",
+                        text = stringResource(R.string.select_tap_or_drag),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -221,7 +224,7 @@ fun SelectScreen(
                 exit = fadeOut(tween(120)) + shrinkVertically(tween(140)),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    SectionLabel("${selections.size} ${if (selections.size == 1) "isSelected" else "selecionadas"}")
+                    SectionLabel(pluralStringResource(R.plurals.select_chosen, selections.size, selections.size))
                     SelectionChips(selections, selections::remove)
                 }
             }
@@ -229,8 +232,8 @@ fun SelectScreen(
             duplicate?.let { DuplicateNotice(it) }
 
             PrimaryButton(
-                text = if (selections.isEmpty()) "Selecione o que guardar"
-                else "Guardar ${selections.size} ${if (selections.size == 1) "capture" else "captures"}",
+                text = if (selections.isEmpty()) stringResource(R.string.select_nothing_chosen)
+                else pluralStringResource(R.plurals.select_save_captures, selections.size, selections.size),
                 onClick = { vm.save(id, snippet, selections.toList(), onSave) },
                 enabled = snippet.isNotBlank() && selections.isNotEmpty(),
                 modifier = Modifier.padding(top = 4.dp),
@@ -274,7 +277,7 @@ private fun DiscardCaptureButton(onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 11.dp),
         ) {
             Icon(AppIcons.Trash, contentDescription = null, tint = colors.error, modifier = Modifier.size(18.dp))
-            Text("Descartar captura", style = MaterialTheme.typography.labelLarge, color = colors.error)
+            Text(stringResource(R.string.select_discard_capture), style = MaterialTheme.typography.labelLarge, color = colors.error)
         }
     }
 }
@@ -301,7 +304,7 @@ private fun LanguagePicker(target: String, courses: List<String>, onChoose: (Str
                 modifier = Modifier.padding(start = 5.dp, end = 8.dp, top = 5.dp, bottom = 5.dp),
             ) {
                 CircularFlag(languageOf(target), size = 19.dp)
-                Icon(AppIcons.Expand, "Trocar idioma", tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                Icon(AppIcons.Expand, stringResource(R.string.a11y_change_language), tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
             }
         }
         DropdownMenu(expanded = activePair, onDismissRequest = { activePair = false }) {
@@ -323,7 +326,7 @@ private fun LanguagePicker(target: String, courses: List<String>, onChoose: (Str
 private fun TextSource(createdAt: Long) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         CategoryDisc(CaptureFormat.TEXT, size = 22.dp)
-        SectionLabel("${formatLabel(CaptureFormat.TEXT)} colado · ${relativeTime(createdAt)}")
+        SectionLabel(stringResource(R.string.select_pasted_text, relativeTime(createdAt)))
     }
 }
 
@@ -335,7 +338,7 @@ private fun PhotoPreview(path: String) {
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        image?.let { Image(it, "Foto capturada", contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth()) }
+        image?.let { Image(it, stringResource(R.string.a11y_captured_photo), contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth()) }
             ?: Box(Modifier.height(180.dp))
     }
 }
@@ -355,7 +358,7 @@ private fun AudioPlayerBar(path: String, durationMs: Long?, correcting: Boolean,
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp)) {
                     Icon(
                         imageVector = if (player.playing) AppIcons.Stop else AppIcons.Play,
-                        contentDescription = if (player.playing) "Parar" else "Ouvir",
+                        contentDescription = stringResource(if (player.playing) R.string.a11y_stop else R.string.a11y_play),
                         tint = palette.background,
                         modifier = Modifier.size(18.dp),
                     )
@@ -375,9 +378,9 @@ private fun AudioPlayerBar(path: String, durationMs: Long?, correcting: Boolean,
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-            SectionLabel("Áudio · transcrito pela IA", Modifier.weight(1f))
+            SectionLabel(stringResource(R.string.select_audio_transcribed), Modifier.weight(1f))
             Text(
-                text = if (correcting) "voltar" else "corrigir texto",
+                text = stringResource(if (correcting) R.string.select_back else R.string.select_fix_text),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier

@@ -105,6 +105,79 @@
     <string name="daybyday_empty_title">Nada aconteceu ainda</string>
     <string name="daybyday_empty_detail">Capture uma palavra e ela aparece aqui.</string>
 
+    <!-- "Seu inglês", "no seu inglês": todo nome de idioma é masculino em pt. -->
+    <string name="a11y_you">Você</string>
+    <string name="home_your_language">Seu %1$s</string>
+    <string name="home_captured_today_in">Capturadas hoje em %1$s</string>
+    <string name="home_capture_in">Capturar em %1$s</string>
+    <string name="home_empty">Nada ainda. Ouviu alguma coisa hoje que valia guardar?</string>
+    <string name="home_nothing_scheduled">Nada agendado ainda</string>
+    <string name="home_next_one">Próxima %1$s</string>
+    <string name="home_next_many">Próximas %1$d %2$s</string>
+    <string name="home_start_capturing">capture algo para começar</string>
+    <string name="home_nothing_today">nada a fazer hoje</string>
+    <string name="home_no_cards_yet">nenhuma ficha ainda</string>
+    <string name="home_capture_first">capture a primeira</string>
+    <plurals name="home_review_words">
+        <item quantity="one">Revisar %1$d palavra</item>
+        <item quantity="many">Revisar %1$d de palavras</item>
+        <item quantity="other">Revisar %1$d palavras</item>
+    </plurals>
+    <plurals name="home_stock_cards">
+        <item quantity="one">%1$d ficha</item>
+        <item quantity="many">%1$d de fichas</item>
+        <item quantity="other">%1$d fichas</item>
+    </plurals>
+    <string name="home_stock">%1$s · %2$d dominadas</string>
+    <plurals name="home_cooled_today">
+        <item quantity="one">%1$d esfriou hoje</item>
+        <item quantity="many">%1$d de esfriaram hoje</item>
+        <item quantity="other">%1$d esfriaram hoje</item>
+    </plurals>
+    <string name="home_nothing_cooled">nada esfriou hoje</string>
+
+    <string name="words_title">Vocabulários</string>
+    <string name="words_search_placeholder">Buscar em todos os idiomas</string>
+    <string name="words_empty_title">Sua coleção começa aqui</string>
+    <string name="words_empty_detail">Capture um trecho e escolha o que quer aprender.</string>
+    <string name="words_none_found_title">Nenhuma ficha encontrada</string>
+    <string name="words_none_found_detail">Tente outra busca ou outro nível.</string>
+    <string name="words_group_to_review">%1$d · %2$d para revisar</string>
+    <string name="words_group_up_to_date">%1$d · em dia</string>
+    <string name="a11y_collapse">Recolher</string>
+    <string name="a11y_expand">Expandir</string>
+
+    <string name="select_discard_title">Descartar captura?</string>
+    <string name="select_discard_body">A mídia será removida porque ainda não há fichas ligadas a ela.</string>
+    <string name="select_discard">Descartar</string>
+    <string name="select_keep">Manter</string>
+    <string name="select_discard_capture">Descartar captura</string>
+    <string name="select_question">O que chamou atenção?</string>
+    <string name="select_transcribing">Transcrição local em andamento…</string>
+    <string name="select_transcription">Transcrição</string>
+    <string name="select_type_manually">Digite o trecho manualmente</string>
+    <string name="select_done_marking">Pronto, marcar termos</string>
+    <string name="select_tap_or_drag">Toque ou arraste para marcar.</string>
+    <string name="select_nothing_chosen">Selecione o que guardar</string>
+    <plurals name="select_chosen">
+        <item quantity="one">%1$d selecionada</item>
+        <item quantity="many">%1$d de selecionadas</item>
+        <item quantity="other">%1$d selecionadas</item>
+    </plurals>
+    <plurals name="select_save_captures">
+        <item quantity="one">Guardar %1$d captura</item>
+        <item quantity="many">Guardar %1$d de capturas</item>
+        <item quantity="other">Guardar %1$d capturas</item>
+    </plurals>
+    <string name="select_pasted_text">Texto colado · %1$s</string>
+    <string name="select_audio_transcribed">Áudio · transcrito pela IA</string>
+    <string name="select_back">voltar</string>
+    <string name="select_fix_text">corrigir texto</string>
+    <string name="a11y_change_language">Trocar idioma</string>
+    <string name="a11y_captured_photo">Foto capturada</string>
+    <string name="a11y_stop">Parar</string>
+    <string name="a11y_play">Ouvir</string>
+
     <!-- Configurações -->
     <string name="settings_section_language">Idioma</string>
     <string name="settings_app_language">Idioma do app</string>

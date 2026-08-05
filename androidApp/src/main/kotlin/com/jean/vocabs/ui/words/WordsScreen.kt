@@ -26,9 +26,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.R
 import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.ui.components.AppIcons
@@ -67,9 +70,13 @@ fun WordsScreen(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
     ) {
         item(key = "cabecalho") {
-            Text("Vocabulários", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
+            Text(stringResource(R.string.words_title), style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
             Text(
-                text = "${state.total} ${if (state.total == 1) "card" else "cards"} · ${state.mastered} dominadas",
+                text = stringResource(
+                    R.string.home_stock,
+                    pluralStringResource(R.plurals.home_stock_cards, state.total, state.total),
+                    state.mastered,
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 3.dp),
@@ -78,7 +85,7 @@ fun WordsScreen(
                 value = state.query,
                 onValueChange = vm::search,
                 leadingIcon = { Icon(AppIcons.MagnifyingGlass, null) },
-                placeholder = { Text("Buscar em todos os idiomas") },
+                placeholder = { Text(stringResource(R.string.words_search_placeholder)) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
@@ -97,16 +104,16 @@ fun WordsScreen(
             item(key = "vazio") {
                 EmptyState(
                     icon = AppIcons.Cards,
-                    title = "Sua coleção começa aqui",
-                    detail = "Capture um trecho e escolha o que quer aprender.",
+                    title = stringResource(R.string.words_empty_title),
+                    detail = stringResource(R.string.words_empty_detail),
                 )
             }
         } else if (state.loaded && state.matches == 0) {
             item(key = "sem-resultado") {
                 EmptyState(
                     icon = AppIcons.MagnifyingGlass,
-                    title = "Nenhuma ficha encontrada",
-                    detail = "Tente outra busca ou outro nível.",
+                    title = stringResource(R.string.words_none_found_title),
+                    detail = stringResource(R.string.words_none_found_detail),
                 )
             }
         }
@@ -174,13 +181,14 @@ private fun LanguageHeader(
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = if (group.inQueue > 0) "${group.total} · ${group.inQueue} para revisar" else "${group.total} · em dia",
+                text = if (group.inQueue > 0) stringResource(R.string.words_group_to_review, group.total, group.inQueue)
+                else stringResource(R.string.words_group_up_to_date, group.total),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (group.inQueue > 0) colors.primary else colors.onSurfaceVariant,
             )
             Icon(
                 imageVector = AppIcons.Forward,
-                contentDescription = if (activePair) "Recolher" else "Expandir",
+                contentDescription = stringResource(if (activePair) R.string.a11y_collapse else R.string.a11y_expand),
                 tint = if (activePair) colors.primary else colors.onSurfaceVariant,
                 modifier = Modifier.size(16.dp).rotate(spin),
             )

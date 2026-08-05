@@ -127,6 +127,79 @@
     <string name="daybyday_empty_title">Nothing has happened yet</string>
     <string name="daybyday_empty_detail">Capture a word and it shows up here.</string>
 
+    <!-- Home -->
+    <string name="a11y_you">You</string>
+    <string name="home_your_language">Your %1$s</string>
+    <string name="home_captured_today_in">Captured today in %1$s</string>
+    <string name="home_capture_in">Capture in %1$s</string>
+    <string name="home_empty">Nothing yet. Heard anything today worth keeping?</string>
+    <string name="home_nothing_scheduled">Nothing scheduled yet</string>
+    <string name="home_next_one">Next %1$s</string>
+    <string name="home_next_many">Next %1$d %2$s</string>
+    <string name="home_start_capturing">capture something to get started</string>
+    <string name="home_nothing_today">nothing to do today</string>
+    <string name="home_no_cards_yet">no cards yet</string>
+    <string name="home_capture_first">capture the first one</string>
+    <plurals name="home_review_words">
+        <item quantity="one">Review %1$d word</item>
+        <item quantity="other">Review %1$d words</item>
+    </plurals>
+    <!-- "12 cards · 4 mastered" -->
+    <plurals name="home_stock_cards">
+        <item quantity="one">%1$d card</item>
+        <item quantity="other">%1$d cards</item>
+    </plurals>
+    <string name="home_stock">%1$s · %2$d mastered</string>
+    <plurals name="home_cooled_today">
+        <item quantity="one">%1$d cooled off today</item>
+        <item quantity="other">%1$d cooled off today</item>
+    </plurals>
+    <string name="home_nothing_cooled">nothing cooled off today</string>
+
+    <!-- Words -->
+    <string name="words_title">Vocabulary</string>
+    <string name="words_search_placeholder">Search across every language</string>
+    <string name="words_empty_title">Your collection starts here</string>
+    <string name="words_empty_detail">Capture a snippet and pick what you want to learn.</string>
+    <string name="words_none_found_title">No cards found</string>
+    <string name="words_none_found_detail">Try another search or another level.</string>
+    <string name="words_group_to_review">%1$d · %2$d to review</string>
+    <string name="words_group_up_to_date">%1$d · up to date</string>
+    <string name="a11y_collapse">Collapse</string>
+    <string name="a11y_expand">Expand</string>
+
+    <!-- Select -->
+    <string name="select_discard_title">Discard capture?</string>
+    <string name="select_discard_body">The media will be removed because no cards are linked to it yet.</string>
+    <string name="select_discard">Discard</string>
+    <string name="select_keep">Keep</string>
+    <string name="select_discard_capture">Discard capture</string>
+    <string name="select_question">What caught your attention?</string>
+    <string name="select_transcribing">Local transcription in progress…</string>
+    <string name="select_transcription">Transcription</string>
+    <string name="select_type_manually">Type the snippet manually</string>
+    <string name="select_done_marking">Done, mark terms</string>
+    <string name="select_tap_or_drag">Tap or drag to mark.</string>
+    <string name="select_nothing_chosen">Choose what to keep</string>
+    <plurals name="select_chosen">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <plurals name="select_save_captures">
+        <item quantity="one">Save %1$d capture</item>
+        <item quantity="other">Save %1$d captures</item>
+    </plurals>
+    <!-- "Pasted text · 5m ago". One string, not a format label plus a participle:
+         Portuguese has to agree with the noun, and the noun is inside. -->
+    <string name="select_pasted_text">Pasted text · %1$s</string>
+    <string name="select_audio_transcribed">Audio · transcribed by AI</string>
+    <string name="select_back">back</string>
+    <string name="select_fix_text">fix the text</string>
+    <string name="a11y_change_language">Change language</string>
+    <string name="a11y_captured_photo">Captured photo</string>
+    <string name="a11y_stop">Stop</string>
+    <string name="a11y_play">Play</string>
+
     <!-- Settings -->
     <string name="settings_section_language">Language</string>
     <string name="settings_app_language">App language</string>

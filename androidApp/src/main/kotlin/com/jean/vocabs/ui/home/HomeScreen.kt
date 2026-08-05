@@ -33,6 +33,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -107,13 +108,13 @@ fun HomeScreen(
             modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 14.dp),
         ) {
             Image(painterResource(R.drawable.logo_vocabu), stringResource(R.string.logo_description), Modifier.size(34.dp))
-            Text("Vocabu", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 9.dp))
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 9.dp))
             Spacer(Modifier.weight(1f))
             Surface(onClick = onOpenProfile, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp)) {
                     Icon(
                         imageVector = AppIcons.Person,
-                        contentDescription = "Você",
+                        contentDescription = stringResource(R.string.a11y_you),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
                     )
@@ -180,7 +181,7 @@ private fun CoursePage(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CourseRing(page)
                 Column(Modifier.weight(1f).padding(start = 15.dp)) {
-                    Text("Seu ${language.displayName.lowercase()}", style = MaterialTheme.typography.titleLarge)
+                    Text(stringResource(R.string.home_your_language, language.displayName), style = MaterialTheme.typography.titleLarge)
                     Text(
                         text = courseDetail(summary.total, summary.mastered, summary.inQueue),
                         style = MaterialTheme.typography.bodyMedium,
@@ -192,7 +193,7 @@ private fun CoursePage(
 
             if (summary.inQueue > 0) {
                 PrimaryButton(
-                    text = "Revisar ${summary.inQueue} ${if (summary.inQueue == 1) "word" else "words"}",
+                    text = pluralStringResource(R.plurals.home_review_words, summary.inQueue, summary.inQueue),
                     onClick = onReview,
                     modifier = Modifier.padding(top = 15.dp),
                 )
@@ -206,7 +207,7 @@ private fun CoursePage(
         // accumulating — arriving fully assembled would make three captures look
         // like old history instead of what happened today.
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            SectionLabel("Capturadas hoje em ${language.displayName.lowercase()}")
+            SectionLabel(stringResource(R.string.home_captured_today_in, language.displayName))
             if (page.capturedToday.isEmpty()) {
                 CaptureInvite(language.displayName.lowercase(), onCapture)
             } else {
@@ -268,14 +269,15 @@ private fun UpNextRow(page: HomePage, modifier: Modifier = Modifier) {
             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(
                     text = when {
-                        next == null -> "Nada agendado ainda"
-                        page.nextIn24h > 1 -> "Próximas ${page.nextIn24h} ${timeUntil(next)}"
-                        else -> "Próxima ${timeUntil(next)}"
+                        next == null -> stringResource(R.string.home_nothing_scheduled)
+                        page.nextIn24h > 1 ->
+                            stringResource(R.string.home_next_many, page.nextIn24h, timeUntil(next))
+                        else -> stringResource(R.string.home_next_one, timeUntil(next))
                     },
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    text = if (next == null) "capture algo para começar" else "nada a fazer hoje",
+                    text = stringResource(if (next == null) R.string.home_start_capturing else R.string.home_nothing_today),
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                     modifier = Modifier.padding(top = 1.dp),
@@ -312,25 +314,33 @@ private fun CaptureInvite(language: String, onClick: () -> Unit) {
         onClick = onClick,
     ) {
         Text(
-            text = "Nada ainda. Ouviu alguma coisa hoje que valia guardar?",
+            text = stringResource(R.string.home_empty),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         PrimaryButton(
-            text = "Capturar em $language",
+            text = stringResource(R.string.home_capture_in, language),
             onClick = onClick,
             modifier = Modifier.padding(top = 12.dp),
         )
     }
 }
 
+@Composable
 private fun courseDetail(total: Int, mastered: Int, inQueue: Int): String {
-    val stock = if (total == 0) "nenhuma ficha ainda" else "$total ${if (total == 1) "card" else "cards"} · $mastered ${if (mastered == 1) "dominada" else "mastered"}"
+    val stock = if (total == 0) {
+        stringResource(R.string.home_no_cards_yet)
+    } else {
+        stringResource(
+            R.string.home_stock,
+            pluralStringResource(R.plurals.home_stock_cards, total, total),
+            mastered,
+        )
+    }
     val queue = when {
-        total == 0 -> "capture a primeira"
-        inQueue == 0 -> "nada esfriou hoje"
-        inQueue == 1 -> "1 esfriou hoje"
-        else -> "$inQueue esfriaram hoje"
+        total == 0 -> stringResource(R.string.home_capture_first)
+        inQueue == 0 -> stringResource(R.string.home_nothing_cooled)
+        else -> pluralStringResource(R.plurals.home_cooled_today, inQueue, inQueue)
     }
     return "$stock\n$queue"
 }
