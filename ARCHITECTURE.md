@@ -37,14 +37,21 @@ selection inside it inherits that language. One word is `WORD`, two or more
 contiguous tokens are `PHRASE` — decided on the device, reinjected by the server,
 never classified remotely.
 
-### Courses
+### Enrolled languages
 
-**A course is the language it teaches.** The native language belongs to the
-individual card. **Reads filter by target; writes record the pair.**
+You enrol in target languages. Each one has a summary — total, mastered, queued —
+built from the cards whose capture carries that target.
+
+**Grouping is by target alone. The native language belongs to the individual
+card. Reads filter by target; writes record the pair.**
 
 Nothing enforces this. Keying a read by the whole pair made switching native
 language stop matching every stored card — totals read zero, lists came back
 empty, nothing deleted, no way to tell from the screen.
+
+The code still says `Course` (`CourseSummary`, `Scope.ActiveCourse`,
+`enrolledCourses`) — a stray metaphor, not a concept. Read it as "enrolled
+language". Renaming is free whenever someone wants it.
 
 ### Interface language
 
@@ -71,8 +78,8 @@ alternative, an expiry date. Delete anything restating a name.
 
 ```kotlin
 // Bad — says what the next line says.
-// Sorts the courses by name.
-courses.sortedBy { it.name }
+// Sorts the languages by name.
+languages.sortedBy { it.name }
 
 // Good — a fact from outside this file.
 // Haiku 4.5 rejects `effort` with a 400.
@@ -115,7 +122,7 @@ only target.
 | `Scope.Course(target)` | "Your progress · French" |
 | `Scope.All` | Words, Pending, You |
 
-Filtered in memory, not SQL: the open course is a preference flow, and a query
+Filtered in memory, not SQL: the active language is a preference flow, and a query
 parameterised by it would reopen the cursor on every carousel swipe.
 
 **Retention** has two readings answering different questions:
@@ -145,7 +152,7 @@ pieces live in `ui/components`.
 | `Common` | Relative time, capture titles, level labels, entry titles |
 | `Base` | Card, list row, pill, buttons, section label |
 | `Progress` | Ring, week strip, meters |
-| `LanguageStrip` | Course chips — fixed order, always badged |
+| `LanguageStrip` | Language chips — fixed order, always badged |
 | `SwipeToDelete` | The only way a queue row leaves |
 | `Selection` | Term picker |
 | `Flags` | 43 circular flags |
@@ -196,7 +203,7 @@ rides along untranslated as the only diagnostic there is.
 
 `androidHostTest` covers batch creation, overlap, media retention, partial
 concurrency, activity, monthly turnover, scope, quota, steps, timeline, and that
-switching native language keeps a course and its counts.
+switching native language keeps an enrolled language and its counts.
 
 `:androidApp` has a JVM test set for the pure text builders. Five resource lint
 checks are errors; `MissingTranslation` fails the build rather than the device.
