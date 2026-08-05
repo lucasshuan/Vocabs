@@ -1,5 +1,7 @@
 # Product: Vocabu
 
+_Updated: 2026-08-05_
+
 Vocabu turns terms found in games, books, series and conversations into cards tied
 to personal context. There is no fixed curriculum: the content comes out of the
 person's life.

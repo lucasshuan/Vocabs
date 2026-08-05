@@ -1,5 +1,7 @@
 # Third-party resources
 
+_Updated: 2026-08-05_
+
 What the app bundles that was not made here. Art and fonts only — the code
 dependencies live in `gradle/libs.versions.toml`.
 

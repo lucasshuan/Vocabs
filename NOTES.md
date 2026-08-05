@@ -1,5 +1,7 @@
 # Notes
 
+_Updated: 2026-08-05_
+
 Things that fit neither the roadmap nor the architecture: what has not been
 proven, what is crooked, and what might be worth doing. One line each.
 

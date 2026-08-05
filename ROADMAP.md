@@ -1,5 +1,7 @@
 # Roadmap
 
+_Updated: 2026-08-05_
+
 Every phase has an **exit criterion**. Only move to the next one when it is met —
 that is what stops a phase being polished indefinitely.
 

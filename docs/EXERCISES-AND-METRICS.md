@@ -1,5 +1,7 @@
 # Exercises and metrics
 
+_Updated: 2026-08-05_
+
 ## Minigame catalogue
 
 The exercises cover reading, listening, speaking and grammar — but each one costs
