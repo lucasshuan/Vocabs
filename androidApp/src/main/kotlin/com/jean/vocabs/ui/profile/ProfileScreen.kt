@@ -44,7 +44,7 @@ import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.animatedCount
 import com.jean.vocabs.ui.components.animatedFraction
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**
@@ -199,7 +199,7 @@ private fun CourseRow(course: CourseSummary, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val fraction by animatedFraction(
         target = if (course.total == 0) 0f else course.mastered.toFloat() / course.total,
-        label = "fracaoDoCurso",
+        label = "courseFraction",
     )
 
     ListRow(

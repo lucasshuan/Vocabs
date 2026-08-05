@@ -51,7 +51,7 @@ import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.animatedCount
 import com.jean.vocabs.ui.components.smoothEntrance
 import com.jean.vocabs.ui.components.timeUntil
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**

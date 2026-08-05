@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  What the system offers under Settings > Apps > Vocabu > Language on Android 13+.
+
+  Adding a language means three edits that nothing checks against each other: a
+  values-xx/ folder, a line here, and a line in UiLanguage.SUPPORTED.
+-->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="pt-BR" />
+</locale-config>

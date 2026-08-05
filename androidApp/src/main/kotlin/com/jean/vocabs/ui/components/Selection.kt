@@ -91,15 +91,15 @@ fun TermPicker(
                 .padding(horizontal = 12.dp, vertical = 14.dp)
                 .pointerInput(snippet) {
                     awaitEachGesture {
-                        val toque = awaitFirstDown()
-                        val start = indexAt(toque.position) ?: return@awaitEachGesture
+                        val touch = awaitFirstDown()
+                        val start = indexAt(touch.position) ?: return@awaitEachGesture
                         var last = start
                         var dragged = false
                         preview = selectTokens(snippet, start)
                         do {
                             val event = awaitPointerEvent()
                             val change = event.changes.firstOrNull() ?: break
-                            if ((change.position - toque.position).getDistance() > viewConfiguration.touchSlop) {
+                            if ((change.position - touch.position).getDistance() > viewConfiguration.touchSlop) {
                                 dragged = true
                             }
                             indexAt(change.position)?.let { last = it }
@@ -149,19 +149,19 @@ private fun SelectionChip(target: SelectedTarget, onRemove: () -> Unit) {
     val scale by animateFloatAsState(
         targetValue = if (arrived) 1f else 0.7f,
         animationSpec = Motion.elasticSpring(),
-        label = "escalaDoChip",
+        label = "chipScale",
     )
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
 
     Surface(
         onClick = onRemove,
         shape = CircleShape,
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
-        interactionSource = toque,
+        interactionSource = touch,
         modifier = Modifier
             .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (arrived) 1f else 0f }
-            .shrinkOnTouch(toque, minimum = 0.94f),
+            .shrinkOnTouch(touch, minimum = 0.94f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

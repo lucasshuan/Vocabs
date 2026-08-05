@@ -42,7 +42,7 @@ import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.SwipeToDelete
 import com.jean.vocabs.ui.components.captureTitle
 import com.jean.vocabs.ui.components.relativeTime
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 import com.jean.vocabs.ui.temporaryErrorText
 

@@ -29,20 +29,20 @@ class PhotoTranscriber(private val context: Context) {
         val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         try {
             val image = InputImage.fromFilePath(context, Uri.fromFile(File(path)))
-            suspendCancellableCoroutine { continuacao ->
+            suspendCancellableCoroutine { continuation ->
                 recognizer.process(image)
                     .addOnSuccessListener { result ->
-                        if (continuacao.isActive) {
+                        if (continuation.isActive) {
                             val text = result.text.trim().ifBlank { null }
-                            continuacao.resume(
+                            continuation.resume(
                                 if (text == null) TranscriptionResult(error = "Nenhum texto foi encontrado na foto.")
                                 else TranscriptionResult(text = text),
                             )
                         }
                     }
                     .addOnFailureListener { failure ->
-                        if (continuacao.isActive) {
-                            continuacao.resume(
+                        if (continuation.isActive) {
+                            continuation.resume(
                                 TranscriptionResult(error = failure.message ?: "Não foi possível ler a foto."),
                             )
                         }
@@ -74,7 +74,7 @@ class AudioTranscriber(private val context: Context) {
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private suspend fun recognize(path: String): TranscriptionResult =
-        suspendCancellableCoroutine { continuacao ->
+        suspendCancellableCoroutine { continuation ->
             val descriptors = ParcelFileDescriptor.createPipe()
             val reading = descriptors[0]
             val written = descriptors[1]
@@ -87,7 +87,7 @@ class AudioTranscriber(private val context: Context) {
                 runCatching { reading.close() }
                 runCatching { written.close() }
                 recognizer.destroy()
-                if (continuacao.isActive) continuacao.resume(result)
+                if (continuation.isActive) continuation.resume(result)
             }
 
             recognizer.setRecognitionListener(object : RecognitionListener {
@@ -116,7 +116,7 @@ class AudioTranscriber(private val context: Context) {
                 }
             })
 
-            continuacao.invokeOnCancellation {
+            continuation.invokeOnCancellation {
                 recognizer.cancel()
                 runCatching { reading.close() }
                 runCatching { written.close() }

@@ -8,7 +8,7 @@ class StepsTest {
     private val now = 1_000_000L
 
     @Test
-    fun `cada hit sobe exactly um step, ate o fifth`() {
+    fun `each hit climbs exactly one step, up to the fifth`() {
         var retention = Retention.initial(now)
         assertEquals(1, Steps.of(retention))
 
@@ -20,7 +20,7 @@ class StepsTest {
     }
 
     @Test
-    fun `os names dos steps batem com o handoff`() {
+    fun `the step names match the design`() {
         assertEquals(MemoryLevel.LEARNING, Steps.level(1))
         assertEquals(MemoryLevel.LEARNING, Steps.level(2))
         assertEquals(MemoryLevel.LEARNING, Steps.level(3))
@@ -37,7 +37,7 @@ class StepsTest {
     }
 
     @Test
-    fun `miss derruba a ladder, e o step nao cai com o time`() {
+    fun `a miss drops the ladder, and the step does not fall with time`() {
         var retention = Retention.initial(now)
         repeat(3) { retention = retention.after(correct = true, now = now) }
         assertEquals(4, Steps.of(retention))
@@ -56,7 +56,7 @@ class StepsTest {
     }
 
     @Test
-    fun `best streak acha a largest run de days consecutive`() {
+    fun `the best streak finds the longest run of consecutive days`() {
         // Descending and without repeats, as it comes out of the database.
         assertEquals(0, bestStreakOf(emptyList()))
         assertEquals(1, bestStreakOf(listOf(10L)))
@@ -65,7 +65,7 @@ class StepsTest {
     }
 
     @Test
-    fun `quota empty nao divide por zero e ja nasce met`() {
+    fun `an empty quota does not divide by zero and is born met`() {
         val empty = DailyQuota(done = 0, inQueue = 0)
         assertEquals(0, empty.total)
         assertEquals(1f, empty.fraction)

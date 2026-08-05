@@ -1,10 +1,15 @@
 package com.jean.vocabs.ui.languages
 
+import android.content.Context
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import com.jean.vocabs.R
 import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.contracts.Languages
-import com.jean.vocabs.ui.displayName
+import java.text.Normalizer
+import java.util.Locale
 
 /**
  * Each flag's drawing.
@@ -78,20 +83,93 @@ fun flagOf(language: Language): Int = when (language.country) {
  */
 fun languageOf(code: String?): Language = Languages.of(code) ?: Languages.ENGLISH
 
-/** The search filter of the "New language" screen: ignores accents and case. */
-fun List<Language>.search(term: String): List<Language> {
-    val wanted = term.trim().withoutAccents()
+/**
+ * Which string resource names this language in the interface.
+ *
+ * An explicit `when`, the twin of [flagOf], for the reason a `<string-array>` is
+ * wrong here: an array is index-keyed, and index drift against [Languages.CATALOG]
+ * would be silent. Codes with a region become underscores, since a resource name
+ * cannot hold a hyphen.
+ */
+@StringRes
+fun nameResOf(code: String): Int = when (code) {
+    "en" -> R.string.language_en
+    "es" -> R.string.language_es
+    "fr" -> R.string.language_fr
+    "de" -> R.string.language_de
+    "it" -> R.string.language_it
+    "ja" -> R.string.language_ja
+    "ru" -> R.string.language_ru
+    "zh" -> R.string.language_zh
+    "ko" -> R.string.language_ko
+    "nl" -> R.string.language_nl
+    "sv" -> R.string.language_sv
+    "ar" -> R.string.language_ar
+    "pt-BR" -> R.string.language_pt_br
+    "pt-PT" -> R.string.language_pt_pt
+    "hi" -> R.string.language_hi
+    "tr" -> R.string.language_tr
+    "pl" -> R.string.language_pl
+    "el" -> R.string.language_el
+    "he" -> R.string.language_he
+    "nb" -> R.string.language_nb
+    "da" -> R.string.language_da
+    "fi" -> R.string.language_fi
+    "cs" -> R.string.language_cs
+    "hu" -> R.string.language_hu
+    "ro" -> R.string.language_ro
+    "uk" -> R.string.language_uk
+    "th" -> R.string.language_th
+    "vi" -> R.string.language_vi
+    "id" -> R.string.language_id
+    "ms" -> R.string.language_ms
+    "fa" -> R.string.language_fa
+    "sw" -> R.string.language_sw
+    "ca" -> R.string.language_ca
+    "is" -> R.string.language_is
+    "bg" -> R.string.language_bg
+    "hr" -> R.string.language_hr
+    "sr" -> R.string.language_sr
+    "sk" -> R.string.language_sk
+    "et" -> R.string.language_et
+    "lv" -> R.string.language_lv
+    "lt" -> R.string.language_lt
+    "tl" -> R.string.language_tl
+    "bn" -> R.string.language_bn
+    else -> R.string.language_en
+}
+
+val Language.displayName: String
+    @Composable get() = stringResource(nameResOf(code))
+
+/** For the two places a name is needed outside composition: search, and `semantics`. */
+fun Context.nameOf(language: Language): String = getString(nameResOf(language.code))
+
+/**
+ * The search filter of the "New language" screen.
+ *
+ * Matches the display name, the English name and the code, so someone reading a
+ * Portuguese interface who types "japanese" still finds it.
+ */
+fun List<Language>.search(term: String, displayName: (Language) -> String): List<Language> {
+    val wanted = term.fold()
     if (wanted.isEmpty()) return this
-    return filter { it.displayName.withoutAccents().contains(wanted) || it.code.withoutAccents().contains(wanted) }
+    return filter { language ->
+        displayName(language).fold().contains(wanted) ||
+            language.englishName.fold().contains(wanted) ||
+            language.code.fold().contains(wanted)
+    }
 }
 
 /**
- * Accent-free and lower case. Someone typing "japones" in a hurry wants to find
- * "Japonês", and a filter demanding the circumflex returns an empty list.
+ * Accent-free and lower case, on both sides. Someone typing "japones" in a hurry
+ * wants to find "Japonês", and a filter demanding the circumflex returns nothing.
+ *
+ * `Locale.ROOT` rather than the default: this is a comparison, and under a Turkish
+ * locale the default would fold "I" to a dotless "ı" and stop matching.
  */
-private fun String.withoutAccents(): String = lowercase()
-    .replace(ACCENTED) { found -> WITHOUT_ACCENT[ACCENTED_TEXT.indexOf(found.value)].toString() }
+private fun String.fold(): String = Normalizer.normalize(trim(), Normalizer.Form.NFD)
+    .replace(COMBINING_MARKS, "")
+    .lowercase(Locale.ROOT)
 
-private const val ACCENTED_TEXT = "áàâãäéèêëíìîïóòôõöúùûüçñ"
-private const val WITHOUT_ACCENT = "aaaaaeeeeiiiiooooouuuucn"
-private val ACCENTED = Regex("[$ACCENTED_TEXT]")
+private val COMBINING_MARKS = Regex("\\p{Mn}+")

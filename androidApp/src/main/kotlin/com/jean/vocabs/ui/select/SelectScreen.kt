@@ -77,7 +77,7 @@ import com.jean.vocabs.ui.components.formatDurationMs
 import com.jean.vocabs.ui.components.formatLabel
 import com.jean.vocabs.ui.components.relativeTime
 import com.jean.vocabs.ui.components.rememberHaptics
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 import com.jean.vocabs.ui.theme.LocalDarkTheme
 
@@ -259,14 +259,14 @@ private fun DiscardCaptureButton(onClick: () -> Unit) {
     // In dark, Material's `errorContainer` is a nearly opaque wine, too heavy for
     // a supporting action.
     val background = if (LocalDarkTheme.current) colors.error.copy(alpha = 0.14f) else colors.errorContainer
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
     Surface(
         onClick = onClick,
         shape = CircleShape,
         color = background,
         contentColor = colors.error,
-        interactionSource = toque,
-        modifier = Modifier.shrinkOnTouch(toque, minimum = 0.94f),
+        interactionSource = touch,
+        modifier = Modifier.shrinkOnTouch(touch, minimum = 0.94f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

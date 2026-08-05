@@ -66,7 +66,7 @@ import com.jean.vocabs.ui.components.cardOutline
 import com.jean.vocabs.ui.components.dashedOutline
 import com.jean.vocabs.ui.components.shrinkOnTouch
 import com.jean.vocabs.ui.components.rememberHaptics
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 import kotlinx.coroutines.launch
 
@@ -366,11 +366,11 @@ private fun StockLegend(labels: List<String>, color: Color, modifier: Modifier =
 private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val language = languageOf(target)
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
     val spin by animateFloatAsState(
         targetValue = if (opened) 180f else 0f,
         animationSpec = tween(Motion.DEFAULT),
-        label = "giroDaPilula",
+        label = "pillRotation",
     )
 
     Surface(
@@ -378,8 +378,8 @@ private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
         shape = CircleShape,
         color = if (opened) colors.secondaryContainer else colors.surface,
         border = if (opened) BorderStroke(1.5.dp, colors.primary) else cardOutline(),
-        interactionSource = toque,
-        modifier = Modifier.shrinkOnTouch(toque, minimum = 0.94f),
+        interactionSource = touch,
+        modifier = Modifier.shrinkOnTouch(touch, minimum = 0.94f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -462,15 +462,15 @@ private fun CourseDrawer(
 private fun DrawerRow(course: CourseSummary, chosen: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     val language = languageOf(course.languagePair.target)
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
 
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(18.dp),
         color = if (chosen) colors.secondaryContainer else colors.surface,
         border = if (chosen) BorderStroke(1.5.dp, colors.primary) else cardOutline(),
-        interactionSource = toque,
-        modifier = Modifier.fillMaxWidth().shrinkOnTouch(toque),
+        interactionSource = touch,
+        modifier = Modifier.fillMaxWidth().shrinkOnTouch(touch),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

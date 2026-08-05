@@ -252,7 +252,7 @@ fun MemoryBar(
     val fraction by animateFloatAsState(
         targetValue = (points / 100.0).toFloat().coerceIn(0f, 1f),
         animationSpec = tween(500),
-        label = "fracaoMemoria",
+        label = "memoryFraction",
     )
 
     Box(

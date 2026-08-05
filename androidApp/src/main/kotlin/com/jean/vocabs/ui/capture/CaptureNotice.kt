@@ -43,7 +43,7 @@ import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.cardOutline
 import com.jean.vocabs.ui.components.formatDurationMs
 import com.jean.vocabs.ui.components.rememberHaptics
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**
@@ -175,12 +175,12 @@ private fun NoticeCard(
                             }
                         }
                         notice.captureId?.let { id ->
-                            val toque = rememberHaptics()
+                            val touch = rememberHaptics()
                             Surface(
                                 onClick = { onSelect(id) },
                                 shape = CircleShape,
                                 color = colors.primary,
-                                interactionSource = toque,
+                                interactionSource = touch,
                             ) {
                                 Text(
                                     text = "Selecionar",

@@ -9,13 +9,13 @@ import kotlin.test.assertTrue
 
 class SelectionTest {
     @Test
-    fun `tokenization preserva apostrophes e hyphens inners e remove score external`() {
+    fun `tokenizing keeps inner apostrophes and hyphens and drops outer punctuation`() {
         val tokens = tokenizeSnippet("Wait—don't second-guess 'this'.")
         assertEquals(listOf("Wait", "don't", "second-guess", "this"), tokens.map { it.text })
     }
 
     @Test
-    fun `uma selection e word e several formam phrase`() {
+    fun `one token is a WORD and several are a PHRASE`() {
         val snippet = "He is on the fence today."
         val word = assertNotNull(selectTokens(snippet, 4))
         val phrase = assertNotNull(selectTokens(snippet, 2, 4))
@@ -28,7 +28,7 @@ class SelectionTest {
     }
 
     @Test
-    fun `answer ignora box e spaces mas preserva accentMark e score`() {
+    fun `an answer ignores case and spacing but keeps accents and punctuation`() {
         assertTrue(isAnswerCorrect("  On   The Fence ", "on the fence"))
         assertFalse(isAnswerCorrect("cafe", "café"))
         assertFalse(isAnswerCorrect("dont", "don't"))

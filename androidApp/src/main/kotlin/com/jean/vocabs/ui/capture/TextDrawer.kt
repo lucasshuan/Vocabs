@@ -150,12 +150,12 @@ private fun Pill(
     modifier: Modifier = Modifier,
     peso: Boolean = false,
 ) {
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
     Surface(
         onClick = onClick,
         shape = CircleShape,
         color = background,
-        interactionSource = toque,
+        interactionSource = touch,
         modifier = modifier.then(if (peso) Modifier.fillMaxWidth() else Modifier),
     ) {
         Row(

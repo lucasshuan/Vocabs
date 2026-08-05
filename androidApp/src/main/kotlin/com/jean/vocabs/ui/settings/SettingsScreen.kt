@@ -2,6 +2,7 @@ package com.jean.vocabs.ui.settings
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -37,21 +38,28 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -70,10 +78,12 @@ import com.jean.vocabs.ui.components.RowChevron
 import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.cardOutline
-import com.jean.vocabs.ui.components.smoothEntrance
 import com.jean.vocabs.ui.components.rememberHaptics
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.components.smoothEntrance
+import com.jean.vocabs.ui.language.UiLanguage
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
+import com.jean.vocabs.ui.languages.nameResOf
 import java.io.File
 import kotlin.math.roundToInt
 
@@ -93,7 +103,27 @@ fun SettingsScreen(
     val native by vm.native.collectAsStateWithLifecycle()
     val exporting by vm.exporting.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val activity = LocalActivity.current
     val language = languageOf(native)
+
+    // Read once, not observed: on 33+ the store is the system's and on older
+    // releases it is a file, and either way changing it recreates the activity.
+    val uiTag = remember(context) { UiLanguage.tagOf(context) }
+    val uiLanguageName =
+        if (uiTag.isEmpty()) stringResource(R.string.settings_system_default)
+        else stringResource(nameResOf(uiTag))
+    var pickingUiLanguage by remember { mutableStateOf(false) }
+
+    if (pickingUiLanguage) {
+        AppLanguagePicker(
+            current = uiTag,
+            onPick = { tag ->
+                pickingUiLanguage = false
+                activity?.let { UiLanguage.set(it, tag) }
+            },
+            onDismiss = { pickingUiLanguage = false },
+        )
+    }
 
     val importFile = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -113,16 +143,41 @@ fun SettingsScreen(
     ) {
         InnerHeader("Configurações", onBack, Modifier.padding(top = 8.dp))
 
-        Section(icon = AppIcons.Globe, title = "Language", index = 0) {
+        // Two rows, not one. The interface language and the language cards are
+        // written in are independent settings, and the single "Idioma" row that
+        // used to be here was read as doing both.
+        Section(icon = AppIcons.Globe, title = stringResource(R.string.settings_section_language), index = 0) {
+            val colors = MaterialTheme.colorScheme
+            ListRow(
+                onClick = { pickingUiLanguage = true },
+                start = {
+                    IconDisc(
+                        AppIcons.Globe,
+                        null,
+                        color = colors.primary,
+                        background = colors.primaryContainer,
+                    )
+                },
+                end = { SwitchPill() },
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_app_language),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                )
+                Text(uiLanguageName, style = MaterialTheme.typography.titleSmall)
+            }
+            SectionNote(stringResource(R.string.settings_app_language_note))
+
             ListRow(
                 onClick = onSwitchNativeLanguage,
                 start = { NativeFlag(native) },
                 end = { SwitchPill() },
             ) {
                 Text(
-                    text = "Meu idioma",
+                    text = stringResource(R.string.settings_native_language),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = colors.onSurfaceVariant,
                 )
                 // The name crossfades: the picker closes over this screen, and
                 // without the transition the only thing confirming the change is
@@ -133,12 +188,12 @@ fun SettingsScreen(
                         (fadeIn(tween(Motion.DEFAULT)) + scaleIn(tween(Motion.DEFAULT), initialScale = 0.92f))
                             .togetherWith(fadeOut(tween(Motion.FAST)))
                     },
-                    label = "nomeDoNativo",
+                    label = "nativeLanguageName",
                 ) { name ->
                     Text(name, style = MaterialTheme.typography.titleSmall)
                 }
             }
-            SectionNote("As traduções e explicações das fichas saem neste idioma.")
+            SectionNote(stringResource(R.string.settings_native_language_note))
         }
 
         Divider()
@@ -178,7 +233,7 @@ fun SettingsScreen(
                     AnimatedContent(
                         targetState = exporting,
                         transitionSpec = { fadeIn(tween(Motion.FAST)).togetherWith(fadeOut(tween(Motion.FAST))) },
-                        label = "fimDaExportacao",
+                        label = "exportEnd",
                     ) { inProgress ->
                         if (inProgress) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                         else RowChevron()
@@ -240,7 +295,7 @@ private fun Section(
                     (scaleIn(Motion.standardSpring(), initialScale = 0.4f) + fadeIn(tween(Motion.FAST)))
                         .togetherWith(scaleOut(tween(Motion.FAST), targetScale = 0.4f) + fadeOut(tween(Motion.FAST)))
                 },
-                label = "iconeDaSecao",
+                label = "sectionIcon",
             ) { drawing ->
                 Icon(
                     imageVector = drawing,
@@ -282,7 +337,7 @@ private fun SwappingDetail(text: String) {
     AnimatedContent(
         targetState = text,
         transitionSpec = { fadeIn(tween(Motion.DEFAULT)).togetherWith(fadeOut(tween(Motion.FAST))) },
-        label = "detalheDaLinha",
+        label = "rowDetail",
     ) { current ->
         Text(
             text = current,
@@ -297,6 +352,50 @@ private fun SwappingDetail(text: String) {
  * The ring exists because half the catalog's flags have white at the edge: on the
  * white surface of the light card the disc would look clipped.
  */
+/**
+ * The interface languages that ship translations, plus "system default".
+ *
+ * Only the languages with a `values-xx/` folder are offered. Android 13+ shows
+ * the same list under Settings > Apps > Vocabu > Language, from
+ * `res/xml/locales_config.xml`.
+ */
+@Composable
+private fun AppLanguagePicker(current: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_app_language_picker_title)) },
+        text = {
+            Column {
+                LanguageChoice(stringResource(R.string.settings_system_default), current.isEmpty()) {
+                    onPick("")
+                }
+                UiLanguage.SUPPORTED.forEach { tag ->
+                    LanguageChoice(stringResource(nameResOf(tag)), tag == current) { onPick(tag) }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun LanguageChoice(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 4.dp))
+    }
+}
+
 @Composable
 private fun NativeFlag(code: String) {
     val colors = MaterialTheme.colorScheme
@@ -306,7 +405,7 @@ private fun NativeFlag(code: String) {
             (scaleIn(Motion.elasticSpring(), initialScale = 0.5f) + fadeIn(tween(Motion.DEFAULT)))
                 .togetherWith(scaleOut(tween(Motion.FAST), targetScale = 0.5f) + fadeOut(tween(Motion.FAST)))
         },
-        label = "bandeiraDoNativo",
+        label = "nativeFlag",
     ) { current ->
         CircularFlag(
             language = languageOf(current),
@@ -336,7 +435,7 @@ private fun SwitchPill() {
             modifier = Modifier.padding(start = 11.dp, end = 7.dp, top = 7.dp, bottom = 7.dp),
         ) {
             Text(
-                text = "trocar",
+                text = stringResource(R.string.settings_switch),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -422,7 +521,7 @@ private fun ThemeSegmented(
             val destination by animateFloatAsState(
                 targetValue = options.indexOf(isSelected).toFloat(),
                 animationSpec = Motion.standardSpring(),
-                label = "deslizeDoTema",
+                label = "themeSlide",
             )
 
             // `offset` with a lambda: read in the placement phase, so the pill
@@ -441,9 +540,9 @@ private fun ThemeSegmented(
                     val tinta by animateColorAsState(
                         targetValue = if (isActive) colors.onPrimary else colors.onSurfaceVariant,
                         animationSpec = tween(Motion.DEFAULT),
-                        label = "tintaDoSegmento",
+                        label = "segmentTint",
                     )
-                    val toque = rememberHaptics()
+                    val touch = rememberHaptics()
                     Row(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
@@ -452,7 +551,7 @@ private fun ThemeSegmented(
                             .height(SEGMENT_HEIGHT)
                             .clip(shape)
                             .clickable(
-                                interactionSource = toque,
+                                interactionSource = touch,
                                 indication = ripple(),
                                 onClick = { onChoose(option) },
                             ),

@@ -145,7 +145,7 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
                     .togetherWith(slideOutHorizontally(tween(Motion.FAST)) { width -> -width / 4 } + fadeOut(tween(Motion.FAST)))
             },
             contentKey = { it.id },
-            label = "cartaoDaRevisao",
+            label = "reviewCard",
         ) { entry ->
             ScreenCard(
                 shape = MaterialTheme.shapes.extraLarge,

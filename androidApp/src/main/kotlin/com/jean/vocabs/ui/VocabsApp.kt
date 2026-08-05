@@ -188,7 +188,7 @@ fun VocabsApp() {
     val blur = animateFloatAsState(
         targetValue = if (inGesture) 1f else 0f,
         animationSpec = tween(Motion.DEFAULT),
-        label = "desfoqueDoFundo",
+        label = "backgroundBlur",
     )
 
     Box(Modifier.fillMaxSize()) {

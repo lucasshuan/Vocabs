@@ -143,7 +143,7 @@ private fun DaySquare(day: WeekDay) {
     }
     // Today's square changes color mid-session, at the third review. The
     // transition is what makes that step get noticed.
-    val background by animateColorAsState(targetBackground, tween(Motion.DEFAULT), label = "fundoDoDia")
+    val background by animateColorAsState(targetBackground, tween(Motion.DEFAULT), label = "dayBackground")
     val text = when {
         day.today -> colors.primary
         day.future -> colors.outline
@@ -253,7 +253,7 @@ fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     val fraction by animatedFraction(
         target = used.toFloat() / limit.coerceAtLeast(1),
-        label = "fracaoDeUsoDeIa",
+        label = "aiUsageFraction",
     )
     ListRow(
         title = "Gerações por IA",

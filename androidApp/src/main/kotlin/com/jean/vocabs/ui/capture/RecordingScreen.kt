@@ -58,7 +58,7 @@ import com.jean.vocabs.ui.components.shrinkOnTouch
 import com.jean.vocabs.ui.components.formatDuration
 import com.jean.vocabs.ui.components.rememberHaptics
 import com.jean.vocabs.ui.components.breathing
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.theme.LocalDarkTheme
 import com.jean.vocabs.ui.theme.VocabuColors
 import kotlin.math.pow
@@ -108,7 +108,7 @@ internal fun RecordingScreen(
             if (isRecording) Motion.DEFAULT else Motion.FAST,
             easing = FastOutSlowInEasing,
         ),
-        label = "telaDeGravacao",
+        label = "recordingScreen",
     )
 
     Box(
@@ -258,18 +258,18 @@ private fun RecordingActions(
 
 @Composable
 private fun DiscardButton(onClick: () -> Unit) {
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(ACTION_CORNER),
         color = Color.Transparent,
         contentColor = SALMON_AT_NIGHT,
         border = BorderStroke(1.dp, SALMON_AT_NIGHT.copy(alpha = 0.45f)),
-        interactionSource = toque,
+        interactionSource = touch,
         modifier = Modifier
             .width(86.dp)
             .fillMaxHeight()
-            .shrinkOnTouch(toque, minimum = 0.94f),
+            .shrinkOnTouch(touch, minimum = 0.94f),
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -288,19 +288,19 @@ private fun DiscardButton(onClick: () -> Unit) {
 
 @Composable
 private fun RowScope.BotaoDeGuardar(onClick: () -> Unit) {
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(ACTION_CORNER),
         color = FULL_GREEN,
         contentColor = Color.White,
-        interactionSource = toque,
+        interactionSource = touch,
         modifier = Modifier
             .weight(1f)
             .fillMaxHeight()
             // Less than the cards (0.97): at this size the same ratio reads as a
             // jolt rather than a touch.
-            .shrinkOnTouch(toque, minimum = 0.985f),
+            .shrinkOnTouch(touch, minimum = 0.985f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

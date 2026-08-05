@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
@@ -45,7 +46,7 @@ import com.jean.vocabs.ui.components.PrimaryButton
 import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.cardOutline
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 
 /**
  * "New language".
@@ -65,7 +66,8 @@ fun NewLanguageScreen(
     var query by remember { mutableStateOf("") }
     var chosen by remember { mutableStateOf<Language?>(null) }
 
-    val available = remember(state, query) { vm.available().search(query) }
+    val context = LocalContext.current
+    val available = remember(state, query, context) { vm.available().search(query, context::nameOf) }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(14.dp),

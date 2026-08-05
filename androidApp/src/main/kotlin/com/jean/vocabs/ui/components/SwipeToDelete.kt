@@ -125,22 +125,22 @@ fun SwipeToDelete(
     val background by animateColorAsState(
         targetValue = if (armed) colors.error else colors.errorContainer,
         animationSpec = tween(Motion.FAST),
-        label = "fundoDoDescarte",
+        label = "discardBackground",
     )
     val tinta by animateColorAsState(
         targetValue = if (armed) colors.onError else colors.error,
         animationSpec = tween(Motion.FAST),
-        label = "tintaDoDescarte",
+        label = "discardTint",
     )
     val trashScale by animateFloatAsState(
         targetValue = if (armed) 1.15f else 0.92f,
         animationSpec = Motion.elasticSpring(),
-        label = "escalaDaLixeira",
+        label = "trashScale",
     )
     val labelOpacity by animateFloatAsState(
         targetValue = if (armed) 1f else 0f,
         animationSpec = tween(Motion.FAST),
-        label = "opacidadeDoRotulo",
+        label = "labelOpacity",
     )
 
     val drag = rememberDraggableState { step ->

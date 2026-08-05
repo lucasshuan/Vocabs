@@ -8,7 +8,7 @@ import kotlin.test.assertSame
 
 class RetentionAndDuplicateTest {
     @Test
-    fun `error e hit atualizam retention e scoreboard`() {
+    fun `a miss and a hit both update retention and the tally`() {
         val initial = Retention.initial(1_000)
         val error = initial.after(false, 2_000)
         assertEquals(0.0, error.points)
@@ -20,7 +20,7 @@ class RetentionAndDuplicateTest {
     }
 
     @Test
-    fun `duplicate normaliza box e spaces sem block`() {
+    fun `duplicate detection folds case and spaces without blocking`() {
         val isReady = entry(1, "on the fence", EntryStatus.READY)
         val pending = entry(2, "ON  THE FENCE", EntryStatus.PENDING)
         assertSame(isReady, duplicateOfTarget("  On the fence ", listOf(pending, isReady)))

@@ -177,7 +177,7 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
             AnimatedContent(
                 targetState = item.status,
                 transitionSpec = { fadeIn(tween(Motion.DEFAULT)) togetherWith fadeOut(tween(Motion.FAST)) },
-                label = "corpoDaFicha",
+                label = "cardBody",
             ) { status -> when (status) {
                 EntryStatus.GENERATING, EntryStatus.PENDING -> Surface(
                     shape = MaterialTheme.shapes.large,

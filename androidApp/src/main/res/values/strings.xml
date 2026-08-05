@@ -1,5 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Vocabu</string>
-    <string name="logo_description">Papagaio da Vocabu</string>
+    <string name="app_name" translatable="false">Vocabu</string>
+    <string name="logo_description">Vocabu\'s parrot</string>
+
+    <!-- Settings -->
+    <string name="settings_section_language">Language</string>
+    <string name="settings_app_language">App language</string>
+    <string name="settings_app_language_note">Buttons, menus and messages.</string>
+    <string name="settings_native_language">Language I speak</string>
+    <string name="settings_native_language_note">Card translations and explanations come out in this language.</string>
+    <string name="settings_system_default">System default</string>
+    <string name="settings_switch">switch</string>
+    <string name="settings_app_language_picker_title">App language</string>
+    <string name="settings_cancel">Cancel</string>
+
+    <!--
+      One string per language rather than a string-array, because an array is
+      index-keyed and index drift against Languages.CATALOG is exactly the
+      invisible coupling this refactor removes. Cost: two lines per new language.
+
+      These are display names and are deliberately not Language.englishName, which
+      the server prompt uses and which wants the precise form ("Modern Standard
+      Arabic", "Mandarin Chinese"). A list of courses wants the short one.
+    -->
+    <string name="language_en">English</string>
+    <string name="language_es">Spanish</string>
+    <string name="language_fr">French</string>
+    <string name="language_de">German</string>
+    <string name="language_it">Italian</string>
+    <string name="language_ja">Japanese</string>
+    <string name="language_ru">Russian</string>
+    <string name="language_zh">Mandarin</string>
+    <string name="language_ko">Korean</string>
+    <string name="language_nl">Dutch</string>
+    <string name="language_sv">Swedish</string>
+    <string name="language_ar">Arabic</string>
+    <string name="language_pt_br">Portuguese (Brazil)</string>
+    <string name="language_pt_pt">Portuguese (Portugal)</string>
+    <string name="language_hi">Hindi</string>
+    <string name="language_tr">Turkish</string>
+    <string name="language_pl">Polish</string>
+    <string name="language_el">Greek</string>
+    <string name="language_he">Hebrew</string>
+    <string name="language_nb">Norwegian</string>
+    <string name="language_da">Danish</string>
+    <string name="language_fi">Finnish</string>
+    <string name="language_cs">Czech</string>
+    <string name="language_hu">Hungarian</string>
+    <string name="language_ro">Romanian</string>
+    <string name="language_uk">Ukrainian</string>
+    <string name="language_th">Thai</string>
+    <string name="language_vi">Vietnamese</string>
+    <string name="language_id">Indonesian</string>
+    <string name="language_ms">Malay</string>
+    <string name="language_fa">Persian</string>
+    <string name="language_sw">Swahili</string>
+    <string name="language_ca">Catalan</string>
+    <string name="language_is">Icelandic</string>
+    <string name="language_bg">Bulgarian</string>
+    <string name="language_hr">Croatian</string>
+    <string name="language_sr">Serbian</string>
+    <string name="language_sk">Slovak</string>
+    <string name="language_et">Estonian</string>
+    <string name="language_lv">Latvian</string>
+    <string name="language_lt">Lithuanian</string>
+    <string name="language_tl">Filipino</string>
+    <string name="language_bn">Bengali</string>
 </resources>

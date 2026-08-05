@@ -12,7 +12,7 @@ import kotlinx.serialization.descriptors.elementNames
 
 class GeradorDeFichaTest {
     @Test
-    fun `servidor injeta type local e normaliza de tres a seis relacionados`() {
+    fun `the server injects the local type and caps related terms at six`() {
         val request = GenerateCardRequest(
             snippet = "He is on the fence",
             target = "on the fence",
@@ -35,7 +35,7 @@ class GeradorDeFichaTest {
     }
 
     @Test
-    fun `a notacao de pronuncia segue o language target, com IPA como padrao`() {
+    fun `pronunciation notation follows the target language, IPA by default`() {
         assertEquals("IPA, without slashes", LanguagePairSpec.of("pt-BR", "en")!!.target.pronunciationNotation)
         assertEquals("Hanyu Pinyin with tone marks", LanguagePairSpec.of("pt-BR", "zh")!!.target.pronunciationNotation)
         assertEquals("Revised Romanization of Korean", LanguagePairSpec.of("pt-BR", "ko")!!.target.pronunciationNotation)
@@ -44,7 +44,7 @@ class GeradorDeFichaTest {
     }
 
     @Test
-    fun `languagePair desconhecido nao vira o languagePair padrao`() {
+    fun `an unknown language pair does not fall back to the default`() {
         // Refusing is the point: falling back would return an English card for
         // a German word, and the person would only find out by reading it.
         assertNull(LanguagePairSpec.of("pt-BR", "klingon"))
@@ -52,7 +52,7 @@ class GeradorDeFichaTest {
     }
 
     @Test
-    fun `o prompt cita os dois languages pelo name em ingles`() {
+    fun `the prompt names both languages by their English name`() {
         val prompt = CardGenerator.promptFor(LanguagePairSpec.of("pt-BR", "de")!!)
         assertTrue(prompt.contains("Brazilian Portuguese"), prompt)
         assertTrue(prompt.contains("German"), prompt)

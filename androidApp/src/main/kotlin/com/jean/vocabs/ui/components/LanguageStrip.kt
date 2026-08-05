@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.shared.domain.CourseBadge
 import com.jean.vocabs.shared.domain.CourseSummary
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**
@@ -115,20 +115,23 @@ fun LanguageChip(
     val background by animateColorAsState(
         targetValue = if (selected) colors.primary else colors.surface,
         animationSpec = tween(Motion.FAST),
-        label = "fundoDoChip",
+        label = "chipBackground",
     )
     val text by animateColorAsState(
         targetValue = if (selected) colors.onPrimary else colors.onSurfaceVariant,
         animationSpec = tween(Motion.FAST),
-        label = "textoDoChip",
+        label = "chipText",
     )
 
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
+    // Hoisted: `semantics` is not a composable scope, so `stringResource` cannot
+    // be called inside it.
+    val name = language.displayName
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier
-            .shrinkOnTouch(toque, minimum = 0.94f)
+            .shrinkOnTouch(touch, minimum = 0.94f)
             .height(38.dp)
             .clip(CircleShape)
             .background(background)
@@ -136,12 +139,12 @@ fun LanguageChip(
                 if (selected) Modifier
                 else Modifier.border(1.dp, colors.outline, CircleShape),
             )
-            .clickable(interactionSource = toque, indication = ripple(), onClick = onClick)
+            .clickable(interactionSource = touch, indication = ripple(), onClick = onClick)
             .padding(start = 8.dp, end = 10.dp)
-            .semantics { contentDescription = badgeDescription(language.displayName, badge) },
+            .semantics { contentDescription = badgeDescription(name, badge) },
     ) {
         CircularFlag(language, size = 24.dp)
-        Text(text = language.displayName, style = MaterialTheme.typography.titleSmall, color = text)
+        Text(text = name, style = MaterialTheme.typography.titleSmall, color = text)
         CourseBadgeView(badge, inverted = selected)
     }
 }
@@ -185,7 +188,7 @@ private fun CourseBadgeView(badge: CourseBadge, inverted: Boolean) {
                     val exit = slideOutVertically { height -> if (rising) -height else height } + fadeOut(tween(140))
                     entry togetherWith exit
                 },
-                label = "contagemDoSelo",
+                label = "badgeCount",
             ) { count ->
                 Text(
                     text = count.coerceAtMost(99).toString(),
@@ -236,7 +239,7 @@ fun LanguageFilterPill(
     val background by animateColorAsState(
         targetValue = if (selected) colors.primary else colors.surface,
         animationSpec = tween(Motion.FAST),
-        label = "fundoDoFiltro",
+        label = "filterBackground",
     )
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -290,12 +293,12 @@ fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
             val width by androidx.compose.animation.core.animateDpAsState(
                 targetValue = if (isCurrent) 16.dp else 5.dp,
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-                label = "larguraDoPonto",
+                label = "dotWidth",
             )
             val color by animateColorAsState(
                 targetValue = if (isCurrent) colors.primary else colors.outlineVariant,
                 animationSpec = tween(Motion.FAST),
-                label = "corDoPonto",
+                label = "dotColor",
             )
             Box(Modifier.width(width).height(5.dp).background(color, CircleShape))
         }

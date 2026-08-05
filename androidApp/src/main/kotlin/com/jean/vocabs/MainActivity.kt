@@ -1,5 +1,6 @@
 package com.jean.vocabs
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,16 +11,24 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.ui.VocabsApp
+import com.jean.vocabs.ui.language.UiLanguage
 import com.jean.vocabs.ui.theme.VocabsTheme
 import com.jean.vocabs.ui.theme.darkAccordingTo
 
 class MainActivity : ComponentActivity() {
+
+    // No `android:configChanges` for locale on this activity, deliberately: a
+    // language change has to recreate so every `stringResource` re-reads.
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(UiLanguage.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Before any screen: the repository is created the first time a ViewModel
         // asks for it, and by then the server URL has to be decided.
-        AppContainer.configurar(
+        AppContainer.configure(
             lanServer = BuildConfig.LAN_SERVER,
             token = BuildConfig.APP_TOKEN,
         )

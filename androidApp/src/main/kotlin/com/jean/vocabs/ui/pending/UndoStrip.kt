@@ -134,12 +134,12 @@ private fun CardSurface(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                val toque = rememberHaptics()
+                val touch = rememberHaptics()
                 Surface(
                     onClick = onUndo,
                     shape = CircleShape,
                     color = colors.primary,
-                    interactionSource = toque,
+                    interactionSource = touch,
                 ) {
                     Text(
                         text = "Desfazer",

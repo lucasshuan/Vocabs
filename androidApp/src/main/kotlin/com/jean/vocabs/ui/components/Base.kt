@@ -94,12 +94,12 @@ fun DashedBox(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(radius)
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
     val base = modifier
-        .then(if (onClick != null) Modifier.shrinkOnTouch(toque) else Modifier)
+        .then(if (onClick != null) Modifier.shrinkOnTouch(touch) else Modifier)
         .clip(shape)
         .then(
-            if (onClick != null) Modifier.clickable(interactionSource = toque, indication = ripple(), onClick = onClick)
+            if (onClick != null) Modifier.clickable(interactionSource = touch, indication = ripple(), onClick = onClick)
             else Modifier,
         )
         .dashedOutline(color, radius)
@@ -128,14 +128,14 @@ fun ScreenCard(
     if (onClick == null) {
         Surface(shape = shape, color = color, border = outline, modifier = modifier, content = inner)
     } else {
-        val toque = rememberHaptics()
+        val touch = rememberHaptics()
         Surface(
             onClick = onClick,
             shape = shape,
             color = color,
             border = outline,
-            interactionSource = toque,
-            modifier = modifier.shrinkOnTouch(toque),
+            interactionSource = touch,
+            modifier = modifier.shrinkOnTouch(touch),
             content = inner,
         )
     }
@@ -271,7 +271,7 @@ fun PrimaryButton(
     enabled: Boolean = true,
     initialContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
     // Less than the cards (0.97): this button spans the screen, and the same
     // ratio on a target that size reads as a jolt rather than a touch.
     Button(
@@ -279,8 +279,8 @@ fun PrimaryButton(
         enabled = enabled,
         shape = RoundedCornerShape(18.dp),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-        interactionSource = toque,
-        modifier = modifier.shrinkOnTouch(toque, minimum = 0.985f).fillMaxWidth().height(56.dp),
+        interactionSource = touch,
+        modifier = modifier.shrinkOnTouch(touch, minimum = 0.985f).fillMaxWidth().height(56.dp),
     ) {
         initialContent?.invoke(this)
         Text(text, style = MaterialTheme.typography.titleMedium)
@@ -296,18 +296,18 @@ fun SelectablePill(
     shape: Shape = CircleShape,
 ) {
     val colors = MaterialTheme.colorScheme
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
     // The colors transition rather than cutting: in a row of filters a hard cut
     // makes two pills blink at once, and neither says where the selection went.
     val background by animateColorAsState(
         targetValue = if (isSelected) colors.primary else colors.surface,
         animationSpec = tween(Motion.FAST),
-        label = "fundoDaPilula",
+        label = "pillBackground",
     )
     val tinta by animateColorAsState(
         targetValue = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
         animationSpec = tween(Motion.FAST),
-        label = "tintaDaPilula",
+        label = "pillTint",
     )
     Surface(
         onClick = onClick,
@@ -315,8 +315,8 @@ fun SelectablePill(
         color = background,
         contentColor = tinta,
         border = if (isSelected) null else cardOutline(),
-        interactionSource = toque,
-        modifier = modifier.shrinkOnTouch(toque, minimum = 0.94f),
+        interactionSource = touch,
+        modifier = modifier.shrinkOnTouch(touch, minimum = 0.94f),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)) {
             Text(text = label, style = MaterialTheme.typography.labelMedium, color = tinta)
@@ -347,14 +347,14 @@ fun Pill(
     if (onClick == null) {
         Surface(shape = CircleShape, color = background, border = outline, modifier = modifier, content = content)
     } else {
-        val toque = rememberHaptics()
+        val touch = rememberHaptics()
         Surface(
             onClick = onClick,
             shape = CircleShape,
             color = background,
             border = outline,
-            interactionSource = toque,
-            modifier = modifier.shrinkOnTouch(toque, minimum = 0.94f),
+            interactionSource = touch,
+            modifier = modifier.shrinkOnTouch(touch, minimum = 0.94f),
             content = content,
         )
     }
@@ -378,7 +378,7 @@ fun EmptyState(
     val scale by animateFloatAsState(
         targetValue = if (arrived) 1f else 0.6f,
         animationSpec = Motion.elasticSpring(),
-        label = "escalaDoVazio",
+        label = "emptyScale",
     )
 
     Column(
@@ -419,14 +419,14 @@ fun CircularButton(
     onClick: () -> Unit,
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
     Surface(
         onClick = onClick,
         shape = CircleShape,
         color = Color.Transparent,
         contentColor = color,
-        interactionSource = toque,
-        modifier = Modifier.shrinkOnTouch(toque, minimum = 0.88f),
+        interactionSource = touch,
+        modifier = Modifier.shrinkOnTouch(touch, minimum = 0.88f),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp)) {
             Icon(icon, contentDescription, tint = color, modifier = Modifier.size(24.dp))

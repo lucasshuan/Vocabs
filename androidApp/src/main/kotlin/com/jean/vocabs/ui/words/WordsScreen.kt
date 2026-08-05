@@ -41,7 +41,7 @@ import com.jean.vocabs.ui.components.TypeBadge
 import com.jean.vocabs.ui.components.levelLabel
 import com.jean.vocabs.ui.components.levelLabelColor
 import com.jean.vocabs.ui.components.nextReviewText
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**
@@ -151,7 +151,7 @@ private fun LanguageHeader(
     val spin by animateFloatAsState(
         targetValue = if (activePair) 90f else 0f,
         animationSpec = tween(200),
-        label = "giroDoCabecalho",
+        label = "headerRotation",
     )
 
     Surface(

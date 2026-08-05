@@ -50,7 +50,7 @@ import com.jean.vocabs.ui.components.PrimaryButton
 import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.smoothEntrance
 import com.jean.vocabs.ui.components.breathing
-import com.jean.vocabs.ui.displayName
+import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
 import kotlinx.coroutines.delay
 
@@ -162,7 +162,7 @@ private fun ConfirmBadge() {
     val scale by animateFloatAsState(
         targetValue = if (appeared) 1f else 0.5f,
         animationSpec = Motion.elasticSpring(),
-        label = "escalaDoSelo",
+        label = "badgeScale",
     )
 
     Box(
@@ -202,7 +202,7 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
                 AnimatedContent(
                     targetState = entry.status,
                     transitionSpec = { fadeIn(tween(Motion.DEFAULT)) togetherWith fadeOut(tween(Motion.FAST)) },
-                    label = "estadoDaLinha",
+                    label = "rowState",
                 ) { status ->
                     when (status) {
                         EntryStatus.READY -> Text(
@@ -272,7 +272,7 @@ private fun IndeterminateBar() {
     val fraction by animateFloatAsState(
         targetValue = if (full) 0.72f else 0.12f,
         animationSpec = tween(2_400),
-        label = "fracaoDaGeracao",
+        label = "generationFraction",
     )
     Box(Modifier.width(54.dp).height(5.dp).background(colors.outlineVariant, CircleShape)) {
         Box(Modifier.fillMaxWidth(fraction).height(5.dp).background(colors.primary, CircleShape))

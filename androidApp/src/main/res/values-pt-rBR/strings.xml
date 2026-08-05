@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="logo_description">Papagaio da Vocabu</string>
+
+    <!-- Configurações -->
+    <string name="settings_section_language">Idioma</string>
+    <string name="settings_app_language">Idioma do app</string>
+    <string name="settings_app_language_note">Botões, menus e mensagens.</string>
+    <string name="settings_native_language">Idioma que eu falo</string>
+    <string name="settings_native_language_note">As traduções e explicações das fichas saem neste idioma.</string>
+    <string name="settings_system_default">Padrão do sistema</string>
+    <string name="settings_switch">trocar</string>
+    <string name="settings_app_language_picker_title">Idioma do app</string>
+    <string name="settings_cancel">Cancelar</string>
+
+    <string name="language_en">Inglês</string>
+    <string name="language_es">Espanhol</string>
+    <string name="language_fr">Francês</string>
+    <string name="language_de">Alemão</string>
+    <string name="language_it">Italiano</string>
+    <string name="language_ja">Japonês</string>
+    <string name="language_ru">Russo</string>
+    <string name="language_zh">Mandarim</string>
+    <string name="language_ko">Coreano</string>
+    <string name="language_nl">Holandês</string>
+    <string name="language_sv">Sueco</string>
+    <string name="language_ar">Árabe</string>
+    <string name="language_pt_br">Português (Brasil)</string>
+    <string name="language_pt_pt">Português (Portugal)</string>
+    <string name="language_hi">Hindi</string>
+    <string name="language_tr">Turco</string>
+    <string name="language_pl">Polonês</string>
+    <string name="language_el">Grego</string>
+    <string name="language_he">Hebraico</string>
+    <string name="language_nb">Norueguês</string>
+    <string name="language_da">Dinamarquês</string>
+    <string name="language_fi">Finlandês</string>
+    <string name="language_cs">Tcheco</string>
+    <string name="language_hu">Húngaro</string>
+    <string name="language_ro">Romeno</string>
+    <string name="language_uk">Ucraniano</string>
+    <string name="language_th">Tailandês</string>
+    <string name="language_vi">Vietnamita</string>
+    <string name="language_id">Indonésio</string>
+    <string name="language_ms">Malaio</string>
+    <string name="language_fa">Persa</string>
+    <string name="language_sw">Suaíli</string>
+    <string name="language_ca">Catalão</string>
+    <string name="language_is">Islandês</string>
+    <string name="language_bg">Búlgaro</string>
+    <string name="language_hr">Croata</string>
+    <string name="language_sr">Sérvio</string>
+    <string name="language_sk">Eslovaco</string>
+    <string name="language_et">Estoniano</string>
+    <string name="language_lv">Letão</string>
+    <string name="language_lt">Lituano</string>
+    <string name="language_tl">Filipino</string>
+    <string name="language_bn">Bengali</string>
+</resources>

@@ -110,7 +110,7 @@ class Preferences(context: Context) {
     // ---- theme --------------------------------------------------------------
 
     var theme: ThemePreference
-        get() = ThemePreference.de(prefs.getString(THEME, null))
+        get() = ThemePreference.of(prefs.getString(THEME, null))
         set(value) = prefs.edit().putString(THEME, value.name).apply()
 
     // ---- observation --------------------------------------------------------
@@ -165,6 +165,6 @@ enum class ThemePreference {
     SYSTEM;
 
     companion object {
-        fun de(value: String?): ThemePreference = entries.firstOrNull { it.name == value } ?: SYSTEM
+        fun of(value: String?): ThemePreference = entries.firstOrNull { it.name == value } ?: SYSTEM
     }
 }

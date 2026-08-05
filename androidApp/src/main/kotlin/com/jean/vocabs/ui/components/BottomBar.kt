@@ -94,20 +94,20 @@ private fun TabItem(tab: Tab, isSelected: Boolean, onClick: () -> Unit, modifier
     val tinta by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         animationSpec = tween(Motion.DEFAULT),
-        label = "tintaDaAba",
+        label = "tabTint",
     )
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.12f else 1f,
         animationSpec = Motion.elasticSpring(),
-        label = "escalaDaAba",
+        label = "tabScale",
     )
-    val toque = rememberHaptics()
+    val touch = rememberHaptics()
 
     Surface(
         onClick = onClick,
         color = Color.Transparent,
         shape = CircleShape,
-        interactionSource = toque,
+        interactionSource = touch,
         modifier = modifier.height(56.dp),
     ) {
         Box(contentAlignment = Alignment.Center) {

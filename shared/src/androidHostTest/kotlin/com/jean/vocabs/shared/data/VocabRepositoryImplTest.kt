@@ -41,7 +41,7 @@ class VocabRepositoryImplTest {
     private var now = Instant.parse("2026-01-10T12:00:00Z").toEpochMilli()
 
     @Test
-    fun `batch overlaid limita concurrency preserva success partial e contabiliza so success`() = runBlocking {
+    fun `a batch caps concurrency, keeps partial success and counts only what succeeded`() = runBlocking {
         val running = AtomicInteger(0)
         val maximum = AtomicInteger(0)
         val calls = AtomicInteger(0)
@@ -77,7 +77,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `delete card preserva media ate a last sibling`() = runBlocking {
+    fun `deleting a card keeps the media until the last sibling goes`() = runBlocking {
         val removed = mutableListOf<String>()
         val repo = repository(remove = removed::add)
         val capture = repo.captureMedia(CaptureFormat.PHOTO, "foto.jpg")
@@ -96,7 +96,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `activity e usage de ia viram com o month e day real`() = runBlocking {
+    fun `activity and AI usage turn over on the real day and month`() = runBlocking {
         val repo = repository()
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
@@ -110,7 +110,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `cada course ve so as own words e switch de course swap a list`() = runBlocking {
+    fun `each course sees only its own words, and switching swaps the list`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "en"))
         val repo = repository(course = course)
 
@@ -130,7 +130,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `scope All ve os three languages e scope Curso ve so o named`() = runBlocking {
+    fun `Scope All sees all three languages, Scope Course only the named one`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "en"))
         val repo = repository(course = course)
 
@@ -151,7 +151,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `o language chosen na sheet expires o course activePair`() = runBlocking {
+    fun `the language chosen on the sheet beats the active course`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "en"))
         val repo = repository(course = course)
 
@@ -166,7 +166,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `switch o language da capture so vale antes de turn cards`() = runBlocking {
+    fun `a capture language change only applies before it becomes cards`() = runBlocking {
         val repo = repository()
         val snippet = "tant pis"
         val id = repo.captureSnippet(snippet)
@@ -180,7 +180,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `o summary de cada course traz o badge da strip`() = runBlocking {
+    fun `each course summary carries the strip badge`() = runBlocking {
         val repo = repository()
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
@@ -197,7 +197,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `a screen de confirmation acompanha so os ids que ranOut de nascer`() = runBlocking {
+    fun `the confirmation screen follows only the ids just created`() = runBlocking {
         val repo = repository()
         val snippet = "The plan went haywire"
         val id = repo.captureSnippet(snippet)
@@ -213,7 +213,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `a card e regenerated no language em que wasBorn, mesmo after switch de course`() = runBlocking {
+    fun `a card regenerates in the language it was born in, even after switching course`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "de"))
         val requests = mutableListOf<String>()
         val repo = repository(course = course, onRequest = requests::add)
@@ -227,7 +227,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `quota conta o que ja left today e a queue do course activePair`() = runBlocking {
+    fun `the quota counts what left today plus the active course queue`() = runBlocking {
         val repo = repository()
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
@@ -246,7 +246,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `a row do time record capture, card, answer e change de level`() = runBlocking {
+    fun `the timeline records capture, card, answer and level change`() = runBlocking {
         val repo = repository()
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()

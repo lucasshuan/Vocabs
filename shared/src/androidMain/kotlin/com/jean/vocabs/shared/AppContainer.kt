@@ -39,7 +39,7 @@ object AppContainer {
      * Overrides URL and token when the cloud arrives — today only `androidApp`
      * calls this, passing what the build baked into the APK.
      */
-    fun configurar(lanServer: String, token: String) {
+    fun configure(lanServer: String, token: String) {
         this.lanServer = lanServer
         this.token = token
     }

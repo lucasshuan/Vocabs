@@ -30,21 +30,21 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     val native: StateFlow<String> = preferences.observeNativeLanguage()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferences.native)
 
-    private val _exportando = MutableStateFlow(false)
-    val exporting: StateFlow<Boolean> = _exportando.asStateFlow()
+    private val _exporting = MutableStateFlow(false)
+    val exporting: StateFlow<Boolean> = _exporting.asStateFlow()
 
     fun chooseTheme(value: ThemePreference) {
         preferences.theme = value
     }
 
     fun export(onReady: (File) -> Unit, onError: (String) -> Unit) {
-        if (_exportando.value) return
+        if (_exporting.value) return
         viewModelScope.launch {
-            _exportando.value = true
+            _exporting.value = true
             runCatching {
                 VocabuExporter.create(getApplication(), repository.exportData())
             }.onSuccess(onReady).onFailure { onError(it.message ?: "Não foi possível exportar os dados.") }
-            _exportando.value = false
+            _exporting.value = false
         }
     }
 }

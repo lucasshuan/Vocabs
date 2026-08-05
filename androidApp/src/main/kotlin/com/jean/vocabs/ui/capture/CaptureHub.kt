@@ -361,29 +361,29 @@ private fun HubButton(
     val background by animateColorAsState(
         targetValue = if (fanOpen) Color.Transparent else colors.primary,
         animationSpec = tween(Motion.FAST),
-        label = "fundoDoBotao",
+        label = "buttonBackground",
     )
     val outline by animateColorAsState(
         targetValue = if (fanOpen) Color.White.copy(alpha = 0.38f) else Color.Transparent,
         animationSpec = tween(Motion.FAST),
-        label = "contornoDoBotao",
+        label = "buttonOutline",
     )
     val tinta by animateColorAsState(
         targetValue = if (fanOpen) Color.White.copy(alpha = 0.5f) else colors.onPrimary,
         animationSpec = tween(Motion.FAST),
-        label = "tintaDoBotao",
+        label = "buttonTint",
     )
     val scale = animateFloatAsState(
         targetValue = if (fanOpen) 0.94f else 1f,
         animationSpec = Motion.gestureSpring(),
-        label = "escalaDoBotao",
+        label = "buttonScale",
     )
     // The shadow is for the solid button. Over the veil it separates nothing and
     // only blurs the dashed outline.
     val shadow = animateFloatAsState(
         targetValue = if (fanOpen) 0f else 1f,
         animationSpec = tween(Motion.FAST),
-        label = "sombraDoBotao",
+        label = "buttonShadow",
     )
 
     // An infinite animation under an opaque surface is battery spent on no frame.
@@ -435,7 +435,7 @@ private fun Modifier.halo(active: Boolean, color: Color): Modifier = composed {
             },
             repeatMode = RepeatMode.Restart,
         ),
-        label = "avancoDoHalo",
+        label = "haloProgress",
     )
     drawBehind {
         val f = advance.value
@@ -449,7 +449,7 @@ private fun Modifier.halo(active: Boolean, color: Color): Modifier = composed {
 
 private fun Modifier.hubBreath(active: Boolean): Modifier = composed {
     if (!active) return@composed this
-    val transition = rememberInfiniteTransition(label = "respiro")
+    val transition = rememberInfiniteTransition(label = "breath")
     val scale = transition.animateFloat(
         initialValue = 1f,
         targetValue = 1.045f,
@@ -457,7 +457,7 @@ private fun Modifier.hubBreath(active: Boolean): Modifier = composed {
             animation = tween(2_000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
         ),
-        label = "escalaDoRespiro",
+        label = "breathScale",
     )
     graphicsLayer {
         scaleX = scale.value
@@ -512,12 +512,12 @@ private fun FanTarget(
     val emphasis = animateFloatAsState(
         targetValue = if (marked) 1f else 0f,
         animationSpec = tween(TARGET_HIGHLIGHT_MS, easing = LinearOutSlowInEasing),
-        label = "realceDoAlvo",
+        label = "targetHighlight",
     )
     val tinta by animateColorAsState(
         targetValue = if (marked) Color.White else palette.color,
         animationSpec = tween(TARGET_HIGHLIGHT_MS),
-        label = "tintaDoAlvo",
+        label = "targetTint",
     )
 
     // The label hangs **outside** the disc's box: in a column what centers on the
@@ -591,12 +591,12 @@ private fun GuideToTarget(target: GestureTarget, fanOpen: Boolean) {
     val presence = animateFloatAsState(
         targetValue = if (fanOpen) 1f else 0f,
         animationSpec = tween(Motion.FAST),
-        label = "guia",
+        label = "guide",
     )
     val emphasis = animateFloatAsState(
         targetValue = if (marked != null) 1f else 0f,
         animationSpec = tween(TARGET_HIGHLIGHT_MS),
-        label = "realceDaGuia",
+        label = "guideHighlight",
     )
 
     Box(
@@ -636,12 +636,12 @@ private fun GestureHint(target: GestureTarget, fanOpen: Boolean) {
     val background by animateColorAsState(
         targetValue = marked?.let { formatColors(it).color } ?: NIGHT.copy(alpha = 0.82f),
         animationSpec = tween(TARGET_HIGHLIGHT_MS),
-        label = "fundoDaDica",
+        label = "hintBackground",
     )
     val presence = animateFloatAsState(
         targetValue = if (fanOpen) 1f else 0f,
         animationSpec = tween(Motion.FAST),
-        label = "dica",
+        label = "hint",
     )
 
     Box(
