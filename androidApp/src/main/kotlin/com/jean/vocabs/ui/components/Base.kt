@@ -50,28 +50,19 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.ui.theme.LocalDarkTheme
 
-/**
- * The blocks every screen repeats.
- *
- * Each one exists because the same shape appeared in three or four places and was
- * drifting in each: the card that gained an outline in dark on one screen but not
- * another, the big number centered here and left-aligned there.
- */
 
 /**
- * The card outline — deliberately null in dark.
- *
- * In light the surface is white on a near-white background and needs the line to
- * exist at all; in dark the surface is already lighter than the background and
- * the line would only dirty the edge.
+ * Null in dark on purpose: in light the surface is white on a near-white
+ * background and needs the line; in dark it is already lighter than the
+ * background and the line would only dirty the edge.
  */
 @Composable
 fun cardOutline(): BorderStroke? =
     if (LocalDarkTheme.current) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 
 /**
- * The dashed outline of "something else fits here": the box exists, the content
- * does not yet. A solid outline would say "this is a card".
+ * "Something else fits here": the box exists, the content does not yet. A solid
+ * outline would say "this is a card".
  *
  * Hand-drawn because `BorderStroke` does not accept a `PathEffect`.
  */
@@ -93,7 +84,6 @@ fun Modifier.dashedOutline(
     )
 }
 
-/** The dashed box, ready to use. */
 @Composable
 fun DashedBox(
     modifier: Modifier = Modifier,
@@ -118,12 +108,9 @@ fun DashedBox(
 }
 
 /**
- * The default content surface.
- *
  * When clickable it gives under the finger. The shrink lives here rather than at
- * each call because it is exactly the kind of detail that only survives if it is
- * free: there are dozens of clickable cards, and no screen would remember to ask
- * for it one at a time.
+ * each call because it only survives if it is free: there are dozens of clickable
+ * cards, and no screen would remember to ask for it one at a time.
  */
 @Composable
 fun ScreenCard(
@@ -155,8 +142,6 @@ fun ScreenCard(
 }
 
 /**
- * The supporting label above each block.
- *
  * Normal case at 12 sp: the spaced small-caps of the older design competed in
  * weight with the content it was announcing.
  */
@@ -170,7 +155,6 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** The big-number tile, shared by Home, Profile and the review summary. */
 @Composable
 fun MetricCard(
     value: String,
@@ -203,7 +187,6 @@ fun MetricCard(
     }
 }
 
-/** The list row with icon and value at the ends. */
 @Composable
 fun ListRow(
     modifier: Modifier = Modifier,
@@ -232,7 +215,6 @@ fun ListRow(
     }
 }
 
-/** The common case of [ListRow]: title plus one supporting line. */
 @Composable
 fun ListRow(
     title: String,
@@ -255,7 +237,6 @@ fun ListRow(
     }
 }
 
-/** The colored disc that opens Pending's rows. */
 @Composable
 fun IconDisc(
     icon: ImageVector,
@@ -272,7 +253,6 @@ fun IconDisc(
     }
 }
 
-/** The "this opens another screen" chevron. */
 @Composable
 fun RowChevron() {
     Icon(
@@ -283,7 +263,6 @@ fun RowChevron() {
     )
 }
 
-/** The screen's primary action: plum, full width, 18 dp corners. */
 @Composable
 fun PrimaryButton(
     text: String,
@@ -308,7 +287,6 @@ fun PrimaryButton(
     }
 }
 
-/** Words' filter pill and Capture's format tab are the same thing. */
 @Composable
 fun SelectablePill(
     label: String,
@@ -319,9 +297,8 @@ fun SelectablePill(
 ) {
     val colors = MaterialTheme.colorScheme
     val toque = rememberHaptics()
-    // The colors transition rather than cutting between frames: in a row of
-    // filters a hard cut makes two pills blink at once, and neither says where
-    // the selection came from.
+    // The colors transition rather than cutting: in a row of filters a hard cut
+    // makes two pills blink at once, and neither says where the selection went.
     val background by animateColorAsState(
         targetValue = if (isSelected) colors.primary else colors.surface,
         animationSpec = tween(Motion.FAST),
@@ -347,12 +324,7 @@ fun SelectablePill(
     }
 }
 
-/**
- * A content pill: related term, "see more", "try again".
- *
- * With [highlight] it turns plum on lilac — the difference between "this is one
- * more word" and "this does something".
- */
+/** With [highlight] it turns plum on lilac — "this does something". */
 @Composable
 fun Pill(
     text: String,
@@ -389,12 +361,9 @@ fun Pill(
 }
 
 /**
- * The empty state of Words, Pending and Review.
- *
- * The disc springs in and the text rises behind it. An empty screen is the one
- * place with no content to hold the eye, and arriving fully assembled makes
- * "Memory up to date" look like a loading failure instead of the good outcome it
- * is.
+ * An empty screen is the one place with no content to hold the eye, and arriving
+ * fully assembled makes "Memory up to date" look like a loading failure instead
+ * of the good outcome it is.
  */
 @Composable
 fun EmptyState(
@@ -443,7 +412,6 @@ fun EmptyState(
     }
 }
 
-/** The round header button (back, close, discard). */
 @Composable
 fun CircularButton(
     icon: ImageVector,
@@ -466,7 +434,6 @@ fun CircularButton(
     }
 }
 
-/** The quiet text button, centered under the primary action. */
 @Composable
 fun SecondaryAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(

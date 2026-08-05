@@ -68,16 +68,12 @@ import kotlinx.coroutines.delay
  * The recording, with its own screen and actions.
  *
  * The gesture ends when the finger lifts, so recording **starts** with the hand
- * already free. That is what lets the phone be set down on a table, moved closer
- * to whoever is talking, or swapped between hands without risking the capture.
+ * already free — the phone can be set down, moved closer to whoever is talking,
+ * or swapped between hands without risking the capture. Ending is a tap, never a
+ * gesture.
  *
- * **Ending is a tap, never a gesture.** Both destinations stay in view the whole
- * time and cost one tap each — see [RecordingActions] for why they are not the
- * same size.
- *
- * The screen is opaque and blocks every touch below it. It is the last thing the
- * hub draws, so it sits above the `+`, which must not stay clickable under a
- * screen that is no longer it.
+ * Opaque, and the last thing the hub draws: it sits above the `+`, which must not
+ * stay clickable under a screen that is no longer it.
  */
 @Composable
 internal fun RecordingScreen(
@@ -90,14 +86,12 @@ internal fun RecordingScreen(
     val cancel: () -> Unit = { capture.cancelAudio() }
 
     // Back **saves**. Nothing is discarded without being asked for, and the ask
-    // has exactly one place: the discard button. Audio saved by mistake costs one
-    // tap in Pending; audio discarded by mistake costs nothing to undo because it
-    // no longer exists.
+    // has one place: the discard button. Audio saved by mistake costs one tap in
+    // Pending; audio discarded by mistake cannot be undone at all.
     BackHandler(enabled = isRecording) { save() }
 
-    // The app draws behind the status bar. On the light theme the system icons
-    // are dark and would vanish against this background, so they flip to light
-    // for the duration and go back to what the theme asks when recording ends.
+    // On the light theme the system icons are dark and would vanish against this
+    // background, so they flip to light for the duration.
     val view = LocalView.current
     val darkTheme = LocalDarkTheme.current
     DisposableEffect(darkTheme) {
@@ -152,10 +146,9 @@ internal fun RecordingScreen(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 CircularFlag(language, size = 16.dp)
-                // There is no language detector in the app. What exists is the
-                // fallback rule: the capture lands in the course open in the hub.
-                // This sentence describes what actually happens, and it is the
-                // one that has to change the day detection exists.
+                // There is no language detector in the app: the capture lands in
+                // the course open in the hub. This sentence is the one that has
+                // to change the day detection exists.
                 Text(
                     text = "vai para o curso de ${language.displayName}",
                     style = MaterialTheme.typography.bodyMedium,
@@ -178,43 +171,34 @@ internal fun RecordingScreen(
 }
 
 /**
- * Blocks touch on what is under this screen without consuming anything.
+ * Blocks touch below without consuming anything.
  *
  * Being in the way is enough: Compose stops its hit test at the topmost child it
- * reaches, so a full-screen `pointerInput` already keeps the `+` and the bar —
- * still composed under an opaque surface — from receiving anything.
- *
- * Consuming as well was actively harmful: Compose gestures give up when they meet
- * an already-consumed change. Blocking is the hit test's job; consuming belongs
- * to the gesture that actually wants the event.
+ * reaches. Consuming as well was actively harmful — Compose gestures give up when
+ * they meet an already-consumed change.
  */
 private fun Modifier.barTaps(): Modifier = pointerInput(Unit) {
     awaitEachGesture { awaitFirstDown(requireUnconsumed = false) }
 }
 
 /**
- * Recording colors: the screen is dark in both themes, so these are the light
- * ones. `colorScheme.tertiary` is the dark green on the light theme — legible on
- * white and nearly invisible here.
+ * The screen is dark in both themes, so these are the light colors.
+ * `colorScheme.tertiary` is the dark green on the light theme — legible on white
+ * and nearly invisible here.
  *
- * The red deserves a line. Everywhere else in the app red means **category** —
- * photo — and never error or action, so a queued photo never looks like a broken
- * one. This screen is the one exception and pays for it: here salmon means
- * discard, and no photo target exists here, so the two senses never share a
- * screen. Pulling the theme's `error` in would create a second red almost
- * identical to the first, which is the reliable way to make both illegible.
+ * Everywhere else in the app red means **category** (photo), never error or
+ * action. This screen is the one exception and can afford it: no photo target
+ * exists here, so the two senses never share a screen. Pulling in the theme's
+ * `error` would create a second red almost identical to the first.
  */
 private val MINT_AT_NIGHT = VocabuColors.Mint
 private val SALMON_AT_NIGHT = VocabuColors.ParrotDark
 private val FULL_GREEN = VocabuColors.MintDark
 
 /**
- * The "recording" badge, at the top.
- *
- * Far from the actions on purpose: the top says what the screen **is**, the
- * bottom what it does. The dot pulses because it is the only element proving the
- * microphone is open right now — the running clock says the same, but an eye
- * glancing at a phone left on the table does not read numbers.
+ * The dot pulses because it is the only element proving the microphone is open
+ * right now — the running clock says the same, but an eye glancing at a phone on
+ * the table does not read numbers.
  */
 @Composable
 private fun RecordingBadge(isRecording: Boolean, modifier: Modifier = Modifier) {
@@ -239,29 +223,23 @@ private fun RecordingBadge(isRecording: Boolean, modifier: Modifier = Modifier) 
     }
 }
 
-/** The badge's translucent background — a pill of 8% white over the night. */
 private fun Modifier.darkPill(): Modifier = drawBehind {
     drawRoundRect(Color.White, alpha = 0.08f, cornerRadius = CornerRadius(size.height / 2f))
 }
 
-/** Height and corner of the two buttons at the base. */
 private val ACTION_HEIGHT = 68.dp
 private val ACTION_CORNER = 22.dp
 
 /**
  * Discard on the left, save on the right, one tap each.
  *
- * **They are deliberately different sizes, and that is what makes the choice
- * safe.** Two targets at the base of a screen read at a glance invite the wrong
- * tap; what separates them here is area, not color. Save takes the remaining
- * width and is the only filled one, so the thumb finds it without aiming.
- * Discard is narrow, outline only, and lives in the corner a finger does not
- * reach by accident. The asymmetry is frequency written as layout.
+ * **Deliberately different sizes.** Two equal targets at the base of a screen
+ * read at a glance invite the wrong tap; what separates them is area, not color.
+ * Save takes the remaining width and is the only filled one; discard is narrow,
+ * outline only, in the corner a finger does not reach by accident.
  *
- * Neither asks for confirmation. Saving by mistake is undone in Pending, and the
- * 5 s notice already leads there; discarding is itself the request to discard,
- * and asking "are you sure?" after someone picked the small target would charge
- * twice for one decision.
+ * Neither asks for confirmation. Saving by mistake is undone in Pending;
+ * discarding is itself the request to discard.
  */
 @Composable
 private fun RecordingActions(
@@ -335,21 +313,18 @@ private fun RowScope.BotaoDeGuardar(onClick: () -> Unit) {
     }
 }
 
-/** How many bars the wave holds, and how often a new one enters. */
 private const val WAVE_BARS = 22
 private const val WAVE_INTERVAL = 70L
 
 /**
  * The wave: the microphone's real peak, one bar every 70 ms.
  *
- * A new bar enters from the right and pushes the queue along, answering the only
- * question someone speaking has — is it picking me up? The square root on the
- * peak is perceptual, not decorative: normal speech lives at the bottom of the
- * linear scale, and without it the wave would spend the whole recording flat.
+ * The square root on the peak is perceptual, not decorative — normal speech lives
+ * at the bottom of the linear scale, and without it the wave would spend the
+ * whole recording flat.
  *
  * History is a raw `FloatArray` with an observable cursor. Only the cursor is
- * Compose state, and it is read inside `drawBehind`: fourteen frames a second
- * invalidate the drawing of a rectangle and nothing else.
+ * Compose state, and it is read inside `drawBehind`.
  */
 @Composable
 private fun MicWave(isRecording: Boolean, level: () -> Float) {
@@ -376,7 +351,6 @@ private fun MicWave(isRecording: Boolean, level: () -> Float) {
                 val gap = 5.5.dp.toPx()
                 val smallest = 4.dp.toPx()
                 for (i in 0 until WAVE_BARS) {
-                    // Newest on the right, older ones walking left.
                     val index = ((position - 1 - i) % WAVE_BARS + WAVE_BARS) % WAVE_BARS
                     val height = smallest + (size.height - smallest) * history[index].coerceIn(0f, 1f).pow(0.42f)
                     val x = size.width - width - i * gap

@@ -29,42 +29,35 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 /**
- * The app's motion vocabulary — three durations and three springs, and every
- * animation in the app comes from one of them.
- *
- * Nothing the person *waits on* exceeds [DEFAULT]. Only what can be read while
- * it runs reaches [WIDE], and even those are interruptible: `animate*AsState`
- * chases a new target from wherever it is rather than finishing the old path.
+ * The app's motion vocabulary. Nothing the person *waits on* exceeds [DEFAULT];
+ * only what can be read while it runs reaches [WIDE].
  */
 object Motion {
     const val FAST = 150
 
     const val DEFAULT = 240
 
-    /** Only for what is read while it runs. Never for what blocks a tap. */
+/** Only for what is read while it runs. Never for what blocks a tap. */
     const val WIDE = 620
 
     /**
-     * Short on purpose: staggering gives reading a direction, it does not stage
-     * the screen's arrival. At 34 ms with the [STAGGERED_ITEMS] cap the last
-     * item leaves 170 ms after the first — below what reads as a delay.
+     * Short on purpose. At 34 ms with the [STAGGERED_ITEMS] cap the last item
+     * leaves 170 ms after the first — below what reads as a delay.
      */
     const val STAGGER_STEP = 34L
 
     /**
-     * Past this, every item enters together. Without the cap the tenth card in a
-     * list would wait half a second, making the stagger the bottleneck it exists
-     * to avoid.
+     * Without the cap the tenth card in a list would wait half a second, making
+     * the stagger the bottleneck it exists to avoid.
      */
     const val STAGGERED_ITEMS = 5
 
     fun <T> standardSpring() = spring<T>(dampingRatio = 0.78f, stiffness = Spring.StiffnessMediumLow)
 
-    /** For what celebrates — the "Saved" tick, a badge appearing. */
     fun <T> elasticSpring() = spring<T>(dampingRatio = 0.52f, stiffness = Spring.StiffnessMediumLow)
 
     /**
-     * Stiffer than [standardSpring] because the capture fan's targets move far while the
+     * Stiffer than [standardSpring] because the fan's targets move far while the
      * gesture is still running: a target taking 300 ms to arrive is still
      * travelling when the finger has already chosen.
      */
@@ -72,8 +65,6 @@ object Motion {
 }
 
 /**
- * Whether the device has animations turned off.
- *
  * "Reduce motion" on Android is the animator duration scale at zero. Read once
  * per composition and not observed: the switch lives in system Settings, and
  * returning to the app recomposes everything anyway.
@@ -91,12 +82,10 @@ fun reducedMotion(): Boolean {
 }
 
 /**
- * Shrinks what is being touched, so cards read as objects rather than painted
- * rectangles. Costs nothing: `graphicsLayer` scales in the draw phase, with no
- * remeasure or relayout.
+ * Costs nothing: `graphicsLayer` scales in the draw phase, with no remeasure.
  *
- * Takes the same [source] passed to the `Surface`/`clickable` — whoever draws
- * the ripple and whoever shrinks must react to the same touch.
+ * Takes the same [source] passed to the `Surface`/`clickable` — whoever draws the
+ * ripple and whoever shrinks must react to the same touch.
  */
 @Composable
 fun Modifier.shrinkOnTouch(
@@ -119,12 +108,9 @@ fun Modifier.shrinkOnTouch(
 fun rememberHaptics(): MutableInteractionSource = remember { MutableInteractionSource() }
 
 /**
- * Rises slightly and fades in, staggered by [index] within one list.
- *
  * **Not for `LazyColumn`/`LazyRow`.** There an item is recomposed every time it
- * re-enters the viewport, so the animation would restart on every scroll and the
- * list would look permanently loading. Those use `Modifier.animateItem()`, which
- * animates only what actually entered, left or moved.
+ * re-enters the viewport, so the animation would restart on every scroll. Those
+ * use `Modifier.animateItem()`.
  */
 @Composable
 fun Modifier.smoothEntrance(
@@ -150,12 +136,9 @@ fun Modifier.smoothEntrance(
 }
 
 /**
- * A fraction that starts from zero the first time and chases the target after.
- * An answered review pushes the bar from where it is, without returning to zero.
- *
  * Returns the `State` rather than the `Float` so a `Canvas` or `drawBehind`
  * caller reads `.value` *inside* the draw lambda and invalidates only the draw
- * phase. Returning the number would recompose the whole composable every frame.
+ * phase. Returning the number would recompose every frame.
  */
 @Composable
 fun animatedFraction(target: Float, label: String = "fraction"): State<Float> {
@@ -169,8 +152,6 @@ fun animatedFraction(target: Float, label: String = "fraction"): State<Float> {
 }
 
 /**
- * The same for a number that is read: it counts up from zero.
- *
  * For accumulated achievement, never for a queue or a debt — watching "12 due"
  * count up from zero would celebrate falling behind.
  */
@@ -187,9 +168,6 @@ fun animatedCount(target: Int, label: String = "count"): Int {
 }
 
 /**
- * The breathing of something waiting on the outside world — a card being built,
- * a transcription running.
- *
  * Always conditioned on the state that justifies it: an infinite animation
  * outliving its work keeps Compose recomposing forever.
  */
