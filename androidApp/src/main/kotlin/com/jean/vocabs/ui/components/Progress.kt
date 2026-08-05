@@ -55,20 +55,20 @@ import androidx.compose.ui.unit.sp
 fun ProgressRing(
     fraction: Float,
     modifier: Modifier = Modifier,
-    tamanho: Dp = 74.dp,
-    espessura: Dp = 8.dp,
-    cor: Color = MaterialTheme.colorScheme.tertiary,
-    miolo: @Composable ColumnScope.() -> Unit,
+    size: Dp = 74.dp,
+    thickness: Dp = 8.dp,
+    color: Color = MaterialTheme.colorScheme.tertiary,
+    core: @Composable ColumnScope.() -> Unit,
 ) {
-    val trilha = MaterialTheme.colorScheme.outlineVariant
-    val animada = animatedFraction(fraction, "arcoDoAnel")
-    Box(contentAlignment = Alignment.Center, modifier = modifier.size(tamanho)) {
+    val track = MaterialTheme.colorScheme.outlineVariant
+    val animated = animatedFraction(fraction, "arcoDoAnel")
+    Box(contentAlignment = Alignment.Center, modifier = modifier.size(size)) {
         Canvas(Modifier.fillMaxSize()) {
-            val traco = Stroke(espessura.toPx(), cap = StrokeCap.Round)
-            drawArc(trilha, -90f, 360f, false, style = traco)
-            drawArc(cor, -90f, 360f * animada.value, false, style = traco)
+            val line = Stroke(thickness.toPx(), cap = StrokeCap.Round)
+            drawArc(track, -90f, 360f, false, style = line)
+            drawArc(color, -90f, 360f * animated.value, false, style = line)
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally, content = miolo)
+        Column(horizontalAlignment = Alignment.CenterHorizontally, content = core)
     }
 }
 
@@ -80,11 +80,11 @@ fun ProgressRing(
  * transformaria a semana inteira num boletim de dias perdidos toda segunda.
  */
 data class WeekDay(
-    val sigla: String,
-    val numero: Int,
+    val abbreviation: String,
+    val number: Int,
     val reviews: Int,
     val today: Boolean,
-    val futuro: Boolean,
+    val future: Boolean,
 )
 
 /**
@@ -106,25 +106,25 @@ data class WeekDay(
 fun WeekStrip(
     days: List<WeekDay>,
     modifier: Modifier = Modifier,
-    tracejada: Boolean = false,
+    dashed: Boolean = false,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = modifier.fillMaxWidth()) {
         days.forEachIndexed { index, day ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.weight(1f).entradaSuave(index, deslocamento = 8.dp),
+                modifier = Modifier.weight(1f).smoothEntrance(index, offset = 8.dp),
             ) {
                 Text(
-                    text = if (day.today) "hoje" else day.sigla,
+                    text = if (day.today) "hoje" else day.abbreviation,
                     style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
                     color = when {
                         day.today -> MaterialTheme.colorScheme.primary
-                        tracejada || day.futuro -> MaterialTheme.colorScheme.outline
+                        dashed || day.future -> MaterialTheme.colorScheme.outline
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                 )
-                if (tracejada && !day.today) EmptySquare() else DaySquare(day)
+                if (dashed && !day.today) EmptySquare() else DaySquare(day)
             }
         }
     }
@@ -144,34 +144,34 @@ private fun EmptySquare() {
         Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .contornoTracejado(MaterialTheme.colorScheme.outline, raio = 12.dp),
+            .dashedOutline(MaterialTheme.colorScheme.outline, radius = 12.dp),
     )
 }
 
 @Composable
 private fun DaySquare(day: WeekDay) {
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     // Dois tons de menta e não um gradiente: a faixa tem sete quadrados de 40 dp,
     // e uma escala fina neles não é legível — o que precisa ficar claro é
     // "trabalhei" contra "trabalhei bastante".
-    val fundoAlvo = when {
-        day.today -> cores.secondaryContainer
-        day.futuro -> cores.surfaceVariant
-        day.reviews >= FULL_DAY_REVIEWS -> cores.tertiary
-        day.reviews > 0 -> cores.tertiaryContainer
-        else -> cores.outlineVariant
+    val targetBackground = when {
+        day.today -> colors.secondaryContainer
+        day.future -> colors.surfaceVariant
+        day.reviews >= FULL_DAY_REVIEWS -> colors.tertiary
+        day.reviews > 0 -> colors.tertiaryContainer
+        else -> colors.outlineVariant
     }
     // O quadrado de hoje muda de cor no meio da sessão, quando a terceira revisão
     // o leva de menta clara a menta forte. A transição é o que faz esse degrau
     // ser notado: repintado de um quadro para o outro, ele só aparece na próxima
     // vez que alguém vier olhar a semana.
-    val fundo by animateColorAsState(fundoAlvo, tween(Motion.DEFAULT), label = "fundoDoDia")
+    val background by animateColorAsState(targetBackground, tween(Motion.DEFAULT), label = "fundoDoDia")
     val text = when {
-        day.today -> cores.primary
-        day.futuro -> cores.outline
-        day.reviews >= FULL_DAY_REVIEWS -> cores.onTertiary
-        day.reviews > 0 -> cores.onTertiaryContainer
-        else -> cores.onSurfaceVariant
+        day.today -> colors.primary
+        day.future -> colors.outline
+        day.reviews >= FULL_DAY_REVIEWS -> colors.onTertiary
+        day.reviews > 0 -> colors.onTertiaryContainer
+        else -> colors.onSurfaceVariant
     }
 
     Box(
@@ -179,21 +179,21 @@ private fun DaySquare(day: WeekDay) {
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f)
-            .background(fundo, RoundedCornerShape(12.dp))
+            .background(background, RoundedCornerShape(12.dp))
             .then(
-                if (day.today) Modifier.border(2.dp, cores.primary, RoundedCornerShape(12.dp)) else Modifier,
+                if (day.today) Modifier.border(2.dp, colors.primary, RoundedCornerShape(12.dp)) else Modifier,
             )
             .semantics {
                 contentDescription = when {
-                    day.futuro -> "dia ${day.numero}, ainda não chegou"
-                    day.reviews == 0 -> "dia ${day.numero}, sem revisões"
-                    day.reviews == 1 -> "dia ${day.numero}, 1 revisão"
-                    else -> "dia ${day.numero}, ${day.reviews} revisões"
+                    day.future -> "dia ${day.number}, ainda não chegou"
+                    day.reviews == 0 -> "dia ${day.number}, sem revisões"
+                    day.reviews == 1 -> "dia ${day.number}, 1 revisão"
+                    else -> "dia ${day.number}, ${day.reviews} revisões"
                 }
             },
     ) {
         Text(
-            text = day.numero.toString(),
+            text = day.number.toString(),
             style = MaterialTheme.typography.bodySmall,
             color = text,
             textAlign = TextAlign.Center,
@@ -217,25 +217,25 @@ private const val FULL_DAY_REVIEWS = 3
  * faixas são medidas uma vez só, e a animação fica inteira na fase de desenho.
  */
 @Composable
-fun BandBars(faixas: List<Pair<Int, Color>>, modifier: Modifier = Modifier, altura: Dp = 8.dp) {
-    val visiveis = faixas.filter { it.first > 0 }
-    val tracado = animatedFraction(1f, "tracadoDaBarra")
+fun BandBars(strips: List<Pair<Int, Color>>, modifier: Modifier = Modifier, height: Dp = 8.dp) {
+    val visible = strips.filter { it.first > 0 }
+    val stroke = animatedFraction(1f, "tracadoDaBarra")
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = modifier
             .fillMaxWidth()
-            .height(altura)
+            .height(height)
             .graphicsLayer {
-                scaleX = tracado.value
+                scaleX = stroke.value
                 transformOrigin = TransformOrigin(0f, 0.5f)
             },
     ) {
-        if (visiveis.isEmpty()) {
+        if (visible.isEmpty()) {
             Box(Modifier.weight(1f).fillMaxSize().background(MaterialTheme.colorScheme.outlineVariant, CircleShape))
             return@Row
         }
-        visiveis.forEach { (peso, cor) ->
-            Box(Modifier.weight(peso.toFloat()).fillMaxSize().background(cor, CircleShape))
+        visible.forEach { (peso, color) ->
+            Box(Modifier.weight(peso.toFloat()).fillMaxSize().background(color, CircleShape))
         }
     }
 }
@@ -250,7 +250,7 @@ fun BandBars(faixas: List<Pair<Int, Color>>, modifier: Modifier = Modifier, altu
 @Composable
 fun InnerHeader(
     title: String,
-    aoVoltar: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     end: (@Composable () -> Unit)? = null,
 ) {
@@ -259,10 +259,10 @@ fun InnerHeader(
         modifier = modifier.fillMaxWidth(),
     ) {
         CircularButton(
-            icon = AppIcons.Voltar,
-            descricao = "Voltar",
-            aoClicar = aoVoltar,
-            cor = MaterialTheme.colorScheme.onSurface,
+            icon = AppIcons.Back,
+            contentDescription = "Voltar",
+            onClick = onBack,
+            color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
             text = title,
@@ -282,28 +282,28 @@ fun InnerHeader(
  */
 @Composable
 fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     val fraction by animatedFraction(
         target = used.toFloat() / limit.coerceAtLeast(1),
-        rotulo = "fracaoDeUsoDeIa",
+        label = "fracaoDeUsoDeIa",
     )
     ListRow(
         title = "Gerações por IA",
         detail = "$used de $limit este mês",
         modifier = modifier,
-        start = { IconDisc(AppIcons.Brilho, null, cor = cores.primary, fundo = cores.primaryContainer) },
+        start = { IconDisc(AppIcons.Brightness, null, color = colors.primary, background = colors.primaryContainer) },
         end = {
             Box(
                 Modifier
                     .width(52.dp)
                     .height(6.dp)
-                    .background(cores.outlineVariant, CircleShape),
+                    .background(colors.outlineVariant, CircleShape),
             ) {
                 Box(
                     Modifier
                         .fillMaxWidth(fraction)
                         .height(6.dp)
-                        .background(cores.primary, CircleShape),
+                        .background(colors.primary, CircleShape),
                 )
             }
         },

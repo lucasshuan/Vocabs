@@ -79,7 +79,7 @@ interface VocabRepository {
     /** Cria uma capture textual e todas as fichas selecionadas numa transação. */
     suspend fun captureText(
         snippet: String,
-        alvos: List<SelectedTarget>,
+        targets: List<SelectedTarget>,
         languagePair: LanguagePair? = null,
     ): List<Long>
 
@@ -118,20 +118,20 @@ interface VocabRepository {
     suspend fun confirmCapture(
         id: Long,
         snippet: String,
-        alvos: List<SelectedTarget>,
+        targets: List<SelectedTarget>,
     ): List<Long>
 
     /** Chama o servidor e grava o result (ou o error) na entry. */
     suspend fun generateCard(id: Long): Boolean
 
     /** Processa entries independentes com no máximo duas requisições simultâneas. */
-    suspend fun generateCards(ids: List<Long>, concorrencia: Int = 2): List<Boolean>
+    suspend fun generateCards(ids: List<Long>, concurrency: Int = 2): List<Boolean>
 
     /** Grava o result de um cartão e marca o day no calendário de revisões. */
     suspend fun recordAnswer(id: Long, correct: Boolean)
 
     /** Descarta a entry e o file de míday, se houver. */
-    suspend fun excluir(id: Long)
+    suspend fun delete(id: Long)
 
     suspend fun deleteCapture(id: Long)
 }

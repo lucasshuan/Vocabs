@@ -54,29 +54,29 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun TextDrawer(
-    aoGuardar: (String) -> Unit,
+    onSave: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cores = MaterialTheme.colorScheme
-    val prancheta = LocalClipboard.current
+    val colors = MaterialTheme.colorScheme
+    val clipboard = LocalClipboard.current
     val scope = rememberCoroutineScope()
-    val foco = remember { FocusRequester() }
-    val exemplo = remember { ExemplosDeTrecho.random() }
-    var campo by remember { mutableStateOf(TextFieldValue()) }
-    val temTexto = campo.text.isNotBlank()
+    val focus = remember { FocusRequester() }
+    val example = remember { SNIPPET_EXAMPLES.random() }
+    var field by remember { mutableStateOf(TextFieldValue()) }
+    val hasText = field.text.isNotBlank()
 
-    LaunchedEffect(Unit) { foco.requestFocus() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
 
-    fun colar() {
+    fun paste() {
         scope.launch {
-            prancheta.getClipEntry()
+            clipboard.getClipEntry()
                 ?.clipData
                 ?.takeIf { it.itemCount > 0 }
                 ?.getItemAt(0)
                 ?.text
                 ?.toString()
                 ?.takeIf { it.isNotBlank() }
-                ?.let { campo = TextFieldValue(it, TextRange(it.length)) }
+                ?.let { field = TextFieldValue(it, TextRange(it.length)) }
         }
     }
 
@@ -89,27 +89,27 @@ fun TextDrawer(
             .padding(bottom = 14.dp),
     ) {
         BasicTextField(
-            value = campo,
-            onValueChange = { campo = it },
-            textStyle = LocalTextStyle.current.merge(MaterialTheme.typography.bodyLarge).copy(color = cores.onSurface),
-            cursorBrush = SolidColor(cores.primary),
+            value = field,
+            onValueChange = { field = it },
+            textStyle = LocalTextStyle.current.merge(MaterialTheme.typography.bodyLarge).copy(color = colors.onSurface),
+            cursorBrush = SolidColor(colors.primary),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 52.dp, max = 220.dp)
-                .focusRequester(foco),
-            decorationBox = { conteudo ->
+                .focusRequester(focus),
+            decorationBox = { content ->
                 // O `Box` não é decorativo: `decorationBox` entrega o conteúdo a
                 // um layout de filho único, e emitir o exemplo e o campo lado a
                 // lado sem contêiner deixa os dois disputando a mesma medida.
                 Box {
-                    if (campo.text.isEmpty()) {
+                    if (field.text.isEmpty()) {
                         Text(
-                            text = exemplo,
+                            text = example,
                             style = MaterialTheme.typography.bodyLarge,
-                            color = cores.onSurfaceVariant.copy(alpha = 0.6f),
+                            color = colors.onSurfaceVariant.copy(alpha = 0.6f),
                         )
                     }
-                    conteudo()
+                    content()
                 }
             },
         )
@@ -117,21 +117,21 @@ fun TextDrawer(
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Pill(
                 text = "Colar",
-                cor = cores.primary,
-                fundo = cores.secondaryContainer,
+                color = colors.primary,
+                background = colors.secondaryContainer,
                 icon = true,
-                aoClicar = ::colar,
+                onClick = ::paste,
             )
             // "Guardar" só existe quando há o que guardar. Um botão principal
             // permanentemente apagado no canto da gaveta é ruído: ele ocupa o
             // lugar de destaque sem nunca poder ser tocado.
-            if (temTexto) {
+            if (hasText) {
                 Pill(
                     text = "Guardar",
-                    cor = cores.onPrimary,
-                    fundo = cores.primary,
+                    color = colors.onPrimary,
+                    background = colors.primary,
                     icon = false,
-                    aoClicar = { aoGuardar(campo.text.trim()) },
+                    onClick = { onSave(field.text.trim()) },
                     modifier = Modifier.padding(start = 9.dp),
                     peso = true,
                 )
@@ -145,18 +145,18 @@ fun TextDrawer(
 @Composable
 private fun Pill(
     text: String,
-    cor: androidx.compose.ui.graphics.Color,
-    fundo: androidx.compose.ui.graphics.Color,
+    color: androidx.compose.ui.graphics.Color,
+    background: androidx.compose.ui.graphics.Color,
     icon: Boolean,
-    aoClicar: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     peso: Boolean = false,
 ) {
     val toque = rememberHaptics()
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         shape = CircleShape,
-        color = fundo,
+        color = background,
         interactionSource = toque,
         modifier = modifier.then(if (peso) Modifier.fillMaxWidth() else Modifier),
     ) {
@@ -165,8 +165,8 @@ private fun Pill(
             horizontalArrangement = if (peso) Arrangement.Center else Arrangement.spacedBy(6.dp),
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
         ) {
-            if (icon) Icon(AppIcons.Colar, null, tint = cor, modifier = Modifier.size(15.dp))
-            Text(text, style = MaterialTheme.typography.labelLarge, color = cor)
+            if (icon) Icon(AppIcons.Paste, null, tint = color, modifier = Modifier.size(15.dp))
+            Text(text, style = MaterialTheme.typography.labelLarge, color = color)
         }
     }
 }
@@ -177,7 +177,7 @@ private fun Pill(
  * "Digite ou cole o trecho" não mostra o que a IA espera — uma frase inteira, com
  * uma expressão capturável dentro dela. O exemplo mostra.
  */
-private val ExemplosDeTrecho = listOf(
+private val SNIPPET_EXAMPLES = listOf(
     "She rolled her eyes and told him to knock it off.",
     "The password was hidden inside a broken vending machine.",
     "He's been dragging his feet on this decision for weeks.",

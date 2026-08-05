@@ -13,18 +13,18 @@ import kotlinx.coroutines.flow.stateIn
 
 data class NewLanguageState(
     /** Os cursos que já existem — as pílulas de "Você já tem". */
-    val jaTem: List<Language> = emptyList(),
+    val alreadyHas: List<Language> = emptyList(),
     val native: String = Languages.DEFAULT_NATIVE,
 )
 
 class NewLanguageViewModel(app: Application) : AndroidViewModel(app) {
     private val preferences = AppContainer.preferences(app)
 
-    val estado: StateFlow<NewLanguageState> = combine(
+    val state: StateFlow<NewLanguageState> = combine(
         preferences.observeCourses(),
         preferences.observeLanguagePair(),
     ) { courses, languagePair ->
-        NewLanguageState(jaTem = courses.mapNotNull(Languages::of), native = languagePair.native)
+        NewLanguageState(alreadyHas = courses.mapNotNull(Languages::of), native = languagePair.native)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NewLanguageState())
 
     /**
@@ -36,15 +36,15 @@ class NewLanguageViewModel(app: Application) : AndroidViewModel(app) {
      * sentidos: adotar como partida um idioma que se está aprendendo teria o
      * mesmo efeito, visto do outro lado.
      */
-    fun disponiveis(): List<Language> {
-        val current = estado.value
-        val ocupados = current.jaTem.map { it.code } + current.native
-        return Languages.CATALOG.filter { it.code !in ocupados }
+    fun available(): List<Language> {
+        val current = state.value
+        val taken = current.alreadyHas.map { it.code } + current.native
+        return Languages.CATALOG.filter { it.code !in taken }
     }
 
-    fun enroll(codigo: String) = preferences.enroll(codigo)
+    fun enroll(code: String) = preferences.enroll(code)
 
-    fun trocarNativo(codigo: String) {
-        preferences.native = codigo
+    fun switchNative(code: String) {
+        preferences.native = code
     }
 }

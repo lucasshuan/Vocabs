@@ -55,18 +55,18 @@ import java.time.LocalDate
 @Composable
 fun DayByDayScreen(
     target: String?,
-    aoVoltar: () -> Unit,
-    aoAbrirFicha: (Long) -> Unit,
+    onBack: () -> Unit,
+    onOpenCard: (Long) -> Unit,
     vm: ProgressViewModel = viewModel(),
 ) {
-    LaunchedEffect(target) { vm.abrir(target) }
-    val estado by vm.estado.collectAsStateWithLifecycle()
+    LaunchedEffect(target) { vm.open(target) }
+    val state by vm.state.collectAsStateWithLifecycle()
     val today = remember { LocalDate.now() }
-    val days = remember(estado.eventos, estado.quota) {
+    val days = remember(state.events, state.quota) {
         groupByDay(
-            eventos = estado.eventos,
+            events = state.events,
             today = today,
-            quotaDeHoje = "quota ${estado.quota.done}/${estado.quota.total}",
+            todayQuota = "quota ${state.quota.done}/${state.quota.total}",
         )
     }
 
@@ -74,30 +74,30 @@ fun DayByDayScreen(
         modifier = Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(13.dp),
     ) {
-        InnerHeader("Dia a dia", aoVoltar, Modifier.padding(top = 8.dp))
+        InnerHeader("Dia a dia", onBack, Modifier.padding(top = 8.dp))
 
-        ScreenCard(recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
+        ScreenCard(filling = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "${estado.month} · esta semana",
+                    text = "${state.month} · esta semana",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = streakLabel(estado.dayStreak),
+                    text = streakLabel(state.dayStreak),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary,
                 )
             }
             WeekStrip(
-                days = estado.semana.mapIndexed { index, day ->
+                days = state.semana.mapIndexed { index, day ->
                     WeekDay(
-                        sigla = WEEKDAY_LABELS[index],
-                        numero = day.data.dayOfMonth,
+                        abbreviation = WEEKDAY_LABELS[index],
+                        number = day.data.dayOfMonth,
                         reviews = day.reviews,
                         today = day.today,
-                        futuro = day.futuro,
+                        future = day.future,
                     )
                 },
                 modifier = Modifier.padding(top = 13.dp),
@@ -106,18 +106,18 @@ fun DayByDayScreen(
 
         if (days.isEmpty()) {
             EmptyState(
-                icon = AppIcons.Relogio,
+                icon = AppIcons.Clock,
                 title = "Nada aconteceu ainda",
                 detail = "Capture uma palavra e ela aparece aqui.",
                 modifier = Modifier.weight(1f),
             )
         } else {
             LazyColumn(modifier = Modifier.weight(1f)) {
-                items(days, key = { it.day }) { grupo ->
+                items(days, key = { it.day }) { group ->
                     DayGroup(
-                        grupo = grupo,
-                        ultimo = grupo.day == days.last().day,
-                        aoAbrirFicha = aoAbrirFicha,
+                        group = group,
+                        last = group.day == days.last().day,
+                        onOpenCard = onOpenCard,
                     )
                 }
                 item { Spacer(Modifier.navigationBarsPadding().height(110.dp)) }
@@ -140,16 +140,16 @@ fun DayByDayScreen(
  * quatro. Fora isso, ela vive na fase de desenho e não remede ninguém.
  */
 @Composable
-private fun DayGroup(grupo: EventDay, ultimo: Boolean, aoAbrirFicha: (Long) -> Unit) {
-    val cores = MaterialTheme.colorScheme
+private fun DayGroup(group: EventDay, last: Boolean, onOpenCard: (Long) -> Unit) {
+    val colors = MaterialTheme.colorScheme
     // Hoje é ameixa mesmo estando vazio: é o dia em que ainda dá para fazer
     // alguma coisa, e não mais um buraco no histórico.
-    val ponto = when {
-        grupo.today -> cores.primary
-        grupo.eventos.isEmpty() -> cores.outline
-        else -> cores.tertiary
+    val point = when {
+        group.today -> colors.primary
+        group.events.isEmpty() -> colors.outline
+        else -> colors.tertiary
     }
-    val trilho = cores.outlineVariant
+    val rail = colors.outlineVariant
 
     Row(
         modifier = Modifier
@@ -157,12 +157,12 @@ private fun DayGroup(grupo: EventDay, ultimo: Boolean, aoAbrirFicha: (Long) -> U
             .drawBehind {
                 // O último dia não tem para onde continuar: a linha pararia no ar,
                 // sugerindo um passado que a tela não tem como mostrar.
-                if (ultimo) return@drawBehind
+                if (last) return@drawBehind
                 val meio = TRACK_WIDTH.toPx() / 2f
-                val comeco = (DOT_TOP + DOT_SIZE + TRACK_GAP).toPx()
+                val beginning = (DOT_TOP + DOT_SIZE + TRACK_GAP).toPx()
                 drawLine(
-                    color = trilho,
-                    start = Offset(meio, comeco),
+                    color = rail,
+                    start = Offset(meio, beginning),
                     end = Offset(meio, size.height),
                     strokeWidth = 2.dp.toPx(),
                 )
@@ -173,7 +173,7 @@ private fun DayGroup(grupo: EventDay, ultimo: Boolean, aoAbrirFicha: (Long) -> U
                 Modifier
                     .padding(top = DOT_TOP)
                     .size(DOT_SIZE)
-                    .background(ponto, CircleShape),
+                    .background(point, CircleShape),
             )
         }
 
@@ -182,17 +182,17 @@ private fun DayGroup(grupo: EventDay, ultimo: Boolean, aoAbrirFicha: (Long) -> U
             modifier = Modifier.weight(1f).padding(start = 11.dp, bottom = 18.dp),
         ) {
             Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-                Text(grupo.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                grupo.quota?.let {
-                    Text(text = it, style = MaterialTheme.typography.bodySmall, color = cores.primary)
+                Text(group.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                group.quota?.let {
+                    Text(text = it, style = MaterialTheme.typography.bodySmall, color = colors.primary)
                 }
             }
 
-            if (grupo.eventos.isEmpty()) {
+            if (group.events.isEmpty()) {
                 IdleDay()
             } else {
-                grupo.eventos.forEach { evento ->
-                    EventCard(evento, aoClicar = { aoAbrirFicha(evento.entryId) })
+                group.events.forEach { event ->
+                    EventCard(event, onClick = { onOpenCard(event.entryId) })
                 }
             }
         }
@@ -223,19 +223,19 @@ private fun IdleDay() {
 }
 
 @Composable
-private fun EventCard(evento: Event, aoClicar: () -> Unit) {
+private fun EventCard(event: Event, onClick: () -> Unit) {
     ScreenCard(
-        aoClicar = aoClicar,
-        forma = MaterialTheme.shapes.medium,
-        recheio = PaddingValues(horizontal = 15.dp, vertical = 13.dp),
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        filling = PaddingValues(horizontal = 15.dp, vertical = 13.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(evento.target, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(event.target, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(
-                text = eventDescription(evento),
+                text = eventDescription(event),
                 style = MaterialTheme.typography.bodySmall,
-                color = eventColor(evento.type),
+                color = eventColor(event.type),
             )
         }
     }
@@ -270,7 +270,7 @@ internal data class EventDay(
     val title: String,
     val today: Boolean,
     val quota: String?,
-    val eventos: List<Event>,
+    val events: List<Event>,
 )
 
 /**
@@ -282,25 +282,25 @@ internal data class EventDay(
  * rolagem de nada.
  */
 internal fun groupByDay(
-    eventos: List<Event>,
+    events: List<Event>,
     today: LocalDate,
-    quotaDeHoje: String? = null,
+    todayQuota: String? = null,
 ): List<EventDay> {
-    if (eventos.isEmpty()) return emptyList()
-    val porDia = eventos.groupBy { it.day }
-    val diaDeHoje = today.toEpochDay() + JULIAN_DAY_OF_EPOCH_UI
-    val maisAntigo = porDia.keys.min()
-    val maisRecente = maxOf(porDia.keys.max(), diaDeHoje)
+    if (events.isEmpty()) return emptyList()
+    val byDay = events.groupBy { it.day }
+    val todayDay = today.toEpochDay() + JULIAN_DAY_OF_EPOCH_UI
+    val earliest = byDay.keys.min()
+    val latest = maxOf(byDay.keys.max(), todayDay)
 
-    return (maisRecente downTo maisAntigo).map { day ->
+    return (latest downTo earliest).map { day ->
         EventDay(
             day = day,
-            title = dayTitle(day, diaDeHoje),
-            today = day == diaDeHoje,
+            title = dayTitle(day, todayDay),
+            today = day == todayDay,
             // A quota é uma conta sobre a fila de agora, e a fila de terça já
             // passou — só o dia de hoje pode dizer quanto falta.
-            quota = quotaDeHoje.takeIf { day == diaDeHoje },
-            eventos = porDia[day].orEmpty(),
+            quota = todayQuota.takeIf { day == todayDay },
+            events = byDay[day].orEmpty(),
         )
     }
 }
@@ -324,18 +324,18 @@ private fun dayTitle(day: Long, today: Long): String {
  * só "revisão certa" e a linha do tempo perderia justamente a noção de avanço
  * que ela existe para mostrar.
  */
-internal fun eventDescription(evento: Event): String = when (evento.type) {
+internal fun eventDescription(event: Event): String = when (event.type) {
     EventType.CAPTURED -> "capturada"
     EventType.CARD_READY -> "ficha pronta"
-    EventType.CORRECT -> reviewOrdinal(evento.detail, certa = true)
-    EventType.INCORRECT -> reviewOrdinal(evento.detail, certa = false)
-    EventType.LEVELED_UP -> "virou ${levelLabel(levelOf(evento.detail))}"
+    EventType.CORRECT -> reviewOrdinal(event.detail, right = true)
+    EventType.INCORRECT -> reviewOrdinal(event.detail, right = false)
+    EventType.LEVELED_UP -> "virou ${levelLabel(levelOf(event.detail))}"
 }
 
-private fun reviewOrdinal(detail: String?, certa: Boolean): String {
-    val desfecho = if (certa) "certa" else "errada"
-    val numero = detail?.toIntOrNull() ?: return "revisão $desfecho"
-    return "${numero}ª revisão $desfecho"
+private fun reviewOrdinal(detail: String?, right: Boolean): String {
+    val outcome = if (right) "certa" else "errada"
+    val number = detail?.toIntOrNull() ?: return "revisão $outcome"
+    return "${number}ª revisão $outcome"
 }
 
 private fun levelOf(detail: String?): MemoryLevel =

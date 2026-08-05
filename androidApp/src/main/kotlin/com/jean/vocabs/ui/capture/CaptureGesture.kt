@@ -18,12 +18,12 @@ import com.jean.vocabs.shared.domain.CaptureFormat
 sealed interface GestureTarget {
 
     /** Em cima do `+`, de onde o gesto saiu. */
-    data object Origem : GestureTarget
+    data object Origin : GestureTarget
 
     /** Nem origem nem alvo. Soltar aqui não faz nada. */
-    data object Fora : GestureTarget
+    data object Outward : GestureTarget
 
-    data class Modo(val format: CaptureFormat) : GestureTarget
+    data class Mode(val format: CaptureFormat) : GestureTarget
 }
 
 /**
@@ -95,10 +95,10 @@ fun offsetOf(format: CaptureFormat): DpOffset = when (format) {
 }
 
 /** Os mesmos três deslocamentos em pixels, prontos para comparar com o dedo. */
-fun Density.alvosEmPixels(): List<Pair<CaptureFormat, Offset>> =
+fun Density.targetsInPixels(): List<Pair<CaptureFormat, Offset>> =
     CaptureFormat.entries.map { format ->
-        val destino = offsetOf(format)
-        format to Offset(destino.x.toPx(), destino.y.toPx())
+        val destination = offsetOf(format)
+        format to Offset(destination.x.toPx(), destination.y.toPx())
     }
 
 /**
@@ -116,15 +116,15 @@ fun Density.alvosEmPixels(): List<Pair<CaptureFormat, Offset>> =
  * `PointerInputScope`, onde as posições são pixels e a densidade está à mão.
  */
 fun targetFor(
-    desloc: Offset,
-    alvos: List<Pair<CaptureFormat, Offset>>,
-    raioDoAlvoPx: Float,
-    raioDeOrigemPx: Float,
+    shift: Offset,
+    targets: List<Pair<CaptureFormat, Offset>>,
+    targetRadiusPx: Float,
+    originRadiusPx: Float,
 ): GestureTarget {
-    val maisProximo = alvos.minByOrNull { (_, centro) -> (desloc - centro).getDistanceSquared() }
-    if (maisProximo != null && (desloc - maisProximo.second).getDistance() <= raioDoAlvoPx) {
-        return GestureTarget.Modo(maisProximo.first)
+    val nearest = targets.minByOrNull { (_, centro) -> (shift - centro).getDistanceSquared() }
+    if (nearest != null && (shift - nearest.second).getDistance() <= targetRadiusPx) {
+        return GestureTarget.Mode(nearest.first)
     }
-    return if (desloc.getDistance() < raioDeOrigemPx) GestureTarget.Origem else GestureTarget.Fora
+    return if (shift.getDistance() < originRadiusPx) GestureTarget.Origin else GestureTarget.Outward
 }
 

@@ -7,7 +7,7 @@ import com.jean.vocabs.shared.db.VocabsDatabase
 class AndroidDatabaseDriverFactory(
     private val context: Context,
 ) : DatabaseDriverFactory {
-    override fun criar() = AndroidSqliteDriver(
+    override fun create() = AndroidSqliteDriver(
         schema = VocabsDatabase.Schema,
         context = context,
         name = "vocabs.db",

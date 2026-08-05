@@ -18,55 +18,55 @@ private const val NEEDLE_INTERVAL = 60L
 class AudioState internal constructor(private val path: String) {
 
     private var player: MediaPlayer? = null
-    private var tocandoInterno by mutableStateOf(false)
-    private var posicaoInterna by mutableLongStateOf(0L)
+    private var internalPlaying by mutableStateOf(false)
+    private var internalPosition by mutableLongStateOf(0L)
 
     /**
      * A duração vem do player e não precisa ser estado observável: ela é escrita
      * antes de [tocandoInterno] virar `true`, e é essa virada que recompõe.
      */
-    private var duracaoInterna = 0L
+    private var internalDuration = 0L
 
-    val tocando: Boolean get() = tocandoInterno
+    val playing: Boolean get() = internalPlaying
 
     /** Quanto já tocou, em ms. Zera ao parar. */
-    val posicaoMs: Long get() = posicaoInterna
+    val positionMs: Long get() = internalPosition
 
     /** De 0 a 1: onde a agulha está. É o que a onda usa para se preencher. */
-    val progresso: Float
-        get() = if (duracaoInterna > 0L) (posicaoInterna.toFloat() / duracaoInterna).coerceIn(0f, 1f) else 0f
+    val progress: Float
+        get() = if (internalDuration > 0L) (internalPosition.toFloat() / internalDuration).coerceIn(0f, 1f) else 0f
 
     fun alternar() {
-        if (tocandoInterno) parar() else tocar()
+        if (internalPlaying) stop() else play()
     }
 
-    private fun tocar() {
-        val novo = MediaPlayer()
-        val abriu = runCatching {
-            novo.setDataSource(path)
-            novo.prepare()
-            novo.setOnCompletionListener { parar() }
-            novo.start()
+    private fun play() {
+        val new = MediaPlayer()
+        val didOpen = runCatching {
+            new.setDataSource(path)
+            new.prepare()
+            new.setOnCompletionListener { stop() }
+            new.start()
         }.isSuccess
 
-        if (!abriu) {
-            novo.release()
+        if (!didOpen) {
+            new.release()
             return
         }
-        player = novo
-        duracaoInterna = novo.duration.toLong().coerceAtLeast(0L)
-        posicaoInterna = 0L
-        tocandoInterno = true
+        player = new
+        internalDuration = new.duration.toLong().coerceAtLeast(0L)
+        internalPosition = 0L
+        internalPlaying = true
     }
 
-    fun parar() {
+    fun stop() {
         player?.let { current ->
             runCatching { current.stop() }
             current.release()
         }
         player = null
-        posicaoInterna = 0L
-        tocandoInterno = false
+        internalPosition = 0L
+        internalPlaying = false
     }
 
     /**
@@ -77,9 +77,9 @@ class AudioState internal constructor(private val path: String) {
      * pedir a posição ao `MediaPlayer` sessenta vezes por segundo pagaria a
      * travessia para o nativo sem mexer um pixel a mais.
      */
-    internal suspend fun acompanhar() {
-        while (tocandoInterno) {
-            posicaoInterna = player?.currentPosition?.toLong() ?: 0L
+    internal suspend fun follow() {
+        while (internalPlaying) {
+            internalPosition = player?.currentPosition?.toLong() ?: 0L
             delay(NEEDLE_INTERVAL)
         }
     }
@@ -91,12 +91,12 @@ class AudioState internal constructor(private val path: String) {
  */
 @Composable
 fun rememberPlayer(path: String): AudioState {
-    val estado = remember(path) { AudioState(path) }
-    LaunchedEffect(estado, estado.tocando) {
-        if (estado.tocando) estado.acompanhar()
+    val state = remember(path) { AudioState(path) }
+    LaunchedEffect(state, state.playing) {
+        if (state.playing) state.follow()
     }
-    DisposableEffect(estado) {
-        onDispose { estado.parar() }
+    DisposableEffect(state) {
+        onDispose { state.stop() }
     }
-    return estado
+    return state
 }

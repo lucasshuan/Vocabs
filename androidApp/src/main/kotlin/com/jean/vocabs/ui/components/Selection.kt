@@ -53,40 +53,40 @@ import com.jean.vocabs.ui.theme.Bricolage
 @Composable
 fun TermPicker(
     snippet: String,
-    aoSelecionar: (SelectedTarget) -> Unit,
+    onSelect: (SelectedTarget) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val tokens = remember(snippet) { tokenizeSnippet(snippet) }
     var layout by remember(snippet) { mutableStateOf<TextLayoutResult?>(null) }
-    var previa by remember(snippet) { mutableStateOf<SelectedTarget?>(null) }
-    val cores = MaterialTheme.colorScheme
+    var preview by remember(snippet) { mutableStateOf<SelectedTarget?>(null) }
+    val colors = MaterialTheme.colorScheme
 
-    val anotado = buildAnnotatedString {
+    val noted = buildAnnotatedString {
         append(snippet)
-        previa?.takeIf { it.start >= 0 && it.end <= snippet.length }?.let { target ->
+        preview?.takeIf { it.start >= 0 && it.end <= snippet.length }?.let { target ->
             addStyle(
-                SpanStyle(background = cores.primary, color = cores.onPrimary, fontWeight = FontWeight.Bold),
+                SpanStyle(background = colors.primary, color = colors.onPrimary, fontWeight = FontWeight.Bold),
                 target.start,
                 target.end,
             )
         }
     }
 
-    fun indiceEm(posicao: Offset): Int? {
+    fun indexAt(position: Offset): Int? {
         val result = layout ?: return null
-        val deslocamento = result.getOffsetForPosition(posicao)
-        return tokens.indexOfFirst { deslocamento in it.start until it.end }.takeIf { it >= 0 }
+        val offset = result.getOffsetForPosition(position)
+        return tokens.indexOfFirst { offset in it.start until it.end }.takeIf { it >= 0 }
     }
 
     Surface(
         shape = MaterialTheme.shapes.medium,
-        color = cores.surface,
+        color = colors.surface,
         border = cardOutline(),
         modifier = modifier.fillMaxWidth(),
     ) {
         BasicText(
-            text = anotado,
-            style = MaterialTheme.typography.bodyLarge.copy(color = cores.onSurface, lineHeight = 28.sp),
+            text = noted,
+            style = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface, lineHeight = 28.sp),
             onTextLayout = { layout = it },
             modifier = Modifier
                 .fillMaxWidth()
@@ -94,22 +94,22 @@ fun TermPicker(
                 .pointerInput(snippet) {
                     awaitEachGesture {
                         val toque = awaitFirstDown()
-                        val start = indiceEm(toque.position) ?: return@awaitEachGesture
-                        var ultimo = start
-                        var arrastou = false
-                        previa = selectTokens(snippet, start)
+                        val start = indexAt(toque.position) ?: return@awaitEachGesture
+                        var last = start
+                        var dragged = false
+                        preview = selectTokens(snippet, start)
                         do {
-                            val evento = awaitPointerEvent()
-                            val mudanca = evento.changes.firstOrNull() ?: break
-                            if ((mudanca.position - toque.position).getDistance() > viewConfiguration.touchSlop) {
-                                arrastou = true
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull() ?: break
+                            if ((change.position - toque.position).getDistance() > viewConfiguration.touchSlop) {
+                                dragged = true
                             }
-                            indiceEm(mudanca.position)?.let { ultimo = it }
-                            previa = selectTokens(snippet, start, if (arrastou) ultimo else start)
-                        } while (evento.changes.any { it.pressed })
+                            indexAt(change.position)?.let { last = it }
+                            preview = selectTokens(snippet, start, if (dragged) last else start)
+                        } while (event.changes.any { it.pressed })
 
-                        previa?.let(aoSelecionar)
-                        previa = null
+                        preview?.let(onSelect)
+                        preview = null
                     }
                 },
         )
@@ -128,8 +128,8 @@ fun TermPicker(
  */
 @Composable
 fun SelectionChips(
-    selecoes: List<SelectedTarget>,
-    aoRemover: (SelectedTarget) -> Unit,
+    selections: List<SelectedTarget>,
+    onRemove: (SelectedTarget) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     FlowRow(
@@ -137,34 +137,34 @@ fun SelectionChips(
         verticalArrangement = Arrangement.spacedBy(7.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
-        selecoes.forEach { target ->
+        selections.forEach { target ->
             key(target.start, target.end) {
-                SelectionChip(target) { aoRemover(target) }
+                SelectionChip(target) { onRemove(target) }
             }
         }
     }
 }
 
 @Composable
-private fun SelectionChip(target: SelectedTarget, aoRemover: () -> Unit) {
-    var chegou by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { chegou = true }
-    val escala by animateFloatAsState(
-        targetValue = if (chegou) 1f else 0.7f,
-        animationSpec = Motion.molaElastica(),
+private fun SelectionChip(target: SelectedTarget, onRemove: () -> Unit) {
+    var arrived by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { arrived = true }
+    val scale by animateFloatAsState(
+        targetValue = if (arrived) 1f else 0.7f,
+        animationSpec = Motion.elasticSpring(),
         label = "escalaDoChip",
     )
     val toque = rememberHaptics()
 
     Surface(
-        onClick = aoRemover,
+        onClick = onRemove,
         shape = CircleShape,
         color = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
         interactionSource = toque,
         modifier = Modifier
-            .graphicsLayer { scaleX = escala; scaleY = escala; alpha = if (chegou) 1f else 0f }
-            .encolheAoTocar(toque, minimo = 0.94f),
+            .graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (arrived) 1f else 0f }
+            .shrinkOnTouch(toque, minimum = 0.94f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -181,7 +181,7 @@ private fun SelectionChip(target: SelectedTarget, aoRemover: () -> Unit) {
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.62f),
             )
             Icon(
-                imageVector = AppIcons.Fechar,
+                imageVector = AppIcons.Close,
                 contentDescription = "Remover ${target.text}",
                 tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.55f),
                 modifier = Modifier.size(14.dp),

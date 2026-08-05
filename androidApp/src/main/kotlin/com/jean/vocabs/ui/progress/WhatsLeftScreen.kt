@@ -55,45 +55,45 @@ import com.jean.vocabs.ui.components.nextReviewText
 @Composable
 fun WhatsLeftScreen(
     target: String?,
-    aoVoltar: () -> Unit,
-    aoAbrirFicha: (Long) -> Unit,
+    onBack: () -> Unit,
+    onOpenCard: (Long) -> Unit,
     vm: ProgressViewModel = viewModel(),
 ) {
-    LaunchedEffect(target) { vm.abrir(target) }
-    val estado by vm.estado.collectAsStateWithLifecycle()
-    var soPerto by remember { mutableStateOf(true) }
+    LaunchedEffect(target) { vm.open(target) }
+    val state by vm.state.collectAsStateWithLifecycle()
+    var onlyClose by remember { mutableStateOf(true) }
 
-    val perto = estado.pertoDeVirar
-    val lista = remember(estado.words, soPerto) {
-        val base = if (soPerto) perto else estado.words.filter { Steps.level(it.step) != MemoryLevel.MASTERED }
+    val perto = state.closeToLeveling
+    val list = remember(state.words, onlyClose) {
+        val base = if (onlyClose) perto else state.words.filter { Steps.level(it.step) != MemoryLevel.MASTERED }
         base.sortedBy { it.step }
     }
-    val mastered = estado.mastered
+    val mastered = state.mastered
 
     Column(
         verticalArrangement = Arrangement.spacedBy(13.dp),
         modifier = Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp),
     ) {
-        InnerHeader("O que falta", aoVoltar, Modifier.padding(top = 8.dp))
+        InnerHeader("O que falta", onBack, Modifier.padding(top = 8.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SelectablePill(
-                rotulo = "Perto de virar · ${perto.size}",
-                selecionada = soPerto,
-                aoClicar = { soPerto = true },
+                label = "Perto de virar · ${perto.size}",
+                isSelected = onlyClose,
+                onClick = { onlyClose = true },
             )
             SelectablePill(
-                rotulo = "Todas · ${estado.total}",
-                selecionada = !soPerto,
-                aoClicar = { soPerto = false },
+                label = "Todas · ${state.total}",
+                isSelected = !onlyClose,
+                onClick = { onlyClose = false },
             )
         }
 
-        if (lista.isEmpty()) {
+        if (list.isEmpty()) {
             EmptyState(
                 icon = AppIcons.Check,
-                title = if (soPerto) "Nenhuma está perto" else "Nada em aberto",
-                detail = if (soPerto) {
+                title = if (onlyClose) "Nenhuma está perto" else "Nada em aberto",
+                detail = if (onlyClose) {
                     "Acerte mais uma vez e a palavra aparece aqui."
                 } else {
                     "Todas as palavras já estão dominadas."
@@ -105,8 +105,8 @@ fun WhatsLeftScreen(
                 verticalArrangement = Arrangement.spacedBy(7.dp),
                 modifier = Modifier.weight(1f),
             ) {
-                items(lista, key = { it.id }) { entry ->
-                    WordRow(entry, aoClicar = { aoAbrirFicha(entry.id) })
+                items(list, key = { it.id }) { entry ->
+                    WordRow(entry, onClick = { onOpenCard(entry.id) })
                 }
                 if (mastered > 0) {
                     item {
@@ -124,26 +124,26 @@ fun WhatsLeftScreen(
 }
 
 @Composable
-private fun WordRow(entry: Entry, aoClicar: () -> Unit) {
-    val cores = MaterialTheme.colorScheme
+private fun WordRow(entry: Entry, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
     val step = entry.step
     val level = Steps.level(step)
-    val faltam = Steps.hitsToLevelUp(step)
-    val proxima = nextReviewText(entry.retention, System.currentTimeMillis())
+    val remain = Steps.hitsToLevelUp(step)
+    val next = nextReviewText(entry.retention, System.currentTimeMillis())
 
     ScreenCard(
-        aoClicar = aoClicar,
-        forma = MaterialTheme.shapes.medium,
-        recheio = PaddingValues(horizontal = 15.dp, vertical = 13.dp),
+        onClick = onClick,
+        shape = MaterialTheme.shapes.medium,
+        filling = PaddingValues(horizontal = 15.dp, vertical = 13.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text(entry.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
-            proxima?.let {
+            next?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (it == "revisar agora") cores.primary else cores.onSurfaceVariant,
+                    color = if (it == "revisar agora") colors.primary else colors.onSurfaceVariant,
                 )
             }
         }
@@ -152,7 +152,7 @@ private fun WordRow(entry: Entry, aoClicar: () -> Unit) {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodySmall,
-                color = cores.onSurfaceVariant,
+                color = colors.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
             )
         }
@@ -165,16 +165,16 @@ private fun WordRow(entry: Entry, aoClicar: () -> Unit) {
             Text(
                 text = "${levelLabel(level)} · degrau $step de ${Steps.TOTAL}",
                 style = MaterialTheme.typography.bodySmall,
-                color = cores.onSurfaceVariant,
+                color = colors.onSurfaceVariant,
                 modifier = Modifier.padding(start = 10.dp),
             )
         }
 
-        if (faltam > 0) {
+        if (remain > 0) {
             Text(
-                text = whatsLeftText(faltam, Steps.level(step + faltam)),
+                text = whatsLeftText(remain, Steps.level(step + remain)),
                 style = MaterialTheme.typography.bodySmall,
-                color = cores.primary,
+                color = colors.primary,
                 modifier = Modifier.padding(top = 4.dp),
             )
         }
@@ -190,16 +190,16 @@ private fun WordRow(entry: Entry, aoClicar: () -> Unit) {
  */
 @Composable
 private fun StepLadder(step: Int, modifier: Modifier = Modifier) {
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = modifier) {
         repeat(Steps.TOTAL) { index ->
-            val alcancado = index < step
+            val reached = index < step
             Box(
                 Modifier
                     .weight(1f)
                     .height(6.dp)
                     .background(
-                        color = if (alcancado) cores.tertiary else cores.outlineVariant,
+                        color = if (reached) colors.tertiary else colors.outlineVariant,
                         shape = RoundedCornerShape(3.dp),
                     ),
             )
@@ -207,7 +207,7 @@ private fun StepLadder(step: Int, modifier: Modifier = Modifier) {
     }
 }
 
-internal fun whatsLeftText(hits: Int, proximoNivel: MemoryLevel): String {
-    val name = levelLabel(proximoNivel)
+internal fun whatsLeftText(hits: Int, nextLevel: MemoryLevel): String {
+    val name = levelLabel(nextLevel)
     return if (hits == 1) "1 acerto para $name" else "$hits acertos para $name"
 }

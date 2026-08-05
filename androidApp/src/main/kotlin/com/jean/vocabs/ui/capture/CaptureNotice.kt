@@ -63,7 +63,7 @@ sealed interface Notice {
      * resto, quando o banco devolve o id — até lá o atalho "Selecionar" não tem
      * para onde ir e por isso não é desenhado.
      */
-    data class Guardado(
+    data class Saved(
         override val key: Long,
         val format: CaptureFormat,
         val durationMs: Long?,
@@ -72,7 +72,7 @@ sealed interface Notice {
     ) : Notice
 
     /** Uma frase e mais nada: microfone negado, gravação curta demais. */
-    data class Recado(override val key: Long, val text: String) : Notice
+    data class Message(override val key: Long, val text: String) : Notice
 }
 
 /** Quanto tempo cada aviso vive. O recado é mais curto porque não oferece nada. */
@@ -94,38 +94,38 @@ private const val NOTICE_LIFETIME_MS = 3_500
  */
 @Composable
 fun NoticeStrip(
-    aviso: Notice?,
-    aoSelecionar: (Long) -> Unit,
-    aoExpirar: (key: Long) -> Unit,
+    notice: Notice?,
+    onSelect: (Long) -> Unit,
+    onExpire: (key: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // O último aviso não nulo continua desenhado enquanto o cartão sai: sem isso
     // o conteúdo sumiria no primeiro quadro da saída e o cartão desceria vazio.
-    var ultimo by remember { mutableStateOf<Notice?>(null) }
-    LaunchedEffect(aviso) { if (aviso != null) ultimo = aviso }
+    var last by remember { mutableStateOf<Notice?>(null) }
+    LaunchedEffect(notice) { if (notice != null) last = notice }
 
-    val restante = remember { Animatable(1f) }
-    LaunchedEffect(aviso?.key) {
-        val current = aviso ?: return@LaunchedEffect
-        val vida = if (current is Notice.Recado) NOTICE_LIFETIME_MS else SAVED_LIFETIME_MS
-        restante.snapTo(1f)
-        restante.animateTo(0f, tween(vida, easing = LinearEasing))
-        aoExpirar(current.key)
+    val remaining = remember { Animatable(1f) }
+    LaunchedEffect(notice?.key) {
+        val current = notice ?: return@LaunchedEffect
+        val life = if (current is Notice.Message) NOTICE_LIFETIME_MS else SAVED_LIFETIME_MS
+        remaining.snapTo(1f)
+        remaining.animateTo(0f, tween(life, easing = LinearEasing))
+        onExpire(current.key)
     }
 
     AnimatedVisibility(
-        visible = aviso != null,
-        enter = slideInVertically(Motion.mola()) { it / 2 } +
+        visible = notice != null,
+        enter = slideInVertically(Motion.standardSpring()) { it / 2 } +
             fadeIn(tween(Motion.DEFAULT)) +
-            scaleIn(Motion.mola(), initialScale = 0.94f),
+            scaleIn(Motion.standardSpring(), initialScale = 0.94f),
         exit = fadeOut(tween(Motion.FAST)) + slideOutVertically(tween(Motion.FAST)) { it / 3 },
         modifier = modifier,
     ) {
-        ultimo?.let { conteudo ->
+        last?.let { content ->
             NoticeCard(
-                aviso = conteudo,
-                restante = { restante.value },
-                aoSelecionar = aoSelecionar,
+                notice = content,
+                remaining = { remaining.value },
+                onSelect = onSelect,
             )
         }
     }
@@ -133,14 +133,14 @@ fun NoticeStrip(
 
 @Composable
 private fun NoticeCard(
-    aviso: Notice,
-    restante: () -> Float,
-    aoSelecionar: (Long) -> Unit,
+    notice: Notice,
+    remaining: () -> Float,
+    onSelect: (Long) -> Unit,
 ) {
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = cores.surface,
+        color = colors.surface,
         border = cardOutline(),
         shadowElevation = 10.dp,
         modifier = Modifier.fillMaxWidth(),
@@ -151,12 +151,12 @@ private fun NoticeCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.padding(start = 15.dp, end = 15.dp, top = 14.dp, bottom = 14.dp),
             ) {
-                when (aviso) {
-                    is Notice.Guardado -> {
-                        Disc(cores.tertiary, AppIcons.Check)
+                when (notice) {
+                    is Notice.Saved -> {
+                        Disc(colors.tertiary, AppIcons.Check)
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(
-                                text = savedTitle(aviso),
+                                text = savedTitle(notice),
                                 style = MaterialTheme.typography.titleSmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -165,39 +165,39 @@ private fun NoticeCard(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
-                                val language = languageOf(aviso.target)
-                                CircularFlag(language, tamanho = 15.dp)
+                                val language = languageOf(notice.target)
+                                CircularFlag(language, size = 15.dp)
                                 Text(
                                     text = language.displayName.lowercase(),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = cores.onSurfaceVariant,
+                                    color = colors.onSurfaceVariant,
                                 )
                             }
                         }
-                        aviso.captureId?.let { id ->
+                        notice.captureId?.let { id ->
                             val toque = rememberHaptics()
                             Surface(
-                                onClick = { aoSelecionar(id) },
+                                onClick = { onSelect(id) },
                                 shape = CircleShape,
-                                color = cores.primary,
+                                color = colors.primary,
                                 interactionSource = toque,
                             ) {
                                 Text(
                                     text = "Selecionar",
                                     style = MaterialTheme.typography.labelMedium,
-                                    color = cores.onPrimary,
+                                    color = colors.onPrimary,
                                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
                                 )
                             }
                         }
                     }
 
-                    is Notice.Recado -> {
-                        Disc(cores.secondary, AppIcons.Relogio)
+                    is Notice.Message -> {
+                        Disc(colors.secondary, AppIcons.Clock)
                         Text(
-                            text = aviso.text,
+                            text = notice.text,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = cores.onSurface,
+                            color = colors.onSurface,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -211,11 +211,11 @@ private fun NoticeCard(
                 Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .background(cores.outlineVariant)
+                    .background(colors.outlineVariant)
                     .drawBehind {
                         drawRect(
-                            color = cores.onSurfaceVariant.copy(alpha = 0.45f),
-                            size = size.copy(width = size.width * restante().coerceIn(0f, 1f)),
+                            color = colors.onSurfaceVariant.copy(alpha = 0.45f),
+                            size = size.copy(width = size.width * remaining().coerceIn(0f, 1f)),
                         )
                     },
             )
@@ -224,17 +224,17 @@ private fun NoticeCard(
 }
 
 @Composable
-private fun Disc(cor: androidx.compose.ui.graphics.Color, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun Disc(color: androidx.compose.ui.graphics.Color, icon: androidx.compose.ui.graphics.vector.ImageVector) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(36.dp).clip(CircleShape).background(cor),
+        modifier = Modifier.size(36.dp).clip(CircleShape).background(color),
     ) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(19.dp))
     }
 }
 
-private fun savedTitle(aviso: Notice.Guardado): String = when (aviso.format) {
-    CaptureFormat.AUDIO -> aviso.durationMs?.let { "Áudio ${formatDurationMs(it)} guardado" } ?: "Áudio guardado"
+private fun savedTitle(notice: Notice.Saved): String = when (notice.format) {
+    CaptureFormat.AUDIO -> notice.durationMs?.let { "Áudio ${formatDurationMs(it)} guardado" } ?: "Áudio guardado"
     CaptureFormat.PHOTO -> "Foto guardada"
     CaptureFormat.TEXT -> "Trecho guardado"
 }

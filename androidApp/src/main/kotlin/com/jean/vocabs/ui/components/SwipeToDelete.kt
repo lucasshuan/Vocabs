@@ -110,92 +110,92 @@ private const val RESISTANCE_PAST_THRESHOLD = 0.42f
  */
 @Composable
 fun SwipeToDelete(
-    aoExcluir: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier,
-    forma: Shape = MaterialTheme.shapes.medium,
-    rotuloArmado: String = "Solte para excluir",
-    descricaoDaAcao: String = "Excluir",
-    conteudo: @Composable () -> Unit,
+    shape: Shape = MaterialTheme.shapes.medium,
+    armedLabel: String = "Solte para excluir",
+    actionLabel: String = "Excluir",
+    content: @Composable () -> Unit,
 ) {
-    val cores = MaterialTheme.colorScheme
-    val haptico = LocalHapticFeedback.current
+    val colors = MaterialTheme.colorScheme
+    val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    val pisoDoLimiar = with(LocalDensity.current) { MIN_THRESHOLD.toPx() }
+    val thresholdFloor = with(LocalDensity.current) { MIN_THRESHOLD.toPx() }
 
-    val deslocamento = remember { Animatable(0f) }
-    var largura by remember { mutableIntStateOf(0) }
+    val offset = remember { Animatable(0f) }
+    var width by remember { mutableIntStateOf(0) }
     // Depois que o cartão parte para fora da tela o gesto acabou: nenhum toque
     // novo o traz de volta, e `aoExcluir` não pode ser chamado duas vezes.
-    var descartando by remember { mutableStateOf(false) }
+    var discarding by remember { mutableStateOf(false) }
 
-    val limiar = if (largura == 0) pisoDoLimiar else maxOf(largura * THRESHOLD_FRACTION, pisoDoLimiar)
+    val threshold = if (width == 0) thresholdFloor else maxOf(width * THRESHOLD_FRACTION, thresholdFloor)
 
     // `derivedStateOf` porque o deslocamento muda a cada quadro e isto aqui só
     // muda duas vezes por gesto: sem ele, arrastar um cartão recomporia a linha
     // inteira sessenta vezes por segundo.
-    val armado by remember(limiar) { derivedStateOf { abs(deslocamento.value) >= limiar } }
-    val paraEsquerda by remember { derivedStateOf { deslocamento.value <= 0f } }
+    val armed by remember(threshold) { derivedStateOf { abs(offset.value) >= threshold } }
+    val toLeft by remember { derivedStateOf { offset.value <= 0f } }
 
     // Só na entrada. Um segundo pulso ao desarmar transformaria vaivém em
     // vibração contínua — a mesma regra que o leque de captura já segue.
-    LaunchedEffect(armado) {
-        if (armado) haptico.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+    LaunchedEffect(armed) {
+        if (armed) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
 
-    val fundo by animateColorAsState(
-        targetValue = if (armado) cores.error else cores.errorContainer,
+    val background by animateColorAsState(
+        targetValue = if (armed) colors.error else colors.errorContainer,
         animationSpec = tween(Motion.FAST),
         label = "fundoDoDescarte",
     )
     val tinta by animateColorAsState(
-        targetValue = if (armado) cores.onError else cores.error,
+        targetValue = if (armed) colors.onError else colors.error,
         animationSpec = tween(Motion.FAST),
         label = "tintaDoDescarte",
     )
-    val escalaDaLixeira by animateFloatAsState(
-        targetValue = if (armado) 1.15f else 0.92f,
-        animationSpec = Motion.molaElastica(),
+    val trashScale by animateFloatAsState(
+        targetValue = if (armed) 1.15f else 0.92f,
+        animationSpec = Motion.elasticSpring(),
         label = "escalaDaLixeira",
     )
-    val opacidadeDoRotulo by animateFloatAsState(
-        targetValue = if (armado) 1f else 0f,
+    val labelOpacity by animateFloatAsState(
+        targetValue = if (armed) 1f else 0f,
         animationSpec = tween(Motion.FAST),
         label = "opacidadeDoRotulo",
     )
 
-    val arrasto = rememberDraggableState { passo ->
-        val current = deslocamento.value
-        val avancando = current == 0f || sign(passo) == sign(current)
-        val andado = if (avancando && abs(current) >= limiar) passo * RESISTANCE_PAST_THRESHOLD else passo
-        scope.launch { deslocamento.snapTo(current + andado) }
+    val drag = rememberDraggableState { step ->
+        val current = offset.value
+        val advancing = current == 0f || sign(step) == sign(current)
+        val walked = if (advancing && abs(current) >= threshold) step * RESISTANCE_PAST_THRESHOLD else step
+        scope.launch { offset.snapTo(current + walked) }
     }
 
     Box(
         modifier = modifier
-            .onSizeChanged { largura = it.width }
+            .onSizeChanged { width = it.width }
             .draggable(
-                state = arrasto,
+                state = drag,
                 orientation = Orientation.Horizontal,
-                enabled = !descartando,
-                onDragStopped = { velocidade ->
-                    val andado = deslocamento.value
-                    val arremesso = abs(velocidade) > DISMISS_VELOCITY &&
-                        sign(velocidade) == sign(andado) &&
-                        abs(andado) >= limiar * MIN_FLING_FRACTION
-                    if (abs(andado) >= limiar || arremesso) {
-                        descartando = true
-                        haptico.performHapticFeedback(HapticFeedbackType.LongPress)
+                enabled = !discarding,
+                onDragStopped = { speed ->
+                    val walked = offset.value
+                    val fling = abs(speed) > DISMISS_VELOCITY &&
+                        sign(speed) == sign(walked) &&
+                        abs(walked) >= threshold * MIN_FLING_FRACTION
+                    if (abs(walked) >= threshold || fling) {
+                        discarding = true
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         // Sai pela borda antes de a lista fechar o buraco: a
                         // pessoa vê para onde o cartão foi, e só então os de
                         // baixo sobem. As duas coisas ao mesmo tempo viram um
                         // piscar de tela em que nada é legível.
-                        deslocamento.animateTo(
-                            targetValue = sign(andado) * (largura.toFloat() + pisoDoLimiar),
+                        offset.animateTo(
+                            targetValue = sign(walked) * (width.toFloat() + thresholdFloor),
                             animationSpec = tween(Motion.FAST, easing = FastOutLinearInEasing),
                         )
-                        aoExcluir()
+                        onDelete()
                     } else {
-                        deslocamento.animateTo(0f, Motion.mola())
+                        offset.animateTo(0f, Motion.standardSpring())
                     }
                 },
             ),
@@ -206,30 +206,30 @@ fun SwipeToDelete(
             modifier = Modifier
                 .matchParentSize()
                 .clearAndSetSemantics {}
-                .clip(forma)
-                .background(fundo),
+                .clip(shape)
+                .background(background),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier
-                    .align(if (paraEsquerda) Alignment.CenterEnd else Alignment.CenterStart)
+                    .align(if (toLeft) Alignment.CenterEnd else Alignment.CenterStart)
                     .padding(horizontal = 18.dp),
             ) {
                 // A lixeira fica sempre encostada na borda que o cartão
                 // descobriu, e o rótulo cresce para dentro. Invertido, o rótulo
                 // invisível empurraria a lixeira para debaixo do cartão e o
                 // início do gesto não mostraria nada.
-                if (paraEsquerda) DiscardLabel(rotuloArmado, tinta, opacidadeDoRotulo)
+                if (toLeft) DiscardLabel(armedLabel, tinta, labelOpacity)
                 Icon(
-                    imageVector = AppIcons.Lixeira,
+                    imageVector = AppIcons.Trash,
                     contentDescription = null,
                     tint = tinta,
                     modifier = Modifier
-                        .graphicsLayer { scaleX = escalaDaLixeira; scaleY = escalaDaLixeira }
+                        .graphicsLayer { scaleX = trashScale; scaleY = trashScale }
                         .size(24.dp),
                 )
-                if (!paraEsquerda) DiscardLabel(rotuloArmado, tinta, opacidadeDoRotulo)
+                if (!toLeft) DiscardLabel(armedLabel, tinta, labelOpacity)
             }
         }
 
@@ -237,27 +237,27 @@ fun SwipeToDelete(
             modifier = Modifier
                 // Lido dentro da lambda: mover o cartão custa uma passada de
                 // layout por quadro, e nenhuma recomposição.
-                .offset { IntOffset(deslocamento.value.roundToInt(), 0) }
+                .offset { IntOffset(offset.value.roundToInt(), 0) }
                 // Quem navega por leitor de tela não tem como arrastar nada. A
                 // exclusão vira uma ação do cartão, com o mesmo nome que o
                 // gesto mostra escrito.
                 .semantics(mergeDescendants = true) {
-                    customActions = listOf(CustomAccessibilityAction(descricaoDaAcao) { aoExcluir(); true })
+                    customActions = listOf(CustomAccessibilityAction(actionLabel) { onDelete(); true })
                 },
         ) {
-            conteudo()
+            content()
         }
     }
 }
 
 @Composable
-private fun DiscardLabel(text: String, cor: androidx.compose.ui.graphics.Color, opacidade: Float) {
+private fun DiscardLabel(text: String, color: androidx.compose.ui.graphics.Color, opacity: Float) {
     Text(
         text = text,
         style = MaterialTheme.typography.labelMedium,
-        color = cor,
+        color = color,
         maxLines = 1,
         overflow = TextOverflow.Clip,
-        modifier = Modifier.graphicsLayer { alpha = opacidade },
+        modifier = Modifier.graphicsLayer { alpha = opacity },
     )
 }

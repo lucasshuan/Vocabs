@@ -25,8 +25,8 @@ object Device {
         Build.HARDWARE.lowercase() in EMULATED_HARDWARE ||
             // Rede de segurança para emuladores de fabricantes que não estão na
             // lista: o nome do produto praticamente sempre entrega.
-            Build.PRODUCT.lowercase().let { produto ->
-                produto.startsWith("sdk") || produto.contains("emulator")
+            Build.PRODUCT.lowercase().let { product ->
+                product.startsWith("sdk") || product.contains("emulator")
             }
     }
 

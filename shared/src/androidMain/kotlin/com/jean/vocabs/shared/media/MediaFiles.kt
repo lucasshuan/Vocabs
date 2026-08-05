@@ -14,17 +14,17 @@ object MediaFiles {
 
     private const val FOLDER = "captures"
 
-    fun newPhoto(context: Context): File = novo(context, "photo", "jpg")
+    fun newPhoto(context: Context): File = new(context, "photo", "jpg")
 
-    fun newAudio(context: Context): File = novo(context, "audio", "wav")
+    fun newAudio(context: Context): File = new(context, "audio", "wav")
 
-    private fun novo(context: Context, prefixo: String, extensao: String): File {
+    private fun new(context: Context, prefix: String, extension: String): File {
         val folder = File(context.filesDir, FOLDER).apply { mkdirs() }
-        return File(folder, "$prefixo-${System.currentTimeMillis()}.$extensao")
+        return File(folder, "$prefix-${System.currentTimeMillis()}.$extension")
     }
 
     /** Silencioso de propósito: se o file já não existe, o objetivo foi atingido. */
-    fun remover(path: String) {
+    fun remove(path: String) {
         runCatching { File(path).delete() }
     }
 }

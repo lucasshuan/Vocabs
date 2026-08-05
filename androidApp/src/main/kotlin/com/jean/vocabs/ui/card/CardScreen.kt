@@ -73,28 +73,28 @@ import com.jean.vocabs.ui.temporaryErrorText
 import java.util.Locale
 
 @Composable
-fun CardScreen(id: Long, aoVoltar: () -> Unit, vm: CardViewModel = viewModel()) {
-    val entradaFlow = remember(id) { vm.observar(id) }
-    val memoriaFlow = remember(id) { vm.observarMemoria(id) }
-    val entry by entradaFlow.collectAsStateWithLifecycle()
-    val memoria by memoriaFlow.collectAsStateWithLifecycle()
-    val contexto = LocalContext.current
+fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
+    val entryFlow = remember(id) { vm.observe(id) }
+    val memoryFlow = remember(id) { vm.observeMemory(id) }
+    val entry by entryFlow.collectAsStateWithLifecycle()
+    val memory by memoryFlow.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var menu by remember { mutableStateOf(false) }
-    var confirmarExclusao by remember { mutableStateOf(false) }
-    var expandiu by remember { mutableStateOf(false) }
+    var confirmDeletion by remember { mutableStateOf(false) }
+    var didExpand by remember { mutableStateOf(false) }
     val tts = rememberTts(languageOf(entry?.languagePair?.target).tag)
 
-    if (confirmarExclusao) {
+    if (confirmDeletion) {
         AlertDialog(
-            onDismissRequest = { confirmarExclusao = false },
+            onDismissRequest = { confirmDeletion = false },
             title = { Text("Excluir esta ficha?") },
             text = { Text("A mídia compartilhada será preservada enquanto houver outra ficha da mesma captura.") },
             confirmButton = {
-                TextButton(onClick = { vm.excluir(); confirmarExclusao = false; aoVoltar() }) {
+                TextButton(onClick = { vm.delete(); confirmDeletion = false; onBack() }) {
                     Text("Excluir", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmarExclusao = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { confirmDeletion = false }) { Text("Cancelar") } },
         )
     }
 
@@ -103,19 +103,19 @@ fun CardScreen(id: Long, aoVoltar: () -> Unit, vm: CardViewModel = viewModel()) 
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp),
         ) {
-            CircularButton(AppIcons.Voltar, "Voltar", aoVoltar)
+            CircularButton(AppIcons.Back, "Voltar", onBack)
             Spacer(Modifier.weight(1f))
             Box {
-                CircularButton(AppIcons.MaisVertical, "Mais opções", { menu = true })
+                CircularButton(AppIcons.MoreVertical, "Mais opções", { menu = true })
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(
                         text = { Text("Compartilhar") },
-                        leadingIcon = { Icon(AppIcons.Compartilhar, null) },
+                        leadingIcon = { Icon(AppIcons.Share, null) },
                         onClick = {
                             menu = false
                             entry?.let { item ->
                                 val text = "${item.title} — ${item.card?.translation.orEmpty()}\n${item.snippet.orEmpty()}\nVocabu"
-                                contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                                context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, text)
                                 }, "Compartilhar ficha"))
@@ -124,8 +124,8 @@ fun CardScreen(id: Long, aoVoltar: () -> Unit, vm: CardViewModel = viewModel()) 
                     )
                     DropdownMenuItem(
                         text = { Text("Excluir", color = MaterialTheme.colorScheme.error) },
-                        leadingIcon = { Icon(AppIcons.Lixeira, null, tint = MaterialTheme.colorScheme.error) },
-                        onClick = { menu = false; confirmarExclusao = true },
+                        leadingIcon = { Icon(AppIcons.Trash, null, tint = MaterialTheme.colorScheme.error) },
+                        onClick = { menu = false; confirmDeletion = true },
                     )
                 }
             }
@@ -143,14 +143,14 @@ fun CardScreen(id: Long, aoVoltar: () -> Unit, vm: CardViewModel = viewModel()) 
                     // Sem voz instalada para o idioma da ficha o botão não
                     // aparece: um botão que não faz nada é pior que a ausência
                     // dele, e falar alemão com voz portuguesa seria pior ainda.
-                    tts?.let { voz ->
+                    tts?.let { voice ->
                         Surface(
-                            onClick = { voz.speak(item.title, TextToSpeech.QUEUE_FLUSH, null, "Vocabu-ficha") },
+                            onClick = { voice.speak(item.title, TextToSpeech.QUEUE_FLUSH, null, "Vocabu-ficha") },
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceVariant,
                         ) {
                             Icon(
-                                imageVector = AppIcons.Tocar,
+                                imageVector = AppIcons.Play,
                                 contentDescription = "Ouvir pronúncia",
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(32.dp).padding(8.dp),
@@ -210,14 +210,14 @@ fun CardScreen(id: Long, aoVoltar: () -> Unit, vm: CardViewModel = viewModel()) 
                                 modifier = Modifier.padding(top = 4.dp),
                             )
                         }
-                        Button(onClick = vm::tentarDeNovo, modifier = Modifier.padding(top = 12.dp)) { Text("Tentar de novo") }
+                        Button(onClick = vm::tryAgain, modifier = Modifier.padding(top = 12.dp)) { Text("Tentar de novo") }
                     }
                 }
                 EntryStatus.READY -> CardReady(
                     entry = item,
-                    memoria = memoria,
-                    expandiu = expandiu,
-                    aoAlternarRelacionadas = { expandiu = !expandiu },
+                    memory = memory,
+                    didExpand = didExpand,
+                    onToggleRelated = { didExpand = !didExpand },
                 )
             } }
             Spacer(Modifier.navigationBarsPadding().height(36.dp))
@@ -236,14 +236,14 @@ fun CardScreen(id: Long, aoVoltar: () -> Unit, vm: CardViewModel = viewModel()) 
 @Composable
 private fun CardReady(
     entry: Entry,
-    memoria: RetentionNow?,
-    expandiu: Boolean,
-    aoAlternarRelacionadas: () -> Unit,
+    memory: RetentionNow?,
+    didExpand: Boolean,
+    onToggleRelated: () -> Unit,
 ) {
     val card = entry.card ?: return
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        memoria?.let { retention ->
-            ScreenCard(forma = MaterialTheme.shapes.medium, recheio = PaddingValues(15.dp), modifier = Modifier.fillMaxWidth()) {
+        memory?.let { retention ->
+            ScreenCard(shape = MaterialTheme.shapes.medium, filling = PaddingValues(15.dp), modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     SectionLabel("Força de memória", Modifier.weight(1f))
                     Text(
@@ -277,8 +277,8 @@ private fun CardReady(
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SectionLabel("Definições")
-            card.definitions.forEachIndexed { index, definicao ->
-                Text("${index + 1}. $definicao", style = MaterialTheme.typography.bodyMedium)
+            card.definitions.forEachIndexed { index, definition ->
+                Text("${index + 1}. $definition", style = MaterialTheme.typography.bodyMedium)
             }
             card.example.takeIf(String::isNotBlank)?.let {
                 Text(
@@ -298,16 +298,16 @@ private fun CardReady(
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
-                    modifier = Modifier.animateContentSize(Motion.mola()),
+                    modifier = Modifier.animateContentSize(Motion.standardSpring()),
                 ) {
-                    (if (expandiu) card.related else card.related.take(3)).forEach { termo ->
-                        Pill(termo)
+                    (if (didExpand) card.related else card.related.take(3)).forEach { term ->
+                        Pill(term)
                     }
                     if (card.related.size > 3) {
                         Pill(
-                            text = if (expandiu) "ver menos" else "ver mais",
-                            destaque = true,
-                            aoClicar = aoAlternarRelacionadas,
+                            text = if (didExpand) "ver menos" else "ver mais",
+                            highlight = true,
+                            onClick = onToggleRelated,
                         )
                     }
                 }
@@ -349,22 +349,22 @@ private fun HighlightedSnippet(snippet: String) {
  * o botão some, em vez de pronunciar alemão em português.
  */
 @Composable
-private fun rememberTts(etiqueta: String): TextToSpeech? {
-    val contexto = LocalContext.current
+private fun rememberTts(tag: String): TextToSpeech? {
+    val context = LocalContext.current
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
-    DisposableEffect(contexto, etiqueta) {
+    DisposableEffect(context, tag) {
         // O callback pode ler o próprio motor porque `onInit` só chega depois de
         // a construção retornar: ela depende de um bind de serviço, que é
         // assíncrono.
-        var motor: TextToSpeech? = null
-        motor = TextToSpeech(contexto) { status ->
-            val disponivel = status == TextToSpeech.SUCCESS &&
-                motor?.setLanguage(Locale.forLanguageTag(etiqueta)) !in NO_VOICE
-            tts = motor.takeIf { disponivel }
+        var engine: TextToSpeech? = null
+        engine = TextToSpeech(context) { status ->
+            val isAvailable = status == TextToSpeech.SUCCESS &&
+                engine?.setLanguage(Locale.forLanguageTag(tag)) !in NO_VOICE
+            tts = engine.takeIf { isAvailable }
         }
         onDispose {
-            motor.stop()
-            motor.shutdown()
+            engine.stop()
+            engine.shutdown()
             tts = null
         }
     }

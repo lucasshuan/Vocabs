@@ -6,9 +6,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 
-class RetencaoEDuplicataTest {
+class RetentionAndDuplicateTest {
     @Test
-    fun `error e hit atualizam retention e placar`() {
+    fun `error e hit atualizam retention e scoreboard`() {
         val initial = Retention.initial(1_000)
         val error = initial.after(false, 2_000)
         assertEquals(0.0, error.points)
@@ -20,11 +20,11 @@ class RetencaoEDuplicataTest {
     }
 
     @Test
-    fun `duplicata normaliza caixa e espacos sem bloquear`() {
-        val pronta = entry(1, "on the fence", EntryStatus.READY)
-        val pendente = entry(2, "ON  THE FENCE", EntryStatus.PENDING)
-        assertSame(pronta, duplicateOfTarget("  On the fence ", listOf(pendente, pronta)))
-        assertNull(duplicateOfTarget("fence", listOf(pronta)))
+    fun `duplicate normaliza box e spaces sem block`() {
+        val isReady = entry(1, "on the fence", EntryStatus.READY)
+        val pending = entry(2, "ON  THE FENCE", EntryStatus.PENDING)
+        assertSame(isReady, duplicateOfTarget("  On the fence ", listOf(pending, isReady)))
+        assertNull(duplicateOfTarget("fence", listOf(isReady)))
     }
 
     private fun entry(id: Long, target: String, status: EntryStatus) = Entry(

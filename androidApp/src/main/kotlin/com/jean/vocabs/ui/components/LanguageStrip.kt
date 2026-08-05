@@ -68,22 +68,22 @@ import com.jean.vocabs.ui.languages.languageOf
 fun LanguageStrip(
     courses: List<CourseSummary>,
     ativo: String,
-    aoEscolher: (String) -> Unit,
-    aoAdicionar: () -> Unit,
+    onChoose: (String) -> Unit,
+    onAdd: () -> Unit,
     modifier: Modifier = Modifier,
-    recheio: PaddingValues = PaddingValues(horizontal = 20.dp),
+    filling: PaddingValues = PaddingValues(horizontal = 20.dp),
 ) {
-    val estado = rememberLazyListState()
-    val indiceAtivo = courses.indexOfFirst { it.languagePair.target == ativo }
+    val state = rememberLazyListState()
+    val activeIndex = courses.indexOfFirst { it.languagePair.target == ativo }
 
-    LaunchedEffect(indiceAtivo) {
-        if (indiceAtivo >= 0) estado.animateScrollToItem(indiceAtivo)
+    LaunchedEffect(activeIndex) {
+        if (activeIndex >= 0) state.animateScrollToItem(activeIndex)
     }
 
     LazyRow(
-        state = estado,
+        state = state,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = recheio,
+        contentPadding = filling,
         modifier = modifier.fillMaxWidth(),
     ) {
         items(courses.size, key = { courses[it].languagePair.target }) { index ->
@@ -91,11 +91,11 @@ fun LanguageStrip(
             LanguageChip(
                 language = languageOf(course.languagePair.target),
                 badge = course.badge,
-                selecionado = course.languagePair.target == ativo,
-                aoClicar = { aoEscolher(course.languagePair.target) },
+                selected = course.languagePair.target == ativo,
+                onClick = { onChoose(course.languagePair.target) },
             )
         }
-        item(key = "adicionar") { AddLanguageChip(aoAdicionar) }
+        item(key = "adicionar") { AddLanguageChip(onAdd) }
     }
 }
 
@@ -109,18 +109,18 @@ fun LanguageStrip(
 fun LanguageChip(
     language: Language,
     badge: CourseBadge,
-    selecionado: Boolean,
-    aoClicar: () -> Unit,
+    selected: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cores = MaterialTheme.colorScheme
-    val fundo by animateColorAsState(
-        targetValue = if (selecionado) cores.primary else cores.surface,
+    val colors = MaterialTheme.colorScheme
+    val background by animateColorAsState(
+        targetValue = if (selected) colors.primary else colors.surface,
         animationSpec = tween(Motion.FAST),
         label = "fundoDoChip",
     )
     val text by animateColorAsState(
-        targetValue = if (selecionado) cores.onPrimary else cores.onSurfaceVariant,
+        targetValue = if (selected) colors.onPrimary else colors.onSurfaceVariant,
         animationSpec = tween(Motion.FAST),
         label = "textoDoChip",
     )
@@ -130,21 +130,21 @@ fun LanguageChip(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier
-            .encolheAoTocar(toque, minimo = 0.94f)
+            .shrinkOnTouch(toque, minimum = 0.94f)
             .height(38.dp)
             .clip(CircleShape)
-            .background(fundo)
+            .background(background)
             .then(
-                if (selecionado) Modifier
-                else Modifier.border(1.dp, cores.outline, CircleShape),
+                if (selected) Modifier
+                else Modifier.border(1.dp, colors.outline, CircleShape),
             )
-            .clickable(interactionSource = toque, indication = ripple(), onClick = aoClicar)
+            .clickable(interactionSource = toque, indication = ripple(), onClick = onClick)
             .padding(start = 8.dp, end = 10.dp)
             .semantics { contentDescription = badgeDescription(language.displayName, badge) },
     ) {
-        CircularFlag(language, tamanho = 24.dp)
+        CircularFlag(language, size = 24.dp)
         Text(text = language.displayName, style = MaterialTheme.typography.titleSmall, color = text)
-        CourseBadgeView(badge, invertido = selecionado)
+        CourseBadgeView(badge, inverted = selected)
     }
 }
 
@@ -156,19 +156,19 @@ fun LanguageChip(
  * sem precisar de mais nada na tela.
  */
 @Composable
-private fun CourseBadgeView(badge: CourseBadge, invertido: Boolean) {
-    val cores = MaterialTheme.colorScheme
-    val fundo = when {
-        badge is CourseBadge.Review && invertido -> cores.onPrimary
-        badge is CourseBadge.Review -> cores.secondaryContainer
-        badge is CourseBadge.UpToDate -> cores.tertiaryContainer
-        else -> cores.surfaceVariant
+private fun CourseBadgeView(badge: CourseBadge, inverted: Boolean) {
+    val colors = MaterialTheme.colorScheme
+    val background = when {
+        badge is CourseBadge.Review && inverted -> colors.onPrimary
+        badge is CourseBadge.Review -> colors.secondaryContainer
+        badge is CourseBadge.UpToDate -> colors.tertiaryContainer
+        else -> colors.surfaceVariant
     }
     val tinta = when {
-        badge is CourseBadge.Review && invertido -> cores.primary
-        badge is CourseBadge.Review -> cores.primary
-        badge is CourseBadge.UpToDate -> cores.tertiary
-        else -> cores.onSurfaceVariant
+        badge is CourseBadge.Review && inverted -> colors.primary
+        badge is CourseBadge.Review -> colors.primary
+        badge is CourseBadge.UpToDate -> colors.tertiary
+        else -> colors.onSurfaceVariant
     }
 
     Box(
@@ -176,16 +176,16 @@ private fun CourseBadgeView(badge: CourseBadge, invertido: Boolean) {
         modifier = Modifier
             .defaultMinSize(minWidth = 20.dp)
             .height(20.dp)
-            .background(fundo, CircleShape),
+            .background(background, CircleShape),
     ) {
         when (badge) {
             is CourseBadge.Review -> AnimatedContent(
                 targetState = badge.count,
                 transitionSpec = {
-                    val subindo = targetState < initialState
-                    val entry = slideInVertically { altura -> if (subindo) altura else -altura } + fadeIn(tween(140))
-                    val saida = slideOutVertically { altura -> if (subindo) -altura else altura } + fadeOut(tween(140))
-                    entry togetherWith saida
+                    val rising = targetState < initialState
+                    val entry = slideInVertically { height -> if (rising) height else -height } + fadeIn(tween(140))
+                    val exit = slideOutVertically { height -> if (rising) -height else height } + fadeOut(tween(140))
+                    entry togetherWith exit
                 },
                 label = "contagemDoSelo",
             ) { count ->
@@ -197,26 +197,26 @@ private fun CourseBadgeView(badge: CourseBadge, invertido: Boolean) {
                 )
             }
             CourseBadge.UpToDate -> Icon(AppIcons.Check, null, tint = tinta, modifier = Modifier.size(12.dp))
-            CourseBadge.Empty -> Icon(AppIcons.Ampulheta, null, tint = tinta, modifier = Modifier.size(12.dp))
+            CourseBadge.Empty -> Icon(AppIcons.Hourglass, null, tint = tinta, modifier = Modifier.size(12.dp))
         }
     }
 }
 
 /** O `+` que fecha a faixa e leva para adicionar idioma. */
 @Composable
-private fun AddLanguageChip(aoClicar: () -> Unit) {
-    val cores = MaterialTheme.colorScheme
+private fun AddLanguageChip(onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .height(38.dp)
             .width(42.dp)
             .clip(CircleShape)
-            .clickable(onClick = aoClicar)
-            .contornoTracejado(cores.outline, raio = 19.dp)
+            .clickable(onClick = onClick)
+            .dashedOutline(colors.outline, radius = 19.dp)
             .semantics { contentDescription = "Adicionar idioma" },
     ) {
-        Icon(AppIcons.Mais, null, tint = cores.primary, modifier = Modifier.size(20.dp))
+        Icon(AppIcons.Plus, null, tint = colors.primary, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -228,15 +228,15 @@ private fun AddLanguageChip(aoClicar: () -> Unit) {
  */
 @Composable
 fun LanguageFilterPill(
-    rotulo: String,
+    label: String,
     language: Language?,
-    selecionado: Boolean,
-    aoClicar: () -> Unit,
+    selected: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cores = MaterialTheme.colorScheme
-    val fundo by animateColorAsState(
-        targetValue = if (selecionado) cores.primary else cores.surface,
+    val colors = MaterialTheme.colorScheme
+    val background by animateColorAsState(
+        targetValue = if (selected) colors.primary else colors.surface,
         animationSpec = tween(Motion.FAST),
         label = "fundoDoFiltro",
     )
@@ -246,16 +246,16 @@ fun LanguageFilterPill(
         modifier = modifier
             .height(32.dp)
             .clip(CircleShape)
-            .background(fundo)
-            .then(if (selecionado) Modifier else Modifier.border(1.dp, cores.outline, CircleShape))
-            .clickable(onClick = aoClicar)
+            .background(background)
+            .then(if (selected) Modifier else Modifier.border(1.dp, colors.outline, CircleShape))
+            .clickable(onClick = onClick)
             .padding(start = if (language == null) 13.dp else 6.dp, end = 13.dp),
     ) {
-        language?.let { CircularFlag(it, tamanho = 20.dp) }
+        language?.let { CircularFlag(it, size = 20.dp) }
         Text(
-            text = rotulo,
+            text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = if (selecionado) cores.onPrimary else cores.onSurfaceVariant,
+            color = if (selected) colors.onPrimary else colors.onSurfaceVariant,
         )
     }
 }
@@ -268,16 +268,16 @@ fun LanguageFilterPill(
 fun LanguageMark(
     language: Language,
     modifier: Modifier = Modifier,
-    cor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    tamanhoDaBandeira: androidx.compose.ui.unit.Dp = 15.dp,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    flagSize: androidx.compose.ui.unit.Dp = 15.dp,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier,
     ) {
-        CircularFlag(language, tamanho = tamanhoDaBandeira)
-        Text(language.displayName, style = MaterialTheme.typography.bodySmall, color = cor)
+        CircularFlag(language, size = flagSize)
+        Text(language.displayName, style = MaterialTheme.typography.bodySmall, color = color)
     }
 }
 
@@ -285,21 +285,21 @@ fun LanguageMark(
 @Composable
 fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
     if (total <= 1) return
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = modifier) {
         repeat(total) { index ->
-            val aberto = index == current
-            val largura by androidx.compose.animation.core.animateDpAsState(
-                targetValue = if (aberto) 16.dp else 5.dp,
+            val activePair = index == current
+            val width by androidx.compose.animation.core.animateDpAsState(
+                targetValue = if (activePair) 16.dp else 5.dp,
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
                 label = "larguraDoPonto",
             )
-            val cor by animateColorAsState(
-                targetValue = if (aberto) cores.primary else cores.outlineVariant,
+            val color by animateColorAsState(
+                targetValue = if (activePair) colors.primary else colors.outlineVariant,
                 animationSpec = tween(Motion.FAST),
                 label = "corDoPonto",
             )
-            Box(Modifier.width(largura).height(5.dp).background(cor, CircleShape))
+            Box(Modifier.width(width).height(5.dp).background(color, CircleShape))
         }
     }
 }

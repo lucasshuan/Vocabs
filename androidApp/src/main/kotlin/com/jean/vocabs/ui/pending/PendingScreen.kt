@@ -67,17 +67,17 @@ import com.jean.vocabs.ui.temporaryErrorText
  */
 @Composable
 fun PendingScreen(
-    aoAbrirCaptura: (Capture) -> Unit,
-    aoAbrirFicha: (Entry) -> Unit,
+    onOpenCapture: (Capture) -> Unit,
+    onOpenCard: (Entry) -> Unit,
     vm: PendingViewModel = viewModel(),
 ) {
-    val estado by vm.estado.collectAsStateWithLifecycle()
-    var filtro by remember { mutableStateOf<String?>(null) }
+    val state by vm.state.collectAsStateWithLifecycle()
+    var filter by remember { mutableStateOf<String?>(null) }
 
-    val captures = estado.captures.filter { filtro == null || it.languagePair.target == filtro }
-    val cards = estado.cards.filter { filtro == null || it.languagePair.target == filtro }
-    val maisAntiga = captures.minOfOrNull(Capture::createdAt)
-    val languages = estado.porIdioma
+    val captures = state.captures.filter { filter == null || it.languagePair.target == filter }
+    val cards = state.cards.filter { filter == null || it.languagePair.target == filter }
+    val oldest = captures.minOfOrNull(Capture::createdAt)
+    val languages = state.byLanguage
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(9.dp),
@@ -87,12 +87,12 @@ fun PendingScreen(
         item(key = "cabecalho") {
             Text("Pendentes", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
             Text(
-                text = queueSummary(captures.size, cards.size, maisAntiga),
+                text = queueSummary(captures.size, cards.size, oldest),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 3.dp),
             )
-            if (estado.total > 0) SwipeHint()
+            if (state.total > 0) SwipeHint()
         }
 
         if (languages.size > 1) {
@@ -103,25 +103,25 @@ fun PendingScreen(
                 ) {
                     item(key = "tudo") {
                         LanguageFilterPill(
-                            rotulo = "Tudo · ${estado.total}",
+                            label = "Tudo · ${state.total}",
                             language = null,
-                            selecionado = filtro == null,
-                            aoClicar = { filtro = null },
+                            selected = filter == null,
+                            onClick = { filter = null },
                         )
                     }
-                    items(languages.entries.toList(), key = { it.key }) { (codigo, count) ->
+                    items(languages.entries.toList(), key = { it.key }) { (code, count) ->
                         LanguageFilterPill(
-                            rotulo = "${languageOf(codigo).displayName} · $count",
-                            language = languageOf(codigo),
-                            selecionado = filtro == codigo,
-                            aoClicar = { filtro = if (filtro == codigo) null else codigo },
+                            label = "${languageOf(code).displayName} · $count",
+                            language = languageOf(code),
+                            selected = filter == code,
+                            onClick = { filter = if (filter == code) null else code },
                         )
                     }
                 }
             }
         }
 
-        if (estado.total == 0) {
+        if (state.total == 0) {
             item(key = "vazio") {
                 EmptyState(
                     icon = AppIcons.Check,
@@ -133,12 +133,12 @@ fun PendingScreen(
 
         items(captures, key = { "c${it.id}" }) { capture ->
             SwipeToDelete(
-                aoExcluir = { vm.deleteCapture(capture) },
-                descricaoDaAcao = "Excluir captura",
+                onDelete = { vm.deleteCapture(capture) },
+                actionLabel = "Excluir captura",
                 modifier = Modifier.animateItem().fillMaxWidth(),
             ) {
                 ListRow(
-                    aoClicar = { aoAbrirCaptura(capture) },
+                    onClick = { onOpenCapture(capture) },
                     start = { CategoryDisc(capture.format) },
                     end = {
                         Text(
@@ -158,14 +158,14 @@ fun PendingScreen(
             item(key = "secao-fichas") { SectionLabel("Fichas sendo geradas", Modifier.padding(top = 10.dp)) }
             items(cards, key = { "e${it.id}" }) { entry ->
                 SwipeToDelete(
-                    aoExcluir = { vm.excluirFicha(entry) },
-                    descricaoDaAcao = "Excluir ficha",
+                    onDelete = { vm.deleteCard(entry) },
+                    actionLabel = "Excluir ficha",
                     modifier = Modifier.animateItem().fillMaxWidth(),
                 ) {
                     EntryCard(
                         entry = entry,
-                        aoClicar = { aoAbrirFicha(entry) },
-                        tentar = { vm.tentarDeNovo(entry.id) },
+                        onClick = { onOpenCard(entry) },
+                        retry = { vm.tryAgain(entry.id) },
                     )
                 }
             }
@@ -190,7 +190,7 @@ private fun SwipeHint() {
         modifier = Modifier.padding(top = 7.dp),
     ) {
         Icon(
-            imageVector = AppIcons.Lixeira,
+            imageVector = AppIcons.Trash,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(14.dp),
@@ -203,30 +203,30 @@ private fun SwipeHint() {
     }
 }
 
-private fun queueSummary(captures: Int, cards: Int, maisAntiga: Long?): String = when {
+private fun queueSummary(captures: Int, cards: Int, oldest: Long?): String = when {
     captures > 0 -> buildString {
         append(captures)
         append(if (captures == 1) " captura crua" else " capturas cruas")
-        maisAntiga?.let { append(" · a mais antiga ${relativeTime(it)}") }
+        oldest?.let { append(" · a mais antiga ${relativeTime(it)}") }
     }
-    cards > 0 -> "$cards ${if (cards == 1) "card em processamento" else "cards em processamento"}"
+    cards > 0 -> "$cards ${if (cards == 1) "card em processing" else "cards em processing"}"
     else -> "Suas capturas e fichas em processamento aparecem aqui."
 }
 
 @Composable
 private fun EntryCard(
     entry: Entry,
-    aoClicar: () -> Unit,
-    tentar: () -> Unit,
+    onClick: () -> Unit,
+    retry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     ScreenCard(
-        forma = MaterialTheme.shapes.medium,
-        recheio = PaddingValues(horizontal = 15.dp, vertical = 14.dp),
+        shape = MaterialTheme.shapes.medium,
+        filling = PaddingValues(horizontal = 15.dp, vertical = 14.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f).clickable(onClick = aoClicar)) {
+            Column(Modifier.weight(1f).clickable(onClick = onClick)) {
                 Text(entry.title, style = MaterialTheme.typography.titleSmall)
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 3.dp)) {
                     LanguageMark(languageOf(entry.languagePair.target))
@@ -241,7 +241,7 @@ private fun EntryCard(
                 }
             }
             if (entry.status == EntryStatus.GENERATING) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-            if (entry.status == EntryStatus.ERROR) Pill("tentar de novo", destaque = true, aoClicar = tentar)
+            if (entry.status == EntryStatus.ERROR) Pill("tentar de novo", highlight = true, onClick = retry)
         }
     }
 }

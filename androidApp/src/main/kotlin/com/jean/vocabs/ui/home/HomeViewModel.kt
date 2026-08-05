@@ -27,27 +27,27 @@ import kotlinx.coroutines.flow.stateIn
  * qualquer um dos dois faltar.
  */
 data class HomePage(
-    val resumo: CourseSummary,
-    val forcaMedia: Int,
+    val summary: CourseSummary,
+    val averageStrength: Int,
     /** Quantas vencem ainda nas próximas 24h — o "Próximas 5 em 19h". */
-    val proximasEm24h: Int,
-    val capturadasHoje: List<Entry>,
+    val nextIn24h: Int,
+    val capturedToday: List<Entry>,
 ) {
-    val languagePair: LanguagePair get() = resumo.languagePair
+    val languagePair: LanguagePair get() = summary.languagePair
 }
 
 data class HomeState(
-    val paginas: List<HomePage> = emptyList(),
+    val pages: List<HomePage> = emptyList(),
     val ativo: String = "",
     val native: String = "",
-    val carregado: Boolean = false,
+    val loaded: Boolean = false,
 ) {
-    val courses: List<CourseSummary> get() = paginas.map { it.resumo }
+    val courses: List<CourseSummary> get() = pages.map { it.summary }
 
-    val indiceAtivo: Int get() = paginas.indexOfFirst { it.languagePair.target == ativo }.coerceAtLeast(0)
+    val activeIndex: Int get() = pages.indexOfFirst { it.languagePair.target == ativo }.coerceAtLeast(0)
 
     /** Com um curso só não há faixa nem carrossel: não há para onde deslizar. */
-    val temCarrossel: Boolean get() = paginas.size > 1
+    val hasCarousel: Boolean get() = pages.size > 1
 }
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
@@ -62,39 +62,39 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
      * faz a troca de página ser instantânea, e é também o que garante que os
      * três cartões estejam falando do mesmo instante.
      */
-    val estado: StateFlow<HomeState> = combine(
+    val state: StateFlow<HomeState> = combine(
         preferences.observeLanguagePair(),
         preferences.observeCourses(),
         repository.observeReady(Scope.All),
-    ) { languagePair, matriculados, prontas ->
+    ) { languagePair, enrolled, readyEntries ->
         val now = System.currentTimeMillis()
         val today = LocalDate.now()
-        val porCurso = prontas.groupBy { it.languagePair.target }
+        val byCourse = readyEntries.groupBy { it.languagePair.target }
 
         HomeState(
-            paginas = matriculados.map { target ->
-                pagina(
+            pages = enrolled.map { target ->
+                page(
                     languagePair = LanguagePair(native = languagePair.native, target = target),
-                    entries = porCurso[target].orEmpty(),
+                    entries = byCourse[target].orEmpty(),
                     now = now,
                     today = today,
                 )
             },
             ativo = languagePair.target,
             native = languagePair.native,
-            carregado = true,
+            loaded = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeState())
 
-    private fun pagina(
+    private fun page(
         languagePair: LanguagePair,
         entries: List<Entry>,
         now: Long,
         today: LocalDate,
     ): HomePage {
-        val faltas = entries.mapNotNull { it.retention?.nextReviewIn(now) }
+        val misses = entries.mapNotNull { it.retention?.nextReviewIn(now) }
         return HomePage(
-            resumo = CourseSummary(
+            summary = CourseSummary(
                 languagePair = languagePair,
                 total = entries.size,
                 // Por degrau, como em toda tela de número: contar por força de
@@ -102,22 +102,22 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 // porque ela decai entre a leitura de uma e a da outra.
                 mastered = entries.count { Steps.level(it.step) == MemoryLevel.MASTERED },
                 inQueue = entries.count { it.needsReview(now) },
-                nextInMillis = faltas.filter { it > 0L }.minOrNull(),
+                nextInMillis = misses.filter { it > 0L }.minOrNull(),
             ),
-            forcaMedia = entries.mapNotNull { it.retention?.pointsAt(now) }.mediaOuZero().toInt(),
-            proximasEm24h = faltas.count { it in 1..ONE_DAY_IN_MILLIS },
-            capturadasHoje = entries
+            averageStrength = entries.mapNotNull { it.retention?.pointsAt(now) }.averageOrZero().toInt(),
+            nextIn24h = misses.count { it in 1..ONE_DAY_IN_MILLIS },
+            capturedToday = entries
                 .filter { Instant.ofEpochMilli(it.createdAt).atZone(ZoneId.systemDefault()).toLocalDate() == today }
                 .take(3),
         )
     }
 
     /** Deslizar o carrossel **é** trocar de curso: a revisão e o `+` seguem a página. */
-    fun openCourse(codigo: String) = preferences.openCourse(codigo)
+    fun openCourse(code: String) = preferences.openCourse(code)
 
     private companion object {
         const val ONE_DAY_IN_MILLIS = 86_400_000L
     }
 }
 
-private fun List<Double>.mediaOuZero(): Double = if (isEmpty()) 0.0 else average()
+private fun List<Double>.averageOrZero(): Double = if (isEmpty()) 0.0 else average()

@@ -26,9 +26,9 @@ fun enrolledCourses(
     preferences.observeCourses(),
     preferences.observeLanguagePair(),
     repository.observeCourses(),
-) { matriculados, languagePair, comFichas ->
-    matriculados.map { target ->
+) { enrolled, languagePair, withCards ->
+    enrolled.map { target ->
         val course = LanguagePair(native = languagePair.native, target = target)
-        comFichas.firstOrNull { it.languagePair == course } ?: CourseSummary(course, total = 0, mastered = 0)
+        withCards.firstOrNull { it.languagePair == course } ?: CourseSummary(course, total = 0, mastered = 0)
     }
 }

@@ -38,7 +38,7 @@ class CardApi(
      * antiga depois de trocar de curso tem que devolvê-la no idioma em que ela
      * nasceu.
      */
-    suspend fun gerar(snippet: String, target: String, type: TargetType, languagePair: LanguagePair): CardResponse {
+    suspend fun generate(snippet: String, target: String, type: TargetType, languagePair: LanguagePair): CardResponse {
         val answer = try {
             client.post("$baseUrl/v1/card") {
                 contentType(ContentType.Application.Json)
@@ -53,13 +53,13 @@ class CardApi(
                     ),
                 )
             }
-        } catch (cancelamento: CancellationException) {
-            throw cancelamento
-        } catch (falha: Exception) {
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (failure: Exception) {
             // Servidor desligado, rede fora, DNS: para quem lê é tudo a mesma
             // coisa, e a frase do sistema operacional vem em inglês de qualquer
             // jeito. O texto original fica no detalhe, para diagnóstico.
-            throw CardException(ErrorCode.UNREACHABLE, falha.message)
+            throw CardException(ErrorCode.UNREACHABLE, failure.message)
         }
 
         if (!answer.status.isSuccess()) {

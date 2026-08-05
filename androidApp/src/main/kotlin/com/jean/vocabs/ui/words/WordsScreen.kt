@@ -55,10 +55,10 @@ import com.jean.vocabs.ui.languages.languageOf
  */
 @Composable
 fun WordsScreen(
-    aoAbrirFicha: (Long) -> Unit,
+    onOpenCard: (Long) -> Unit,
     vm: WordsViewModel = viewModel(),
 ) {
-    val estado by vm.estado.collectAsStateWithLifecycle()
+    val state by vm.state.collectAsStateWithLifecycle()
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -68,15 +68,15 @@ fun WordsScreen(
         item(key = "cabecalho") {
             Text("Vocabulários", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
             Text(
-                text = "${estado.total} ${if (estado.total == 1) "card" else "cards"} · ${estado.mastered} dominadas",
+                text = "${state.total} ${if (state.total == 1) "card" else "cards"} · ${state.mastered} dominadas",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 3.dp),
             )
             OutlinedTextField(
-                value = estado.busca,
-                onValueChange = vm::buscar,
-                leadingIcon = { Icon(AppIcons.Lupa, null) },
+                value = state.query,
+                onValueChange = vm::search,
+                leadingIcon = { Icon(AppIcons.MagnifyingGlass, null) },
                 placeholder = { Text("Buscar em todos os idiomas") },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
@@ -86,24 +86,24 @@ fun WordsScreen(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 12.dp),
             ) {
-                MemoryFilter.entries.forEach { filtro ->
-                    SelectablePill(filtro.rotulo, estado.filtro == filtro, aoClicar = { vm.filtrar(filtro) })
+                MemoryFilter.entries.forEach { filter ->
+                    SelectablePill(filter.label, state.filter == filter, onClick = { vm.filter(filter) })
                 }
             }
         }
 
-        if (estado.carregado && estado.total == 0) {
+        if (state.loaded && state.total == 0) {
             item(key = "vazio") {
                 EmptyState(
-                    icon = AppIcons.Cartas,
+                    icon = AppIcons.Cards,
                     title = "Sua coleção começa aqui",
                     detail = "Capture um trecho e escolha o que quer aprender.",
                 )
             }
-        } else if (estado.carregado && estado.encontradas == 0) {
+        } else if (state.loaded && state.matches == 0) {
             item(key = "sem-resultado") {
                 EmptyState(
-                    icon = AppIcons.Lupa,
+                    icon = AppIcons.MagnifyingGlass,
                     title = "Nenhuma ficha encontrada",
                     detail = "Tente outra busca ou outro nível.",
                 )
@@ -112,21 +112,21 @@ fun WordsScreen(
 
         // Busca sem resultado nenhum mostra só o vazio: repetir três cabeçalhos
         // sem nada embaixo transformaria a resposta numa lista de nãos.
-        val comGrupos = estado.encontradas > 0
+        val withGroups = state.matches > 0
 
-        estado.grupos.forEach { grupo ->
-            if (grupo.total == 0 || !comGrupos || grupo.vazioPorFiltro) return@forEach
+        state.groups.forEach { group ->
+            if (group.total == 0 || !withGroups || group.emptyByFilter) return@forEach
 
-            item(key = "g${grupo.languagePair.target}") {
+            item(key = "g${group.languagePair.target}") {
                 LanguageHeader(
-                    grupo = grupo,
+                    group = group,
                     modifier = Modifier.animateItem(),
-                    aoAlternar = { vm.toggleGroup(grupo.languagePair.target) },
+                    onToggle = { vm.toggleGroup(group.languagePair.target) },
                 )
             }
-            if (!grupo.recolhido) {
-                items(grupo.entries, key = { "e${it.id}" }) { entry ->
-                    WordCard(entry, Modifier.animateItem()) { aoAbrirFicha(entry.id) }
+            if (!group.isCollapsed) {
+                items(group.entries, key = { "e${it.id}" }) { entry ->
+                    WordCard(entry, Modifier.animateItem()) { onOpenCard(entry.id) }
                 }
             }
         }
@@ -142,22 +142,22 @@ fun WordsScreen(
  */
 @Composable
 private fun LanguageHeader(
-    grupo: LanguageGroup,
-    aoAlternar: () -> Unit,
+    group: LanguageGroup,
+    onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cores = MaterialTheme.colorScheme
-    val aberto = !grupo.recolhido
-    val giro by animateFloatAsState(
-        targetValue = if (aberto) 90f else 0f,
+    val colors = MaterialTheme.colorScheme
+    val activePair = !group.isCollapsed
+    val spin by animateFloatAsState(
+        targetValue = if (activePair) 90f else 0f,
         animationSpec = tween(200),
         label = "giroDoCabecalho",
     )
 
     Surface(
-        onClick = aoAlternar,
+        onClick = onToggle,
         shape = RoundedCornerShape(12.dp),
-        color = if (aberto) cores.secondaryContainer else cores.surfaceVariant,
+        color = if (activePair) colors.secondaryContainer else colors.surfaceVariant,
         modifier = modifier.fillMaxWidth().padding(top = 6.dp),
     ) {
         Row(
@@ -165,37 +165,37 @@ private fun LanguageHeader(
             horizontalArrangement = Arrangement.spacedBy(9.dp),
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
-            CircularFlag(languageOf(grupo.languagePair.target), tamanho = 20.dp)
+            CircularFlag(languageOf(group.languagePair.target), size = 20.dp)
             Text(
-                text = languageOf(grupo.languagePair.target).displayName,
+                text = languageOf(group.languagePair.target).displayName,
                 style = MaterialTheme.typography.titleSmall,
-                color = if (aberto) cores.onSecondaryContainer else cores.onSurface,
+                color = if (activePair) colors.onSecondaryContainer else colors.onSurface,
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = if (grupo.inQueue > 0) "${grupo.total} · ${grupo.inQueue} para revisar" else "${grupo.total} · em dia",
+                text = if (group.inQueue > 0) "${group.total} · ${group.inQueue} para revisar" else "${group.total} · em dia",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (grupo.inQueue > 0) cores.primary else cores.onSurfaceVariant,
+                color = if (group.inQueue > 0) colors.primary else colors.onSurfaceVariant,
             )
             Icon(
-                imageVector = AppIcons.Avancar,
-                contentDescription = if (aberto) "Recolher" else "Expandir",
-                tint = if (aberto) cores.primary else cores.onSurfaceVariant,
-                modifier = Modifier.size(16.dp).rotate(giro),
+                imageVector = AppIcons.Forward,
+                contentDescription = if (activePair) "Recolher" else "Expandir",
+                tint = if (activePair) colors.primary else colors.onSurfaceVariant,
+                modifier = Modifier.size(16.dp).rotate(spin),
             )
         }
     }
 }
 
 @Composable
-private fun WordCard(entry: Entry, modifier: Modifier = Modifier, aoClicar: () -> Unit) {
+private fun WordCard(entry: Entry, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val now = System.currentTimeMillis()
     val level = entry.retention?.levelAt(now) ?: MemoryLevel.NEW
     val points = entry.retention?.pointsAt(now) ?: 0.0
-    val proxima = nextReviewText(entry.retention, now)
+    val next = nextReviewText(entry.retention, now)
     val inQueue = entry.needsReview(now)
 
-    ScreenCard(modifier = modifier.fillMaxWidth(), aoClicar = aoClicar) {
+    ScreenCard(modifier = modifier.fillMaxWidth(), onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(entry.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.weight(1f))
             TypeBadge(entry.type)
@@ -206,14 +206,14 @@ private fun WordCard(entry: Entry, modifier: Modifier = Modifier, aoClicar: () -
             modifier = Modifier.padding(top = 9.dp),
         )
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 11.dp)) {
-            MemoryBar(points, level, Modifier.width(84.dp), altura = 6.dp)
+            MemoryBar(points, level, Modifier.width(84.dp), height = 6.dp)
             Text(
                 text = levelLabel(level),
                 style = MaterialTheme.typography.bodySmall,
                 color = levelLabelColor(level),
                 modifier = Modifier.padding(start = 9.dp).weight(1f),
             )
-            proxima?.let {
+            next?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,

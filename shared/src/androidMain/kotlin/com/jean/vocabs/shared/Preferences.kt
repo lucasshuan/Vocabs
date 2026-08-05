@@ -66,15 +66,15 @@ class Preferences(context: Context) {
     val languagePair: LanguagePair get() = LanguagePair(native = native, target = target)
 
     /** Matricula num language novo e já o deixa aberto — é o que o botão da tela 5c faz. */
-    fun enroll(codigo: String) {
-        courses = courses + codigo
-        target = codigo
+    fun enroll(code: String) {
+        courses = courses + code
+        target = code
     }
 
     /** Troca o course aberto. Matricula por segurança: escolher o que não existe seria um beco. */
-    fun openCourse(codigo: String) {
-        if (codigo !in courses) courses = courses + codigo
-        target = codigo
+    fun openCourse(code: String) {
+        if (code !in courses) courses = courses + code
+        target = code
     }
 
     /**
@@ -85,11 +85,11 @@ class Preferences(context: Context) {
      * do curso aberto abre o primeiro que sobrou, para que a tela não fique
      * apontando para um idioma que não está mais ali.
      */
-    fun unenroll(codigo: String) {
-        val restantes = courses - codigo
-        if (restantes.isEmpty()) return
-        courses = restantes
-        if (target == codigo) target = restantes.first()
+    fun unenroll(code: String) {
+        val rest = courses - code
+        if (rest.isEmpty()) return
+        courses = rest
+        if (target == code) target = rest.first()
     }
 
     /**
@@ -104,8 +104,8 @@ class Preferences(context: Context) {
         get() = prefs.getStringSet(COLLAPSED, emptySet()).orEmpty()
         set(value) = prefs.edit().putStringSet(COLLAPSED, value).apply()
 
-    fun toggleGroup(codigo: String) {
-        collapsedGroups = collapsedGroups.let { if (codigo in it) it - codigo else it + codigo }
+    fun toggleGroup(code: String) {
+        collapsedGroups = collapsedGroups.let { if (code in it) it - code else it + code }
     }
 
     // ---- tema ---------------------------------------------------------------
@@ -123,13 +123,13 @@ class Preferences(context: Context) {
      * mesmo frame em que a pessoa troca de curso, em vez de na próxima vez que a
      * tela for recriada.
      */
-    private fun <T> observar(vararg chaves: String, ler: () -> T): Flow<T> = callbackFlow {
-        trySend(ler())
-        val ouvinte = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key in chaves) trySend(ler())
+    private fun <T> observe(vararg keys: String, read: () -> T): Flow<T> = callbackFlow {
+        trySend(read())
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key in keys) trySend(read())
         }
-        prefs.registerOnSharedPreferenceChangeListener(ouvinte)
-        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(ouvinte) }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
         // Conflate porque o que interessa é o valor atual, não a série de
         // valores: quem trocar de curso três vezes seguidas com a tela ocupada
@@ -137,13 +137,13 @@ class Preferences(context: Context) {
         .conflate()
         .distinctUntilChanged()
 
-    fun observeLanguagePair(): Flow<LanguagePair> = observar(NATIVE, TARGET) { languagePair }
+    fun observeLanguagePair(): Flow<LanguagePair> = observe(NATIVE, TARGET) { languagePair }
 
-    fun observeCourses(): Flow<List<String>> = observar(COURSES) { courses }
+    fun observeCourses(): Flow<List<String>> = observe(COURSES) { courses }
 
-    fun observeTheme(): Flow<ThemePreference> = observar(THEME) { theme }
+    fun observeTheme(): Flow<ThemePreference> = observe(THEME) { theme }
 
-    fun observeCollapsedGroups(): Flow<Set<String>> = observar(COLLAPSED) { collapsedGroups }
+    fun observeCollapsedGroups(): Flow<Set<String>> = observe(COLLAPSED) { collapsedGroups }
 
     /** O native sozinho, para a row "Meu language" da tela Configurações. */
     fun observeNativeLanguage(): Flow<String> = observeLanguagePair().map { it.native }

@@ -73,7 +73,7 @@ object AppContainer {
 
     fun repository(context: Context): VocabRepository =
         repository ?: synchronized(this) {
-            repository ?: criar(context.applicationContext).also { repository = it }
+            repository ?: create(context.applicationContext).also { repository = it }
         }
 
     fun preferences(context: Context): Preferences =
@@ -81,8 +81,8 @@ object AppContainer {
             preferences ?: Preferences(context.applicationContext).also { preferences = it }
         }
 
-    private fun criar(context: Context): VocabRepository {
-        val driver = AndroidDatabaseDriverFactory(context).criar()
+    private fun create(context: Context): VocabRepository {
+        val driver = AndroidDatabaseDriverFactory(context).create()
         val http = HttpClient(OkHttp) {
             install(ContentNegotiation) {
                 json(Json { ignoreUnknownKeys = true })
@@ -102,7 +102,7 @@ object AppContainer {
             io = Dispatchers.IO,
             now = { System.currentTimeMillis() },
             activeCourse = preferences(context).observeLanguagePair(),
-            removeFile = MediaFiles::remover,
+            removeFile = MediaFiles::remove,
         )
     }
 }

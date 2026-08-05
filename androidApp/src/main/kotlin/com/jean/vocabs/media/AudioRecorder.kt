@@ -15,10 +15,10 @@ class AudioRecorder(private val context: Context) {
 
     private var audioRecord: AudioRecord? = null
     private var file: File? = null
-    private var trabalhador: Thread? = null
+    private var worker: Thread? = null
 
     @Volatile
-    private var escrevendo = false
+    private var writing = false
 
     /**
      * O pico do último bloco lido, de 0 a 1.
@@ -34,12 +34,12 @@ class AudioRecorder(private val context: Context) {
     var level: Float = 0f
         private set
 
-    val gravando: Boolean get() = escrevendo
+    val isRecording: Boolean get() = writing
 
-    @Suppress("MissingPermission") // A permissão é concedida pelo launcher antes deste ponto.
-    fun iniciar(): Boolean {
-        if (gravando) return true
-        val tamanho = maxOf(
+    @Suppress("MissingPermission") // A permissão é granted pelo launcher antes deste point.
+    fun begin(): Boolean {
+        if (isRecording) return true
+        val size = maxOf(
             AudioRecord.getMinBufferSize(
                 SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
@@ -47,86 +47,86 @@ class AudioRecorder(private val context: Context) {
             ),
             4_096,
         )
-        val gravador = runCatching {
+        val recorder = runCatching {
             AudioRecord(
                 MediaRecorder.AudioSource.VOICE_RECOGNITION,
                 SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
-                tamanho * 2,
+                size * 2,
             )
         }.getOrNull() ?: return false
-        if (gravador.state != AudioRecord.STATE_INITIALIZED) {
-            gravador.release()
+        if (recorder.state != AudioRecord.STATE_INITIALIZED) {
+            recorder.release()
             return false
         }
 
-        val destino = MediaFiles.newAudio(context)
+        val destination = MediaFiles.newAudio(context)
         return runCatching {
-            FileOutputStream(destino).use { it.write(ByteArray(WAV_HEADER)) }
-            gravador.startRecording()
-            escrevendo = true
-            audioRecord = gravador
-            file = destino
+            FileOutputStream(destination).use { it.write(ByteArray(WAV_HEADER)) }
+            recorder.startRecording()
+            writing = true
+            audioRecord = recorder
+            file = destination
             level = 0f
-            trabalhador = thread(name = "Vocabu-wav", isDaemon = true) {
-                FileOutputStream(destino, true).use { saida ->
-                    val buffer = ByteArray(tamanho)
-                    while (escrevendo) {
-                        val lidos = gravador.read(buffer, 0, buffer.size)
-                        if (lidos > 0) {
-                            saida.write(buffer, 0, lidos)
-                            level = picoDe(buffer, lidos)
+            worker = thread(name = "Vocabu-wav", isDaemon = true) {
+                FileOutputStream(destination, true).use { exit ->
+                    val buffer = ByteArray(size)
+                    while (writing) {
+                        val seen = recorder.read(buffer, 0, buffer.size)
+                        if (seen > 0) {
+                            exit.write(buffer, 0, seen)
+                            level = peakOf(buffer, seen)
                         }
                     }
                 }
             }
             true
         }.getOrElse {
-            escrevendo = false
-            gravador.release()
-            destino.delete()
+            writing = false
+            recorder.release()
+            destination.delete()
             false
         }
     }
 
-    fun parar(): File? {
-        val gravador = audioRecord ?: return null
-        val destino = file
-        escrevendo = false
-        runCatching { gravador.stop() }
-        trabalhador?.join(2_000)
-        gravador.release()
-        limparEstado()
+    fun stop(): File? {
+        val recorder = audioRecord ?: return null
+        val destination = file
+        writing = false
+        runCatching { recorder.stop() }
+        worker?.join(2_000)
+        recorder.release()
+        clearState()
 
-        if (destino == null || destino.length() <= WAV_HEADER) {
-            destino?.delete()
+        if (destination == null || destination.length() <= WAV_HEADER) {
+            destination?.delete()
             return null
         }
         return runCatching {
-            escreverCabecalho(destino)
-            destino
+            writeHeader(destination)
+            destination
         }.getOrElse {
-            destino.delete()
+            destination.delete()
             null
         }
     }
 
-    fun cancelar() {
-        escrevendo = false
-        audioRecord?.let { gravador ->
-            runCatching { gravador.stop() }
-            trabalhador?.join(1_000)
-            gravador.release()
+    fun cancel() {
+        writing = false
+        audioRecord?.let { recorder ->
+            runCatching { recorder.stop() }
+            worker?.join(1_000)
+            recorder.release()
         }
         file?.delete()
-        limparEstado()
+        clearState()
     }
 
-    private fun limparEstado() {
+    private fun clearState() {
         audioRecord = null
         file = null
-        trabalhador = null
+        worker = null
         level = 0f
     }
 
@@ -138,24 +138,24 @@ class AudioRecorder(private val context: Context) {
      * sobrevive à amostragem, e o que se perde no meio do caminho é menor que a
      * espessura da barra desenhada.
      */
-    private fun picoDe(buffer: ByteArray, lidos: Int): Float {
-        var pico = 0
+    private fun peakOf(buffer: ByteArray, seen: Int): Float {
+        var peak = 0
         var i = 0
-        while (i + 1 < lidos) {
-            val amostra = ((buffer[i + 1].toInt() shl 8) or (buffer[i].toInt() and 0xFF)).toShort().toInt()
-            val modulo = if (amostra < 0) -amostra else amostra
-            if (modulo > pico) pico = modulo
+        while (i + 1 < seen) {
+            val sample = ((buffer[i + 1].toInt() shl 8) or (buffer[i].toInt() and 0xFF)).toShort().toInt()
+            val modulus = if (sample < 0) -sample else sample
+            if (modulus > peak) peak = modulus
             i += SAMPLING_STEP * BYTES_PER_SAMPLE
         }
-        return (pico / 32_767f).coerceIn(0f, 1f)
+        return (peak / 32_767f).coerceIn(0f, 1f)
     }
 
-    private fun escreverCabecalho(destino: File) {
-        val dados = destino.length() - WAV_HEADER
-        RandomAccessFile(destino, "rw").use { wav ->
+    private fun writeHeader(destination: File) {
+        val data = destination.length() - WAV_HEADER
+        RandomAccessFile(destination, "rw").use { wav ->
             wav.seek(0)
             wav.writeBytes("RIFF")
-            wav.writeIntLe((dados + 36).toInt())
+            wav.writeIntLe((data + 36).toInt())
             wav.writeBytes("WAVEfmt ")
             wav.writeIntLe(16)
             wav.writeShortLe(1)
@@ -165,7 +165,7 @@ class AudioRecorder(private val context: Context) {
             wav.writeShortLe(BYTES_PER_SAMPLE)
             wav.writeShortLe(16)
             wav.writeBytes("data")
-            wav.writeIntLe(dados.toInt())
+            wav.writeIntLe(data.toInt())
         }
     }
 

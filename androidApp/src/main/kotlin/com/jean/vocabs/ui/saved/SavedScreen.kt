@@ -48,8 +48,8 @@ import com.jean.vocabs.ui.components.CircularFlag
 import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.PrimaryButton
 import com.jean.vocabs.ui.components.ScreenCard
-import com.jean.vocabs.ui.components.entradaSuave
-import com.jean.vocabs.ui.components.respirando
+import com.jean.vocabs.ui.components.smoothEntrance
+import com.jean.vocabs.ui.components.breathing
 import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 import kotlinx.coroutines.delay
@@ -69,21 +69,21 @@ import kotlinx.coroutines.delay
 @Composable
 fun SavedScreen(
     ids: List<Long>,
-    aoFechar: () -> Unit,
-    aoCapturarOutra: () -> Unit,
-    aoVerFichas: () -> Unit,
-    aoRevisar: () -> Unit,
+    onClose: () -> Unit,
+    onCaptureAnother: () -> Unit,
+    onViewCards: () -> Unit,
+    onReview: () -> Unit,
     vm: SavedViewModel = viewModel(),
 ) {
-    LaunchedEffect(ids) { vm.acompanhar(ids) }
-    val estado by vm.estado.collectAsStateWithLifecycle()
-    val cores = MaterialTheme.colorScheme
-    var interagiu by remember { mutableStateOf(false) }
+    LaunchedEffect(ids) { vm.follow(ids) }
+    val state by vm.state.collectAsStateWithLifecycle()
+    val colors = MaterialTheme.colorScheme
+    var interacted by remember { mutableStateOf(false) }
 
-    LaunchedEffect(estado.trabalhando, estado.entries.isEmpty(), interagiu) {
-        if (estado.entries.isEmpty() || estado.trabalhando || interagiu) return@LaunchedEffect
+    LaunchedEffect(state.working, state.entries.isEmpty(), interacted) {
+        if (state.entries.isEmpty() || state.working || interacted) return@LaunchedEffect
         delay(AUTO_CLOSE_MS)
-        aoFechar()
+        onClose()
     }
 
     Column(
@@ -104,30 +104,30 @@ fun SavedScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
             )
-            if (estado.target.isNotEmpty()) {
+            if (state.target.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    CircularFlag(languageOf(estado.target), tamanho = 18.dp)
+                    CircularFlag(languageOf(state.target), size = 18.dp)
                     Text(
-                        text = "no seu ${languageOf(estado.target).displayName.lowercase()} · ${estado.totalDoCurso} ${if (estado.totalDoCurso == 1) "card" else "cards"} agora",
+                        text = "no seu ${languageOf(state.target).displayName.lowercase()} · ${state.courseTotal} ${if (state.courseTotal == 1) "card" else "cards"} agora",
                         style = MaterialTheme.typography.bodySmall,
-                        color = cores.onSurfaceVariant,
+                        color = colors.onSurfaceVariant,
                     )
                 }
             }
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            estado.entries.forEachIndexed { index, entry ->
-                SavedRow(entry, Modifier.entradaSuave(index))
+            state.entries.forEachIndexed { index, entry ->
+                SavedRow(entry, Modifier.smoothEntrance(index))
             }
         }
 
-        Surface(shape = MaterialTheme.shapes.medium, color = cores.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
+        Surface(shape = MaterialTheme.shapes.medium, color = colors.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = if (ids.size > 1) "Todas entram na revisão de hoje. Se a IA errar o sentido, você corrige na ficha — nada trava aqui."
                 else "Ela entra na revisão de hoje. Se a IA errar o sentido, você corrige na ficha — nada trava aqui.",
                 style = MaterialTheme.typography.bodySmall,
-                color = cores.onSurfaceVariant,
+                color = colors.onSurfaceVariant,
                 modifier = Modifier.padding(14.dp),
             )
         }
@@ -137,16 +137,16 @@ fun SavedScreen(
         Column(verticalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.padding(bottom = 8.dp)) {
             PrimaryButton(
                 text = "Capturar outra",
-                aoClicar = { interagiu = true; aoCapturarOutra() },
+                onClick = { interacted = true; onCaptureAnother() },
             )
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-                ExitAction("Ver as fichas", Modifier.weight(1f)) { interagiu = true; aoVerFichas() }
-                ExitAction("Revisar agora", Modifier.weight(1f)) { interagiu = true; aoRevisar() }
+                ExitAction("Ver as fichas", Modifier.weight(1f)) { interacted = true; onViewCards() }
+                ExitAction("Revisar agora", Modifier.weight(1f)) { interacted = true; onReview() }
             }
             Text(
-                text = if (estado.trabalhando) "A IA continua montando ao fundo." else "Fecha sozinho e volta para onde você estava.",
+                text = if (state.working) "A IA continua montando ao fundo." else "Fecha sozinho e volta para onde você estava.",
                 style = MaterialTheme.typography.bodySmall,
-                color = cores.outline,
+                color = colors.outline,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -158,24 +158,24 @@ fun SavedScreen(
 /** O tique entra com mola: é a única comemoração do app, e ela dura 300 ms. */
 @Composable
 private fun ConfirmBadge() {
-    val cores = MaterialTheme.colorScheme
-    var apareceu by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { apareceu = true }
-    val escala by animateFloatAsState(
-        targetValue = if (apareceu) 1f else 0.5f,
-        animationSpec = Motion.molaElastica(),
+    val colors = MaterialTheme.colorScheme
+    var appeared by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { appeared = true }
+    val scale by animateFloatAsState(
+        targetValue = if (appeared) 1f else 0.5f,
+        animationSpec = Motion.elasticSpring(),
         label = "escalaDoSelo",
     )
 
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.scale(escala).size(96.dp).background(cores.tertiaryContainer.copy(alpha = 0.45f), CircleShape),
+        modifier = Modifier.scale(scale).size(96.dp).background(colors.tertiaryContainer.copy(alpha = 0.45f), CircleShape),
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(76.dp).background(cores.tertiaryContainer, CircleShape),
+            modifier = Modifier.size(76.dp).background(colors.tertiaryContainer, CircleShape),
         ) {
-            Icon(AppIcons.Check, null, tint = cores.tertiary, modifier = Modifier.size(34.dp))
+            Icon(AppIcons.Check, null, tint = colors.tertiary, modifier = Modifier.size(34.dp))
         }
     }
 }
@@ -190,13 +190,13 @@ private fun ConfirmBadge() {
  */
 @Composable
 private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
-    val cores = MaterialTheme.colorScheme
-    val pronta = entry.status == EntryStatus.READY
-    val comErro = entry.status == EntryStatus.ERROR
+    val colors = MaterialTheme.colorScheme
+    val isReady = entry.status == EntryStatus.READY
+    val withError = entry.status == EntryStatus.ERROR
 
     ScreenCard(
-        forma = MaterialTheme.shapes.medium,
-        recheio = PaddingValues(horizontal = 15.dp, vertical = 13.dp),
+        shape = MaterialTheme.shapes.medium,
+        filling = PaddingValues(horizontal = 15.dp, vertical = 13.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -211,13 +211,13 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
                         EntryStatus.READY -> Text(
                             text = entry.card?.translation.orEmpty(),
                             style = MaterialTheme.typography.bodySmall,
-                            color = cores.onSurfaceVariant,
+                            color = colors.onSurfaceVariant,
                             modifier = Modifier.padding(top = 3.dp),
                         )
                         EntryStatus.ERROR -> Text(
                             text = "não deu certo — dá para tentar de novo em Pendentes",
                             style = MaterialTheme.typography.bodySmall,
-                            color = cores.error,
+                            color = colors.error,
                             modifier = Modifier.padding(top = 3.dp),
                         )
                         else -> Row(
@@ -229,8 +229,8 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
                             Text(
                                 text = "montando o sentido",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = cores.onSurfaceVariant,
-                                modifier = Modifier.respirando(ativo = true),
+                                color = colors.onSurfaceVariant,
+                                modifier = Modifier.breathing(active = true),
                             )
                         }
                     }
@@ -239,23 +239,23 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
             // O selo de pronta entra com mola: ele é o desfecho de uma espera, e
             // é a única coisa da linha que a pessoa pode estar esperando ver.
             AnimatedVisibility(
-                visible = pronta,
-                enter = scaleIn(Motion.molaElastica()) + fadeIn(tween(Motion.DEFAULT)),
+                visible = isReady,
+                enter = scaleIn(Motion.elasticSpring()) + fadeIn(tween(Motion.DEFAULT)),
                 exit = fadeOut(tween(Motion.FAST)),
             ) {
-                Surface(shape = CircleShape, color = cores.tertiaryContainer) {
+                Surface(shape = CircleShape, color = colors.tertiaryContainer) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     ) {
-                        Icon(AppIcons.Check, null, tint = cores.tertiary, modifier = Modifier.size(11.dp))
-                        Text("ficha pronta", style = MaterialTheme.typography.labelSmall, color = cores.onTertiaryContainer)
+                        Icon(AppIcons.Check, null, tint = colors.tertiary, modifier = Modifier.size(11.dp))
+                        Text("ficha pronta", style = MaterialTheme.typography.labelSmall, color = colors.onTertiaryContainer)
                     }
                 }
             }
-            if (!pronta && !comErro) {
-                Text("IA", style = MaterialTheme.typography.labelSmall, color = cores.outline)
+            if (!isReady && !withError) {
+                Text("IA", style = MaterialTheme.typography.labelSmall, color = colors.outline)
             }
         }
     }
@@ -270,23 +270,23 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
  */
 @Composable
 private fun IndeterminateBar() {
-    val cores = MaterialTheme.colorScheme
-    var cheia by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { cheia = true }
+    val colors = MaterialTheme.colorScheme
+    var full by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { full = true }
     val fraction by animateFloatAsState(
-        targetValue = if (cheia) 0.72f else 0.12f,
+        targetValue = if (full) 0.72f else 0.12f,
         animationSpec = tween(2_400),
         label = "fracaoDaGeracao",
     )
-    Box(Modifier.width(54.dp).height(5.dp).background(cores.outlineVariant, CircleShape)) {
-        Box(Modifier.fillMaxWidth(fraction).height(5.dp).background(cores.primary, CircleShape))
+    Box(Modifier.width(54.dp).height(5.dp).background(colors.outlineVariant, CircleShape)) {
+        Box(Modifier.fillMaxWidth(fraction).height(5.dp).background(colors.primary, CircleShape))
     }
 }
 
 @Composable
-private fun ExitAction(text: String, modifier: Modifier = Modifier, aoClicar: () -> Unit) {
+private fun ExitAction(text: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surface,
         border = com.jean.vocabs.ui.components.cardOutline(),

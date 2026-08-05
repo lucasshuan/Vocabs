@@ -60,35 +60,35 @@ import com.jean.vocabs.ui.components.rememberHaptics
  */
 @Composable
 fun UndoStrip(
-    exclusao: PendingDeletion?,
-    aoDesfazer: () -> Unit,
+    deletion: PendingDeletion?,
+    onUndo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // O último conteúdo não nulo continua desenhado enquanto o cartão desce:
     // sem isto a faixa sairia vazia no primeiro quadro da saída.
-    var ultima by remember { mutableStateOf<PendingDeletion?>(null) }
-    LaunchedEffect(exclusao) { if (exclusao != null) ultima = exclusao }
+    var last by remember { mutableStateOf<PendingDeletion?>(null) }
+    LaunchedEffect(deletion) { if (deletion != null) last = deletion }
 
-    val restante = remember { Animatable(1f) }
-    LaunchedEffect(exclusao?.key) {
-        if (exclusao == null) return@LaunchedEffect
-        restante.snapTo(1f)
-        restante.animateTo(0f, tween(VISIBLE_WINDOW_MS, easing = LinearEasing))
+    val remaining = remember { Animatable(1f) }
+    LaunchedEffect(deletion?.key) {
+        if (deletion == null) return@LaunchedEffect
+        remaining.snapTo(1f)
+        remaining.animateTo(0f, tween(VISIBLE_WINDOW_MS, easing = LinearEasing))
         // Quem apaga de verdade é o ViewModel, no fim da mesma janela. A barra
         // só desenha o tempo passando: dois relógios disputando quem manda
         // fariam a faixa sumir antes ou depois da exclusão acontecer.
     }
 
     AnimatedVisibility(
-        visible = exclusao != null,
-        enter = slideInVertically(Motion.mola()) { it / 2 } +
+        visible = deletion != null,
+        enter = slideInVertically(Motion.standardSpring()) { it / 2 } +
             fadeIn(tween(Motion.DEFAULT)) +
-            scaleIn(Motion.mola(), initialScale = 0.94f),
+            scaleIn(Motion.standardSpring(), initialScale = 0.94f),
         exit = fadeOut(tween(Motion.FAST)) + slideOutVertically(tween(Motion.FAST)) { it / 3 },
         modifier = modifier,
     ) {
-        ultima?.let { conteudo ->
-            CardSurface(exclusao = conteudo, restante = { restante.value }, aoDesfazer = aoDesfazer)
+        last?.let { content ->
+            CardSurface(deletion = content, remaining = { remaining.value }, onUndo = onUndo)
         }
     }
 }
@@ -101,14 +101,14 @@ private const val VISIBLE_WINDOW_MS = 5_000
 
 @Composable
 private fun CardSurface(
-    exclusao: PendingDeletion,
-    restante: () -> Float,
-    aoDesfazer: () -> Unit,
+    deletion: PendingDeletion,
+    remaining: () -> Float,
+    onUndo: () -> Unit,
 ) {
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = cores.surface,
+        color = colors.surface,
         border = cardOutline(),
         shadowElevation = 10.dp,
         modifier = Modifier.fillMaxWidth(),
@@ -121,35 +121,35 @@ private fun CardSurface(
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(36.dp).clip(CircleShape).background(cores.error),
+                    modifier = Modifier.size(36.dp).clip(CircleShape).background(colors.error),
                 ) {
-                    Icon(AppIcons.Lixeira, null, tint = cores.onError, modifier = Modifier.size(19.dp))
+                    Icon(AppIcons.Trash, null, tint = colors.onError, modifier = Modifier.size(19.dp))
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
-                        text = if (exclusao.ehCaptura) "Captura excluída" else "Ficha excluída",
+                        text = if (deletion.isCapture) "Captura excluída" else "Ficha excluída",
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
                     )
                     Text(
-                        text = exclusao.title,
+                        text = deletion.title,
                         style = MaterialTheme.typography.bodySmall,
-                        color = cores.onSurfaceVariant,
+                        color = colors.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
                 val toque = rememberHaptics()
                 Surface(
-                    onClick = aoDesfazer,
+                    onClick = onUndo,
                     shape = CircleShape,
-                    color = cores.primary,
+                    color = colors.primary,
                     interactionSource = toque,
                 ) {
                     Text(
                         text = "Desfazer",
                         style = MaterialTheme.typography.labelMedium,
-                        color = cores.onPrimary,
+                        color = colors.onPrimary,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
                     )
                 }
@@ -159,11 +159,11 @@ private fun CardSurface(
                 Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .background(cores.outlineVariant)
+                    .background(colors.outlineVariant)
                     .drawBehind {
                         drawRect(
-                            color = cores.error.copy(alpha = 0.55f),
-                            size = size.copy(width = size.width * restante().coerceIn(0f, 1f)),
+                            color = colors.error.copy(alpha = 0.55f),
+                            size = size.copy(width = size.width * remaining().coerceIn(0f, 1f)),
                         )
                     },
             )

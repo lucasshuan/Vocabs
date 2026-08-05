@@ -70,7 +70,7 @@ import com.jean.vocabs.ui.components.RowChevron
 import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.cardOutline
-import com.jean.vocabs.ui.components.entradaSuave
+import com.jean.vocabs.ui.components.smoothEntrance
 import com.jean.vocabs.ui.components.rememberHaptics
 import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
@@ -97,21 +97,21 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun SettingsScreen(
-    aoVoltar: () -> Unit,
-    aoTrocarIdiomaNativo: () -> Unit,
+    onBack: () -> Unit,
+    onSwitchNativeLanguage: () -> Unit,
     vm: SettingsViewModel = viewModel(),
 ) {
     val theme by vm.theme.collectAsStateWithLifecycle()
     val native by vm.native.collectAsStateWithLifecycle()
-    val exportando by vm.exportando.collectAsStateWithLifecycle()
-    val contexto = LocalContext.current
+    val exporting by vm.exporting.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     val language = languageOf(native)
 
-    val importarArquivo = rememberLauncherForActivityResult(
+    val importFile = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri != null) {
-            Toast.makeText(contexto, "Importação ainda não disponível — em breve.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Importação ainda não disponível — em breve.", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -123,14 +123,14 @@ fun SettingsScreen(
             .statusBarsPadding()
             .padding(horizontal = 20.dp),
     ) {
-        InnerHeader("Configurações", aoVoltar, Modifier.padding(top = 8.dp))
+        InnerHeader("Configurações", onBack, Modifier.padding(top = 8.dp))
 
         // As seções chegam escalonadas, de cima para baixo. É a mesma entrada das
         // outras telas de dentro, e aqui ela faz um trabalho a mais: dá ordem de
         // leitura a quatro blocos que, parados, têm todos o mesmo peso.
-        Section(icon = AppIcons.Globo, title = "Language", index = 0) {
+        Section(icon = AppIcons.Globe, title = "Language", index = 0) {
             ListRow(
-                aoClicar = aoTrocarIdiomaNativo,
+                onClick = onSwitchNativeLanguage,
                 start = { NativeFlag(native) },
                 end = { SwitchPill() },
             ) {
@@ -159,7 +159,7 @@ fun SettingsScreen(
         Divider()
 
         Section(icon = themeIcon(theme), title = "Aparência", index = 1) {
-            ScreenCard(recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
+            ScreenCard(filling = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
                 Text("Tema", style = MaterialTheme.typography.titleSmall)
                 Text(
                     text = "Auto segue o aparelho.",
@@ -168,8 +168,8 @@ fun SettingsScreen(
                     modifier = Modifier.padding(top = 2.dp),
                 )
                 ThemeSegmented(
-                    selecionada = theme,
-                    aoEscolher = vm::escolherTema,
+                    isSelected = theme,
+                    onChoose = vm::chooseTheme,
                     modifier = Modifier.padding(top = 12.dp),
                 )
             }
@@ -177,40 +177,40 @@ fun SettingsScreen(
 
         Divider()
 
-        Section(icon = AppIcons.Exportar, title = "Dados", index = 2) {
-            val cores = MaterialTheme.colorScheme
+        Section(icon = AppIcons.Export, title = "Dados", index = 2) {
+            val colors = MaterialTheme.colorScheme
             ListRow(
-                aoClicar = {
-                    vm.exportar(
-                        aoPronto = { file -> share(contexto, file) },
-                        aoErro = { Toast.makeText(contexto, it, Toast.LENGTH_LONG).show() },
+                onClick = {
+                    vm.export(
+                        onReady = { file -> share(context, file) },
+                        onError = { Toast.makeText(context, it, Toast.LENGTH_LONG).show() },
                     )
                 },
-                start = { IconDisc(AppIcons.Exportar, null, cor = cores.primary, fundo = cores.primaryContainer) },
+                start = { IconDisc(AppIcons.Export, null, color = colors.primary, background = colors.primaryContainer) },
                 end = {
                     // O indicador entra no lugar da chevron em vez de ao lado
                     // dela: enquanto o ZIP é montado a linha não abre nada, e uma
                     // seta de "isto leva a algum lugar" ali seria uma promessa
                     // falsa por alguns segundos.
                     AnimatedContent(
-                        targetState = exportando,
+                        targetState = exporting,
                         transitionSpec = { fadeIn(tween(Motion.FAST)).togetherWith(fadeOut(tween(Motion.FAST))) },
                         label = "fimDaExportacao",
-                    ) { emCurso ->
-                        if (emCurso) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    ) { inProgress ->
+                        if (inProgress) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                         else RowChevron()
                     }
                 },
             ) {
                 Text("Exportar meus dados", style = MaterialTheme.typography.titleSmall)
                 SwappingDetail(
-                    if (exportando) "preparando ZIP…" else "um arquivo com as fichas e as mídias",
+                    if (exporting) "preparando ZIP…" else "um arquivo com as fichas e as mídias",
                 )
             }
 
             ListRow(
-                aoClicar = { importarArquivo.launch(arrayOf("application/zip")) },
-                start = { IconDisc(AppIcons.Importar, null, cor = cores.tertiary, fundo = cores.tertiaryContainer) },
+                onClick = { importFile.launch(arrayOf("application/zip")) },
+                start = { IconDisc(AppIcons.Import, null, color = colors.tertiary, background = colors.tertiaryContainer) },
                 end = { RowChevron() },
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -223,7 +223,7 @@ fun SettingsScreen(
 
         Divider()
 
-        Section(icon = AppIcons.Informacao, title = "Sobre", index = 3) {
+        Section(icon = AppIcons.Info, title = "Sobre", index = 3) {
             Signature()
         }
 
@@ -243,11 +243,11 @@ private fun Section(
     icon: ImageVector,
     title: String,
     index: Int,
-    conteudo: @Composable () -> Unit,
+    content: @Composable () -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.entradaSuave(index).fillMaxWidth().padding(top = 4.dp),
+        modifier = Modifier.smoothEntrance(index).fillMaxWidth().padding(top = 4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Três dos quatro ícones nunca mudam, e para eles isto não anima
@@ -258,13 +258,13 @@ private fun Section(
             AnimatedContent(
                 targetState = icon,
                 transitionSpec = {
-                    (scaleIn(Motion.mola(), initialScale = 0.4f) + fadeIn(tween(Motion.FAST)))
+                    (scaleIn(Motion.standardSpring(), initialScale = 0.4f) + fadeIn(tween(Motion.FAST)))
                         .togetherWith(scaleOut(tween(Motion.FAST), targetScale = 0.4f) + fadeOut(tween(Motion.FAST)))
                 },
                 label = "iconeDaSecao",
-            ) { desenho ->
+            ) { drawing ->
                 Icon(
-                    imageVector = desenho,
+                    imageVector = drawing,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(15.dp),
@@ -272,7 +272,7 @@ private fun Section(
             }
             SectionLabel(title, Modifier.padding(start = 7.dp))
         }
-        conteudo()
+        content()
     }
 }
 
@@ -327,20 +327,20 @@ private fun SwappingDetail(text: String) {
  * lado e pareceria recortado.
  */
 @Composable
-private fun NativeFlag(codigo: String) {
-    val cores = MaterialTheme.colorScheme
+private fun NativeFlag(code: String) {
+    val colors = MaterialTheme.colorScheme
     AnimatedContent(
-        targetState = codigo,
+        targetState = code,
         transitionSpec = {
-            (scaleIn(Motion.molaElastica(), initialScale = 0.5f) + fadeIn(tween(Motion.DEFAULT)))
+            (scaleIn(Motion.elasticSpring(), initialScale = 0.5f) + fadeIn(tween(Motion.DEFAULT)))
                 .togetherWith(scaleOut(tween(Motion.FAST), targetScale = 0.5f) + fadeOut(tween(Motion.FAST)))
         },
         label = "bandeiraDoNativo",
     ) { current ->
         CircularFlag(
             language = languageOf(current),
-            tamanho = 34.dp,
-            modifier = Modifier.border(1.dp, cores.outline, CircleShape),
+            size = 34.dp,
+            modifier = Modifier.border(1.dp, colors.outline, CircleShape),
         )
     }
 }
@@ -372,7 +372,7 @@ private fun SwitchPill() {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Icon(
-                imageVector = AppIcons.Avancar,
+                imageVector = AppIcons.Forward,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(14.dp),
@@ -404,14 +404,14 @@ private fun Signature() {
     }
 }
 
-private fun share(contexto: android.content.Context, file: File) {
-    val uri = FileProvider.getUriForFile(contexto, "${contexto.packageName}.fileprovider", file)
+private fun share(context: android.content.Context, file: File) {
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "application/zip"
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    contexto.startActivity(Intent.createChooser(intent, "Exportar dados da Vocabu"))
+    context.startActivity(Intent.createChooser(intent, "Exportar dados da Vocabu"))
 }
 
 private fun themeLabel(theme: ThemePreference): String = when (theme) {
@@ -421,9 +421,9 @@ private fun themeLabel(theme: ThemePreference): String = when (theme) {
 }
 
 private fun themeIcon(theme: ThemePreference): ImageVector = when (theme) {
-    ThemePreference.LIGHT -> AppIcons.Sol
-    ThemePreference.DARK -> AppIcons.Lua
-    ThemePreference.SYSTEM -> AppIcons.MeioDisco
+    ThemePreference.LIGHT -> AppIcons.Sun
+    ThemePreference.DARK -> AppIcons.Moon
+    ThemePreference.SYSTEM -> AppIcons.HalfDisc
 }
 
 /**
@@ -440,25 +440,25 @@ private fun themeIcon(theme: ThemePreference): ImageVector = when (theme) {
  */
 @Composable
 private fun ThemeSegmented(
-    selecionada: ThemePreference,
-    aoEscolher: (ThemePreference) -> Unit,
+    isSelected: ThemePreference,
+    onChoose: (ThemePreference) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cores = MaterialTheme.colorScheme
-    val opcoes = ThemePreference.entries
-    val forma = RoundedCornerShape(11.dp)
+    val colors = MaterialTheme.colorScheme
+    val options = ThemePreference.entries
+    val shape = RoundedCornerShape(11.dp)
 
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = cores.surfaceVariant,
+        color = colors.surfaceVariant,
         border = cardOutline(),
         modifier = modifier.fillMaxWidth(),
     ) {
         BoxWithConstraints(Modifier.padding(4.dp)) {
-            val largura = maxWidth / opcoes.size
-            val destino by animateFloatAsState(
-                targetValue = opcoes.indexOf(selecionada).toFloat(),
-                animationSpec = Motion.mola(),
+            val width = maxWidth / options.size
+            val destination by animateFloatAsState(
+                targetValue = options.indexOf(isSelected).toFloat(),
+                animationSpec = Motion.standardSpring(),
                 label = "deslizeDoTema",
             )
 
@@ -466,17 +466,17 @@ private fun ThemeSegmented(
             // a pastilha atravessa a linha sem recompor nem remedir ninguém.
             Box(
                 Modifier
-                    .offset { IntOffset((destino * largura.toPx()).roundToInt(), 0) }
-                    .width(largura)
+                    .offset { IntOffset((destination * width.toPx()).roundToInt(), 0) }
+                    .width(width)
                     .height(SEGMENT_HEIGHT)
-                    .background(cores.primary, forma),
+                    .background(colors.primary, shape),
             )
 
             Row(Modifier.fillMaxWidth()) {
-                opcoes.forEach { opcao ->
-                    val ativa = opcao == selecionada
+                options.forEach { option ->
+                    val ativa = option == isSelected
                     val tinta by animateColorAsState(
-                        targetValue = if (ativa) cores.onPrimary else cores.onSurfaceVariant,
+                        targetValue = if (ativa) colors.onPrimary else colors.onSurfaceVariant,
                         animationSpec = tween(Motion.DEFAULT),
                         label = "tintaDoSegmento",
                     )
@@ -485,23 +485,23 @@ private fun ThemeSegmented(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .width(largura)
+                            .width(width)
                             .height(SEGMENT_HEIGHT)
-                            .clip(forma)
+                            .clip(shape)
                             .clickable(
                                 interactionSource = toque,
                                 indication = ripple(),
-                                onClick = { aoEscolher(opcao) },
+                                onClick = { onChoose(option) },
                             ),
                     ) {
                         Icon(
-                            imageVector = themeIcon(opcao),
+                            imageVector = themeIcon(option),
                             contentDescription = null,
                             tint = tinta,
                             modifier = Modifier.size(15.dp),
                         )
                         Text(
-                            text = themeLabel(opcao),
+                            text = themeLabel(option),
                             style = MaterialTheme.typography.labelLarge,
                             color = tinta,
                             modifier = Modifier.padding(start = 6.dp),

@@ -43,7 +43,7 @@ import kotlinx.coroutines.delay
 @Stable
 class QuickCapture internal constructor() {
 
-    var gravando by mutableStateOf(false)
+    var isRecording by mutableStateOf(false)
         internal set
 
     /**
@@ -55,23 +55,23 @@ class QuickCapture internal constructor() {
      * segundo para escrever o mesmo "0:07" — [segundos] existe para isso.
      */
     val durationMs: Long
-        get() = if (gravando) SystemClock.elapsedRealtime() - comecouEm else ultimaDuracaoMs
+        get() = if (isRecording) SystemClock.elapsedRealtime() - startedAt else lastDurationMs
 
-    var segundos by mutableLongStateOf(0L)
+    var seconds by mutableLongStateOf(0L)
         internal set
 
     /** Se o microfone já está liberado — reavaliado a cada composição. */
-    var temPermissaoDeAudio by mutableStateOf(false)
+    var hasAudioPermission by mutableStateOf(false)
         internal set
 
-    internal var comecouEm = 0L
-    internal var ultimaDuracaoMs = 0L
+    internal var startedAt = 0L
+    internal var lastDurationMs = 0L
 
-    internal var aoPedirAudio: () -> Unit = {}
-    internal var aoEncerrar: (Boolean) -> Unit = {}
-    internal var aoAbrirCamera: () -> Unit = {}
-    internal var aoPedirPermissao: () -> Unit = {}
-    internal var lerNivel: () -> Float = { 0f }
+    internal var onRequestAudio: () -> Unit = {}
+    internal var onFinish: (Boolean) -> Unit = {}
+    internal var onOpenCamera: () -> Unit = {}
+    internal var onRequestPermission: () -> Unit = {}
+    internal var readLevel: () -> Float = { 0f }
 
     /**
      * O pico do microfone agora, de 0 a 1.
@@ -80,24 +80,24 @@ class QuickCapture internal constructor() {
      * um estado que mudasse a 60 Hz recomporia a tela de gravação inteira para
      * mexer dezenove retângulos.
      */
-    fun nivelAgora(): Float = lerNivel()
+    fun levelNow(): Float = readLevel()
 
     /** Começa a gravar já — o gesto só chega aqui com a permissão em mãos. */
-    fun gravarAudio() = aoPedirAudio()
+    fun recordAudio() = onRequestAudio()
 
     /** Encerra e guarda, se passou de [MINIMO_DE_GRAVACAO_MS]. */
-    fun guardarAudio() = aoEncerrar(true)
+    fun saveAudio() = onFinish(true)
 
     /**
      * Encerra sem guardar — o botão de descartar da tela de gravação. Uma fila
      * cheia de áudios de meio segundo custaria mais para limpar do que o gesto
      * economiza.
      */
-    fun cancelarAudio() = aoEncerrar(false)
+    fun cancelAudio() = onFinish(false)
 
-    fun tirarFoto() = aoAbrirCamera()
+    fun takePhoto() = onOpenCamera()
 
-    fun pedirPermissaoDeAudio() = aoPedirPermissao()
+    fun requestAudioPermission() = onRequestPermission()
 }
 
 /**
@@ -120,29 +120,29 @@ const val MIN_RECORDING_MS = 800L
 @Composable
 fun rememberQuickCapture(
     target: String,
-    aoGuardar: (format: CaptureFormat, path: String, durationMs: Long?, target: String) -> Unit,
-    aoRecado: (String) -> Unit,
+    onSave: (format: CaptureFormat, path: String, durationMs: Long?, target: String) -> Unit,
+    onNotice: (String) -> Unit,
 ): QuickCapture {
-    val contexto = LocalContext.current
-    val gravador = remember { AudioRecorder(contexto) }
-    val estado = remember { QuickCapture() }
+    val context = LocalContext.current
+    val recorder = remember { AudioRecorder(context) }
+    val state = remember { QuickCapture() }
 
-    estado.temPermissaoDeAudio = ContextCompat.checkSelfPermission(
-        contexto,
+    state.hasAudioPermission = ContextCompat.checkSelfPermission(
+        context,
         Manifest.permission.RECORD_AUDIO,
     ) == PackageManager.PERMISSION_GRANTED
 
     // O arquivo de destino precisa existir antes de chamar a câmera: o app de
     // câmera escreve nele, não devolve um caminho.
-    var fotoPendente by remember { mutableStateOf<File?>(null) }
-    var alvoDaFoto by remember { mutableStateOf(target) }
+    var pendingPhoto by remember { mutableStateOf<File?>(null) }
+    var photoTarget by remember { mutableStateOf(target) }
     val camera = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture(),
-    ) { deuCerto ->
-        val file = fotoPendente
-        fotoPendente = null
-        if (deuCerto && file != null) {
-            aoGuardar(CaptureFormat.PHOTO, file.absolutePath, null, alvoDaFoto)
+    ) { succeeded ->
+        val file = pendingPhoto
+        pendingPhoto = null
+        if (succeeded && file != null) {
+            onSave(CaptureFormat.PHOTO, file.absolutePath, null, photoTarget)
         } else {
             file?.delete()
         }
@@ -155,54 +155,54 @@ fun rememberQuickCapture(
      * enquanto a câmera está aberta — e o destino tem que ser o que estava
      * marcado quando o dedo desceu, não o que estiver na tela quando voltar.
      */
-    var alvoDaGravacao by remember { mutableStateOf(target) }
+    var recordingTarget by remember { mutableStateOf(target) }
 
-    val permissaoAudio = rememberLauncherForActivityResult(
+    val audioPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
-    ) { concedida ->
-        estado.temPermissaoDeAudio = concedida
-        aoRecado(
-            if (concedida) "Microfone liberado. Segure o + e arraste até o microfone."
+    ) { granted ->
+        state.hasAudioPermission = granted
+        onNotice(
+            if (granted) "Microfone liberado. Segure o + e arraste até o microfone."
             else "Sem microfone não dá para gravar. Dá para capturar por texto ou foto.",
         )
     }
 
-    estado.lerNivel = { gravador.level }
+    state.readLevel = { recorder.level }
 
-    estado.aoAbrirCamera = {
-        alvoDaFoto = target
-        val file = MediaFiles.newPhoto(contexto)
-        fotoPendente = file
+    state.onOpenCamera = {
+        photoTarget = target
+        val file = MediaFiles.newPhoto(context)
+        pendingPhoto = file
         val uri: Uri = FileProvider.getUriForFile(
-            contexto,
-            "${contexto.packageName}.fileprovider",
+            context,
+            "${context.packageName}.fileprovider",
             file,
         )
         camera.launch(uri)
     }
 
-    estado.aoPedirPermissao = { permissaoAudio.launch(Manifest.permission.RECORD_AUDIO) }
+    state.onRequestPermission = { audioPermission.launch(Manifest.permission.RECORD_AUDIO) }
 
-    estado.aoPedirAudio = {
-        if (estado.temPermissaoDeAudio && gravador.iniciar()) {
-            alvoDaGravacao = target
-            estado.comecouEm = SystemClock.elapsedRealtime()
-            estado.segundos = 0
-            estado.gravando = true
+    state.onRequestAudio = {
+        if (state.hasAudioPermission && recorder.begin()) {
+            recordingTarget = target
+            state.startedAt = SystemClock.elapsedRealtime()
+            state.seconds = 0
+            state.isRecording = true
         }
     }
 
-    estado.aoEncerrar = { guardar ->
-        val duracao = estado.durationMs
-        estado.ultimaDuracaoMs = duracao
-        estado.gravando = false
-        val curta = duracao < MIN_RECORDING_MS
-        if (!guardar || curta) {
-            gravador.cancelar()
-            if (guardar && curta) aoRecado("Curto demais para guardar.")
+    state.onFinish = { save ->
+        val duration = state.durationMs
+        state.lastDurationMs = duration
+        state.isRecording = false
+        val short = duration < MIN_RECORDING_MS
+        if (!save || short) {
+            recorder.cancel()
+            if (save && short) onNotice("Curto demais para guardar.")
         } else {
-            gravador.parar()?.let { file ->
-                aoGuardar(CaptureFormat.AUDIO, file.absolutePath, duracao, alvoDaGravacao)
+            recorder.stop()?.let { file ->
+                onSave(CaptureFormat.AUDIO, file.absolutePath, duration, recordingTarget)
             }
         }
     }
@@ -210,17 +210,17 @@ fun rememberQuickCapture(
     // Se o app morrer gravando, o arquivo pela metade é descartado em vez de
     // virar um áudio mudo na lista de pendentes.
     DisposableEffect(Unit) {
-        onDispose { if (gravador.gravando) gravador.cancelar() }
+        onDispose { if (recorder.isRecording) recorder.cancel() }
     }
 
     // O cronômetro publica só a virada do segundo. A precisão de verdade está em
     // `duracaoMs`, que é lido direto do relógio quando alguém pergunta.
-    LaunchedEffect(estado.gravando) {
-        while (estado.gravando) {
-            estado.segundos = estado.durationMs / 1_000L
+    LaunchedEffect(state.isRecording) {
+        while (state.isRecording) {
+            state.seconds = state.durationMs / 1_000L
             delay(120)
         }
     }
 
-    return estado
+    return state
 }

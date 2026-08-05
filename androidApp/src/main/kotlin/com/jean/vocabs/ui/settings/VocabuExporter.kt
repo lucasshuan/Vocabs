@@ -13,15 +13,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object VocabuExporter {
-    suspend fun criar(context: Context, dados: ExportData): File = withContext(Dispatchers.IO) {
+    suspend fun create(context: Context, data: ExportData): File = withContext(Dispatchers.IO) {
         val folder = File(context.cacheDir, "exports").apply { mkdirs() }
-        val destino = File(folder, "Vocabu-${System.currentTimeMillis()}.zip")
-        ZipOutputStream(FileOutputStream(destino)).use { zip ->
+        val destination = File(folder, "Vocabu-${System.currentTimeMillis()}.zip")
+        ZipOutputStream(FileOutputStream(destination)).use { zip ->
             zip.putNextEntry(ZipEntry("Vocabu.json"))
-            zip.write(json(dados).toString(2).toByteArray(Charsets.UTF_8))
+            zip.write(json(data).toString(2).toByteArray(Charsets.UTF_8))
             zip.closeEntry()
 
-            dados.captures.distinctBy { it.mediaPath }.forEach { capture ->
+            data.captures.distinctBy { it.mediaPath }.forEach { capture ->
                 val path = capture.mediaPath ?: return@forEach
                 val file = File(path).takeIf(File::isFile) ?: return@forEach
                 zip.putNextEntry(ZipEntry("media/${capture.id}-${file.name}"))
@@ -29,18 +29,18 @@ object VocabuExporter {
                 zip.closeEntry()
             }
         }
-        destino
+        destination
     }
 
-    private fun json(dados: ExportData) = JSONObject().apply {
+    private fun json(data: ExportData) = JSONObject().apply {
         // 2: `ipa` virou `pronuncia` e o par de idiomas deixou de ser um valor
         // fixo do arquivo para ser uma propriedade de cada captura.
         put("schemaVersion", 3)
         put("app", "Vocabu")
         put("exportedAt", System.currentTimeMillis())
-        put("aiUsage", JSONObject().put("month", dados.aiUsage.month).put("generations", dados.aiUsage.used))
+        put("aiUsage", JSONObject().put("month", data.aiUsage.month).put("generations", data.aiUsage.used))
         put("captures", JSONArray().apply {
-            dados.captures.forEach { capture -> put(JSONObject().apply {
+            data.captures.forEach { capture -> put(JSONObject().apply {
                 put("id", capture.id)
                 put("snippet", capture.snippet)
                 put("source", capture.source)
@@ -55,7 +55,7 @@ object VocabuExporter {
             }) }
         })
         put("entries", JSONArray().apply {
-            dados.entries.forEach { entry -> put(JSONObject().apply {
+            data.entries.forEach { entry -> put(JSONObject().apply {
                 put("id", entry.id)
                 put("captureId", entry.captureId)
                 put("target", entry.target)
@@ -81,7 +81,7 @@ object VocabuExporter {
             }) }
         })
         put("activity", JSONArray().apply {
-            dados.activity.forEach { put(JSONObject().put("day", it.day).put("reviews", it.reviews)) }
+            data.activity.forEach { put(JSONObject().put("day", it.day).put("reviews", it.reviews)) }
         })
     }
 }

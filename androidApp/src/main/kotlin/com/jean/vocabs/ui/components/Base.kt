@@ -48,7 +48,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.jean.vocabs.ui.theme.LocalTemaEscuro
+import com.jean.vocabs.ui.theme.LocalDarkTheme
 
 /**
  * Os blocos que o handoff repete em todas as telas.
@@ -68,7 +68,7 @@ import com.jean.vocabs.ui.theme.LocalTemaEscuro
  */
 @Composable
 fun cardOutline(): BorderStroke? =
-    if (LocalTemaEscuro.current) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    if (LocalDarkTheme.current) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 
 /**
  * O contorno tracejado de "aqui cabe mais alguma coisa".
@@ -80,20 +80,20 @@ fun cardOutline(): BorderStroke? =
  *
  * Desenhado à mão porque `BorderStroke` não aceita `PathEffect`.
  */
-fun Modifier.contornoTracejado(
-    cor: Color,
-    raio: Dp = 18.dp,
-    espessura: Dp = 1.dp,
+fun Modifier.dashedOutline(
+    color: Color,
+    radius: Dp = 18.dp,
+    thickness: Dp = 1.dp,
 ): Modifier = drawBehind {
-    val traco = espessura.toPx()
+    val line = thickness.toPx()
     drawRoundRect(
-        color = cor,
-        topLeft = Offset(traco / 2f, traco / 2f),
-        size = Size(size.width - traco, size.height - traco),
-        cornerRadius = CornerRadius(raio.toPx()),
+        color = color,
+        topLeft = Offset(line / 2f, line / 2f),
+        size = Size(size.width - line, size.height - line),
+        cornerRadius = CornerRadius(radius.toPx()),
         style = Stroke(
-            width = traco,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(traco * 5, traco * 4)),
+            width = line,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(line * 5, line * 4)),
         ),
     )
 }
@@ -102,24 +102,24 @@ fun Modifier.contornoTracejado(
 @Composable
 fun DashedBox(
     modifier: Modifier = Modifier,
-    raio: Dp = 18.dp,
-    cor: Color = MaterialTheme.colorScheme.outline,
-    recheio: PaddingValues = PaddingValues(horizontal = 15.dp, vertical = 12.dp),
-    aoClicar: (() -> Unit)? = null,
-    conteudo: @Composable ColumnScope.() -> Unit,
+    radius: Dp = 18.dp,
+    color: Color = MaterialTheme.colorScheme.outline,
+    filling: PaddingValues = PaddingValues(horizontal = 15.dp, vertical = 12.dp),
+    onClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    val forma = RoundedCornerShape(raio)
+    val shape = RoundedCornerShape(radius)
     val toque = rememberHaptics()
     val base = modifier
-        .then(if (aoClicar != null) Modifier.encolheAoTocar(toque) else Modifier)
-        .clip(forma)
+        .then(if (onClick != null) Modifier.shrinkOnTouch(toque) else Modifier)
+        .clip(shape)
         .then(
-            if (aoClicar != null) Modifier.clickable(interactionSource = toque, indication = ripple(), onClick = aoClicar)
+            if (onClick != null) Modifier.clickable(interactionSource = toque, indication = ripple(), onClick = onClick)
             else Modifier,
         )
-        .contornoTracejado(cor, raio)
-        .padding(recheio)
-    Column(modifier = base, content = conteudo)
+        .dashedOutline(color, radius)
+        .padding(filling)
+    Column(modifier = base, content = content)
 }
 
 /**
@@ -133,28 +133,28 @@ fun DashedBox(
 @Composable
 fun ScreenCard(
     modifier: Modifier = Modifier,
-    forma: Shape = MaterialTheme.shapes.large,
-    cor: Color = MaterialTheme.colorScheme.surface,
-    recheio: PaddingValues = PaddingValues(16.dp),
-    aoClicar: (() -> Unit)? = null,
-    conteudo: @Composable ColumnScope.() -> Unit,
+    shape: Shape = MaterialTheme.shapes.large,
+    color: Color = MaterialTheme.colorScheme.surface,
+    filling: PaddingValues = PaddingValues(16.dp),
+    onClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
-    val contorno = cardOutline()
-    val interno: @Composable () -> Unit = {
-        Column(modifier = Modifier.padding(recheio), content = conteudo)
+    val outline = cardOutline()
+    val inner: @Composable () -> Unit = {
+        Column(modifier = Modifier.padding(filling), content = content)
     }
-    if (aoClicar == null) {
-        Surface(shape = forma, color = cor, border = contorno, modifier = modifier, content = interno)
+    if (onClick == null) {
+        Surface(shape = shape, color = color, border = outline, modifier = modifier, content = inner)
     } else {
         val toque = rememberHaptics()
         Surface(
-            onClick = aoClicar,
-            shape = forma,
-            color = cor,
-            border = contorno,
+            onClick = onClick,
+            shape = shape,
+            color = color,
+            border = outline,
             interactionSource = toque,
-            modifier = modifier.encolheAoTocar(toque),
-            content = interno,
+            modifier = modifier.shrinkOnTouch(toque),
+            content = inner,
         )
     }
 }
@@ -179,16 +179,16 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 @Composable
 fun MetricCard(
     value: String,
-    rotulo: String,
+    label: String,
     modifier: Modifier = Modifier,
-    destaque: Boolean = false,
-    aoClicar: (() -> Unit)? = null,
+    highlight: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
     ScreenCard(
         modifier = modifier,
-        forma = MaterialTheme.shapes.medium,
-        recheio = PaddingValues(horizontal = 14.dp, vertical = 13.dp),
-        aoClicar = aoClicar,
+        shape = MaterialTheme.shapes.medium,
+        filling = PaddingValues(horizontal = 14.dp, vertical = 13.dp),
+        onClick = onClick,
     ) {
         // Sem transição no número, de propósito. O ladrilho recebe uma `String`
         // já formatada — "42%", "4,2", "—" — e quem quer ver o valor subir passa
@@ -198,10 +198,10 @@ fun MetricCard(
         Text(
             text = value,
             style = MaterialTheme.typography.headlineMedium,
-            color = if (destaque) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
+            color = if (highlight) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = rotulo,
+            text = label,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp),
@@ -213,23 +213,23 @@ fun MetricCard(
 @Composable
 fun ListRow(
     modifier: Modifier = Modifier,
-    aoClicar: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
     start: (@Composable () -> Unit)? = null,
     end: (@Composable () -> Unit)? = null,
-    conteudo: @Composable ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
 ) {
     ScreenCard(
         modifier = modifier.fillMaxWidth(),
-        forma = MaterialTheme.shapes.medium,
-        recheio = PaddingValues(horizontal = 15.dp, vertical = 14.dp),
-        aoClicar = aoClicar,
+        shape = MaterialTheme.shapes.medium,
+        filling = PaddingValues(horizontal = 15.dp, vertical = 14.dp),
+        onClick = onClick,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             start?.let {
                 it()
                 Spacer(Modifier.width(13.dp))
             }
-            Column(Modifier.weight(1f), content = conteudo)
+            Column(Modifier.weight(1f), content = content)
             end?.let {
                 Spacer(Modifier.width(10.dp))
                 it()
@@ -244,11 +244,11 @@ fun ListRow(
     title: String,
     modifier: Modifier = Modifier,
     detail: String? = null,
-    aoClicar: (() -> Unit)? = null,
+    onClick: (() -> Unit)? = null,
     start: (@Composable () -> Unit)? = null,
     end: (@Composable () -> Unit)? = null,
 ) {
-    ListRow(modifier = modifier, aoClicar = aoClicar, start = start, end = end) {
+    ListRow(modifier = modifier, onClick = onClick, start = start, end = end) {
         Text(title, style = MaterialTheme.typography.titleSmall)
         detail?.let {
             Text(
@@ -265,16 +265,16 @@ fun ListRow(
 @Composable
 fun IconDisc(
     icon: ImageVector,
-    descricao: String?,
-    cor: Color,
-    fundo: Color,
-    tamanho: Dp = 38.dp,
+    contentDescription: String?,
+    color: Color,
+    background: Color,
+    size: Dp = 38.dp,
 ) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier.size(tamanho).background(fundo, CircleShape),
+        modifier = Modifier.size(size).background(background, CircleShape),
     ) {
-        Icon(icon, descricao, tint = cor, modifier = Modifier.size(tamanho * 0.52f))
+        Icon(icon, contentDescription, tint = color, modifier = Modifier.size(size * 0.52f))
     }
 }
 
@@ -282,7 +282,7 @@ fun IconDisc(
 @Composable
 fun RowChevron() {
     Icon(
-        imageVector = AppIcons.Avancar,
+        imageVector = AppIcons.Forward,
         contentDescription = null,
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.size(20.dp),
@@ -293,23 +293,23 @@ fun RowChevron() {
 @Composable
 fun PrimaryButton(
     text: String,
-    aoClicar: () -> Unit,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    habilitado: Boolean = true,
-    conteudoInicial: (@Composable RowScope.() -> Unit)? = null,
+    enabled: Boolean = true,
+    initialContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val toque = rememberHaptics()
     // Menos que os cartões (0,97): este botão ocupa a largura da tela, e a mesma
     // proporção num alvo desse tamanho vira um solavanco em vez de um toque.
     Button(
-        onClick = aoClicar,
-        enabled = habilitado,
+        onClick = onClick,
+        enabled = enabled,
         shape = RoundedCornerShape(18.dp),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
         interactionSource = toque,
-        modifier = modifier.encolheAoTocar(toque, minimo = 0.985f).fillMaxWidth().height(56.dp),
+        modifier = modifier.shrinkOnTouch(toque, minimum = 0.985f).fillMaxWidth().height(56.dp),
     ) {
-        conteudoInicial?.invoke(this)
+        initialContent?.invoke(this)
         Text(text, style = MaterialTheme.typography.titleMedium)
     }
 }
@@ -317,38 +317,38 @@ fun PrimaryButton(
 /** A pílula de filtro de Palavras e a aba de formato da Capture são a mesma coisa. */
 @Composable
 fun SelectablePill(
-    rotulo: String,
-    selecionada: Boolean,
-    aoClicar: () -> Unit,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    forma: Shape = CircleShape,
+    shape: Shape = CircleShape,
 ) {
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     val toque = rememberHaptics()
     // As cores transitam em vez de trocar de um quadro para o outro: numa fileira
     // de filtros, o corte seco faz duas pílulas piscarem ao mesmo tempo e nenhuma
     // das duas diz de onde a seleção veio.
-    val fundo by animateColorAsState(
-        targetValue = if (selecionada) cores.primary else cores.surface,
+    val background by animateColorAsState(
+        targetValue = if (isSelected) colors.primary else colors.surface,
         animationSpec = tween(Motion.FAST),
         label = "fundoDaPilula",
     )
     val tinta by animateColorAsState(
-        targetValue = if (selecionada) cores.onPrimary else cores.onSurfaceVariant,
+        targetValue = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
         animationSpec = tween(Motion.FAST),
         label = "tintaDaPilula",
     )
     Surface(
-        onClick = aoClicar,
-        shape = forma,
-        color = fundo,
+        onClick = onClick,
+        shape = shape,
+        color = background,
         contentColor = tinta,
-        border = if (selecionada) null else cardOutline(),
+        border = if (isSelected) null else cardOutline(),
         interactionSource = toque,
-        modifier = modifier.encolheAoTocar(toque, minimo = 0.94f),
+        modifier = modifier.shrinkOnTouch(toque, minimum = 0.94f),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)) {
-            Text(text = rotulo, style = MaterialTheme.typography.labelMedium, color = tinta)
+            Text(text = label, style = MaterialTheme.typography.labelMedium, color = tinta)
         }
     }
 }
@@ -363,33 +363,33 @@ fun SelectablePill(
 fun Pill(
     text: String,
     modifier: Modifier = Modifier,
-    destaque: Boolean = false,
-    aoClicar: (() -> Unit)? = null,
+    highlight: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
-    val cores = MaterialTheme.colorScheme
-    val fundo = if (destaque) cores.secondaryContainer else cores.surface
-    val cor = if (destaque) cores.primary else cores.onSurface
-    val contorno = if (destaque) null else cardOutline()
-    val conteudo: @Composable () -> Unit = {
+    val colors = MaterialTheme.colorScheme
+    val background = if (highlight) colors.secondaryContainer else colors.surface
+    val color = if (highlight) colors.primary else colors.onSurface
+    val outline = if (highlight) null else cardOutline()
+    val content: @Composable () -> Unit = {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
-            color = cor,
+            color = color,
             modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
         )
     }
-    if (aoClicar == null) {
-        Surface(shape = CircleShape, color = fundo, border = contorno, modifier = modifier, content = conteudo)
+    if (onClick == null) {
+        Surface(shape = CircleShape, color = background, border = outline, modifier = modifier, content = content)
     } else {
         val toque = rememberHaptics()
         Surface(
-            onClick = aoClicar,
+            onClick = onClick,
             shape = CircleShape,
-            color = fundo,
-            border = contorno,
+            color = background,
+            border = outline,
             interactionSource = toque,
-            modifier = modifier.encolheAoTocar(toque, minimo = 0.94f),
-            content = conteudo,
+            modifier = modifier.shrinkOnTouch(toque, minimum = 0.94f),
+            content = content,
         )
     }
 }
@@ -408,13 +408,13 @@ fun EmptyState(
     title: String,
     detail: String,
     modifier: Modifier = Modifier,
-    acao: (@Composable () -> Unit)? = null,
+    action: (@Composable () -> Unit)? = null,
 ) {
-    var chegou by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { chegou = true }
-    val escala by animateFloatAsState(
-        targetValue = if (chegou) 1f else 0.6f,
-        animationSpec = Motion.molaElastica(),
+    var arrived by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { arrived = true }
+    val scale by animateFloatAsState(
+        targetValue = if (arrived) 1f else 0.6f,
+        animationSpec = Motion.elasticSpring(),
         label = "escalaDoVazio",
     )
 
@@ -423,28 +423,28 @@ fun EmptyState(
         verticalArrangement = Arrangement.Center,
         modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 60.dp),
     ) {
-        Box(Modifier.graphicsLayer { scaleX = escala; scaleY = escala; alpha = if (chegou) 1f else 0f }) {
+        Box(Modifier.graphicsLayer { scaleX = scale; scaleY = scale; alpha = if (arrived) 1f else 0f }) {
             IconDisc(
                 icon = icon,
-                descricao = null,
-                cor = MaterialTheme.colorScheme.tertiary,
-                fundo = MaterialTheme.colorScheme.tertiaryContainer,
-                tamanho = 72.dp,
+                contentDescription = null,
+                color = MaterialTheme.colorScheme.tertiary,
+                background = MaterialTheme.colorScheme.tertiaryContainer,
+                size = 72.dp,
             )
         }
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.entradaSuave(index = 1).padding(top = 16.dp),
+            modifier = Modifier.smoothEntrance(index = 1).padding(top = 16.dp),
         )
         Text(
             text = detail,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.entradaSuave(index = 2).padding(top = 4.dp),
+            modifier = Modifier.smoothEntrance(index = 2).padding(top = 4.dp),
         )
-        acao?.let {
-            Box(Modifier.entradaSuave(index = 3).padding(top = 20.dp)) { it() }
+        action?.let {
+            Box(Modifier.smoothEntrance(index = 3).padding(top = 20.dp)) { it() }
         }
     }
 }
@@ -453,30 +453,30 @@ fun EmptyState(
 @Composable
 fun CircularButton(
     icon: ImageVector,
-    descricao: String,
-    aoClicar: () -> Unit,
-    cor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    contentDescription: String,
+    onClick: () -> Unit,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     val toque = rememberHaptics()
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         shape = CircleShape,
         color = Color.Transparent,
-        contentColor = cor,
+        contentColor = color,
         interactionSource = toque,
-        modifier = Modifier.encolheAoTocar(toque, minimo = 0.88f),
+        modifier = Modifier.shrinkOnTouch(toque, minimum = 0.88f),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(44.dp)) {
-            Icon(icon, descricao, tint = cor, modifier = Modifier.size(24.dp))
+            Icon(icon, contentDescription, tint = color, modifier = Modifier.size(24.dp))
         }
     }
 }
 
 /** Botão de texto discreto ("Não lembro"), centralizado sob a ação principal. */
 @Composable
-fun SecondaryAction(text: String, aoClicar: () -> Unit, modifier: Modifier = Modifier) {
+fun SecondaryAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         color = Color.Transparent,
         shape = MaterialTheme.shapes.medium,
         modifier = modifier.fillMaxWidth(),

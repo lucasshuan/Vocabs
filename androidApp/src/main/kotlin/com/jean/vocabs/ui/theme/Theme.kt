@@ -33,10 +33,10 @@ object VocabuColors {
      * se forme no ato da captura e se repita em Pendentes. Usar o vermelho de
      * erro aqui faria toda foto na fila parecer uma foto com problema.
      */
-    val Papagaio = Color(0xFFC4243C)
-    val PapagaioContainer = Color(0xFFFBEAEC)
-    val PapagaioEscuro = Color(0xFFF0798F)
-    val PapagaioContainerEscuro = Color(0xFF3A2028)
+    val Parrot = Color(0xFFC4243C)
+    val ParrotContainer = Color(0xFFFBEAEC)
+    val ParrotDark = Color(0xFFF0798F)
+    val ParrotContainerDark = Color(0xFF3A2028)
 }
 
 /**
@@ -47,7 +47,7 @@ object VocabuColors {
  * superfície já se destaca. Sem esse sinal cada tela adivinharia sozinha, que é
  * como metade delas acabou com contorno no escuro.
  */
-val LocalTemaEscuro = staticCompositionLocalOf { false }
+val LocalDarkTheme = staticCompositionLocalOf { false }
 
 private val LightColors = lightColorScheme(
     primary = Color(0xFF8C34B4),
@@ -148,7 +148,7 @@ private val Shapes = Shapes(
  * noite.
  */
 @Composable
-fun darkAccordingTo(preferencia: ThemePreference): Boolean = when (preferencia) {
+fun darkAccordingTo(preference: ThemePreference): Boolean = when (preference) {
     ThemePreference.LIGHT -> false
     ThemePreference.DARK -> true
     ThemePreference.SYSTEM -> isSystemInDarkTheme()
@@ -156,15 +156,15 @@ fun darkAccordingTo(preferencia: ThemePreference): Boolean = when (preferencia) 
 
 @Composable
 fun VocabsTheme(
-    temaEscuro: Boolean = isSystemInDarkTheme(),
-    conteudo: @Composable () -> Unit,
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit,
 ) {
-    CompositionLocalProvider(LocalTemaEscuro provides temaEscuro) {
+    CompositionLocalProvider(LocalDarkTheme provides darkTheme) {
         MaterialTheme(
-            colorScheme = if (temaEscuro) DarkColors else LightColors,
+            colorScheme = if (darkTheme) DarkColors else LightColors,
             typography = Type,
             shapes = Shapes,
-            content = conteudo,
+            content = content,
         )
     }
 }

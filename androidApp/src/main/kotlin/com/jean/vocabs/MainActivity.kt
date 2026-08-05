@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
             val theme by preferences.observeTheme()
                 .collectAsStateWithLifecycle(initialValue = preferences.theme)
 
-            VocabsTheme(temaEscuro = darkAccordingTo(theme)) {
+            VocabsTheme(darkTheme = darkAccordingTo(theme)) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     VocabsApp()
                 }

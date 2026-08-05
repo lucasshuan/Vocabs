@@ -26,32 +26,32 @@ import kotlinx.coroutines.launch
 class SelectViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
     private val preferences = AppContainer.preferences(app)
-    private val wanted = MutableStateFlow(Procura())
+    private val wanted = MutableStateFlow(Search())
 
-    private data class Procura(val text: String = "", val target: String = "")
+    private data class Search(val text: String = "", val target: String = "")
 
-    val duplicata: StateFlow<Entry?> = combine(
+    val duplicate: StateFlow<Entry?> = combine(
         repository.observeReady(Scope.All),
         repository.observeInbox(Scope.All),
         wanted,
-    ) { prontas, inbox, busca ->
-        if (busca.text.isBlank()) return@combine null
-        duplicateOfTarget(busca.text, (prontas + inbox).filter { it.languagePair.target == busca.target })
+    ) { readyEntries, inbox, query ->
+        if (query.text.isBlank()) return@combine null
+        duplicateOfTarget(query.text, (readyEntries + inbox).filter { it.languagePair.target == query.target })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** Os idiomas em que dá para guardar — a lista do seletor do cabeçalho. */
     val courses: StateFlow<List<String>> = preferences.observeCourses()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun observar(id: Long): StateFlow<Capture?> = repository.observeCaptureById(id)
+    fun observe(id: Long): StateFlow<Capture?> = repository.observeCaptureById(id)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun procurarDuplicata(text: String, target: String) {
-        wanted.value = Procura(text, target)
+    fun findDuplicate(text: String, target: String) {
+        wanted.value = Search(text, target)
     }
 
     /** Ainda dá para trocar aqui: nada nasceu neste par até o "Guardar". */
-    fun trocarIdioma(id: Long, target: String) {
+    fun switchLanguage(id: Long, target: String) {
         AppContainer.scope.launch { repository.changeCaptureLanguage(id, target) }
     }
 
@@ -60,15 +60,15 @@ class SelectViewModel(app: Application) : AndroidViewModel(app) {
      * acompanha enquanto a IA trabalha. A geração segue no escopo do app: a
      * navegação acontece antes de a primeira ficha ficar pronta.
      */
-    fun guardar(id: Long, snippet: String, alvos: List<SelectedTarget>, aoPronto: (List<Long>) -> Unit) {
+    fun save(id: Long, snippet: String, targets: List<SelectedTarget>, onReady: (List<Long>) -> Unit) {
         viewModelScope.launch {
-            val ids = repository.confirmCapture(id, snippet, alvos)
-            aoPronto(ids)
+            val ids = repository.confirmCapture(id, snippet, targets)
+            onReady(ids)
             AppContainer.scope.launch { repository.generateCards(ids) }
         }
     }
 
-    fun excluir(id: Long) {
+    fun delete(id: Long) {
         AppContainer.scope.launch { repository.deleteCapture(id) }
     }
 }

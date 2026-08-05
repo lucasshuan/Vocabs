@@ -29,32 +29,32 @@ data class ProfileState(
     val dayStreak: Int = 0,
     val aiUsage: AiUsage = AiUsage("", 0),
 ) {
-    val totalDeFichas: Int get() = courses.sumOf { it.total }
-    val totalDeDominadas: Int get() = courses.sumOf { it.mastered }
+    val totalCards: Int get() = courses.sumOf { it.total }
+    val totalMastered: Int get() = courses.sumOf { it.mastered }
 }
 
 class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
     private val preferences = AppContainer.preferences(app)
 
-    val estado: StateFlow<ProfileState> = combine(
+    val state: StateFlow<ProfileState> = combine(
         enrolledCourses(repository, preferences),
         preferences.observeLanguagePair(),
         // De todos os cursos: a sequência de dias conta atividade em qualquer
         // idioma, e é o único número desta tela que já era assim antes.
         repository.observeReviewSummary(Scope.All),
         repository.observeAiUsage(),
-    ) { listaDeCursos, languagePair, revisao, aiUsage ->
+    ) { courseList, languagePair, review, aiUsage ->
         ProfileState(
             languagePair = languagePair,
-            courses = listaDeCursos,
-            dayStreak = revisao.dayStreak,
+            courses = courseList,
+            dayStreak = review.dayStreak,
             aiUsage = aiUsage,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProfileState())
 
     /** Quantos idiomas ainda dá para escolher — o "37 idiomas" da tela Novo idioma. */
-    val disponiveis: StateFlow<Int> = preferences.observeCourses()
-        .map { matriculados -> com.jean.vocabs.contracts.Languages.CATALOG.count { it.code !in matriculados } }
+    val available: StateFlow<Int> = preferences.observeCourses()
+        .map { enrolled -> com.jean.vocabs.contracts.Languages.CATALOG.count { it.code !in enrolled } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 }

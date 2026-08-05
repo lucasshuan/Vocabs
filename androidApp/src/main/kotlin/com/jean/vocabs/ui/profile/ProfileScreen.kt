@@ -62,12 +62,12 @@ import com.jean.vocabs.ui.languages.languageOf
  */
 @Composable
 fun ProfileScreen(
-    aoAbrirProgresso: (String) -> Unit,
-    aoAbrirConfiguracoes: () -> Unit,
-    aoAbrirNovoIdioma: () -> Unit,
+    onOpenProgress: (String) -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenNewLanguage: () -> Unit,
     vm: ProfileViewModel = viewModel(),
 ) {
-    val estado by vm.estado.collectAsStateWithLifecycle()
+    val state by vm.state.collectAsStateWithLifecycle()
 
     Column(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -79,7 +79,7 @@ fun ProfileScreen(
     ) {
         Text("Você", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
 
-        ScreenCard(recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
+        ScreenCard(filling = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
             Text("No total", style = MaterialTheme.typography.titleLarge)
             Text(
                 text = "somando todos os idiomas",
@@ -91,37 +91,37 @@ fun ProfileScreen(
             // o assunto e não um detalhe de apoio — aqui a contagem é o conteúdo.
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
                 SummaryNumber(
-                    value = "${animatedCount(estado.totalDeDominadas, "dominadasNoTotal")}",
-                    rotulo = if (estado.totalDeDominadas == 1) "dominada" else "dominadas",
-                    cor = MaterialTheme.colorScheme.tertiary,
+                    value = "${animatedCount(state.totalMastered, "masteredTotal")}",
+                    label = if (state.totalMastered == 1) "dominada" else "dominadas",
+                    color = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.weight(1f),
                 )
                 VerticalDivider()
                 SummaryNumber(
-                    value = "${animatedCount(estado.dayStreak, "diasSeguidosNoTotal")}",
-                    rotulo = if (estado.dayStreak == 1) "dia seguido" else "dias seguidos",
-                    cor = MaterialTheme.colorScheme.onSurface,
+                    value = "${animatedCount(state.dayStreak, "totalDayStreak")}",
+                    label = if (state.dayStreak == 1) "dia seguido" else "dias seguidos",
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
                 VerticalDivider()
                 SummaryNumber(
-                    value = "${animatedCount(estado.totalDeFichas, "fichasNoTotal")}",
-                    rotulo = if (estado.totalDeFichas == 1) "ficha" else "fichas",
-                    cor = MaterialTheme.colorScheme.primary,
+                    value = "${animatedCount(state.totalCards, "cardsTotal")}",
+                    label = if (state.totalCards == 1) "ficha" else "fichas",
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f),
                 )
             }
         }
 
         ProgressByLanguage(
-            courses = estado.courses,
-            aoAbrir = aoAbrirProgresso,
-            aoAdicionar = aoAbrirNovoIdioma,
+            courses = state.courses,
+            onOpen = onOpenProgress,
+            onAdd = onOpenNewLanguage,
         )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        AiUsageRow(used = estado.aiUsage.used, limit = estado.aiUsage.limit)
+        AiUsageRow(used = state.aiUsage.used, limit = state.aiUsage.limit)
 
         // O subtexto não é enfeite: o idioma-base era uma linha desta tela e agora
         // está um toque mais fundo. Sem citá-lo aqui, quem o procura onde ele
@@ -129,8 +129,8 @@ fun ProfileScreen(
         ListRow(
             title = "Configurações",
             detail = "meu idioma, tema e meus dados",
-            aoClicar = aoAbrirConfiguracoes,
-            start = { IconDisc(AppIcons.Engrenagem, null, cor = MaterialTheme.colorScheme.onSurfaceVariant, fundo = MaterialTheme.colorScheme.surfaceVariant) },
+            onClick = onOpenSettings,
+            start = { IconDisc(AppIcons.Gear, null, color = MaterialTheme.colorScheme.onSurfaceVariant, background = MaterialTheme.colorScheme.surfaceVariant) },
             end = { RowChevron() },
         )
         Spacer(Modifier.navigationBarsPadding().height(110.dp))
@@ -147,47 +147,47 @@ fun ProfileScreen(
 @Composable
 private fun ProgressByLanguage(
     courses: List<CourseSummary>,
-    aoAbrir: (String) -> Unit,
-    aoAdicionar: () -> Unit,
+    onOpen: (String) -> Unit,
+    onAdd: () -> Unit,
 ) {
-    val cores = MaterialTheme.colorScheme
-    val rolavel = courses.size > 3
+    val colors = MaterialTheme.colorScheme
+    val scrollable = courses.size > 3
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             SectionLabel("Progresso por idioma", Modifier.weight(1f))
-            if (rolavel) {
-                Text("role para ver", style = MaterialTheme.typography.bodySmall, color = cores.outline)
+            if (scrollable) {
+                Text("role para ver", style = MaterialTheme.typography.bodySmall, color = colors.outline)
             }
         }
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .background(cores.surfaceVariant, RoundedCornerShape(22.dp))
+                .background(colors.surfaceVariant, RoundedCornerShape(22.dp))
                 .heightIn(max = MAX_LIST_HEIGHT)
                 .verticalScroll(rememberScrollState())
                 .padding(8.dp),
         ) {
             courses.forEach { course ->
-                CourseRow(course) { aoAbrir(course.languagePair.target) }
+                CourseRow(course) { onOpen(course.languagePair.target) }
             }
             DashedBox(
                 modifier = Modifier.fillMaxWidth(),
-                aoClicar = aoAdicionar,
-                recheio = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
+                onClick = onAdd,
+                filling = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(30.dp).background(cores.surface, CircleShape),
+                        modifier = Modifier.size(30.dp).background(colors.surface, CircleShape),
                     ) {
-                        Icon(AppIcons.Mais, null, tint = cores.primary, modifier = Modifier.size(18.dp))
+                        Icon(AppIcons.Plus, null, tint = colors.primary, modifier = Modifier.size(18.dp))
                     }
                     Text(
                         text = "Adicionar idioma",
                         style = MaterialTheme.typography.titleSmall,
-                        color = cores.primary,
+                        color = colors.primary,
                         modifier = Modifier.padding(start = 12.dp),
                     )
                 }
@@ -197,16 +197,16 @@ private fun ProgressByLanguage(
 }
 
 @Composable
-private fun CourseRow(course: CourseSummary, aoClicar: () -> Unit) {
-    val cores = MaterialTheme.colorScheme
+private fun CourseRow(course: CourseSummary, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
     val fraction by animatedFraction(
         target = if (course.total == 0) 0f else course.mastered.toFloat() / course.total,
-        rotulo = "fracaoDoCurso",
+        label = "fracaoDoCurso",
     )
 
     ListRow(
-        aoClicar = aoClicar,
-        start = { CircularFlag(languageOf(course.languagePair.target), tamanho = 30.dp) },
+        onClick = onClick,
+        start = { CircularFlag(languageOf(course.languagePair.target), size = 30.dp) },
         end = { RowChevron() },
     ) {
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
@@ -218,7 +218,7 @@ private fun CourseRow(course: CourseSummary, aoClicar: () -> Unit) {
             Text(
                 text = "${course.mastered} de ${course.total}",
                 style = MaterialTheme.typography.bodySmall,
-                color = cores.onSurfaceVariant,
+                color = colors.onSurfaceVariant,
             )
         }
         Box(
@@ -226,24 +226,24 @@ private fun CourseRow(course: CourseSummary, aoClicar: () -> Unit) {
                 .fillMaxWidth()
                 .padding(top = 5.dp)
                 .height(6.dp)
-                .background(cores.outlineVariant, CircleShape),
+                .background(colors.outlineVariant, CircleShape),
         ) {
             Box(
                 Modifier
                     .fillMaxWidth(fraction)
                     .height(6.dp)
-                    .background(cores.tertiary, CircleShape),
+                    .background(colors.tertiary, CircleShape),
             )
         }
     }
 }
 
 @Composable
-private fun SummaryNumber(value: String, rotulo: String, cor: Color, modifier: Modifier = Modifier) {
+private fun SummaryNumber(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
     Column(modifier) {
-        Text(value, style = MaterialTheme.typography.headlineMedium, color = cor)
+        Text(value, style = MaterialTheme.typography.headlineMedium, color = color)
         Text(
-            text = rotulo,
+            text = label,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp),

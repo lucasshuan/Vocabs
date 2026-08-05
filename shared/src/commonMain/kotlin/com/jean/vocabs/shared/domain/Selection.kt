@@ -12,11 +12,11 @@ private val validToken = Regex("[\\p{L}\\p{N}]+(?:['’\\-][\\p{L}\\p{N}]+)*")
 private val repeatedSpaces = Regex("\\s+")
 
 /** Pontuação externa fica fora; apóstrofos e hífens internos permanecem. */
-fun tokenizeSnippet(snippet: String): List<SnippetToken> = validToken.findAll(snippet).map { achado ->
+fun tokenizeSnippet(snippet: String): List<SnippetToken> = validToken.findAll(snippet).map { found ->
     SnippetToken(
-        text = achado.value,
-        start = achado.range.first,
-        end = achado.range.last + 1,
+        text = found.value,
+        start = found.range.first,
+        end = found.range.last + 1,
     )
 }.toList()
 
@@ -24,11 +24,11 @@ fun tokenizeSnippet(snippet: String): List<SnippetToken> = validToken.findAll(sn
  * Cria uma seleção contínua entre dois tokens. Os limites são [início, fim), o
  * mesmo formato usado pelo banco e por String.substring.
  */
-fun selectTokens(snippet: String, primeiro: Int, ultimo: Int = primeiro): SelectedTarget? {
+fun selectTokens(snippet: String, first: Int, last: Int = first): SelectedTarget? {
     val tokens = tokenizeSnippet(snippet)
-    if (primeiro !in tokens.indices || ultimo !in tokens.indices) return null
-    val startIndex = minOf(primeiro, ultimo)
-    val endIndex = maxOf(primeiro, ultimo)
+    if (first !in tokens.indices || last !in tokens.indices) return null
+    val startIndex = minOf(first, last)
+    val endIndex = maxOf(first, last)
     val start = tokens[startIndex].start
     val end = tokens[endIndex].end
     return SelectedTarget(
@@ -45,13 +45,13 @@ fun SelectedTarget.isValidIn(snippet: String): Boolean =
 /** Só caixa e espaços repetidos são ignorados; acentos e pontuação continuam valendo. */
 fun normalizeAnswer(value: String): String = value.trim().lowercase().replace(repeatedSpaces, " ")
 
-fun isAnswerCorrect(answer: String, esperado: String): Boolean =
-    normalizeAnswer(answer) == normalizeAnswer(esperado)
+fun isAnswerCorrect(answer: String, expected: String): Boolean =
+    normalizeAnswer(answer) == normalizeAnswer(expected)
 
-fun clozeSnippet(entry: Entry, marcador: String = "________"): String {
+fun clozeSnippet(entry: Entry, marker: String = "________"): String {
     val snippet = entry.snippet.orEmpty()
-    val start = entry.start ?: return snippet.replace(entry.target.orEmpty(), marcador)
-    val end = entry.end ?: return snippet.replace(entry.target.orEmpty(), marcador)
+    val start = entry.start ?: return snippet.replace(entry.target.orEmpty(), marker)
+    val end = entry.end ?: return snippet.replace(entry.target.orEmpty(), marker)
     if (start !in 0..snippet.length || end !in start..snippet.length) return snippet
-    return snippet.replaceRange(start, end, marcador)
+    return snippet.replaceRange(start, end, marker)
 }

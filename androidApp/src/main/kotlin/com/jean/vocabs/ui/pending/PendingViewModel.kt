@@ -34,7 +34,7 @@ data class PendingState(
     val total: Int get() = captures.size + cards.size
 
     /** Quantas capturas cruas por idioma — o número que cada chip de filtro mostra. */
-    val porIdioma: Map<String, Int>
+    val byLanguage: Map<String, Int>
         get() = (captures.map { it.languagePair.target } + cards.map { it.languagePair.target })
             .groupingBy { it }
             .eachCount()
@@ -50,7 +50,7 @@ data class PendingState(
 data class PendingDeletion(
     val key: Long,
     val id: Long,
-    val ehCaptura: Boolean,
+    val isCapture: Boolean,
     val title: String,
 )
 
@@ -70,9 +70,9 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
     private val _exclusao = MutableStateFlow<PendingDeletion?>(null)
 
     /** A última exclusão ainda dentro da janela de arrependimento, se houver. */
-    val exclusao: StateFlow<PendingDeletion?> = _exclusao.asStateFlow()
+    val deletion: StateFlow<PendingDeletion?> = _exclusao.asStateFlow()
 
-    private var contagem: Job? = null
+    private var count: Job? = null
 
     /**
      * A fila **já sem** o que acabou de ser arrastado para fora.
@@ -82,36 +82,36 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
      * verdade só acontece quando a janela de desfazer fecha. Como o selo da aba
      * sai de `total`, que sai daqui, os dois nunca discordam.
      */
-    val estado: StateFlow<PendingState> = combine(
+    val state: StateFlow<PendingState> = combine(
         repository.observePendingCaptures(Scope.All),
         repository.observeInbox(Scope.All),
         _exclusao,
-    ) { captures, cards, exclusao ->
+    ) { captures, cards, deletion ->
         PendingState(
-            captures = captures.filterNot { exclusao != null && exclusao.ehCaptura && exclusao.id == it.id },
-            cards = cards.filterNot { exclusao != null && !exclusao.ehCaptura && exclusao.id == it.id },
+            captures = captures.filterNot { deletion != null && deletion.isCapture && deletion.id == it.id },
+            cards = cards.filterNot { deletion != null && !deletion.isCapture && deletion.id == it.id },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PendingState())
 
-    val total: StateFlow<Int> = estado.map { it.total }
+    val total: StateFlow<Int> = state.map { it.total }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
-    fun tentarDeNovo(id: Long) {
+    fun tryAgain(id: Long) {
         AppContainer.scope.launch { repository.generateCard(id) }
     }
 
     fun deleteCapture(capture: Capture) {
-        agendar(PendingDeletion(System.nanoTime(), capture.id, ehCaptura = true, title = captureTitle(capture)))
+        schedule(PendingDeletion(System.nanoTime(), capture.id, isCapture = true, title = captureTitle(capture)))
     }
 
-    fun excluirFicha(entry: Entry) {
-        agendar(PendingDeletion(System.nanoTime(), entry.id, ehCaptura = false, title = entry.title))
+    fun deleteCard(entry: Entry) {
+        schedule(PendingDeletion(System.nanoTime(), entry.id, isCapture = false, title = entry.title))
     }
 
     /** O gesto foi um engano: o item volta para a fila e nada chega ao banco. */
-    fun desfazer() {
-        contagem?.cancel()
-        contagem = null
+    fun undo() {
+        count?.cancel()
+        count = null
         _exclusao.value = null
     }
 
@@ -122,14 +122,14 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
      * o primeiro — empilhar faixas obrigaria a ler três confirmações para limpar
      * três linhas, e é justamente limpar a fila em série que o gesto veio permitir.
      */
-    private fun agendar(nova: PendingDeletion) {
-        contagem?.cancel()
-        _exclusao.value?.let(::confirmar)
-        _exclusao.value = nova
-        contagem = viewModelScope.launch {
+    private fun schedule(fresh: PendingDeletion) {
+        count?.cancel()
+        _exclusao.value?.let(::confirm)
+        _exclusao.value = fresh
+        count = viewModelScope.launch {
             delay(UNDO_WINDOW_MS)
-            confirmar(nova)
-            _exclusao.compareAndSet(nova, null)
+            confirm(fresh)
+            _exclusao.compareAndSet(fresh, null)
         }
     }
 
@@ -141,9 +141,9 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
      * contagem dos 5 s é do ViewModel de propósito: se o processo morrer antes de
      * ela terminar, o item simplesmente continua na fila — o erro seguro dos dois.
      */
-    private fun confirmar(exclusao: PendingDeletion) {
+    private fun confirm(deletion: PendingDeletion) {
         AppContainer.scope.launch {
-            if (exclusao.ehCaptura) repository.deleteCapture(exclusao.id) else repository.excluir(exclusao.id)
+            if (deletion.isCapture) repository.deleteCapture(deletion.id) else repository.delete(deletion.id)
         }
     }
 }

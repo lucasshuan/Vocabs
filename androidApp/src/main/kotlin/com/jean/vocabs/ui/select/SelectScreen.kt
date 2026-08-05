@@ -71,7 +71,7 @@ import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.SelectionChips
 import com.jean.vocabs.ui.components.TermPicker
 import com.jean.vocabs.ui.components.cardOutline
-import com.jean.vocabs.ui.components.encolheAoTocar
+import com.jean.vocabs.ui.components.shrinkOnTouch
 import com.jean.vocabs.ui.components.formatColors
 import com.jean.vocabs.ui.components.formatDurationMs
 import com.jean.vocabs.ui.components.formatLabel
@@ -79,7 +79,7 @@ import com.jean.vocabs.ui.components.relativeTime
 import com.jean.vocabs.ui.components.rememberHaptics
 import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
-import com.jean.vocabs.ui.theme.LocalTemaEscuro
+import com.jean.vocabs.ui.theme.LocalDarkTheme
 
 /**
  * Telas 09/10 do handoff — "O que chamou atenção?".
@@ -98,39 +98,39 @@ import com.jean.vocabs.ui.theme.LocalTemaEscuro
 @Composable
 fun SelectScreen(
     id: Long,
-    aoVoltar: () -> Unit,
-    aoGuardar: (List<Long>) -> Unit,
+    onBack: () -> Unit,
+    onSave: (List<Long>) -> Unit,
     vm: SelectViewModel = viewModel(),
 ) {
-    val fluxo = remember(id) { vm.observar(id) }
-    val capture by fluxo.collectAsStateWithLifecycle()
-    val duplicata by vm.duplicata.collectAsStateWithLifecycle()
+    val flow = remember(id) { vm.observe(id) }
+    val capture by flow.collectAsStateWithLifecycle()
+    val duplicate by vm.duplicate.collectAsStateWithLifecycle()
     val courses by vm.courses.collectAsStateWithLifecycle()
     var snippet by remember { mutableStateOf("") }
-    val selecoes = remember { mutableStateListOf<SelectedTarget>() }
-    var corrigindo by remember { mutableStateOf(false) }
-    var confirmarExclusao by remember { mutableStateOf(false) }
+    val selections = remember { mutableStateListOf<SelectedTarget>() }
+    var correcting by remember { mutableStateOf(false) }
+    var confirmDeletion by remember { mutableStateOf(false) }
 
     LaunchedEffect(capture?.id, capture?.snippet) {
         snippet = capture?.snippet.orEmpty()
-        selecoes.clear()
-        corrigindo = snippet.isBlank()
+        selections.clear()
+        correcting = snippet.isBlank()
     }
-    LaunchedEffect(selecoes.lastOrNull()?.text, capture?.languagePair?.target) {
-        vm.procurarDuplicata(selecoes.lastOrNull()?.text.orEmpty(), capture?.languagePair?.target.orEmpty())
+    LaunchedEffect(selections.lastOrNull()?.text, capture?.languagePair?.target) {
+        vm.findDuplicate(selections.lastOrNull()?.text.orEmpty(), capture?.languagePair?.target.orEmpty())
     }
 
-    if (confirmarExclusao) {
+    if (confirmDeletion) {
         AlertDialog(
-            onDismissRequest = { confirmarExclusao = false },
+            onDismissRequest = { confirmDeletion = false },
             title = { Text("Descartar captura?") },
             text = { Text("A mídia será removida porque ainda não há fichas ligadas a ela.") },
             confirmButton = {
-                TextButton(onClick = { vm.excluir(id); confirmarExclusao = false; aoVoltar() }) {
+                TextButton(onClick = { vm.delete(id); confirmDeletion = false; onBack() }) {
                     Text("Descartar", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmarExclusao = false }) { Text("Manter") } },
+            dismissButton = { TextButton(onClick = { confirmDeletion = false }) { Text("Manter") } },
         )
     }
 
@@ -146,7 +146,7 @@ fun SelectScreen(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(start = 8.dp, end = 14.dp, top = 8.dp),
         ) {
-            CircularButton(AppIcons.Voltar, "Voltar", aoVoltar, MaterialTheme.colorScheme.onSurface)
+            CircularButton(AppIcons.Back, "Voltar", onBack, MaterialTheme.colorScheme.onSurface)
             Text(
                 text = "O que chamou atenção?",
                 style = MaterialTheme.typography.headlineSmall,
@@ -156,7 +156,7 @@ fun SelectScreen(
                 LanguagePicker(
                     target = it.languagePair.target,
                     courses = courses,
-                    aoEscolher = { codigo -> vm.trocarIdioma(id, codigo) },
+                    onChoose = { code -> vm.switchLanguage(id, code) },
                 )
             }
         }
@@ -173,8 +173,8 @@ fun SelectScreen(
                     AudioPlayerBar(
                         path = it,
                         durationMs = current.durationMs,
-                        corrigindo = corrigindo,
-                        aoCorrigir = { corrigindo = !corrigindo },
+                        correcting = correcting,
+                        onCorrect = { correcting = !correcting },
                     )
                 }
                 CaptureFormat.TEXT -> TextSource(current.createdAt)
@@ -183,32 +183,32 @@ fun SelectScreen(
             when {
                 current.status == CaptureStatus.TRANSCRIBING -> ProcessNotice(
                     text = "Transcrição local em andamento…",
-                    comProgresso = true,
+                    withProgress = true,
                 )
                 current.transcriptionError != null -> ErrorNotice(current.transcriptionError.orEmpty())
             }
 
-            if (corrigindo || snippet.isBlank()) {
+            if (correcting || snippet.isBlank()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SectionLabel("Transcrição")
                     OutlinedTextField(
                         value = snippet,
-                        onValueChange = { snippet = it; selecoes.clear() },
+                        onValueChange = { snippet = it; selections.clear() },
                         placeholder = { Text("Digite o trecho manualmente") },
                         minLines = 2,
                         shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     if (snippet.isNotBlank()) {
-                        PrimaryButton("Pronto, marcar termos", { corrigindo = false })
+                        PrimaryButton("Pronto, marcar termos", { correcting = false })
                     }
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     TermPicker(
                         snippet = snippet,
-                        aoSelecionar = { target ->
-                            if (selecoes.none { it.start == target.start && it.end == target.end }) selecoes += target
+                        onSelect = { target ->
+                            if (selections.none { it.start == target.start && it.end == target.end }) selections += target
                         },
                     )
                     Text(
@@ -220,28 +220,28 @@ fun SelectScreen(
             }
 
             AnimatedVisibility(
-                visible = selecoes.isNotEmpty(),
+                visible = selections.isNotEmpty(),
                 enter = fadeIn(tween(160)) + expandVertically(tween(180)),
                 exit = fadeOut(tween(120)) + shrinkVertically(tween(140)),
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    SectionLabel("${selecoes.size} ${if (selecoes.size == 1) "selecionada" else "selecionadas"}")
-                    SelectionChips(selecoes, selecoes::remove)
+                    SectionLabel("${selections.size} ${if (selections.size == 1) "isSelected" else "selecionadas"}")
+                    SelectionChips(selections, selections::remove)
                 }
             }
 
-            duplicata?.let { DuplicateNotice(it) }
+            duplicate?.let { DuplicateNotice(it) }
 
             PrimaryButton(
-                text = if (selecoes.isEmpty()) "Selecione o que guardar"
-                else "Guardar ${selecoes.size} ${if (selecoes.size == 1) "capture" else "captures"}",
-                aoClicar = { vm.guardar(id, snippet, selecoes.toList(), aoGuardar) },
-                habilitado = snippet.isNotBlank() && selecoes.isNotEmpty(),
+                text = if (selections.isEmpty()) "Selecione o que guardar"
+                else "Guardar ${selections.size} ${if (selections.size == 1) "capture" else "captures"}",
+                onClick = { vm.save(id, snippet, selections.toList(), onSave) },
+                enabled = snippet.isNotBlank() && selections.isNotEmpty(),
                 modifier = Modifier.padding(top = 4.dp),
             )
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                DiscardCaptureButton { confirmarExclusao = true }
+                DiscardCaptureButton { confirmDeletion = true }
             }
         }
         Spacer(Modifier.navigationBarsPadding().height(24.dp))
@@ -268,28 +268,28 @@ fun SelectScreen(
  * da tela leva a captura junto.
  */
 @Composable
-private fun DiscardCaptureButton(aoClicar: () -> Unit) {
-    val cores = MaterialTheme.colorScheme
+private fun DiscardCaptureButton(onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
     // No escuro o `errorContainer` do Material é um vinho quase opaco, pesado
     // demais para uma ação de apoio. O vermelho claro do tema a 14% dá o mesmo
     // recado sobre o fundo escuro sem virar um bloco vermelho no rodapé.
-    val fundo = if (LocalTemaEscuro.current) cores.error.copy(alpha = 0.14f) else cores.errorContainer
+    val background = if (LocalDarkTheme.current) colors.error.copy(alpha = 0.14f) else colors.errorContainer
     val toque = rememberHaptics()
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         shape = CircleShape,
-        color = fundo,
-        contentColor = cores.error,
+        color = background,
+        contentColor = colors.error,
         interactionSource = toque,
-        modifier = Modifier.encolheAoTocar(toque, minimo = 0.94f),
+        modifier = Modifier.shrinkOnTouch(toque, minimum = 0.94f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 11.dp),
         ) {
-            Icon(AppIcons.Lixeira, contentDescription = null, tint = cores.error, modifier = Modifier.size(18.dp))
-            Text("Descartar captura", style = MaterialTheme.typography.labelLarge, color = cores.error)
+            Icon(AppIcons.Trash, contentDescription = null, tint = colors.error, modifier = Modifier.size(18.dp))
+            Text("Descartar captura", style = MaterialTheme.typography.labelLarge, color = colors.error)
         }
     }
 }
@@ -301,15 +301,15 @@ private fun DiscardCaptureButton(aoClicar: () -> Unit) {
  * conserta aqui, no último instante em que isso ainda é barato.
  */
 @Composable
-private fun LanguagePicker(target: String, courses: List<String>, aoEscolher: (String) -> Unit) {
-    var aberto by remember { mutableStateOf(false) }
-    val cores = MaterialTheme.colorScheme
+private fun LanguagePicker(target: String, courses: List<String>, onChoose: (String) -> Unit) {
+    var activePair by remember { mutableStateOf(false) }
+    val colors = MaterialTheme.colorScheme
 
     Box {
         Surface(
-            onClick = { aberto = true },
+            onClick = { activePair = true },
             shape = CircleShape,
-            color = cores.surface,
+            color = colors.surface,
             border = cardOutline(),
         ) {
             Row(
@@ -317,19 +317,19 @@ private fun LanguagePicker(target: String, courses: List<String>, aoEscolher: (S
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.padding(start = 5.dp, end = 8.dp, top = 5.dp, bottom = 5.dp),
             ) {
-                CircularFlag(languageOf(target), tamanho = 19.dp)
-                Icon(AppIcons.Expandir, "Trocar idioma", tint = cores.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                CircularFlag(languageOf(target), size = 19.dp)
+                Icon(AppIcons.Expand, "Trocar idioma", tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
             }
         }
-        DropdownMenu(expanded = aberto, onDismissRequest = { aberto = false }) {
-            courses.forEach { codigo ->
+        DropdownMenu(expanded = activePair, onDismissRequest = { activePair = false }) {
+            courses.forEach { code ->
                 DropdownMenuItem(
-                    text = { Text(languageOf(codigo).displayName) },
-                    leadingIcon = { CircularFlag(languageOf(codigo), tamanho = 20.dp) },
+                    text = { Text(languageOf(code).displayName) },
+                    leadingIcon = { CircularFlag(languageOf(code), size = 20.dp) },
                     trailingIcon = {
-                        if (codigo == target) Icon(AppIcons.Check, null, tint = cores.tertiary, modifier = Modifier.size(16.dp))
+                        if (code == target) Icon(AppIcons.Check, null, tint = colors.tertiary, modifier = Modifier.size(16.dp))
                     },
-                    onClick = { aberto = false; if (codigo != target) aoEscolher(codigo) },
+                    onClick = { activePair = false; if (code != target) onChoose(code) },
                 )
             }
         }
@@ -340,20 +340,20 @@ private fun LanguagePicker(target: String, courses: List<String>, aoEscolher: (S
 @Composable
 private fun TextSource(createdAt: Long) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        CategoryDisc(CaptureFormat.TEXT, tamanho = 22.dp)
+        CategoryDisc(CaptureFormat.TEXT, size = 22.dp)
         SectionLabel("${formatLabel(CaptureFormat.TEXT)} colado · ${relativeTime(createdAt)}")
     }
 }
 
 @Composable
 private fun PhotoPreview(path: String) {
-    val imagem by rememberPhoto(path)
+    val image by rememberPhoto(path)
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        imagem?.let { Image(it, "Foto capturada", contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth()) }
+        image?.let { Image(it, "Foto capturada", contentScale = ContentScale.FillWidth, modifier = Modifier.fillMaxWidth()) }
             ?: Box(Modifier.height(180.dp))
     }
 }
@@ -366,31 +366,31 @@ private fun PhotoPreview(path: String) {
  * transcrição local não entrega.
  */
 @Composable
-private fun AudioPlayerBar(path: String, durationMs: Long?, corrigindo: Boolean, aoCorrigir: () -> Unit) {
+private fun AudioPlayerBar(path: String, durationMs: Long?, correcting: Boolean, onCorrect: () -> Unit) {
     val player = rememberPlayer(path)
-    val paleta = formatColors(CaptureFormat.AUDIO)
-    ScreenCard(recheio = PaddingValues(14.dp), modifier = Modifier.fillMaxWidth()) {
+    val palette = formatColors(CaptureFormat.AUDIO)
+    ScreenCard(filling = PaddingValues(14.dp), modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
-            Surface(onClick = player::alternar, shape = CircleShape, color = paleta.cor) {
+            Surface(onClick = player::alternar, shape = CircleShape, color = palette.color) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(40.dp)) {
                     Icon(
-                        imageVector = if (player.tocando) AppIcons.Parar else AppIcons.Tocar,
-                        contentDescription = if (player.tocando) "Parar" else "Ouvir",
-                        tint = paleta.fundo,
+                        imageVector = if (player.playing) AppIcons.Stop else AppIcons.Play,
+                        contentDescription = if (player.playing) "Parar" else "Ouvir",
+                        tint = palette.background,
                         modifier = Modifier.size(18.dp),
                     )
                 }
             }
             AudioWave(
                 path = path,
-                cor = paleta.cor,
-                progresso = player.progresso,
+                color = palette.color,
+                progress = player.progress,
                 modifier = Modifier.weight(1f),
             )
             Text(
                 // Tocando, o número anda junto com a onda: quem está ouvindo quer
                 // saber quanto falta, não quanto o arquivo tem.
-                text = if (player.tocando) formatDurationMs(player.posicaoMs)
+                text = if (player.playing) formatDurationMs(player.positionMs)
                 else durationMs?.let(::formatDurationMs).orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -399,27 +399,27 @@ private fun AudioPlayerBar(path: String, durationMs: Long?, corrigindo: Boolean,
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
             SectionLabel("Áudio · transcrito pela IA", Modifier.weight(1f))
             Text(
-                text = if (corrigindo) "voltar" else "corrigir texto",
+                text = if (correcting) "voltar" else "corrigir texto",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .padding(start = 8.dp)
                     .then(Modifier)
-                    .clickableSemRipple(aoCorrigir),
+                    .clickableWithoutRipple(onCorrect),
             )
         }
     }
 }
 
 @Composable
-private fun ProcessNotice(text: String, comProgresso: Boolean) {
+private fun ProcessNotice(text: String, withProgress: Boolean) {
     Surface(
         color = MaterialTheme.colorScheme.secondaryContainer,
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(14.dp)) {
-            if (comProgresso) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            if (withProgress) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
             Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 12.dp))
         }
     }
@@ -462,26 +462,26 @@ private const val PRESS_OPACITY = 0.3f
 @Composable
 private fun AudioWave(
     path: String,
-    cor: androidx.compose.ui.graphics.Color,
-    progresso: Float,
+    color: androidx.compose.ui.graphics.Color,
+    progress: Float,
     modifier: Modifier = Modifier,
 ) {
-    val perfil by rememberWaveformProfile(path)
+    val profile by rememberWaveformProfile(path)
     Canvas(modifier = modifier.height(26.dp)) {
-        val largura = 3.dp.toPx()
-        val passo = largura * 2
-        val minima = MIN_WAVE_HEIGHT.toPx()
-        val quantidade = (size.width / passo).toInt().coerceAtLeast(1)
-        val agulha = size.width * progresso
-        repeat(quantidade) { index ->
-            val altura = minima + (size.height - minima) * perfil.picoDaBarra(index, quantidade)
-            val x = index * passo
+        val width = 3.dp.toPx()
+        val step = width * 2
+        val smallest = MIN_WAVE_HEIGHT.toPx()
+        val amount = (size.width / step).toInt().coerceAtLeast(1)
+        val needle = size.width * progress
+        repeat(amount) { index ->
+            val height = smallest + (size.height - smallest) * profile.picoDaBarra(index, amount)
+            val x = index * step
             drawRoundRect(
-                color = cor,
-                topLeft = Offset(x, (size.height - altura) / 2f),
-                size = Size(largura, altura),
-                cornerRadius = CornerRadius(largura / 2f),
-                alpha = if (x + largura <= agulha) 1f else PRESS_OPACITY,
+                color = color,
+                topLeft = Offset(x, (size.height - height) / 2f),
+                size = Size(width, height),
+                cornerRadius = CornerRadius(width / 2f),
+                alpha = if (x + width <= needle) 1f else PRESS_OPACITY,
             )
         }
     }
@@ -489,7 +489,7 @@ private fun AudioWave(
 
 /** Texto que age sem virar botão: "corrigir texto" é um atalho, não uma ação da tela. */
 @Composable
-private fun Modifier.clickableSemRipple(aoClicar: () -> Unit): Modifier {
-    val interacao = remember { MutableInteractionSource() }
-    return clickable(interactionSource = interacao, indication = null, onClick = aoClicar)
+private fun Modifier.clickableWithoutRipple(onClick: () -> Unit): Modifier {
+    val interaction = remember { MutableInteractionSource() }
+    return clickable(interactionSource = interaction, indication = null, onClick = onClick)
 }

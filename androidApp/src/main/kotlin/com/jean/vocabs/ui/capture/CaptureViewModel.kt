@@ -31,10 +31,10 @@ class CaptureViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = AppContainer.repository(app)
     private val preferences = AppContainer.preferences(app)
-    private val transcritorFoto = PhotoTranscriber(app)
-    private val transcritorAudio = AudioTranscriber(app)
+    private val photoTranscriber = PhotoTranscriber(app)
+    private val audioTranscriber = AudioTranscriber(app)
 
-    val estado: StateFlow<CaptureState> = combine(
+    val state: StateFlow<CaptureState> = combine(
         preferences.observeLanguagePair(),
         preferences.observeCourses(),
         ::CaptureState,
@@ -48,10 +48,10 @@ class CaptureViewModel(app: Application) : AndroidViewModel(app) {
      * captura em Pendentes com o idioma já escolhido, em vez de jogar fora o que
      * a pessoa colou.
      */
-    fun salvarTrecho(snippet: String, target: String, aoPronto: (Long) -> Unit) {
-        val languagePair = LanguagePair(native = estado.value.languagePair.native, target = target)
+    fun saveSnippet(snippet: String, target: String, onReady: (Long) -> Unit) {
+        val languagePair = LanguagePair(native = state.value.languagePair.native, target = target)
         viewModelScope.launch {
-            aoPronto(repository.captureSnippet(snippet, languagePair))
+            onReady(repository.captureSnippet(snippet, languagePair))
         }
     }
 
@@ -62,20 +62,20 @@ class CaptureViewModel(app: Application) : AndroidViewModel(app) {
      * `viewModelScope`, o cancelamento da tela deixaria a captura para sempre em
      * TRANSCRIBING.
      */
-    fun salvarMidia(
+    fun saveMedia(
         format: CaptureFormat,
         path: String,
         durationMs: Long?,
         target: String,
-        aoIdentificar: (Long) -> Unit = {},
+        onIdentify: (Long) -> Unit = {},
     ) {
-        val languagePair = LanguagePair(native = estado.value.languagePair.native, target = target)
+        val languagePair = LanguagePair(native = state.value.languagePair.native, target = target)
         AppContainer.scope.launch {
             val id = repository.captureMedia(format, path, durationMs, languagePair)
-            aoIdentificar(id)
+            onIdentify(id)
             val result = when (format) {
-                CaptureFormat.PHOTO -> transcritorFoto.transcrever(path)
-                CaptureFormat.AUDIO -> transcritorAudio.transcrever(path)
+                CaptureFormat.PHOTO -> photoTranscriber.transcribe(path)
+                CaptureFormat.AUDIO -> audioTranscriber.transcribe(path)
                 CaptureFormat.TEXT -> return@launch
             }
             repository.recordTranscription(id, result.text, result.error)

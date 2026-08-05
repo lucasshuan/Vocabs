@@ -28,11 +28,11 @@ import com.jean.vocabs.ui.languages.flagOf
  * que os dois se trocam no mesmo lugar, e não se trocam mais.
  */
 @Composable
-fun CircularFlag(language: Language, modifier: Modifier = Modifier, tamanho: Dp = 20.dp) {
+fun CircularFlag(language: Language, modifier: Modifier = Modifier, size: Dp = 20.dp) {
     Image(
         painter = painterResource(flagOf(language)),
         contentDescription = language.displayName,
         contentScale = ContentScale.Crop,
-        modifier = modifier.size(tamanho).clip(CircleShape),
+        modifier = modifier.size(size).clip(CircleShape),
     )
 }

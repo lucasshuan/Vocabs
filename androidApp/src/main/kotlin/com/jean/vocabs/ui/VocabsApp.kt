@@ -126,27 +126,27 @@ private const val ID_SEPARATOR = ","
 @Composable
 fun VocabsApp() {
     val nav = rememberNavController()
-    val pilha by nav.currentBackStackEntryAsState()
-    val rota = pilha?.destination?.route
+    val stack by nav.currentBackStackEntryAsState()
+    val route = stack?.destination?.route
     val scope = rememberCoroutineScope()
 
     // A mesma instância que a tela de Pendentes usa, e não a dela por baixo: o
     // selo da aba e a lista precisam concordar sobre o que já foi arrastado para
     // fora, e é este ViewModel que segura a exclusão em suspenso.
-    val pendentesVm: PendingViewModel = viewModel()
-    val capturaVm: CaptureViewModel = viewModel()
-    val totalPendentes by pendentesVm.total.collectAsStateWithLifecycle()
-    val exclusaoPendente by pendentesVm.exclusao.collectAsStateWithLifecycle()
-    val capture by capturaVm.estado.collectAsStateWithLifecycle()
+    val pendingVm: PendingViewModel = viewModel()
+    val captureVm: CaptureViewModel = viewModel()
+    val pendingTotal by pendingVm.total.collectAsStateWithLifecycle()
+    val pendingDeletion by pendingVm.deletion.collectAsStateWithLifecycle()
+    val capture by captureVm.state.collectAsStateWithLifecycle()
 
-    val barraVisivel = rota !in Routes.fullScreen
-    val abaAtual = Routes.tabFor(rota)
+    val barVisible = route !in Routes.fullScreen
+    val currentTab = Routes.tabFor(route)
 
     // A gaveta é estado, e não destino de navegação: ela precisa poder abrir por
     // cima de qualquer aba sem empurrar nada para a pilha, e o voltar do sistema
     // deve fechá-la — que é o que o `ModalBottomSheet` já faz.
-    var gavetaAberta by remember { mutableStateOf(false) }
-    val estadoDaGaveta = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var drawerOpen by remember { mutableStateOf(false) }
+    val drawerState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     /**
      * O aviso de baixo, um de cada vez.
@@ -155,44 +155,44 @@ fun VocabsApp() {
      * em vez de empilhar cartões: quem captura três coisas seguidas não quer ler
      * três confirmações, quer o botão livre para a quarta.
      */
-    var aviso by remember { mutableStateOf<Notice?>(null) }
+    var notice by remember { mutableStateOf<Notice?>(null) }
 
-    val gravacao = rememberQuickCapture(
+    val recording = rememberQuickCapture(
         target = capture.languagePair.target,
-        aoGuardar = { format, path, durationMs, alvoDaCaptura ->
+        onSave = { format, path, durationMs, captureTarget ->
             val key = System.nanoTime()
-            aviso = Notice.Guardado(key, format, durationMs, alvoDaCaptura)
-            capturaVm.salvarMidia(format, path, durationMs, alvoDaCaptura) { id ->
+            notice = Notice.Saved(key, format, durationMs, captureTarget)
+            captureVm.saveMedia(format, path, durationMs, captureTarget) { id ->
                 // O id chega do banco alguns milissegundos depois. Só entra no
                 // cartão se ele ainda for o mesmo — uma captura seguinte já pode
                 // ter tomado o lugar dele.
-                val current = aviso
-                if (current is Notice.Guardado && current.key == key) aviso = current.copy(captureId = id)
+                val current = notice
+                if (current is Notice.Saved && current.key == key) notice = current.copy(captureId = id)
             }
         },
-        aoRecado = { text -> aviso = Notice.Recado(System.nanoTime(), text) },
+        onNotice = { text -> notice = Notice.Message(System.nanoTime(), text) },
     )
 
-    fun fecharGaveta() {
-        scope.launch { estadoDaGaveta.hide() }.invokeOnCompletion { gavetaAberta = false }
+    fun closeDrawer() {
+        scope.launch { drawerState.hide() }.invokeOnCompletion { drawerOpen = false }
     }
 
     // O fundo desfoca enquanto o leque está aberto ou a gravação corre. O
     // `graphicsLayer` só entra na cadeia enquanto o gesto dura: uma camada de
     // composição sobre o `NavHost` inteiro é barata de manter por dois segundos e
     // cara de manter para sempre.
-    var emGesto by remember { mutableStateOf(false) }
-    var desfocando by remember { mutableStateOf(false) }
-    LaunchedEffect(emGesto) {
-        if (emGesto) {
-            desfocando = true
+    var inGesture by remember { mutableStateOf(false) }
+    var blurring by remember { mutableStateOf(false) }
+    LaunchedEffect(inGesture) {
+        if (inGesture) {
+            blurring = true
         } else {
             delay(Motion.DEFAULT.toLong() + 80)
-            desfocando = false
+            blurring = false
         }
     }
-    val desfoque = animateFloatAsState(
-        targetValue = if (emGesto) 1f else 0f,
+    val blur = animateFloatAsState(
+        targetValue = if (inGesture) 1f else 0f,
         animationSpec = tween(Motion.DEFAULT),
         label = "desfoqueDoFundo",
     )
@@ -207,12 +207,12 @@ fun VocabsApp() {
                 // leitor de tela: o conteúdo continua composto debaixo do leque e
                 // da gravação, e sem isto o TalkBack andaria por uma tela que a
                 // pessoa não está mais vendo.
-                .then(if (emGesto) Modifier.clearAndSetSemantics {} else Modifier)
+                .then(if (inGesture) Modifier.clearAndSetSemantics {} else Modifier)
                 .then(
-                    if (desfocando && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if (blurring && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         Modifier.graphicsLayer {
-                            val raio = 15.dp.toPx() * desfoque.value
-                            renderEffect = if (raio > 0.2f) BlurEffect(raio, raio, TileMode.Decal) else null
+                            val radius = 15.dp.toPx() * blur.value
+                            renderEffect = if (radius > 0.2f) BlurEffect(radius, radius, TileMode.Decal) else null
                         }
                     } else {
                         Modifier
@@ -227,27 +227,27 @@ fun VocabsApp() {
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
-                    aoCapturar = { gavetaAberta = true },
-                    aoRevisar = { nav.navigate(Routes.REVIEW) },
-                    aoAbrirPerfil = { nav.irParaAba(Routes.PROFILE) },
-                    aoAdicionarIdioma = { nav.navigate(Routes.NEW_LANGUAGE) },
+                    onCapture = { drawerOpen = true },
+                    onReview = { nav.navigate(Routes.REVIEW) },
+                    onOpenProfile = { nav.goToTab(Routes.PROFILE) },
+                    onAddLanguage = { nav.navigate(Routes.NEW_LANGUAGE) },
                 )
             }
             composable(Routes.WORDS) {
-                WordsScreen(aoAbrirFicha = { nav.navigate(Routes.card(it)) })
+                WordsScreen(onOpenCard = { nav.navigate(Routes.card(it)) })
             }
             composable(Routes.PENDING) {
                 PendingScreen(
-                    aoAbrirCaptura = { nav.navigate(Routes.select(it.id)) },
-                    aoAbrirFicha = { nav.navigate(Routes.card(it.id)) },
-                    vm = pendentesVm,
+                    onOpenCapture = { nav.navigate(Routes.select(it.id)) },
+                    onOpenCard = { nav.navigate(Routes.card(it.id)) },
+                    vm = pendingVm,
                 )
             }
             composable(Routes.PROFILE) {
                 ProfileScreen(
-                    aoAbrirProgresso = { nav.navigate(Routes.progress(it)) },
-                    aoAbrirConfiguracoes = { nav.navigate(Routes.SETTINGS) },
-                    aoAbrirNovoIdioma = { nav.navigate(Routes.NEW_LANGUAGE) },
+                    onOpenProgress = { nav.navigate(Routes.progress(it)) },
+                    onOpenSettings = { nav.navigate(Routes.SETTINGS) },
+                    onOpenNewLanguage = { nav.navigate(Routes.NEW_LANGUAGE) },
                 )
             }
             composable(Routes.PROGRESS, arguments = listOf(navArgument(Routes.ARG_TARGET) { type = NavType.StringType })) { entry ->
@@ -256,40 +256,40 @@ fun VocabsApp() {
                     // bandeira troca o curso olhado sem sair do destino, e é o
                     // curso de agora que as telas de dentro precisam receber.
                     target = entry.arguments?.getString(Routes.ARG_TARGET),
-                    aoVoltar = { nav.popBackStack() },
-                    aoAbrirDiaADia = { nav.navigate(Routes.dayByDay(it)) },
-                    aoAbrirOQueFalta = { nav.navigate(Routes.whatsLeft(it)) },
-                    aoAdicionarIdioma = { nav.navigate(Routes.NEW_LANGUAGE) },
+                    onBack = { nav.popBackStack() },
+                    onOpenDayByDay = { nav.navigate(Routes.dayByDay(it)) },
+                    onOpenWhatsLeft = { nav.navigate(Routes.whatsLeft(it)) },
+                    onAddLanguage = { nav.navigate(Routes.NEW_LANGUAGE) },
                 )
             }
             composable(Routes.DAY_BY_DAY, arguments = listOf(navArgument(Routes.ARG_TARGET) { type = NavType.StringType })) { entry ->
                 DayByDayScreen(
                     target = entry.arguments?.getString(Routes.ARG_TARGET),
-                    aoVoltar = { nav.popBackStack() },
-                    aoAbrirFicha = { nav.navigate(Routes.card(it)) },
+                    onBack = { nav.popBackStack() },
+                    onOpenCard = { nav.navigate(Routes.card(it)) },
                 )
             }
             composable(Routes.WHATS_LEFT, arguments = listOf(navArgument(Routes.ARG_TARGET) { type = NavType.StringType })) { entry ->
                 WhatsLeftScreen(
                     target = entry.arguments?.getString(Routes.ARG_TARGET),
-                    aoVoltar = { nav.popBackStack() },
-                    aoAbrirFicha = { nav.navigate(Routes.card(it)) },
+                    onBack = { nav.popBackStack() },
+                    onOpenCard = { nav.navigate(Routes.card(it)) },
                 )
             }
             composable(Routes.SETTINGS) {
                 SettingsScreen(
-                    aoVoltar = { nav.popBackStack() },
-                    aoTrocarIdiomaNativo = { nav.navigate(Routes.NATIVE_LANGUAGE) },
+                    onBack = { nav.popBackStack() },
+                    onSwitchNativeLanguage = { nav.navigate(Routes.NATIVE_LANGUAGE) },
                 )
             }
             composable(Routes.NEW_LANGUAGE, enterTransition = { up() }, popExitTransition = { down() }) {
-                NewLanguageScreen(aoVoltar = { nav.popBackStack() })
+                NewLanguageScreen(onBack = { nav.popBackStack() })
             }
             composable(Routes.NATIVE_LANGUAGE, enterTransition = { up() }, popExitTransition = { down() }) {
-                NewLanguageScreen(aoVoltar = { nav.popBackStack() }, paraNativo = true)
+                NewLanguageScreen(onBack = { nav.popBackStack() }, forNative = true)
             }
             composable(Routes.REVIEW, enterTransition = { up() }, popExitTransition = { down() }) {
-                ReviewScreen(aoVoltar = { nav.popBackStack() })
+                ReviewScreen(onBack = { nav.popBackStack() })
             }
             composable(
                 Routes.CARD,
@@ -307,8 +307,8 @@ fun VocabsApp() {
             ) { entry ->
                 SelectScreen(
                     id = entry.arguments?.getLong(Routes.ARG_ID) ?: 0,
-                    aoVoltar = { nav.popBackStack() },
-                    aoGuardar = { ids ->
+                    onBack = { nav.popBackStack() },
+                    onSave = { ids ->
                         // A seleção sai da pilha junto: voltar da confirmação
                         // deve levar de onde a captura começou, e não a um
                         // trecho que já virou ficha.
@@ -328,10 +328,10 @@ fun VocabsApp() {
                     ids = entry.arguments?.getString(Routes.ARG_IDS).orEmpty()
                         .split(ID_SEPARATOR)
                         .mapNotNull(String::toLongOrNull),
-                    aoFechar = { nav.popBackStack() },
-                    aoCapturarOutra = { nav.popBackStack(); gavetaAberta = true },
-                    aoVerFichas = { nav.popBackStack(); nav.irParaAba(Routes.WORDS) },
-                    aoRevisar = { nav.popBackStack(); nav.navigate(Routes.REVIEW) },
+                    onClose = { nav.popBackStack() },
+                    onCaptureAnother = { nav.popBackStack(); drawerOpen = true },
+                    onViewCards = { nav.popBackStack(); nav.goToTab(Routes.WORDS) },
+                    onReview = { nav.popBackStack(); nav.navigate(Routes.REVIEW) },
                 )
             }
         }
@@ -339,7 +339,7 @@ fun VocabsApp() {
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .then(if (emGesto) Modifier.clearAndSetSemantics {} else Modifier),
+                .then(if (inGesture) Modifier.clearAndSetSemantics {} else Modifier),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // O aviso flutua sobre o conteúdo, encostado na barra: nada na tela
@@ -349,12 +349,12 @@ fun VocabsApp() {
                 // Some junto com a barra: nas telas cheias — Selecionar,
                 // Guardado, Revisão — o rodapé já tem uma ação principal, e o
                 // cartão pousaria em cima dela.
-                aviso = aviso.takeIf { barraVisivel },
-                aoSelecionar = { id ->
-                    aviso = null
+                notice = notice.takeIf { barVisible },
+                onSelect = { id ->
+                    notice = null
                     nav.navigate(Routes.select(id))
                 },
-                aoExpirar = { key -> if (aviso?.key == key) aviso = null },
+                onExpire = { key -> if (notice?.key == key) notice = null },
                 modifier = Modifier.padding(horizontal = 14.dp).padding(bottom = 8.dp),
             )
 
@@ -364,20 +364,20 @@ fun VocabsApp() {
             // aba não tira a segunda chance da mão de quem acabou de arrastar
             // sem querer. Só some nas telas cheias, onde o rodapé já tem dono.
             UndoStrip(
-                exclusao = exclusaoPendente.takeIf { barraVisivel },
-                aoDesfazer = pendentesVm::desfazer,
+                deletion = pendingDeletion.takeIf { barVisible },
+                onUndo = pendingVm::undo,
                 modifier = Modifier.padding(horizontal = 14.dp).padding(bottom = 8.dp),
             )
             AnimatedVisibility(
-                visible = barraVisivel,
+                visible = barVisible,
                 enter = slideInVertically(tween(Motion.DEFAULT)) { it } + fadeIn(tween(Motion.DEFAULT)),
                 exit = slideOutVertically(tween(Motion.FAST)) { it } + fadeOut(tween(Motion.FAST)),
             ) {
                 BottomBar(
-                    abasEsquerda = listOf(Tab(Routes.HOME, AppIcons.Casa, "Início"), Tab(Routes.WORDS, AppIcons.Cartas, "Palavras")),
-                    abasDireita = listOf(Tab(Routes.PENDING, AppIcons.Relogio, "Pendentes", totalPendentes), Tab(Routes.PROFILE, AppIcons.Pessoa, "Perfil")),
-                    rotaAtual = abaAtual,
-                    aoNavegar = nav::irParaAba,
+                    leftTabs = listOf(Tab(Routes.HOME, AppIcons.House, "Início"), Tab(Routes.WORDS, AppIcons.Cards, "Palavras")),
+                    rightTabs = listOf(Tab(Routes.PENDING, AppIcons.Clock, "Pendentes", pendingTotal), Tab(Routes.PROFILE, AppIcons.Person, "Perfil")),
+                    currentRoute = currentTab,
+                    onNavigate = nav::goToTab,
                 )
             }
         }
@@ -390,31 +390,31 @@ fun VocabsApp() {
         // tela: o hub é do tamanho da tela, mas a única coisa visível dele fora
         // de um gesto é o `+` — e ele tem que descer junto com a barra em que
         // está encaixado, não vindo de um andar abaixo.
-        val passoDaBarra = with(LocalDensity.current) { BAR_HEIGHT.roundToPx() }
+        val barStep = with(LocalDensity.current) { BAR_HEIGHT.roundToPx() }
         AnimatedVisibility(
-            visible = barraVisivel,
-            enter = fadeIn(tween(Motion.DEFAULT)) + slideInVertically(tween(Motion.DEFAULT)) { passoDaBarra },
-            exit = fadeOut(tween(Motion.FAST)) + slideOutVertically(tween(Motion.FAST)) { passoDaBarra },
+            visible = barVisible,
+            enter = fadeIn(tween(Motion.DEFAULT)) + slideInVertically(tween(Motion.DEFAULT)) { barStep },
+            exit = fadeOut(tween(Motion.FAST)) + slideOutVertically(tween(Motion.FAST)) { barStep },
             modifier = Modifier.fillMaxSize(),
         ) {
             CaptureHub(
-                capture = gravacao,
+                capture = recording,
                 language = languageOf(capture.languagePair.target),
-                aoAbrirTexto = { gavetaAberta = true },
-                aoMudarDeFase = { emGesto = it },
+                onOpenText = { drawerOpen = true },
+                onPhaseChange = { inGesture = it },
             )
         }
     }
 
-    if (gavetaAberta) {
+    if (drawerOpen) {
         ModalBottomSheet(
-            onDismissRequest = { gavetaAberta = false },
-            sheetState = estadoDaGaveta,
+            onDismissRequest = { drawerOpen = false },
+            sheetState = drawerState,
         ) {
             TextDrawer(
-                aoGuardar = { snippet ->
-                    capturaVm.salvarTrecho(snippet, capture.languagePair.target) { id ->
-                        fecharGaveta()
+                onSave = { snippet ->
+                    captureVm.saveSnippet(snippet, capture.languagePair.target) { id ->
+                        closeDrawer()
                         nav.navigate(Routes.select(id))
                     }
                 },
@@ -436,8 +436,8 @@ private fun up() =
 private fun down() =
     slideOutVertically(tween(Motion.FAST)) { it / 5 } + fadeOut(tween(Motion.FAST))
 
-private fun NavHostController.irParaAba(rota: String) {
-    navigate(rota) {
+private fun NavHostController.goToTab(route: String) {
+    navigate(route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = true

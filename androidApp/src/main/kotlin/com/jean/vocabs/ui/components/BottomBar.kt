@@ -34,7 +34,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
-data class Tab(val rota: String, val icon: ImageVector, val rotulo: String, val badge: Int = 0)
+data class Tab(val route: String, val icon: ImageVector, val label: String, val badge: Int = 0)
 
 /**
  * Cinco lugares, só ícones.
@@ -54,10 +54,10 @@ data class Tab(val rota: String, val icon: ImageVector, val rotulo: String, val 
  */
 @Composable
 fun BottomBar(
-    abasEsquerda: List<Tab>,
-    abasDireita: List<Tab>,
-    rotaAtual: String?,
-    aoNavegar: (String) -> Unit,
+    leftTabs: List<Tab>,
+    rightTabs: List<Tab>,
+    currentRoute: String?,
+    onNavigate: (String) -> Unit,
 ) {
     Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
         Column {
@@ -71,9 +71,9 @@ fun BottomBar(
                     .height(BAR_HEIGHT)
                     .padding(horizontal = 8.dp),
             ) {
-                abasEsquerda.forEach { TabItem(it, rotaAtual == it.rota, { aoNavegar(it.rota) }, Modifier.weight(1f)) }
+                leftTabs.forEach { TabItem(it, currentRoute == it.route, { onNavigate(it.route) }, Modifier.weight(1f)) }
                 Spacer(Modifier.weight(1f))
-                abasDireita.forEach { TabItem(it, rotaAtual == it.rota, { aoNavegar(it.rota) }, Modifier.weight(1f)) }
+                rightTabs.forEach { TabItem(it, currentRoute == it.route, { onNavigate(it.route) }, Modifier.weight(1f)) }
             }
         }
     }
@@ -92,31 +92,31 @@ val BAR_HEIGHT = 68.dp
  * antes mesmo de a tela nova ter desenhado.
  */
 @Composable
-private fun TabItem(aba: Tab, selecionada: Boolean, aoClicar: () -> Unit, modifier: Modifier) {
+private fun TabItem(tab: Tab, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
     val tinta by animateColorAsState(
-        targetValue = if (selecionada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         animationSpec = tween(Motion.DEFAULT),
         label = "tintaDaAba",
     )
-    val escala by animateFloatAsState(
-        targetValue = if (selecionada) 1.12f else 1f,
-        animationSpec = Motion.molaElastica(),
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.12f else 1f,
+        animationSpec = Motion.elasticSpring(),
         label = "escalaDaAba",
     )
     val toque = rememberHaptics()
 
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         color = Color.Transparent,
         shape = CircleShape,
         interactionSource = toque,
         modifier = modifier.height(56.dp),
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Box(Modifier.graphicsLayer { scaleX = escala; scaleY = escala }) {
+            Box(Modifier.graphicsLayer { scaleX = scale; scaleY = scale }) {
                 Icon(
-                    imageVector = aba.icon,
-                    contentDescription = aba.rotulo,
+                    imageVector = tab.icon,
+                    contentDescription = tab.label,
                     tint = tinta,
                     modifier = Modifier.size(23.dp),
                 )
@@ -125,12 +125,12 @@ private fun TabItem(aba: Tab, selecionada: Boolean, aoClicar: () -> Unit, modifi
                 // um número que aparece do nada no canto do ícone não se lê como
                 // "chegou algo" — se lê como um defeito de desenho.
                 AnimatedVisibility(
-                    visible = aba.badge > 0,
-                    enter = scaleIn(Motion.molaElastica()) + fadeIn(tween(Motion.FAST)),
+                    visible = tab.badge > 0,
+                    enter = scaleIn(Motion.elasticSpring()) + fadeIn(tween(Motion.FAST)),
                     exit = scaleOut(tween(Motion.FAST)) + fadeOut(tween(Motion.FAST)),
                     modifier = Modifier.align(Alignment.TopEnd),
                 ) {
-                    Badge { Text(aba.badge.coerceAtMost(99).toString()) }
+                    Badge { Text(tab.badge.coerceAtMost(99).toString()) }
                 }
             }
         }

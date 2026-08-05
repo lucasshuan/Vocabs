@@ -79,21 +79,21 @@ fun flagOf(language: Language): Int = when (language.country) {
  * código é desconhecido — o servidor, na hora de gerar — usa [Languages.de], que
  * devolve nulo e recusa.
  */
-fun languageOf(codigo: String?): Language = Languages.of(codigo) ?: Languages.ENGLISH
+fun languageOf(code: String?): Language = Languages.of(code) ?: Languages.ENGLISH
 
 /** Filtro da busca da tela "Novo idioma": ignora acento e caixa. */
-fun List<Language>.buscar(termo: String): List<Language> {
-    val wanted = termo.trim().semAcento()
+fun List<Language>.search(term: String): List<Language> {
+    val wanted = term.trim().withoutAccents()
     if (wanted.isEmpty()) return this
-    return filter { it.displayName.semAcento().contains(wanted) || it.code.semAcento().contains(wanted) }
+    return filter { it.displayName.withoutAccents().contains(wanted) || it.code.withoutAccents().contains(wanted) }
 }
 
 /**
  * Sem acento e em caixa baixa. Quem digita "japones" na pressa quer achar
  * "Japonês", e um filtro que exige o circunflexo devolve lista vazia.
  */
-private fun String.semAcento(): String = lowercase()
-    .replace(ACCENTED) { encontro -> WITHOUT_ACCENT[ACCENTED_TEXT.indexOf(encontro.value)].toString() }
+private fun String.withoutAccents(): String = lowercase()
+    .replace(ACCENTED) { found -> WITHOUT_ACCENT[ACCENTED_TEXT.indexOf(found.value)].toString() }
 
 private const val ACCENTED_TEXT = "áàâãäéèêëíìîïóòôõöúùûüçñ"
 private const val WITHOUT_ACCENT = "aaaaaeeeeiiiiooooouuuucn"

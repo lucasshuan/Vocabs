@@ -24,12 +24,12 @@ import kotlinx.coroutines.flow.stateIn
  */
 data class SavedState(
     val entries: List<Entry> = emptyList(),
-    val totalDoCurso: Int = 0,
+    val courseTotal: Int = 0,
 ) {
     val target: String get() = entries.firstOrNull()?.languagePair?.target.orEmpty()
 
     /** Enquanto houver ficha em construção há o que olhar, e a tela não se fecha sozinha. */
-    val trabalhando: Boolean
+    val working: Boolean
         get() = entries.any { it.status == EntryStatus.PENDING || it.status == EntryStatus.GENERATING }
 }
 
@@ -38,20 +38,20 @@ class SavedViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
     private val ids = MutableStateFlow<List<Long>>(emptyList())
 
-    val estado: StateFlow<SavedState> = ids.flatMapLatest { lista ->
+    val state: StateFlow<SavedState> = ids.flatMapLatest { list ->
         combine(
-            repository.observeEntries(lista),
+            repository.observeEntries(list),
             repository.observeReady(Scope.All),
-        ) { entries, prontas ->
+        ) { entries, readyEntries ->
             val course = entries.firstOrNull()?.languagePair
             SavedState(
                 entries = entries,
-                totalDoCurso = prontas.count { it.languagePair == course },
+                courseTotal = readyEntries.count { it.languagePair == course },
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SavedState())
 
-    fun acompanhar(lista: List<Long>) {
-        if (ids.value != lista) ids.value = lista
+    fun follow(list: List<Long>) {
+        if (ids.value != list) ids.value = list
     }
 }

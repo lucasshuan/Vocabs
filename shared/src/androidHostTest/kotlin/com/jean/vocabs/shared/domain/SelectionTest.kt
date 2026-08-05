@@ -7,28 +7,28 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-class SelecaoTest {
+class SelectionTest {
     @Test
-    fun `tokenizacao preserva apostrofos e hifens internos e remove pontuacao externa`() {
+    fun `tokenization preserva apostrophes e hyphens inners e remove score external`() {
         val tokens = tokenizeSnippet("Wait—don't second-guess 'this'.")
         assertEquals(listOf("Wait", "don't", "second-guess", "this"), tokens.map { it.text })
     }
 
     @Test
-    fun `uma selecao e word e varias formam expressao`() {
+    fun `uma selection e word e several formam phrase`() {
         val snippet = "He is on the fence today."
         val word = assertNotNull(selectTokens(snippet, 4))
-        val expressao = assertNotNull(selectTokens(snippet, 2, 4))
+        val phrase = assertNotNull(selectTokens(snippet, 2, 4))
         assertEquals("fence", word.text)
         assertEquals(TargetType.WORD, word.type)
-        assertEquals("on the fence", expressao.text)
-        assertEquals(TargetType.PHRASE, expressao.type)
+        assertEquals("on the fence", phrase.text)
+        assertEquals(TargetType.PHRASE, phrase.type)
         // Os intervalos podem se sobrepor sem perder nenhuma seleção.
-        assertTrue(word.start >= expressao.start && word.end <= expressao.end)
+        assertTrue(word.start >= phrase.start && word.end <= phrase.end)
     }
 
     @Test
-    fun `answer ignora caixa e espacos mas preserva acento e pontuacao`() {
+    fun `answer ignora box e spaces mas preserva accentMark e score`() {
         assertTrue(isAnswerCorrect("  On   The Fence ", "on the fence"))
         assertFalse(isAnswerCorrect("cafe", "café"))
         assertFalse(isAnswerCorrect("dont", "don't"))

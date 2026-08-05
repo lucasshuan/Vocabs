@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.shared.domain.CaptureFormat
-import com.jean.vocabs.ui.theme.LocalTemaEscuro
+import com.jean.vocabs.ui.theme.LocalDarkTheme
 import com.jean.vocabs.ui.theme.VocabuColors
 
 /**
@@ -21,26 +21,26 @@ import com.jean.vocabs.ui.theme.VocabuColors
  *
  * O vermelho **não** é `error`: uma foto na fila não é uma foto com problema.
  */
-data class CategoryColors(val cor: Color, val fundo: Color)
+data class CategoryColors(val color: Color, val background: Color)
 
 @Composable
 fun formatColors(format: CaptureFormat): CategoryColors {
-    val cores = MaterialTheme.colorScheme
-    val escuro = LocalTemaEscuro.current
+    val colors = MaterialTheme.colorScheme
+    val dark = LocalDarkTheme.current
     return when (format) {
-        CaptureFormat.TEXT -> CategoryColors(cores.primary, cores.secondaryContainer)
-        CaptureFormat.AUDIO -> CategoryColors(cores.tertiary, cores.tertiaryContainer)
-        CaptureFormat.PHOTO -> if (escuro) {
-            CategoryColors(VocabuColors.PapagaioEscuro, VocabuColors.PapagaioContainerEscuro)
+        CaptureFormat.TEXT -> CategoryColors(colors.primary, colors.secondaryContainer)
+        CaptureFormat.AUDIO -> CategoryColors(colors.tertiary, colors.tertiaryContainer)
+        CaptureFormat.PHOTO -> if (dark) {
+            CategoryColors(VocabuColors.ParrotDark, VocabuColors.ParrotContainerDark)
         } else {
-            CategoryColors(VocabuColors.Papagaio, VocabuColors.PapagaioContainer)
+            CategoryColors(VocabuColors.Parrot, VocabuColors.ParrotContainer)
         }
     }
 }
 
 fun formatIcon(format: CaptureFormat): ImageVector = when (format) {
-    CaptureFormat.TEXT -> AppIcons.Lapis
-    CaptureFormat.AUDIO -> AppIcons.Microfone
+    CaptureFormat.TEXT -> AppIcons.Pencil
+    CaptureFormat.AUDIO -> AppIcons.Microphone
     CaptureFormat.PHOTO -> AppIcons.Camera
 }
 
@@ -57,13 +57,13 @@ fun formatLabel(format: CaptureFormat): String = when (format) {
 
 /** O disco da categoria, já com as cores certas — o começo de toda linha de Pendentes. */
 @Composable
-fun CategoryDisc(format: CaptureFormat, tamanho: Dp = 38.dp) {
-    val paleta = formatColors(format)
+fun CategoryDisc(format: CaptureFormat, size: Dp = 38.dp) {
+    val palette = formatColors(format)
     IconDisc(
         icon = formatIcon(format),
-        descricao = formatLabel(format),
-        cor = paleta.cor,
-        fundo = paleta.fundo,
-        tamanho = tamanho,
+        contentDescription = formatLabel(format),
+        color = palette.color,
+        background = palette.background,
+        size = size,
     )
 }

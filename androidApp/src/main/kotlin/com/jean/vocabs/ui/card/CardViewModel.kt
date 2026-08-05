@@ -17,23 +17,23 @@ class CardViewModel(app: Application) : AndroidViewModel(app) {
 
     private var id: Long = 0L
 
-    fun observar(id: Long): StateFlow<Entry?> {
+    fun observe(id: Long): StateFlow<Entry?> {
         this.id = id
         return repository.observeById(id)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     }
 
     /** A força de memória já resolvida para agora — o relógio mora no repositório. */
-    fun observarMemoria(id: Long): StateFlow<RetentionNow?> =
+    fun observeMemory(id: Long): StateFlow<RetentionNow?> =
         repository.observeRetention(id)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** Usado quando a geração falhou (servidor fora do ar, rede caiu). */
-    fun tentarDeNovo() {
+    fun tryAgain() {
         AppContainer.scope.launch { repository.generateCard(id) }
     }
 
-    fun excluir() {
-        AppContainer.scope.launch { repository.excluir(id) }
+    fun delete() {
+        AppContainer.scope.launch { repository.delete(id) }
     }
 }

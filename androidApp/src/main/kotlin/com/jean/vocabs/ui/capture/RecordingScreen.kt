@@ -54,12 +54,12 @@ import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.CircularFlag
 import com.jean.vocabs.ui.components.Motion
-import com.jean.vocabs.ui.components.encolheAoTocar
+import com.jean.vocabs.ui.components.shrinkOnTouch
 import com.jean.vocabs.ui.components.formatDuration
 import com.jean.vocabs.ui.components.rememberHaptics
-import com.jean.vocabs.ui.components.respirando
+import com.jean.vocabs.ui.components.breathing
 import com.jean.vocabs.ui.displayName
-import com.jean.vocabs.ui.theme.LocalTemaEscuro
+import com.jean.vocabs.ui.theme.LocalDarkTheme
 import com.jean.vocabs.ui.theme.VocabuColors
 import kotlin.math.pow
 import kotlinx.coroutines.delay
@@ -89,37 +89,37 @@ import kotlinx.coroutines.delay
 internal fun RecordingScreen(
     capture: QuickCapture,
     language: Language,
-    gravando: Boolean,
+    isRecording: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val guardar: () -> Unit = { capture.guardarAudio() }
-    val cancelar: () -> Unit = { capture.cancelarAudio() }
+    val save: () -> Unit = { capture.saveAudio() }
+    val cancel: () -> Unit = { capture.cancelAudio() }
 
     // Voltar **guarda**. A regra do app é que nada é descartado sem a pessoa
     // pedir, e o pedido tem um lugar só: o botão de descartar. Quem apertou
     // voltar pediu para sair dali, não para perder o que falou — e o áudio
     // guardado por engano custa um toque em Pendentes, enquanto o descartado por
     // engano não custa nada porque não existe mais.
-    BackHandler(enabled = gravando) { guardar() }
+    BackHandler(enabled = isRecording) { save() }
 
     // A tela apaga tudo, e o app desenha atrás da barra de status. No tema claro
     // os ícones do sistema são escuros e sumiriam sobre este fundo: vira o relógio
     // e a bateria para o claro enquanto durar, e devolve ao que o tema pede
     // quando a gravação termina.
-    val vista = LocalView.current
-    val temaEscuro = LocalTemaEscuro.current
-    DisposableEffect(temaEscuro) {
-        val controle = (vista.context as? Activity)
+    val view = LocalView.current
+    val darkTheme = LocalDarkTheme.current
+    DisposableEffect(darkTheme) {
+        val controller = (view.context as? Activity)
             ?.window
-            ?.let { WindowCompat.getInsetsController(it, vista) }
-        controle?.isAppearanceLightStatusBars = false
-        onDispose { controle?.isAppearanceLightStatusBars = !temaEscuro }
+            ?.let { WindowCompat.getInsetsController(it, view) }
+        controller?.isAppearanceLightStatusBars = false
+        onDispose { controller?.isAppearanceLightStatusBars = !darkTheme }
     }
 
-    val presenca = animateFloatAsState(
-        targetValue = if (gravando) 1f else 0f,
+    val presence = animateFloatAsState(
+        targetValue = if (isRecording) 1f else 0f,
         animationSpec = tween(
-            if (gravando) Motion.DEFAULT else Motion.FAST,
+            if (isRecording) Motion.DEFAULT else Motion.FAST,
             easing = FastOutSlowInEasing,
         ),
         label = "telaDeGravacao",
@@ -128,17 +128,17 @@ internal fun RecordingScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .graphicsLayer { alpha = presenca.value }
+            .graphicsLayer { alpha = presence.value }
             .drawBehind { drawRect(NIGHT) }
-            .then(if (gravando) Modifier.barraToques() else Modifier),
+            .then(if (isRecording) Modifier.barTaps() else Modifier),
     ) {
         RecordingBadge(
-            gravando = gravando,
+            isRecording = isRecording,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .statusBarsPadding()
                 .padding(top = 14.dp)
-                .graphicsLayer { alpha = presenca.value },
+                .graphicsLayer { alpha = presence.value },
         )
 
         Column(
@@ -147,19 +147,19 @@ internal fun RecordingScreen(
             modifier = Modifier
                 .align(Alignment.Center)
                 .offset(y = (-56).dp)
-                .graphicsLayer { translationY = 18.dp.toPx() * (1f - presenca.value) },
+                .graphicsLayer { translationY = 18.dp.toPx() * (1f - presence.value) },
         ) {
             Text(
-                text = formatDuration(capture.segundos),
+                text = formatDuration(capture.seconds),
                 style = MaterialTheme.typography.displaySmall.copy(fontSize = 46.sp, lineHeight = 50.sp),
                 color = Color.White,
             )
-            MicWave(gravando) { capture.nivelAgora() }
+            MicWave(isRecording) { capture.levelNow() }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                CircularFlag(language, tamanho = 16.dp)
+                CircularFlag(language, size = 16.dp)
                 // O handoff escreve "o idioma sai da fala". Não sai: não há
                 // detector de idioma no app, e o que existe é a regra de fallback
                 // do próprio handoff — cai no curso aberto no hub. A frase diz o
@@ -174,14 +174,14 @@ internal fun RecordingScreen(
         }
 
         RecordingActions(
-            aoDescartar = cancelar,
-            aoGuardar = guardar,
+            onDiscard = cancel,
+            onSave = save,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp)
                 .padding(bottom = 36.dp)
-                .graphicsLayer { translationY = 26.dp.toPx() * (1f - presenca.value) },
+                .graphicsLayer { translationY = 26.dp.toPx() * (1f - presence.value) },
         )
     }
 }
@@ -199,7 +199,7 @@ internal fun RecordingScreen(
  * encontram uma mudança já consumida. Barrar é trabalho do teste de toque;
  * consumir é do gesto que de fato quer o evento.
  */
-private fun Modifier.barraToques(): Modifier = pointerInput(Unit) {
+private fun Modifier.barTaps(): Modifier = pointerInput(Unit) {
     awaitEachGesture { awaitFirstDown(requireUnconsumed = false) }
 }
 
@@ -219,7 +219,7 @@ private fun Modifier.barraToques(): Modifier = pointerInput(Unit) {
  * quase igual ao primeiro, que é o jeito garantido de tornar os dois ilegíveis.
  */
 private val MINT_AT_NIGHT = VocabuColors.Mint
-private val SALMON_AT_NIGHT = VocabuColors.PapagaioEscuro
+private val SALMON_AT_NIGHT = VocabuColors.ParrotDark
 private val FULL_GREEN = VocabuColors.MintDark
 
 /**
@@ -231,18 +231,18 @@ private val FULL_GREEN = VocabuColors.MintDark
  * uma conferida rápida no aparelho apoiado na mesa não lê números.
  */
 @Composable
-private fun RecordingBadge(gravando: Boolean, modifier: Modifier = Modifier) {
+private fun RecordingBadge(isRecording: Boolean, modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier
-            .pilulaEscura()
+            .darkPill()
             .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {
         Box(
             Modifier
                 .requiredSize(8.dp)
-                .respirando(ativo = gravando, minimo = 0.25f)
+                .breathing(active = isRecording, minimum = 0.25f)
                 .drawBehind { drawCircle(SALMON_AT_NIGHT) },
         )
         Text(
@@ -254,7 +254,7 @@ private fun RecordingBadge(gravando: Boolean, modifier: Modifier = Modifier) {
 }
 
 /** O fundo translúcido do selo — uma pílula de 8% de branco sobre a noite. */
-private fun Modifier.pilulaEscura(): Modifier = drawBehind {
+private fun Modifier.darkPill(): Modifier = drawBehind {
     drawRoundRect(Color.White, alpha = 0.08f, cornerRadius = CornerRadius(size.height / 2f))
 }
 
@@ -280,24 +280,24 @@ private val ACTION_CORNER = 22.dp
  */
 @Composable
 private fun RecordingActions(
-    aoDescartar: () -> Unit,
-    aoGuardar: () -> Unit,
+    onDiscard: () -> Unit,
+    onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier.fillMaxWidth().height(ACTION_HEIGHT),
     ) {
-        DiscardButton(aoDescartar)
-        BotaoDeGuardar(aoGuardar)
+        DiscardButton(onDiscard)
+        BotaoDeGuardar(onSave)
     }
 }
 
 @Composable
-private fun DiscardButton(aoClicar: () -> Unit) {
+private fun DiscardButton(onClick: () -> Unit) {
     val toque = rememberHaptics()
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         shape = RoundedCornerShape(ACTION_CORNER),
         color = Color.Transparent,
         contentColor = SALMON_AT_NIGHT,
@@ -306,14 +306,14 @@ private fun DiscardButton(aoClicar: () -> Unit) {
         modifier = Modifier
             .width(86.dp)
             .fillMaxHeight()
-            .encolheAoTocar(toque, minimo = 0.94f),
+            .shrinkOnTouch(toque, minimum = 0.94f),
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(5.dp, Alignment.CenterVertically),
             modifier = Modifier.fillMaxSize(),
         ) {
-            Icon(AppIcons.Lixeira, contentDescription = null, modifier = Modifier.size(20.dp))
+            Icon(AppIcons.Trash, contentDescription = null, modifier = Modifier.size(20.dp))
             Text(
                 text = "Descartar",
                 style = MaterialTheme.typography.labelSmall,
@@ -324,10 +324,10 @@ private fun DiscardButton(aoClicar: () -> Unit) {
 }
 
 @Composable
-private fun RowScope.BotaoDeGuardar(aoClicar: () -> Unit) {
+private fun RowScope.BotaoDeGuardar(onClick: () -> Unit) {
     val toque = rememberHaptics()
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         shape = RoundedCornerShape(ACTION_CORNER),
         color = FULL_GREEN,
         contentColor = Color.White,
@@ -337,7 +337,7 @@ private fun RowScope.BotaoDeGuardar(aoClicar: () -> Unit) {
             .fillMaxHeight()
             // Menos que os cartões (0,97): num alvo deste tamanho a mesma
             // proporção vira solavanco em vez de toque.
-            .encolheAoTocar(toque, minimo = 0.985f),
+            .shrinkOnTouch(toque, minimum = 0.985f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -368,16 +368,16 @@ private const val WAVE_INTERVAL = 70L
  * segundo invalidam o desenho de um retângulo e nada mais.
  */
 @Composable
-private fun MicWave(gravando: Boolean, level: () -> Float) {
-    val historico = remember { FloatArray(WAVE_BARS) }
+private fun MicWave(isRecording: Boolean, level: () -> Float) {
+    val history = remember { FloatArray(WAVE_BARS) }
     var cursor by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(gravando) {
-        if (!gravando) return@LaunchedEffect
-        historico.fill(0f)
+    LaunchedEffect(isRecording) {
+        if (!isRecording) return@LaunchedEffect
+        history.fill(0f)
         cursor = 0
         while (true) {
-            historico[cursor % WAVE_BARS] = level()
+            history[cursor % WAVE_BARS] = level()
             cursor++
             delay(WAVE_INTERVAL)
         }
@@ -387,21 +387,21 @@ private fun MicWave(gravando: Boolean, level: () -> Float) {
         Modifier
             .requiredSize(width = 208.dp, height = 52.dp)
             .drawBehind {
-                val posicao = cursor
-                val largura = 4.dp.toPx()
-                val vao = 5.5.dp.toPx()
-                val minima = 4.dp.toPx()
+                val position = cursor
+                val width = 4.dp.toPx()
+                val gap = 5.5.dp.toPx()
+                val smallest = 4.dp.toPx()
                 for (i in 0 until WAVE_BARS) {
                     // A mais recente à direita, as antigas caminhando à esquerda.
-                    val index = ((posicao - 1 - i) % WAVE_BARS + WAVE_BARS) % WAVE_BARS
-                    val altura = minima + (size.height - minima) * historico[index].coerceIn(0f, 1f).pow(0.42f)
-                    val x = size.width - largura - i * vao
+                    val index = ((position - 1 - i) % WAVE_BARS + WAVE_BARS) % WAVE_BARS
+                    val height = smallest + (size.height - smallest) * history[index].coerceIn(0f, 1f).pow(0.42f)
+                    val x = size.width - width - i * gap
                     if (x < 0) break
                     drawRoundRect(
                         color = MINT_AT_NIGHT,
-                        topLeft = Offset(x, (size.height - altura) / 2f),
-                        size = Size(largura, altura),
-                        cornerRadius = CornerRadius(largura / 2f),
+                        topLeft = Offset(x, (size.height - height) / 2f),
+                        size = Size(width, height),
+                        cornerRadius = CornerRadius(width / 2f),
                         alpha = 1f - 0.5f * (i.toFloat() / WAVE_BARS),
                     )
                 }

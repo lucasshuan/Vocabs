@@ -32,7 +32,7 @@ import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.Retention
-import com.jean.vocabs.ui.theme.LocalTemaEscuro
+import com.jean.vocabs.ui.theme.LocalDarkTheme
 
 /**
  * Selo "palavra" / "expressão".
@@ -43,13 +43,13 @@ import com.jean.vocabs.ui.theme.LocalTemaEscuro
  */
 @Composable
 fun TypeBadge(type: TargetType, modifier: Modifier = Modifier) {
-    val cores = MaterialTheme.colorScheme
-    val escuro = LocalTemaEscuro.current
-    val (fundo, text) = when (type) {
-        TargetType.PHRASE -> cores.secondaryContainer to if (escuro) cores.onSurface else cores.primary
-        TargetType.WORD -> cores.surfaceVariant to cores.onSurfaceVariant
+    val colors = MaterialTheme.colorScheme
+    val dark = LocalDarkTheme.current
+    val (background, text) = when (type) {
+        TargetType.PHRASE -> colors.secondaryContainer to if (dark) colors.onSurface else colors.primary
+        TargetType.WORD -> colors.surfaceVariant to colors.onSurfaceVariant
     }
-    Surface(shape = CircleShape, color = fundo, modifier = modifier) {
+    Surface(shape = CircleShape, color = background, modifier = modifier) {
         Text(
             text = if (type == TargetType.WORD) "palavra" else "expressão",
             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
@@ -61,10 +61,10 @@ fun TypeBadge(type: TargetType, modifier: Modifier = Modifier) {
 
 @Composable
 fun DuplicateNotice(entry: Entry, modifier: Modifier = Modifier) {
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     Surface(
         shape = MaterialTheme.shapes.medium,
-        color = cores.secondaryContainer,
+        color = colors.secondaryContainer,
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(
@@ -75,12 +75,12 @@ fun DuplicateNotice(entry: Entry, modifier: Modifier = Modifier) {
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(34.dp)
-                    .background(cores.secondary, CircleShape),
+                    .background(colors.secondary, CircleShape),
             ) {
                 Icon(
-                    imageVector = AppIcons.Repetir,
+                    imageVector = AppIcons.Repeat,
                     contentDescription = null,
-                    tint = cores.onSecondary,
+                    tint = colors.onSecondary,
                     modifier = Modifier.size(18.dp),
                 )
             }
@@ -92,12 +92,12 @@ fun DuplicateNotice(entry: Entry, modifier: Modifier = Modifier) {
                 Text(
                     text = "Você já tem isso",
                     style = MaterialTheme.typography.titleSmall,
-                    color = cores.onSecondaryContainer,
+                    color = colors.onSecondaryContainer,
                 )
                 Text(
                     text = duplicateDetail(entry),
                     style = MaterialTheme.typography.bodySmall,
-                    color = cores.onSecondaryContainer.copy(alpha = 0.76f),
+                    color = colors.onSecondaryContainer.copy(alpha = 0.76f),
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
@@ -126,13 +126,13 @@ private fun duplicateStatusLabel(status: EntryStatus): String = when (status) {
 
 /** "agora", "há 5min", "há 2h", "ontem", "há 3d". */
 fun relativeTime(entao: Long, now: Long = System.currentTimeMillis()): String {
-    val minutos = ((now - entao) / 60_000L).coerceAtLeast(0)
+    val minutes = ((now - entao) / 60_000L).coerceAtLeast(0)
     return when {
-        minutos < 1 -> "agora"
-        minutos < 60 -> "há ${minutos}min"
-        minutos < 60 * 24 -> "há ${minutos / 60}h"
-        minutos < 60 * 48 -> "ontem"
-        else -> "há ${minutos / (60 * 24)}d"
+        minutes < 1 -> "agora"
+        minutes < 60 -> "há ${minutes}min"
+        minutes < 60 * 24 -> "há ${minutes / 60}h"
+        minutes < 60 * 48 -> "ontem"
+        else -> "há ${minutes / (60 * 24)}d"
     }
 }
 
@@ -146,28 +146,28 @@ fun relativeTime(entao: Long, now: Long = System.currentTimeMillis()): String {
  * a barra da ficha e o cartão da home discordarem sobre que horas são.
  */
 fun timeUntil(millis: Long): String {
-    val minutos = (millis / 60_000L).coerceAtLeast(0)
+    val minutes = (millis / 60_000L).coerceAtLeast(0)
     return when {
-        minutos < 1 -> "agora"
-        minutos < 60 -> "em ${minutos}min"
-        minutos < 60 * 24 -> "em ${minutos / 60}h"
-        minutos < 60 * 48 -> "amanhã"
-        else -> "em ${minutos / (60 * 24)} dias"
+        minutes < 1 -> "agora"
+        minutes < 60 -> "em ${minutes}min"
+        minutes < 60 * 24 -> "em ${minutes / 60}h"
+        minutes < 60 * 48 -> "amanhã"
+        else -> "em ${minutes / (60 * 24)} dias"
     }
 }
 
 /** "0:12", "1:03:20" — a duração de um áudio, a partir de millis. */
 fun formatDurationMs(durationMs: Long): String {
-    val totalSegundos = (durationMs / 1_000).coerceAtLeast(0)
-    val horas = totalSegundos / 3_600
-    val minutos = (totalSegundos % 3_600) / 60
-    val segundos = totalSegundos % 60
-    val segundosComZero = segundos.toString().padStart(2, '0')
-    return if (horas > 0) "$horas:${minutos.toString().padStart(2, '0')}:$segundosComZero" else "$minutos:$segundosComZero"
+    val totalSeconds = (durationMs / 1_000).coerceAtLeast(0)
+    val hours = totalSeconds / 3_600
+    val minutes = (totalSeconds % 3_600) / 60
+    val seconds = totalSeconds % 60
+    val paddedSeconds = seconds.toString().padStart(2, '0')
+    return if (hours > 0) "$hours:${minutes.toString().padStart(2, '0')}:$paddedSeconds" else "$minutes:$paddedSeconds"
 }
 
 /** A mesma duração, a partir de segundos — o que o cronômetro da gravação conta. */
-fun formatDuration(segundos: Long): String = formatDurationMs(segundos * 1_000L)
+fun formatDuration(seconds: Long): String = formatDurationMs(seconds * 1_000L)
 
 /**
  * Como chamar uma captura crua: "Áudio · 0:12", "Foto do Kindle", "“tant pis”".
@@ -193,10 +193,10 @@ fun captureTitle(capture: Capture): String {
 
 /** Uma linha de trecho para caber num título, cortada na palavra e não na letra. */
 fun summarize(text: String, limit: Int = 38): String {
-    val limpo = text.trim().replace(Regex("\\s+"), " ")
-    if (limpo.length <= limit) return limpo
-    val corte = limpo.take(limit).substringBeforeLast(' ', limpo.take(limit))
-    return "$corte…"
+    val clean = text.trim().replace(Regex("\\s+"), " ")
+    if (clean.length <= limit) return clean
+    val cut = clean.take(limit).substringBeforeLast(' ', clean.take(limit))
+    return "$cut…"
 }
 
 /**
@@ -236,8 +236,8 @@ fun levelLabel(level: MemoryLevel): String = when (level) {
  * dizer "revisar agora" nesse caso mandaria a pessoa a uma fila vazia.
  */
 fun nextReviewText(retention: Retention?, now: Long): String? {
-    val falta = retention?.nextReviewIn(now) ?: return null
-    return if (falta <= 0L) "revisar agora" else timeUntil(falta)
+    val missing = retention?.nextReviewIn(now) ?: return null
+    return if (missing <= 0L) "revisar agora" else timeUntil(missing)
 }
 
 /**
@@ -252,7 +252,7 @@ fun MemoryBar(
     points: Double,
     level: MemoryLevel,
     modifier: Modifier = Modifier,
-    altura: Dp = 8.dp,
+    height: Dp = 8.dp,
 ) {
     val fraction by animateFloatAsState(
         targetValue = (points / 100.0).toFloat().coerceIn(0f, 1f),
@@ -262,14 +262,14 @@ fun MemoryBar(
 
     Box(
         modifier = modifier
-            .height(altura)
-            .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(altura / 2)),
+            .height(height)
+            .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(height / 2)),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(fraction)
                 .fillMaxHeight()
-                .background(levelColor(level), RoundedCornerShape(altura / 2)),
+                .background(levelColor(level), RoundedCornerShape(height / 2)),
         )
     }
 }

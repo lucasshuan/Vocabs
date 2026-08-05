@@ -41,16 +41,16 @@ class VocabRepositoryImplTest {
     private var now = Instant.parse("2026-01-10T12:00:00Z").toEpochMilli()
 
     @Test
-    fun `lote sobreposto limita concorrencia preserva sucesso parcial e contabiliza so sucesso`() = runBlocking {
+    fun `batch overlaid limita concurrency preserva success partial e contabiliza so success`() = runBlocking {
         val ativas = AtomicInteger(0)
-        val maximo = AtomicInteger(0)
-        val chamadas = AtomicInteger(0)
+        val maximum = AtomicInteger(0)
+        val calls = AtomicInteger(0)
         val repo = repository { 
-            val emCurso = ativas.incrementAndGet()
-            maximo.updateAndGet { maxOf(it, emCurso) }
+            val inProgress = ativas.incrementAndGet()
+            maximum.updateAndGet { maxOf(it, inProgress) }
             try {
                 delay(60)
-                if (chamadas.getAndIncrement() == 1) HttpStatusCode.InternalServerError to "{\"mensagem\":\"falhou\"}"
+                if (calls.getAndIncrement() == 1) HttpStatusCode.InternalServerError to "{\"message\":\"failed\"}"
                 else HttpStatusCode.OK to CARD_JSON
             } finally {
                 ativas.decrementAndGet()
@@ -66,20 +66,20 @@ class VocabRepositoryImplTest {
             ),
         )
 
-        val resultados = repo.generateCards(ids, concorrencia = 2)
-        assertEquals(3, resultados.size)
-        assertEquals(2, resultados.count { it })
-        assertTrue(maximo.get() <= 2)
-        assertTrue(maximo.get() >= 2)
+        val results = repo.generateCards(ids, concurrency = 2)
+        assertEquals(3, results.size)
+        assertEquals(2, results.count { it })
+        assertTrue(maximum.get() <= 2)
+        assertTrue(maximum.get() >= 2)
         assertEquals(2, repo.observeAiUsage().first().used)
         assertEquals(2, repo.observeReady().first().size)
         assertEquals(EntryStatus.ERROR, repo.observeInbox().first().single().status)
     }
 
     @Test
-    fun `excluir card preserva midia ate a ultima irma`() = runBlocking {
-        val removidos = mutableListOf<String>()
-        val repo = repository(remover = removidos::add)
+    fun `delete card preserva media ate a last sibling`() = runBlocking {
+        val removed = mutableListOf<String>()
+        val repo = repository(remove = removed::add)
         val capture = repo.captureMedia(CaptureFormat.PHOTO, "foto.jpg")
         val snippet = "green fence"
         repo.recordTranscription(capture, snippet)
@@ -89,14 +89,14 @@ class VocabRepositoryImplTest {
             listOf(selectTokens(snippet, 0)!!, selectTokens(snippet, 1)!!),
         )
 
-        repo.excluir(ids.first())
-        assertTrue(removidos.isEmpty())
-        repo.excluir(ids.last())
-        assertEquals(listOf("foto.jpg"), removidos)
+        repo.delete(ids.first())
+        assertTrue(removed.isEmpty())
+        repo.delete(ids.last())
+        assertEquals(listOf("foto.jpg"), removed)
     }
 
     @Test
-    fun `activity e uso de ia viram com o month e day reais`() = runBlocking {
+    fun `activity e usage de ia viram com o month e day real`() = runBlocking {
         val repo = repository()
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
@@ -110,16 +110,16 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `cada course ve so as proprias palavras e trocar de course troca a lista`() = runBlocking {
+    fun `cada course ve so as own words e switch de course swap a list`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "en"))
         val repo = repository(course = course)
 
-        val ingles = "on the fence"
-        repo.captureText(ingles, listOf(selectTokens(ingles, 2)!!))
+        val english = "on the fence"
+        repo.captureText(english, listOf(selectTokens(english, 2)!!))
 
         course.value = LanguagePair("pt-BR", "de")
-        val alemao = "der Zaun"
-        repo.captureText(alemao, listOf(selectTokens(alemao, 1)!!))
+        val german = "der Zaun"
+        repo.captureText(german, listOf(selectTokens(german, 1)!!))
 
         assertEquals(listOf("Zaun"), repo.observeInbox().first().map { it.target })
         course.value = LanguagePair("pt-BR", "en")
@@ -130,15 +130,15 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `scope All ve os tres languages e scope Curso ve so o nomeado`() = runBlocking {
+    fun `scope All ve os three languages e scope Curso ve so o named`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "en"))
         val repo = repository(course = course)
 
-        val ingles = "on the fence"
-        repo.captureText(ingles, listOf(selectTokens(ingles, 2)!!))
+        val english = "on the fence"
+        repo.captureText(english, listOf(selectTokens(english, 2)!!))
         course.value = LanguagePair("pt-BR", "de")
-        val alemao = "der Zaun"
-        repo.captureText(alemao, listOf(selectTokens(alemao, 1)!!))
+        val german = "der Zaun"
+        repo.captureText(german, listOf(selectTokens(german, 1)!!))
 
         // Vocabulários, Pendentes e Você leem assim: tudo, sempre.
         assertEquals(
@@ -151,22 +151,22 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `o language escolhido na folha vence o course aberto`() = runBlocking {
+    fun `o language chosen na sheet expires o course activePair`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "en"))
         val repo = repository(course = course)
 
-        val espanhol = "se puso las botas"
-        val id = repo.captureSnippet(espanhol, LanguagePair("pt-BR", "es"))
+        val spanish = "se puso las botas"
+        val id = repo.captureSnippet(spanish, LanguagePair("pt-BR", "es"))
 
-        val pendente = repo.observePendingCaptures(Scope.All).first().single()
-        assertEquals(id, pendente.id)
-        assertEquals("es", pendente.languagePair.target)
+        val pending = repo.observePendingCaptures(Scope.All).first().single()
+        assertEquals(id, pending.id)
+        assertEquals("es", pending.languagePair.target)
         // E some do curso aberto, que continua sendo o inglês.
         assertTrue(repo.observePendingCaptures().first().isEmpty())
     }
 
     @Test
-    fun `trocar o language da capture so vale antes de virar fichas`() = runBlocking {
+    fun `switch o language da capture so vale antes de turn cards`() = runBlocking {
         val repo = repository()
         val snippet = "tant pis"
         val id = repo.captureSnippet(snippet)
@@ -180,24 +180,24 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `o resumo de cada course traz o badge da faixa`() = runBlocking {
+    fun `o summary de cada course traz o badge da strip`() = runBlocking {
         val repo = repository()
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
         assertTrue(repo.generateCard(id))
 
         // Ficha recém-pronta: em dia, com uma revisão agendada para depois.
-        val emDia = repo.observeCourses().first().single()
-        assertEquals(0, emDia.inQueue)
-        assertTrue(emDia.nextInMillis!! > 0)
-        assertEquals(CourseBadge.UpToDate, emDia.badge)
+        val upToDate = repo.observeCourses().first().single()
+        assertEquals(0, upToDate.inQueue)
+        assertTrue(upToDate.nextInMillis!! > 0)
+        assertEquals(CourseBadge.UpToDate, upToDate.badge)
 
         now += 2 * 86_400_000L
         assertEquals(CourseBadge.Review(1), repo.observeCourses().first().single().badge)
     }
 
     @Test
-    fun `a tela de confirmacao acompanha so os ids que acabaram de nascer`() = runBlocking {
+    fun `a screen de confirmation acompanha so os ids que ranOut de nascer`() = runBlocking {
         val repo = repository()
         val snippet = "The plan went haywire"
         val id = repo.captureSnippet(snippet)
@@ -213,21 +213,21 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `a card e regerada no language em que nasceu, mesmo after trocar de course`() = runBlocking {
+    fun `a card e regenerated no language em que wasBorn, mesmo after switch de course`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "de"))
-        val pedidos = mutableListOf<String>()
-        val repo = repository(course = course, aoPedir = pedidos::add)
+        val requests = mutableListOf<String>()
+        val repo = repository(course = course, onRequest = requests::add)
 
         val snippet = "der Zaun"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 1)!!)).single()
         course.value = LanguagePair("pt-BR", "en")
         assertTrue(repo.generateCard(id))
 
-        assertTrue(pedidos.single().contains("\"targetLanguage\":\"de\""), pedidos.single())
+        assertTrue(requests.single().contains("\"targetLanguage\":\"de\""), requests.single())
     }
 
     @Test
-    fun `quota conta o que ja saiu today e a fila do course aberto`() = runBlocking {
+    fun `quota conta o que ja left today e a queue do course activePair`() = runBlocking {
         val repo = repository()
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
@@ -246,17 +246,17 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `a row do tempo registra capture, card, answer e mudanca de level`() = runBlocking {
+    fun `a row do time record capture, card, answer e change de level`() = runBlocking {
         val repo = repository()
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
         assertTrue(repo.generateCard(id))
         repo.recordAnswer(id, correct = true)
 
-        val tipos = repo.observeEvents(84).first().map { it.type }
-        assertTrue(EventType.CAPTURED in tipos)
-        assertTrue(EventType.CARD_READY in tipos)
-        assertTrue(EventType.CORRECT in tipos)
+        val types = repo.observeEvents(84).first().map { it.type }
+        assertTrue(EventType.CAPTURED in types)
+        assertTrue(EventType.CARD_READY in types)
+        assertTrue(EventType.CORRECT in types)
 
         val hit = repo.observeEvents(84).first().first { it.type == EventType.CORRECT }
         assertEquals("1", hit.detail)
@@ -264,20 +264,20 @@ class VocabRepositoryImplTest {
 
         // Três acertos depois ela cruza para familiar, e só aí um SUBIU_NIVEL sai.
         repeat(3) { repo.recordAnswer(id, correct = true) }
-        val subidas = repo.observeEvents(84).first().filter { it.type == EventType.LEVELED_UP }
-        assertEquals(listOf(MemoryLevel.MASTERED.name, MemoryLevel.FAMILIAR.name), subidas.map { it.detail })
+        val rises = repo.observeEvents(84).first().filter { it.type == EventType.LEVELED_UP }
+        assertEquals(listOf(MemoryLevel.MASTERED.name, MemoryLevel.FAMILIAR.name), rises.map { it.detail })
     }
 
     private fun repository(
-        remover: (String) -> Unit = {},
+        remove: (String) -> Unit = {},
         course: Flow<LanguagePair> = flowOf(LanguagePair.DEFAULT),
-        aoPedir: (String) -> Unit = {},
+        onRequest: (String) -> Unit = {},
         answer: suspend () -> Pair<HttpStatusCode, String> = { HttpStatusCode.OK to CARD_JSON },
     ): VocabRepositoryImpl {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         VocabsDatabase.Schema.create(driver)
-        val engine = MockEngine { requisicao ->
-            aoPedir((requisicao.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
+        val engine = MockEngine { request ->
+            onRequest((request.body as OutgoingContent.ByteArrayContent).bytes().decodeToString())
             val (status, body) = answer()
             respond(
                 body,
@@ -294,7 +294,7 @@ class VocabRepositoryImplTest {
             io = Dispatchers.IO,
             now = { now },
             activeCourse = course,
-            removeFile = remover,
+            removeFile = remove,
         )
     }
 

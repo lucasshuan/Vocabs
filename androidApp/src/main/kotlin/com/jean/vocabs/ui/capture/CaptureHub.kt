@@ -111,24 +111,24 @@ import kotlinx.coroutines.withTimeoutOrNull
 fun CaptureHub(
     capture: QuickCapture,
     language: Language,
-    aoAbrirTexto: () -> Unit,
-    aoMudarDeFase: (emGesto: Boolean) -> Unit,
+    onOpenText: () -> Unit,
+    onPhaseChange: (inGesture: Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val haptico = LocalHapticFeedback.current
-    val reduzido = reducedMotion()
-    val abrirTexto by rememberUpdatedState(aoAbrirTexto)
+    val haptic = LocalHapticFeedback.current
+    val reduced = reducedMotion()
+    val openText by rememberUpdatedState(onOpenText)
 
-    var aberto by remember { mutableStateOf(false) }
-    var target by remember { mutableStateOf<GestureTarget>(GestureTarget.Origem) }
-    val gravando = capture.gravando
+    var activePair by remember { mutableStateOf(false) }
+    var target by remember { mutableStateOf<GestureTarget>(GestureTarget.Origin) }
+    val isRecording = capture.isRecording
 
     // "O hub tomou a tela": o que está atrás desfoca e sai do alcance do leitor de
     // tela. Vale para o leque e para a gravação — a tela de gravação é opaca, mas
     // o conteúdo continua composto por baixo dela, e um `+` alcançável pelo
     // TalkBack debaixo de uma tela que já não é aquela é uma armadilha.
-    val emGesto = aberto || gravando
-    LaunchedEffect(emGesto) { aoMudarDeFase(emGesto) }
+    val inGesture = activePair || isRecording
+    LaunchedEffect(inGesture) { onPhaseChange(inGesture) }
 
     // Rede de segurança: o hub sai de cena quando uma tela cheia abre, e sair de
     // cena cancela a corrotina do gesto sem passar por `concluir`. Sem isto, uma
@@ -136,21 +136,21 @@ fun CaptureHub(
     // aberto e sem nada na tela dizendo isso.
     DisposableEffect(Unit) {
         onDispose {
-            if (capture.gravando) capture.cancelarAudio()
-            aoMudarDeFase(false)
+            if (capture.isRecording) capture.cancelAudio()
+            onPhaseChange(false)
         }
     }
 
     // Leque e gravação continuam compostos por um instante depois de fechar, para
     // a saída poder ser animada. Sem isto os alvos desapareceriam no quadro em que
     // o dedo sobe, e o gesto terminaria num corte seco.
-    val desenhandoLeque = stillOnScreen(aberto)
-    val desenhandoGravacao = stillOnScreen(gravando)
+    val drawingFan = stillOnScreen(activePair)
+    val drawingRecording = stillOnScreen(isRecording)
 
     // O véu do leque deixa o conteúdo legível por trás: a pessoa está decidindo, e
     // o app é o contexto da decisão.
-    val veu = animateFloatAsState(
-        targetValue = if (aberto) 0.46f else 0f,
+    val veil = animateFloatAsState(
+        targetValue = if (activePair) 0.46f else 0f,
         animationSpec = tween(Motion.FAST, easing = FastOutSlowInEasing),
         label = "veu",
     )
@@ -159,7 +159,7 @@ fun CaptureHub(
         Box(
             Modifier
                 .fillMaxSize()
-                .drawBehind { if (veu.value > 0.001f) drawRect(NIGHT, alpha = veu.value) },
+                .drawBehind { if (veil.value > 0.001f) drawRect(NIGHT, alpha = veil.value) },
         )
 
         Box(
@@ -172,31 +172,31 @@ fun CaptureHub(
                 // O `+` fica debaixo da tela de gravação, que é opaca. Deixá-lo
                 // no alcance do leitor de tela ofereceria "Capturar" no meio de
                 // uma gravação em curso.
-                .then(if (gravando) Modifier.clearAndSetSemantics {} else Modifier)
+                .then(if (isRecording) Modifier.clearAndSetSemantics {} else Modifier)
                 // A âncora é alta para caber o leque inteiro sem apertar as
                 // medidas de ninguém, e desce até o centro dela coincidir com o
                 // centro do botão. Daí em diante todo alvo é um `offset` puro a
                 // partir do `+`, que é como o handoff descreve as posições.
                 .offset(y = ANCHOR_HEIGHT / 2 - BAR_HEIGHT / 2 - BUTTON_ELEVATION),
         ) {
-            if (desenhandoLeque) {
-                GuideToTarget(target, aberto)
+            if (drawingFan) {
+                GuideToTarget(target, activePair)
                 CaptureFormat.entries.forEach { format ->
                     FanTarget(
                         format = format,
-                        marcado = target == GestureTarget.Modo(format),
-                        visivel = aberto,
-                        atraso = ENTER_DELAY.getValue(format),
-                        reduzido = reduzido,
+                        marked = target == GestureTarget.Mode(format),
+                        isVisible = activePair,
+                        delay = ENTER_DELAY.getValue(format),
+                        reduced = reduced,
                     )
                 }
-                GestureHint(target, aberto)
+                GestureHint(target, activePair)
             }
 
             HubButton(
-                aberto = aberto,
-                gravando = gravando,
-                reduzido = reduzido,
+                activePair = activePair,
+                isRecording = isRecording,
+                reduced = reduced,
                 modifier = Modifier
                     .offset(y = -BUTTON_ELEVATION)
                     .semantics {
@@ -206,24 +206,24 @@ fun CaptureHub(
                         // próprio botão, e a gravação aberta por aqui é encerrada
                         // pelas ações da tela de gravação.
                         customActions = listOf(
-                            CustomAccessibilityAction("Escrever") { abrirTexto(); true },
-                            CustomAccessibilityAction("Fotografar") { capture.tirarFoto(); true },
+                            CustomAccessibilityAction("Escrever") { openText(); true },
+                            CustomAccessibilityAction("Fotografar") { capture.takePhoto(); true },
                             CustomAccessibilityAction("Gravar áudio") {
-                                if (capture.temPermissaoDeAudio) capture.gravarAudio()
-                                else capture.pedirPermissaoDeAudio()
+                                if (capture.hasAudioPermission) capture.recordAudio()
+                                else capture.requestAudioPermission()
                                 true
                             },
                         )
                     }
                     .pointerInput(Unit) {
-                        val alvos = alvosEmPixels()
-                        val raioDoAlvoPx = TARGET_RADIUS.toPx()
-                        val raioDeOrigemPx = ORIGIN_RADIUS.toPx()
-                        val folga = viewConfiguration.touchSlop
+                        val targets = targetsInPixels()
+                        val targetRadiusPx = TARGET_RADIUS.toPx()
+                        val originRadiusPx = ORIGIN_RADIUS.toPx()
+                        val slack = viewConfiguration.touchSlop
 
                         awaitEachGesture {
-                            val primeiro = awaitFirstDown(requireUnconsumed = false)
-                            primeiro.consume()
+                            val first = awaitFirstDown(requireUnconsumed = false)
+                            first.consume()
                             val centro = Offset(size.width / 2f, size.height / 2f)
 
                             // Até 180 ms parado ainda é toque; a partir daí, ou
@@ -231,60 +231,60 @@ fun CaptureHub(
                             // abre. O limiar do sistema (500 ms) é longo demais
                             // para um gesto que precisa render antes de a frase
                             // terminar de passar.
-                            val soltouCedo = withTimeoutOrNull(FAN_OPEN_MS) {
-                                var solto: PointerInputChange? = null
+                            val releasedEarly = withTimeoutOrNull(FAN_OPEN_MS) {
+                                var loose: PointerInputChange? = null
                                 while (true) {
-                                    val mudanca = proximaMudanca(primeiro) ?: break
-                                    if (!mudanca.pressed) {
-                                        solto = mudanca
+                                    val change = nextChange(first) ?: break
+                                    if (!change.pressed) {
+                                        loose = change
                                         break
                                     }
-                                    if ((mudanca.position - primeiro.position).getDistance() > folga) break
+                                    if ((change.position - first.position).getDistance() > slack) break
                                 }
-                                solto
+                                loose
                             }
 
-                            if (soltouCedo != null) {
-                                abrirTexto()
+                            if (releasedEarly != null) {
+                                openText()
                                 return@awaitEachGesture
                             }
 
-                            aberto = true
-                            haptico.performHapticFeedback(HapticFeedbackType.LongPress)
+                            activePair = true
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
 
-                            var current: GestureTarget = GestureTarget.Origem
-                            var soltou = false
+                            var current: GestureTarget = GestureTarget.Origin
+                            var released = false
 
                             while (true) {
-                                val mudanca = proximaMudanca(primeiro) ?: break
-                                val novo = targetFor(
-                                    desloc = mudanca.position - centro,
-                                    alvos = alvos,
-                                    raioDoAlvoPx = raioDoAlvoPx,
-                                    raioDeOrigemPx = raioDeOrigemPx,
+                                val change = nextChange(first) ?: break
+                                val new = targetFor(
+                                    shift = change.position - centro,
+                                    targets = targets,
+                                    targetRadiusPx = targetRadiusPx,
+                                    originRadiusPx = originRadiusPx,
                                 )
 
-                                if (novo != current) {
-                                    current = novo
-                                    target = novo
+                                if (new != current) {
+                                    current = new
+                                    target = new
                                     // Chegar num alvo tem toque tátil; sair dele
                                     // não. O que a mão precisa sentir é o encaixe,
                                     // e um segundo pulso na saída transformaria
                                     // atravessar o leque numa vibração contínua.
-                                    if (novo is GestureTarget.Modo) {
-                                        haptico.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    if (new is GestureTarget.Mode) {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     }
                                 }
 
-                                if (!mudanca.pressed) {
-                                    soltou = true
+                                if (!change.pressed) {
+                                    released = true
                                     break
                                 }
                             }
 
-                            aberto = false
-                            target = GestureTarget.Origem
-                            finish(capture, current, soltou, haptico, abrirTexto)
+                            activePair = false
+                            target = GestureTarget.Origin
+                            finish(capture, current, released, haptic, openText)
                         }
                     },
             )
@@ -292,11 +292,11 @@ fun CaptureHub(
 
         // Por último no `Box`, portanto por cima de tudo — inclusive do `+`, que
         // some atrás dela em vez de continuar clicável debaixo de uma tela opaca.
-        if (desenhandoGravacao) {
+        if (drawingRecording) {
             RecordingScreen(
                 capture = capture,
                 language = language,
-                gravando = gravando,
+                isRecording = isRecording,
             )
         }
     }
@@ -309,13 +309,13 @@ fun CaptureHub(
  * a animação de saída ter tido tempo de correr.
  */
 @Composable
-private fun stillOnScreen(ativo: Boolean, sobra: Long = Motion.DEFAULT.toLong() + 80): Boolean {
+private fun stillOnScreen(ativo: Boolean, leftover: Long = Motion.DEFAULT.toLong() + 80): Boolean {
     var presente by remember { mutableStateOf(ativo) }
     LaunchedEffect(ativo) {
         if (ativo) {
             presente = true
         } else {
-            delay(sobra)
+            delay(leftover)
             presente = false
         }
     }
@@ -328,13 +328,13 @@ private fun stillOnScreen(ativo: Boolean, sobra: Long = Motion.DEFAULT.toLong() 
  * Todo evento é consumido: o hub fica por cima de listas roláveis, e um arrasto
  * para cima que vazasse para o conteúdo rolaria a tela debaixo do leque.
  */
-private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.proximaMudanca(
+private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.nextChange(
     source: PointerInputChange,
 ): PointerInputChange? {
-    val evento = awaitPointerEvent()
-    val mudanca = evento.changes.firstOrNull { it.id == source.id } ?: return null
-    mudanca.consume()
-    return mudanca
+    val event = awaitPointerEvent()
+    val change = event.changes.firstOrNull { it.id == source.id } ?: return null
+    change.consume()
+    return change
 }
 
 /**
@@ -348,28 +348,28 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.pro
 private fun finish(
     capture: QuickCapture,
     target: GestureTarget,
-    soltou: Boolean,
-    haptico: HapticFeedback,
-    abrirTexto: () -> Unit,
+    released: Boolean,
+    haptic: HapticFeedback,
+    openText: () -> Unit,
 ) {
-    if (!soltou) return
+    if (!released) return
     when (target) {
-        is GestureTarget.Modo -> {
-            haptico.performHapticFeedback(HapticFeedbackType.LongPress)
+        is GestureTarget.Mode -> {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             when (target.format) {
-                CaptureFormat.TEXT -> abrirTexto()
-                CaptureFormat.PHOTO -> capture.tirarFoto()
+                CaptureFormat.TEXT -> openText()
+                CaptureFormat.PHOTO -> capture.takePhoto()
                 CaptureFormat.AUDIO ->
-                    if (capture.temPermissaoDeAudio) capture.gravarAudio()
-                    else capture.pedirPermissaoDeAudio()
+                    if (capture.hasAudioPermission) capture.recordAudio()
+                    else capture.requestAudioPermission()
             }
         }
         // O leque abriu por tempo e o dedo nunca saiu do `+`. Isso é um toque
         // devagar, não uma desistência: quem só encostou no botão fica com o
         // caminho do texto em vez de com um gesto que não fez nada.
-        GestureTarget.Origem -> abrirTexto()
+        GestureTarget.Origin -> openText()
         // Soltar fora fecha sem capturar nada e sem aviso.
-        GestureTarget.Fora -> Unit
+        GestureTarget.Outward -> Unit
     }
 }
 
@@ -419,37 +419,37 @@ private val ENTER_DELAY = mapOf(
  */
 @Composable
 private fun HubButton(
-    aberto: Boolean,
-    gravando: Boolean,
-    reduzido: Boolean,
+    activePair: Boolean,
+    isRecording: Boolean,
+    reduced: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
 
-    val fundo by animateColorAsState(
-        targetValue = if (aberto) Color.Transparent else cores.primary,
+    val background by animateColorAsState(
+        targetValue = if (activePair) Color.Transparent else colors.primary,
         animationSpec = tween(Motion.FAST),
         label = "fundoDoBotao",
     )
-    val contorno by animateColorAsState(
-        targetValue = if (aberto) Color.White.copy(alpha = 0.38f) else Color.Transparent,
+    val outline by animateColorAsState(
+        targetValue = if (activePair) Color.White.copy(alpha = 0.38f) else Color.Transparent,
         animationSpec = tween(Motion.FAST),
         label = "contornoDoBotao",
     )
     val tinta by animateColorAsState(
-        targetValue = if (aberto) Color.White.copy(alpha = 0.5f) else cores.onPrimary,
+        targetValue = if (activePair) Color.White.copy(alpha = 0.5f) else colors.onPrimary,
         animationSpec = tween(Motion.FAST),
         label = "tintaDoBotao",
     )
-    val escala = animateFloatAsState(
-        targetValue = if (aberto) 0.94f else 1f,
-        animationSpec = Motion.molaDeGesto(),
+    val scale = animateFloatAsState(
+        targetValue = if (activePair) 0.94f else 1f,
+        animationSpec = Motion.gestureSpring(),
         label = "escalaDoBotao",
     )
     // A sombra vale para o botão sólido. Sobre o véu ela não separa nada de nada
     // e só borra o contorno tracejado.
-    val sombra = animateFloatAsState(
-        targetValue = if (aberto) 0f else 1f,
+    val shadow = animateFloatAsState(
+        targetValue = if (activePair) 0f else 1f,
         animationSpec = tween(Motion.FAST),
         label = "sombraDoBotao",
     )
@@ -457,27 +457,27 @@ private fun HubButton(
     // Nada respira enquanto o leque está aberto nem por trás da tela de gravação:
     // uma animação infinita rodando debaixo de uma superfície opaca é bateria
     // gasta em quadro nenhum.
-    val emRepouso = !aberto && !gravando && !reduzido
+    val atRest = !activePair && !isRecording && !reduced
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
             .graphicsLayer {
-                scaleX = escala.value
-                scaleY = escala.value
-                shadowElevation = 10.dp.toPx() * sombra.value
+                scaleX = scale.value
+                scaleY = scale.value
+                shadowElevation = 10.dp.toPx() * shadow.value
                 shape = CircleShape
-                ambientShadowColor = cores.primary
-                spotShadowColor = cores.primary
+                ambientShadowColor = colors.primary
+                spotShadowColor = colors.primary
             }
             .size(BUTTON_DIAMETER)
-            .halo(ativo = emRepouso, cor = cores.primary)
-            .respiroDoHub(ativo = emRepouso)
-            .background(fundo, CircleShape)
-            .contornoCircularTracejado { contorno },
+            .halo(ativo = atRest, color = colors.primary)
+            .hubBreath(ativo = atRest)
+            .background(background, CircleShape)
+            .dashedCircleOutline { outline },
     ) {
         Icon(
-            imageVector = AppIcons.Mais,
+            imageVector = AppIcons.Plus,
             contentDescription = null,
             tint = tinta,
             modifier = Modifier.size(30.dp),
@@ -496,10 +496,10 @@ private fun HubButton(
  * só a fase de desenho é invalidada a cada quadro, em vez de o botão inteiro
  * recompor 60 vezes por segundo para desenhar um círculo.
  */
-private fun Modifier.halo(ativo: Boolean, cor: Color): Modifier = composed {
+private fun Modifier.halo(ativo: Boolean, color: Color): Modifier = composed {
     if (!ativo) return@composed this
-    val transicao = rememberInfiniteTransition(label = "halo")
-    val avanco = transicao.animateFloat(
+    val transition = rememberInfiniteTransition(label = "halo")
+    val advance = transition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
@@ -514,9 +514,9 @@ private fun Modifier.halo(ativo: Boolean, cor: Color): Modifier = composed {
         label = "avancoDoHalo",
     )
     drawBehind {
-        val f = avanco.value
+        val f = advance.value
         drawCircle(
-            color = cor,
+            color = color,
             radius = size.minDimension / 2f * (1f + 0.55f * f),
             alpha = 0.45f * (1f - f),
         )
@@ -524,10 +524,10 @@ private fun Modifier.halo(ativo: Boolean, cor: Color): Modifier = composed {
 }
 
 /** O respiro de 4,5% que acompanha o halo. */
-private fun Modifier.respiroDoHub(ativo: Boolean): Modifier = composed {
+private fun Modifier.hubBreath(ativo: Boolean): Modifier = composed {
     if (!ativo) return@composed this
-    val transicao = rememberInfiniteTransition(label = "respiro")
-    val escala = transicao.animateFloat(
+    val transition = rememberInfiniteTransition(label = "respiro")
+    val scale = transition.animateFloat(
         initialValue = 1f,
         targetValue = 1.045f,
         animationSpec = infiniteRepeatable(
@@ -537,22 +537,22 @@ private fun Modifier.respiroDoHub(ativo: Boolean): Modifier = composed {
         label = "escalaDoRespiro",
     )
     graphicsLayer {
-        scaleX = escala.value
-        scaleY = escala.value
+        scaleX = scale.value
+        scaleY = scale.value
     }
 }
 
 /** O contorno tracejado do `+` quando ele é origem e não botão. */
-private fun Modifier.contornoCircularTracejado(cor: () -> Color): Modifier = drawBehind {
-    val tinta = cor()
+private fun Modifier.dashedCircleOutline(color: () -> Color): Modifier = drawBehind {
+    val tinta = color()
     if (tinta.alpha < 0.01f) return@drawBehind
-    val traco = 1.6.dp.toPx()
+    val line = 1.6.dp.toPx()
     drawCircle(
         color = tinta,
-        radius = size.minDimension / 2f - traco / 2f,
+        radius = size.minDimension / 2f - line / 2f,
         style = Stroke(
-            width = traco,
-            pathEffect = PathEffect.dashPathEffect(floatArrayOf(traco * 4.5f, traco * 3.5f)),
+            width = line,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(line * 4.5f, line * 3.5f)),
         ),
     )
 }
@@ -578,31 +578,31 @@ private val HIGHLIGHT_GROWTH =
 @Composable
 private fun FanTarget(
     format: CaptureFormat,
-    marcado: Boolean,
-    visivel: Boolean,
-    atraso: Long,
-    reduzido: Boolean,
+    marked: Boolean,
+    isVisible: Boolean,
+    delay: Long,
+    reduced: Boolean,
 ) {
-    val paleta = formatColors(format)
-    val destino: DpOffset = offsetOf(format)
+    val palette = formatColors(format)
+    val destination: DpOffset = offsetOf(format)
 
-    val avanco = remember { Animatable(0f) }
-    LaunchedEffect(visivel) {
-        if (visivel) {
-            if (atraso > 0 && !reduzido) delay(atraso)
-            avanco.animateTo(1f, Motion.molaDeGesto())
+    val advance = remember { Animatable(0f) }
+    LaunchedEffect(isVisible) {
+        if (isVisible) {
+            if (delay > 0 && !reduced) delay(delay)
+            advance.animateTo(1f, Motion.gestureSpring())
         } else {
-            avanco.animateTo(0f, tween(100, easing = FastOutSlowInEasing))
+            advance.animateTo(0f, tween(100, easing = FastOutSlowInEasing))
         }
     }
 
-    val realce = animateFloatAsState(
-        targetValue = if (marcado) 1f else 0f,
+    val emphasis = animateFloatAsState(
+        targetValue = if (marked) 1f else 0f,
         animationSpec = tween(TARGET_HIGHLIGHT_MS, easing = LinearOutSlowInEasing),
         label = "realceDoAlvo",
     )
     val tinta by animateColorAsState(
-        targetValue = if (marcado) Color.White else paleta.cor,
+        targetValue = if (marked) Color.White else palette.color,
         animationSpec = tween(TARGET_HIGHLIGHT_MS),
         label = "tintaDoAlvo",
     )
@@ -617,23 +617,23 @@ private fun FanTarget(
         modifier = Modifier
             .requiredSize(TARGET_DIAMETER)
             .graphicsLayer {
-                val f = avanco.value
-                translationX = destino.x.toPx() * f
-                translationY = destino.y.toPx() * f
+                val f = advance.value
+                translationX = destination.x.toPx() * f
+                translationY = destination.y.toPx() * f
                 alpha = f.coerceIn(0f, 1f)
-                val crescimento = (0.62f + 0.38f * f) * (1f + HIGHLIGHT_GROWTH * realce.value)
-                scaleX = crescimento
-                scaleY = crescimento
+                val growth = (0.62f + 0.38f * f) * (1f + HIGHLIGHT_GROWTH * emphasis.value)
+                scaleX = growth
+                scaleY = growth
             }
             .drawBehind {
-                val r = realce.value
-                val raio = size.minDimension / 2f
+                val r = emphasis.value
+                val radius = size.minDimension / 2f
                 // O anel fica por fora do disco: confirma a escolha sem disputar
                 // espaço com o ícone que está sendo apontado.
                 if (r > 0.01f) {
-                    drawCircle(color = paleta.cor, radius = raio + 7.dp.toPx() * r, alpha = 0.26f * r)
+                    drawCircle(color = palette.color, radius = radius + 7.dp.toPx() * r, alpha = 0.26f * r)
                 }
-                drawCircle(color = lerp(paleta.fundo, paleta.cor, r), radius = raio)
+                drawCircle(color = lerp(palette.background, palette.color, r), radius = radius)
             },
     ) {
         Icon(
@@ -646,13 +646,13 @@ private fun FanTarget(
             text = formatLabel(format),
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
-            fontWeight = if (marcado) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = if (marked) FontWeight.Bold else FontWeight.Medium,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .requiredWidth(112.dp)
                 .offset(y = TARGET_DIAMETER + 9.dp)
-                .graphicsLayer { alpha = 0.78f + 0.22f * realce.value },
+                .graphicsLayer { alpha = 0.78f + 0.22f * emphasis.value },
         )
     }
 }
@@ -673,43 +673,43 @@ private val GUIDE_STUB = 46.dp
  * troca de alvo com a mesma mola dos discos, sem recompor ninguém.
  */
 @Composable
-private fun GuideToTarget(target: GestureTarget, aberto: Boolean) {
-    val densidade = LocalDensity.current
-    val marcado = (target as? GestureTarget.Modo)?.format
-    val destino = with(densidade) {
-        val ponto = marcado?.let(::offsetOf) ?: DpOffset(0.dp, -(ORIGIN_RADIUS + GUIDE_STUB))
-        Offset(ponto.x.toPx(), ponto.y.toPx())
+private fun GuideToTarget(target: GestureTarget, activePair: Boolean) {
+    val density = LocalDensity.current
+    val marked = (target as? GestureTarget.Mode)?.format
+    val destination = with(density) {
+        val point = marked?.let(::offsetOf) ?: DpOffset(0.dp, -(ORIGIN_RADIUS + GUIDE_STUB))
+        Offset(point.x.toPx(), point.y.toPx())
     }
 
-    val ponta = remember { Animatable(destino, Offset.VectorConverter) }
-    LaunchedEffect(destino) { ponta.animateTo(destino, Motion.molaDeGesto()) }
+    val tip = remember { Animatable(destination, Offset.VectorConverter) }
+    LaunchedEffect(destination) { tip.animateTo(destination, Motion.gestureSpring()) }
 
-    val presenca = animateFloatAsState(
-        targetValue = if (aberto) 1f else 0f,
+    val presence = animateFloatAsState(
+        targetValue = if (activePair) 1f else 0f,
         animationSpec = tween(Motion.FAST),
         label = "guia",
     )
-    val realce = animateFloatAsState(
-        targetValue = if (marcado != null) 1f else 0f,
+    val emphasis = animateFloatAsState(
+        targetValue = if (marked != null) 1f else 0f,
         animationSpec = tween(TARGET_HIGHLIGHT_MS),
         label = "realceDaGuia",
     )
 
     Box(
         Modifier.requiredSize(1.dp).drawBehind {
-            val forca = presenca.value
-            if (forca < 0.01f) return@drawBehind
-            val end = ponta.value
-            val distancia = end.getDistance()
-            if (distancia < 1f) return@drawBehind
-            val start = end * (ORIGIN_RADIUS.toPx() / distancia)
+            val strength = presence.value
+            if (strength < 0.01f) return@drawBehind
+            val end = tip.value
+            val distance = end.getDistance()
+            if (distance < 1f) return@drawBehind
+            val start = end * (ORIGIN_RADIUS.toPx() / distance)
             drawLine(
                 color = Color.White,
                 start = center + start,
-                end = center + end * forca,
+                end = center + end * strength,
                 strokeWidth = 2.5.dp.toPx(),
                 cap = StrokeCap.Round,
-                alpha = (0.26f + 0.18f * realce.value) * forca,
+                alpha = (0.26f + 0.18f * emphasis.value) * strength,
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(5.dp.toPx(), 7.dp.toPx())),
             )
         },
@@ -725,21 +725,21 @@ private fun GuideToTarget(target: GestureTarget, aberto: Boolean) {
  * É o que ensina o leque na primeira vez sem ninguém explicar.
  */
 @Composable
-private fun GestureHint(target: GestureTarget, aberto: Boolean) {
-    val marcado = (target as? GestureTarget.Modo)?.format
-    val text = when (marcado) {
+private fun GestureHint(target: GestureTarget, activePair: Boolean) {
+    val marked = (target as? GestureTarget.Mode)?.format
+    val text = when (marked) {
         CaptureFormat.TEXT -> "solte para escrever"
         CaptureFormat.AUDIO -> "solte para gravar"
         CaptureFormat.PHOTO -> "solte para fotografar"
         null -> "arraste e solte no alvo"
     }
-    val fundo by animateColorAsState(
-        targetValue = marcado?.let { formatColors(it).cor } ?: NIGHT.copy(alpha = 0.82f),
+    val background by animateColorAsState(
+        targetValue = marked?.let { formatColors(it).color } ?: NIGHT.copy(alpha = 0.82f),
         animationSpec = tween(TARGET_HIGHLIGHT_MS),
         label = "fundoDaDica",
     )
-    val presenca = animateFloatAsState(
-        targetValue = if (aberto) 1f else 0f,
+    val presence = animateFloatAsState(
+        targetValue = if (activePair) 1f else 0f,
         animationSpec = tween(Motion.FAST),
         label = "dica",
     )
@@ -748,18 +748,18 @@ private fun GestureHint(target: GestureTarget, aberto: Boolean) {
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .offset(y = (-238).dp)
-            .graphicsLayer { alpha = presenca.value }
+            .graphicsLayer { alpha = presence.value }
             // A frase troca de tamanho junto com o alvo: sem isto a pílula daria
             // um salto de largura a cada vez que o dedo entra num disco.
             .animateContentSize(tween(TARGET_HIGHLIGHT_MS, easing = LinearOutSlowInEasing))
-            .background(fundo, CircleShape)
+            .background(background, CircleShape)
             .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
-            fontWeight = if (marcado != null) FontWeight.Bold else FontWeight.Medium,
+            fontWeight = if (marked != null) FontWeight.Bold else FontWeight.Medium,
         )
     }
 }

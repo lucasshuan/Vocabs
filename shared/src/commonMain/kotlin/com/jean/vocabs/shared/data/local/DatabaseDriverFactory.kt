@@ -11,5 +11,5 @@ import app.cash.sqldelight.db.SqlDriver
  * injetarem um driver em memória sem precisar de emulador.
  */
 fun interface DatabaseDriverFactory {
-    fun criar(): SqlDriver
+    fun create(): SqlDriver
 }

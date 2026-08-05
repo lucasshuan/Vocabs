@@ -94,29 +94,29 @@ class ProgressTextsTest {
 
     @Test
     fun `an event with no review number loses the ordinal but keeps the outcome`() {
-        assertEquals("revisão certa", eventDescription(evento(EventType.CORRECT, detail = null)))
-        assertEquals("revisão errada", eventDescription(evento(EventType.INCORRECT, detail = "not-a-number")))
+        assertEquals("revisão certa", eventDescription(event(EventType.CORRECT, detail = null)))
+        assertEquals("revisão errada", eventDescription(event(EventType.INCORRECT, detail = "not-a-number")))
     }
 
     @Test
     fun `an event with a number gets the feminine ordinal`() {
-        assertEquals("2ª revisão certa", eventDescription(evento(EventType.CORRECT, detail = "2")))
-        assertEquals("3ª revisão errada", eventDescription(evento(EventType.INCORRECT, detail = "3")))
+        assertEquals("2ª revisão certa", eventDescription(event(EventType.CORRECT, detail = "2")))
+        assertEquals("3ª revisão errada", eventDescription(event(EventType.INCORRECT, detail = "3")))
     }
 
     @Test
     fun `levelling up repeats the level label, and an unknown one falls back`() {
-        assertEquals("virou dominada", eventDescription(evento(EventType.LEVELED_UP, detail = "MASTERED")))
-        assertEquals("virou aprendendo", eventDescription(evento(EventType.LEVELED_UP, detail = "SEPIA")))
+        assertEquals("virou dominada", eventDescription(event(EventType.LEVELED_UP, detail = "MASTERED")))
+        assertEquals("virou aprendendo", eventDescription(event(EventType.LEVELED_UP, detail = "SEPIA")))
     }
 
     @Test
     fun `capture and card-ready have no variants`() {
-        assertEquals("capturada", eventDescription(evento(EventType.CAPTURED, detail = null)))
-        assertEquals("ficha pronta", eventDescription(evento(EventType.CARD_READY, detail = null)))
+        assertEquals("capturada", eventDescription(event(EventType.CAPTURED, detail = null)))
+        assertEquals("ficha pronta", eventDescription(event(EventType.CARD_READY, detail = null)))
     }
 
-    private fun evento(type: EventType, detail: String?) = Event(
+    private fun event(type: EventType, detail: String?) = Event(
         id = 1L,
         entryId = 1L,
         day = 2_460_000L,

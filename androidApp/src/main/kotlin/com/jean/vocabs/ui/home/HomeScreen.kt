@@ -49,7 +49,7 @@ import com.jean.vocabs.ui.components.ProgressRing
 import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.animatedCount
-import com.jean.vocabs.ui.components.entradaSuave
+import com.jean.vocabs.ui.components.smoothEntrance
 import com.jean.vocabs.ui.components.timeUntil
 import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
@@ -67,36 +67,36 @@ import com.jean.vocabs.ui.languages.languageOf
  */
 @Composable
 fun HomeScreen(
-    aoCapturar: () -> Unit,
-    aoRevisar: () -> Unit,
-    aoAbrirPerfil: () -> Unit,
-    aoAdicionarIdioma: () -> Unit,
+    onCapture: () -> Unit,
+    onReview: () -> Unit,
+    onOpenProfile: () -> Unit,
+    onAddLanguage: () -> Unit,
     vm: HomeViewModel = viewModel(),
 ) {
-    val estado by vm.estado.collectAsStateWithLifecycle()
-    val paginas = estado.paginas
-    val pager = rememberPagerState(pageCount = { paginas.size })
+    val state by vm.state.collectAsStateWithLifecycle()
+    val pages = state.pages
+    val pager = rememberPagerState(pageCount = { pages.size })
 
     // Duas direções, e a ordem entre elas importa. O pager nasce na página 0, que
     // quase nunca é o curso aberto — deixá-lo mandar antes de estar posicionado
     // faria abrir o app no inglês trocar o curso para o inglês, em silêncio.
     // Por isso ele só passa a mandar depois do primeiro posicionamento.
-    var posicionado by remember { mutableStateOf(false) }
+    var positioned by remember { mutableStateOf(false) }
 
-    LaunchedEffect(paginas.size, estado.ativo) {
-        if (paginas.isEmpty()) return@LaunchedEffect
-        if (!posicionado) {
-            pager.scrollToPage(estado.indiceAtivo)
-            posicionado = true
-        } else if (estado.indiceAtivo != pager.currentPage && !pager.isScrollInProgress) {
-            pager.animateScrollToPage(estado.indiceAtivo)
+    LaunchedEffect(pages.size, state.ativo) {
+        if (pages.isEmpty()) return@LaunchedEffect
+        if (!positioned) {
+            pager.scrollToPage(state.activeIndex)
+            positioned = true
+        } else if (state.activeIndex != pager.currentPage && !pager.isScrollInProgress) {
+            pager.animateScrollToPage(state.activeIndex)
         }
     }
 
-    LaunchedEffect(posicionado) {
-        if (!posicionado) return@LaunchedEffect
+    LaunchedEffect(positioned) {
+        if (!positioned) return@LaunchedEffect
         snapshotFlow { pager.settledPage }.collect { index ->
-            paginas.getOrNull(index)?.let { vm.openCourse(it.languagePair.target) }
+            pages.getOrNull(index)?.let { vm.openCourse(it.languagePair.target) }
         }
     }
 
@@ -108,10 +108,10 @@ fun HomeScreen(
             Image(painterResource(R.drawable.logo_vocabu), stringResource(R.string.logo_description), Modifier.size(34.dp))
             Text("Vocabu", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 9.dp))
             Spacer(Modifier.weight(1f))
-            Surface(onClick = aoAbrirPerfil, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
+            Surface(onClick = onOpenProfile, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(34.dp)) {
                     Icon(
-                        imageVector = AppIcons.Pessoa,
+                        imageVector = AppIcons.Person,
                         contentDescription = "Você",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
@@ -120,12 +120,12 @@ fun HomeScreen(
             }
         }
 
-        if (estado.temCarrossel) {
+        if (state.hasCarousel) {
             LanguageStrip(
-                courses = estado.courses,
-                ativo = estado.ativo,
-                aoEscolher = vm::openCourse,
-                aoAdicionar = aoAdicionarIdioma,
+                courses = state.courses,
+                ativo = state.ativo,
+                onChoose = vm::openCourse,
+                onAdd = onAddLanguage,
                 modifier = Modifier.padding(bottom = 14.dp),
             )
         }
@@ -135,11 +135,11 @@ fun HomeScreen(
             beyondViewportPageCount = 1,
             modifier = Modifier.weight(1f),
         ) { index ->
-            paginas.getOrNull(index)?.let { pagina ->
+            pages.getOrNull(index)?.let { page ->
                 CoursePage(
-                    pagina = pagina,
-                    aoRevisar = aoRevisar,
-                    aoCapturar = aoCapturar,
+                    page = page,
+                    onReview = onReview,
+                    onCapture = onCapture,
                 )
             }
         }
@@ -148,7 +148,7 @@ fun HomeScreen(
         // página nem a nenhum cartão, e ficam no mesmo lugar não importa o que
         // muda acima.
         PageDots(
-            total = paginas.size,
+            total = pages.size,
             current = pager.currentPage,
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 10.dp),
         )
@@ -158,12 +158,12 @@ fun HomeScreen(
 
 @Composable
 private fun CoursePage(
-    pagina: HomePage,
-    aoRevisar: () -> Unit,
-    aoCapturar: () -> Unit,
+    page: HomePage,
+    onReview: () -> Unit,
+    onCapture: () -> Unit,
 ) {
-    val language = languageOf(pagina.languagePair.target)
-    val resumo = pagina.resumo
+    val language = languageOf(page.languagePair.target)
+    val summary = page.summary
 
     Column(
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -173,16 +173,16 @@ private fun CoursePage(
             .padding(horizontal = 20.dp),
     ) {
         ScreenCard(
-            forma = MaterialTheme.shapes.extraLarge,
-            recheio = PaddingValues(18.dp),
+            shape = MaterialTheme.shapes.extraLarge,
+            filling = PaddingValues(18.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                CourseRing(pagina)
+                CourseRing(page)
                 Column(Modifier.weight(1f).padding(start = 15.dp)) {
                     Text("Seu ${language.displayName.lowercase()}", style = MaterialTheme.typography.titleLarge)
                     Text(
-                        text = courseDetail(resumo.total, resumo.mastered, resumo.inQueue),
+                        text = courseDetail(summary.total, summary.mastered, summary.inQueue),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -190,14 +190,14 @@ private fun CoursePage(
                 }
             }
 
-            if (resumo.inQueue > 0) {
+            if (summary.inQueue > 0) {
                 PrimaryButton(
-                    text = "Revisar ${resumo.inQueue} ${if (resumo.inQueue == 1) "word" else "words"}",
-                    aoClicar = aoRevisar,
+                    text = "Revisar ${summary.inQueue} ${if (summary.inQueue == 1) "word" else "words"}",
+                    onClick = onReview,
                     modifier = Modifier.padding(top = 15.dp),
                 )
             } else {
-                UpNextRow(pagina, Modifier.padding(top = 15.dp))
+                UpNextRow(page, Modifier.padding(top = 15.dp))
             }
         }
 
@@ -207,11 +207,11 @@ private fun CoursePage(
         // capturas parecerem um histórico velho em vez do que aconteceu hoje.
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
             SectionLabel("Capturadas hoje em ${language.displayName.lowercase()}")
-            if (pagina.capturadasHoje.isEmpty()) {
-                CaptureInvite(language.displayName.lowercase(), aoCapturar)
+            if (page.capturedToday.isEmpty()) {
+                CaptureInvite(language.displayName.lowercase(), onCapture)
             } else {
-                pagina.capturadasHoje.forEachIndexed { index, entry ->
-                    CapturedRow(entry, Modifier.entradaSuave(index))
+                page.capturedToday.forEachIndexed { index, entry ->
+                    CapturedRow(entry, Modifier.smoothEntrance(index))
                 }
             }
         }
@@ -227,57 +227,57 @@ private fun CoursePage(
  * confirmação de que o selo lá em cima não estava falando de outra coisa.
  */
 @Composable
-private fun CourseRing(pagina: HomePage) {
-    val cores = MaterialTheme.colorScheme
-    val emDia = pagina.resumo.inQueue == 0 && pagina.resumo.total > 0
+private fun CourseRing(page: HomePage) {
+    val colors = MaterialTheme.colorScheme
+    val upToDate = page.summary.inQueue == 0 && page.summary.total > 0
     ProgressRing(
-        fraction = if (emDia) 1f else pagina.forcaMedia / 100f,
-        tamanho = 70.dp,
-        espessura = 8.dp,
+        fraction = if (upToDate) 1f else page.averageStrength / 100f,
+        size = 70.dp,
+        thickness = 8.dp,
     ) {
-        if (emDia) {
-            Icon(AppIcons.Check, null, tint = cores.tertiary, modifier = Modifier.size(26.dp))
+        if (upToDate) {
+            Icon(AppIcons.Check, null, tint = colors.tertiary, modifier = Modifier.size(26.dp))
         } else {
             // A porcentagem sobe no mesmo tempo em que o arco corre: os dois são
             // a mesma medida, e vê-los chegarem juntos é o que impede o anel de
             // parecer decoração ao redor de um número.
-            Text("${animatedCount(pagina.forcaMedia, "forcaMedia")}%", style = MaterialTheme.typography.headlineSmall)
+            Text("${animatedCount(page.averageStrength, "averageStrength")}%", style = MaterialTheme.typography.headlineSmall)
         }
     }
 }
 
 /** "Próximas 5 em 19h · nada a fazer hoje" — o cartão de um curso sem fila. */
 @Composable
-private fun UpNextRow(pagina: HomePage, modifier: Modifier = Modifier) {
-    val cores = MaterialTheme.colorScheme
-    val proxima = pagina.resumo.nextInMillis
+private fun UpNextRow(page: HomePage, modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    val next = page.summary.nextInMillis
     ScreenCard(
-        forma = MaterialTheme.shapes.medium,
-        cor = cores.surfaceVariant,
-        recheio = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = colors.surfaceVariant,
+        filling = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconDisc(
-                icon = if (proxima == null) AppIcons.Mais else AppIcons.Relogio,
-                descricao = null,
-                cor = cores.onSurfaceVariant,
-                fundo = cores.surface,
-                tamanho = 34.dp,
+                icon = if (next == null) AppIcons.Plus else AppIcons.Clock,
+                contentDescription = null,
+                color = colors.onSurfaceVariant,
+                background = colors.surface,
+                size = 34.dp,
             )
             Column(Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(
                     text = when {
-                        proxima == null -> "Nada agendado ainda"
-                        pagina.proximasEm24h > 1 -> "Próximas ${pagina.proximasEm24h} ${timeUntil(proxima)}"
-                        else -> "Próxima ${timeUntil(proxima)}"
+                        next == null -> "Nada agendado ainda"
+                        page.nextIn24h > 1 -> "Próximas ${page.nextIn24h} ${timeUntil(next)}"
+                        else -> "Próxima ${timeUntil(next)}"
                     },
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    text = if (proxima == null) "capture algo para começar" else "nada a fazer hoje",
+                    text = if (next == null) "capture algo para começar" else "nada a fazer hoje",
                     style = MaterialTheme.typography.bodySmall,
-                    color = cores.onSurfaceVariant,
+                    color = colors.onSurfaceVariant,
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }
@@ -288,8 +288,8 @@ private fun UpNextRow(pagina: HomePage, modifier: Modifier = Modifier) {
 @Composable
 private fun CapturedRow(entry: Entry, modifier: Modifier = Modifier) {
     ScreenCard(
-        forma = MaterialTheme.shapes.small,
-        recheio = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
+        shape = MaterialTheme.shapes.small,
+        filling = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -305,11 +305,11 @@ private fun CapturedRow(entry: Entry, modifier: Modifier = Modifier) {
 
 /** Dia sem captura vira convite, e não tela vazia — o custo de capturar é o ponto do app. */
 @Composable
-private fun CaptureInvite(language: String, aoClicar: () -> Unit) {
+private fun CaptureInvite(language: String, onClick: () -> Unit) {
     DashedBox(
         modifier = Modifier.fillMaxWidth(),
-        recheio = PaddingValues(18.dp),
-        aoClicar = aoClicar,
+        filling = PaddingValues(18.dp),
+        onClick = onClick,
     ) {
         Text(
             text = "Nada ainda. Ouviu alguma coisa hoje que valia guardar?",
@@ -318,21 +318,21 @@ private fun CaptureInvite(language: String, aoClicar: () -> Unit) {
         )
         PrimaryButton(
             text = "Capturar em $language",
-            aoClicar = aoClicar,
+            onClick = onClick,
             modifier = Modifier.padding(top = 12.dp),
         )
     }
 }
 
 private fun courseDetail(total: Int, mastered: Int, inQueue: Int): String {
-    val estoque = if (total == 0) "nenhuma ficha ainda" else "$total ${if (total == 1) "card" else "cards"} · $mastered ${if (mastered == 1) "dominada" else "mastered"}"
-    val fila = when {
+    val stock = if (total == 0) "nenhuma ficha ainda" else "$total ${if (total == 1) "card" else "cards"} · $mastered ${if (mastered == 1) "dominada" else "mastered"}"
+    val queue = when {
         total == 0 -> "capture a primeira"
         inQueue == 0 -> "nada esfriou hoje"
         inQueue == 1 -> "1 esfriou hoje"
         else -> "$inQueue esfriaram hoje"
     }
-    return "$estoque\n$fila"
+    return "$stock\n$queue"
 }
 
 /** A barra de baixo mais o vão do botão de captura, que passa dela para cima. */

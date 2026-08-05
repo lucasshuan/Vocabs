@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
-enum class MemoryFilter(val rotulo: String) { TODAS("Todas"), APRENDENDO("Aprendendo"), FAMILIAR("Familiar"), DOMINADA("Dominada") }
+enum class MemoryFilter(val label: String) { ALL("Todas"), LEARNING("Aprendendo"), FAMILIAR("Familiar"), MASTERED("Dominada") }
 
 /**
  * Um idioma como cabeçalho, e não como filtro.
@@ -29,20 +29,20 @@ data class LanguageGroup(
     val entries: List<Entry>,
     val total: Int,
     val inQueue: Int,
-    val recolhido: Boolean,
+    val isCollapsed: Boolean,
 ) {
-    val vazioPorFiltro: Boolean get() = total > 0 && entries.isEmpty()
+    val emptyByFilter: Boolean get() = total > 0 && entries.isEmpty()
 }
 
 data class WordsState(
-    val grupos: List<LanguageGroup> = emptyList(),
-    val filtro: MemoryFilter = MemoryFilter.TODAS,
-    val busca: String = "",
+    val groups: List<LanguageGroup> = emptyList(),
+    val filter: MemoryFilter = MemoryFilter.ALL,
+    val query: String = "",
     val total: Int = 0,
     val mastered: Int = 0,
-    val carregado: Boolean = false,
+    val loaded: Boolean = false,
 ) {
-    val encontradas: Int get() = grupos.sumOf { it.entries.size }
+    val matches: Int get() = groups.sumOf { it.entries.size }
 }
 
 /**
@@ -57,63 +57,63 @@ data class WordsState(
 class WordsViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
     private val preferences = AppContainer.preferences(app)
-    private val filtro = MutableStateFlow(MemoryFilter.TODAS)
-    private val busca = MutableStateFlow("")
+    private val filter = MutableStateFlow(MemoryFilter.ALL)
+    private val query = MutableStateFlow("")
 
     /** Em duas etapas: `combine` só tem sobrecarga tipada até cinco fluxos. */
-    private val recorte = combine(filtro, busca, ::Pair)
+    private val crop = combine(filter, query, ::Pair)
 
-    val estado: StateFlow<WordsState> = combine(
+    val state: StateFlow<WordsState> = combine(
         repository.observeReady(Scope.All),
         preferences.observeCourses(),
         preferences.observeLanguagePair(),
         preferences.observeCollapsedGroups(),
-        recorte,
-    ) { prontas, matriculados, languagePair, recolhidos, (filtroAtual, termo) ->
+        crop,
+    ) { readyEntries, enrolled, languagePair, collapsed, (currentFilter, term) ->
         val now = System.currentTimeMillis()
-        val wanted = termo.normalizado()
-        val porCurso = prontas.groupBy { it.languagePair.target }
+        val wanted = term.normalizado()
+        val byCourse = readyEntries.groupBy { it.languagePair.target }
 
         WordsState(
             // A ordem é a da matrícula, e não a da quantidade de fichas: é a mesma
             // ordem da faixa da Início, e trocá-la aqui faria as duas telas
             // discordarem sobre onde fica o francês.
-            grupos = matriculados.map { target ->
-                val doCurso = porCurso[target].orEmpty()
+            groups = enrolled.map { target ->
+                val ofCourse = byCourse[target].orEmpty()
                 LanguageGroup(
                     languagePair = LanguagePair(native = languagePair.native, target = target),
-                    entries = doCurso.filter { cabe(it, filtroAtual, wanted, now) },
-                    total = doCurso.size,
-                    inQueue = doCurso.count { it.needsReview(now) },
-                    recolhido = target in recolhidos,
+                    entries = ofCourse.filter { cabe(it, currentFilter, wanted, now) },
+                    total = ofCourse.size,
+                    inQueue = ofCourse.count { it.needsReview(now) },
+                    isCollapsed = target in collapsed,
                 )
             },
-            filtro = filtroAtual,
-            busca = termo,
-            total = prontas.size,
-            mastered = prontas.count { Steps.level(it.step) == MemoryLevel.MASTERED },
-            carregado = true,
+            filter = currentFilter,
+            query = term,
+            total = readyEntries.size,
+            mastered = readyEntries.count { Steps.level(it.step) == MemoryLevel.MASTERED },
+            loaded = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WordsState())
 
-    private fun cabe(entry: Entry, filtro: MemoryFilter, wanted: String, now: Long): Boolean {
+    private fun cabe(entry: Entry, filter: MemoryFilter, wanted: String, now: Long): Boolean {
         val level = entry.retention?.levelAt(now) ?: MemoryLevel.NEW
-        val bateNivel = when (filtro) {
-            MemoryFilter.TODAS -> true
-            MemoryFilter.APRENDENDO -> level == MemoryLevel.NEW || level == MemoryLevel.LEARNING
+        val matchesLevel = when (filter) {
+            MemoryFilter.ALL -> true
+            MemoryFilter.LEARNING -> level == MemoryLevel.NEW || level == MemoryLevel.LEARNING
             MemoryFilter.FAMILIAR -> level == MemoryLevel.FAMILIAR
-            MemoryFilter.DOMINADA -> level == MemoryLevel.MASTERED
+            MemoryFilter.MASTERED -> level == MemoryLevel.MASTERED
         }
-        val bateBusca = wanted.isBlank() ||
+        val matchesSearch = wanted.isBlank() ||
             entry.target.orEmpty().normalizado().contains(wanted) ||
             entry.card?.translation.orEmpty().normalizado().contains(wanted)
-        return bateNivel && bateBusca
+        return matchesLevel && matchesSearch
     }
 
-    fun filtrar(novo: MemoryFilter) { filtro.value = novo }
-    fun buscar(text: String) { busca.value = text }
+    fun filter(new: MemoryFilter) { filter.value = new }
+    fun search(text: String) { query.value = text }
     fun toggleGroup(target: String) = preferences.toggleGroup(target)
 }
 
-private val espacos = Regex("\\s+")
-private fun String.normalizado() = trim().lowercase().replace(espacos, " ")
+private val spaces = Regex("\\s+")
+private fun String.normalizado() = trim().lowercase().replace(spaces, " ")

@@ -63,8 +63,8 @@ import com.jean.vocabs.ui.components.WeekStrip
 import com.jean.vocabs.ui.components.animatedCount
 import com.jean.vocabs.ui.components.animatedFraction
 import com.jean.vocabs.ui.components.cardOutline
-import com.jean.vocabs.ui.components.contornoTracejado
-import com.jean.vocabs.ui.components.encolheAoTocar
+import com.jean.vocabs.ui.components.dashedOutline
+import com.jean.vocabs.ui.components.shrinkOnTouch
 import com.jean.vocabs.ui.components.rememberHaptics
 import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
@@ -93,43 +93,43 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProgressScreen(
     target: String?,
-    aoVoltar: () -> Unit,
-    aoAbrirDiaADia: (String) -> Unit,
-    aoAbrirOQueFalta: (String) -> Unit,
-    aoAdicionarIdioma: () -> Unit,
+    onBack: () -> Unit,
+    onOpenDayByDay: (String) -> Unit,
+    onOpenWhatsLeft: (String) -> Unit,
+    onAddLanguage: () -> Unit,
     vm: ProgressViewModel = viewModel(),
 ) {
-    LaunchedEffect(target) { vm.abrir(target) }
-    val estado by vm.estado.collectAsStateWithLifecycle()
+    LaunchedEffect(target) { vm.open(target) }
+    val state by vm.state.collectAsStateWithLifecycle()
     val courses by vm.courses.collectAsStateWithLifecycle()
-    val podeRemover by vm.podeRemover.collectAsStateWithLifecycle()
-    val cores = MaterialTheme.colorScheme
+    val canRemove by vm.canRemove.collectAsStateWithLifecycle()
+    val colors = MaterialTheme.colorScheme
     val scope = rememberCoroutineScope()
-    var confirmarRemocao by remember { mutableStateOf(false) }
-    var gavetaAberta by remember { mutableStateOf(false) }
-    val estadoDaGaveta = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var confirmRemoval by remember { mutableStateOf(false) }
+    var drawerOpen by remember { mutableStateOf(false) }
+    val drawerState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     /** O curso olhado agora — o da rota, o escolhido na gaveta, ou o aberto. */
-    val olhado = estado.languagePair.target
-    val vazio = estado.total == 0
+    val viewed = state.languagePair.target
+    val empty = state.total == 0
 
-    fun fecharGaveta() {
-        scope.launch { estadoDaGaveta.hide() }.invokeOnCompletion { gavetaAberta = false }
+    fun closeDrawer() {
+        scope.launch { drawerState.hide() }.invokeOnCompletion { drawerOpen = false }
     }
 
-    if (confirmarRemocao) {
+    if (confirmRemoval) {
         AlertDialog(
-            onDismissRequest = { confirmarRemocao = false },
-            title = { Text("Sair do ${languageOf(olhado).displayName.lowercase()}?") },
+            onDismissRequest = { confirmRemoval = false },
+            title = { Text("Sair do ${languageOf(viewed).displayName.lowercase()}?") },
             text = { Text("As fichas continuam guardadas — o idioma volta com tudo se você matricular de novo.") },
             confirmButton = {
                 TextButton(onClick = {
-                    confirmarRemocao = false
-                    vm.removerCurso(olhado)
-                    aoVoltar()
-                }) { Text("Remover", color = cores.error) }
+                    confirmRemoval = false
+                    vm.removeCourse(viewed)
+                    onBack()
+                }) { Text("Remover", color = colors.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmarRemocao = false }) { Text("Manter") } },
+            dismissButton = { TextButton(onClick = { confirmRemoval = false }) { Text("Manter") } },
         )
     }
 
@@ -141,36 +141,36 @@ fun ProgressScreen(
             .statusBarsPadding()
             .padding(horizontal = 20.dp),
     ) {
-        InnerHeader("Seu progresso", aoVoltar, Modifier.padding(top = 8.dp)) {
-            CoursePill(target = olhado, aberta = gavetaAberta, aoClicar = { gavetaAberta = true })
+        InnerHeader("Seu progresso", onBack, Modifier.padding(top = 8.dp)) {
+            CoursePill(target = viewed, opened = drawerOpen, onClick = { drawerOpen = true })
         }
 
-        WeekCard(estado = estado, vazio = vazio, aoAbrir = { aoAbrirDiaADia(olhado) })
+        WeekCard(state = state, empty = empty, onOpen = { onOpenDayByDay(viewed) })
 
-        StockCard(estado = estado, vazio = vazio, aoAbrir = { aoAbrirOQueFalta(olhado) })
+        StockCard(state = state, empty = empty, onOpen = { onOpenWhatsLeft(viewed) })
 
-        if (podeRemover) {
+        if (canRemove) {
             SecondaryAction(
-                text = "Remover o ${languageOf(olhado).displayName.lowercase()} da faixa",
-                aoClicar = { confirmarRemocao = true },
+                text = "Remover o ${languageOf(viewed).displayName.lowercase()} da faixa",
+                onClick = { confirmRemoval = true },
             )
         }
 
         Spacer(Modifier.navigationBarsPadding().height(110.dp))
     }
 
-    if (gavetaAberta) {
-        ModalBottomSheet(onDismissRequest = { gavetaAberta = false }, sheetState = estadoDaGaveta) {
+    if (drawerOpen) {
+        ModalBottomSheet(onDismissRequest = { drawerOpen = false }, sheetState = drawerState) {
             CourseDrawer(
                 courses = courses,
-                olhado = olhado,
-                aoEscolher = {
-                    vm.abrir(it)
-                    fecharGaveta()
+                viewed = viewed,
+                onChoose = {
+                    vm.open(it)
+                    closeDrawer()
                 },
-                aoAdicionar = {
-                    fecharGaveta()
-                    aoAdicionarIdioma()
+                onAdd = {
+                    closeDrawer()
+                    onAddLanguage()
                 },
             )
         }
@@ -185,89 +185,89 @@ fun ProgressScreen(
  * meta à parte, e ela é só o dia de hoje da faixa logo acima.
  */
 @Composable
-private fun WeekCard(estado: ProgressState, vazio: Boolean, aoAbrir: () -> Unit) {
-    val cores = MaterialTheme.colorScheme
-    val conteudo: @Composable ColumnScope.() -> Unit = {
+private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    val content: @Composable ColumnScope.() -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "${estado.month} · esta semana",
+                text = "${state.month} · esta semana",
                 style = MaterialTheme.typography.labelMedium,
-                color = if (vazio) cores.outline else cores.onSurfaceVariant,
+                color = if (empty) colors.outline else colors.onSurfaceVariant,
             )
-            if (!vazio) {
+            if (!empty) {
                 Icon(
-                    imageVector = AppIcons.Avancar,
+                    imageVector = AppIcons.Forward,
                     contentDescription = null,
-                    tint = cores.outline,
+                    tint = colors.outline,
                     modifier = Modifier.size(16.dp).padding(start = 2.dp),
                 )
             }
         }
 
         WeekStrip(
-            days = estado.semana.mapIndexed { index, day ->
+            days = state.semana.mapIndexed { index, day ->
                 WeekDay(
-                    sigla = WEEKDAY_LABELS[index],
-                    numero = day.data.dayOfMonth,
+                    abbreviation = WEEKDAY_LABELS[index],
+                    number = day.data.dayOfMonth,
                     reviews = day.reviews,
                     today = day.today,
-                    futuro = day.futuro,
+                    future = day.future,
                 )
             },
-            tracejada = vazio,
+            dashed = empty,
             modifier = Modifier.padding(top = 13.dp),
         )
 
-        Box(Modifier.fillMaxWidth().padding(vertical = 13.dp).height(1.dp).background(cores.outlineVariant))
+        Box(Modifier.fillMaxWidth().padding(vertical = 13.dp).height(1.dp).background(colors.outlineVariant))
 
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Quota de hoje no ${languageOf(estado.languagePair.target).displayName.lowercase()}",
+                text = "Quota de hoje no ${languageOf(state.languagePair.target).displayName.lowercase()}",
                 style = MaterialTheme.typography.titleSmall,
-                color = if (vazio) cores.onSurfaceVariant else cores.onSurface,
+                color = if (empty) colors.onSurfaceVariant else colors.onSurface,
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = quotaText(estado.quota),
+                text = quotaText(state.quota),
                 style = MaterialTheme.typography.bodySmall,
-                color = if (vazio) cores.outline else cores.onSurfaceVariant,
+                color = if (empty) colors.outline else colors.onSurfaceVariant,
             )
         }
 
         // Sem barra no vazio: uma trilha cinza de ponta a ponta é uma promessa de
         // que existe alguma coisa para preencher hoje, e não existe ainda.
-        if (!vazio) {
-            val avanco by animatedFraction(estado.quota.fraction, "fracaoDaQuota")
+        if (!empty) {
+            val advance by animatedFraction(state.quota.fraction, "fracaoDaQuota")
             Box(
                 Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
                     .height(8.dp)
-                    .background(cores.outlineVariant, RoundedCornerShape(4.dp)),
+                    .background(colors.outlineVariant, RoundedCornerShape(4.dp)),
             ) {
                 Box(
                     Modifier
-                        .fillMaxWidth(avanco)
+                        .fillMaxWidth(advance)
                         .height(8.dp)
-                        .background(cores.tertiary, RoundedCornerShape(4.dp)),
+                        .background(colors.tertiary, RoundedCornerShape(4.dp)),
                 )
             }
         }
     }
 
-    if (vazio) {
+    if (empty) {
         DashedBox(
             modifier = Modifier.fillMaxWidth(),
-            raio = 22.dp,
-            recheio = PaddingValues(16.dp),
-            conteudo = conteudo,
+            radius = 22.dp,
+            filling = PaddingValues(16.dp),
+            content = content,
         )
     } else {
         ScreenCard(
-            aoClicar = aoAbrir,
-            recheio = PaddingValues(16.dp),
+            onClick = onOpen,
+            filling = PaddingValues(16.dp),
             modifier = Modifier.fillMaxWidth(),
-            conteudo = conteudo,
+            content = content,
         )
     }
 }
@@ -280,83 +280,83 @@ private fun WeekCard(estado: ProgressState, vazio: Boolean, aoAbrir: () -> Unit)
  * que é literalmente a escada de [Degraus] do primeiro degrau ao último.
  */
 @Composable
-private fun StockCard(estado: ProgressState, vazio: Boolean, aoAbrir: () -> Unit) {
-    val cores = MaterialTheme.colorScheme
+private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
 
-    if (vazio) {
-        DashedBox(modifier = Modifier.fillMaxWidth(), raio = 22.dp, recheio = PaddingValues(16.dp)) {
+    if (empty) {
+        DashedBox(modifier = Modifier.fillMaxWidth(), radius = 22.dp, filling = PaddingValues(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Box(Modifier.size(78.dp).contornoTracejado(cores.outline, raio = 39.dp, espessura = 2.dp))
+                Box(Modifier.size(78.dp).dashedOutline(colors.outline, radius = 39.dp, thickness = 2.dp))
                 Column(Modifier.weight(1f).padding(start = 14.dp)) {
                     Text(
                         text = "Palavras que já são suas",
                         style = MaterialTheme.typography.titleSmall,
-                        color = cores.onSurfaceVariant,
+                        color = colors.onSurfaceVariant,
                     )
                     Text(
                         text = whenItAppearsText(),
                         style = MaterialTheme.typography.bodySmall,
-                        color = cores.outline,
+                        color = colors.outline,
                         modifier = Modifier.padding(top = 3.dp),
                     )
                 }
             }
             StockLegend(
-                rotulos = listOf("dominadas", "familiares", "aprendendo"),
-                cor = cores.outline,
+                labels = listOf("dominadas", "familiares", "aprendendo"),
+                color = colors.outline,
                 modifier = Modifier.padding(top = 14.dp),
             )
         }
         return
     }
 
-    ScreenCard(aoClicar = aoAbrir, recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
+    ScreenCard(onClick = onOpen, filling = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             ProgressRing(
-                fraction = estado.mastered.toFloat() / estado.total,
-                tamanho = 78.dp,
-                espessura = 9.dp,
+                fraction = state.mastered.toFloat() / state.total,
+                size = 78.dp,
+                thickness = 9.dp,
             ) {
                 // Conta do zero junto com o arco: é a contagem de conquista
                 // acumulada que `contagemAnimada` existe para servir.
                 Text(
-                    text = "${animatedCount(estado.mastered, "mastered")}",
+                    text = "${animatedCount(state.mastered, "mastered")}",
                     style = MaterialTheme.typography.headlineMedium,
                 )
                 Text(
-                    text = "de ${estado.total}",
+                    text = "de ${state.total}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = cores.onSurfaceVariant,
+                    color = colors.onSurfaceVariant,
                 )
             }
             Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
-                Text(stockTitle(estado.mastered), style = MaterialTheme.typography.titleLarge)
+                Text(stockTitle(state.mastered), style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = closeToLevelingText(estado.pertoDeVirar.size),
+                    text = closeToLevelingText(state.closeToLeveling.size),
                     style = MaterialTheme.typography.bodySmall,
-                    color = cores.onSurfaceVariant,
+                    color = colors.onSurfaceVariant,
                     modifier = Modifier.padding(top = 5.dp),
                 )
             }
-            Icon(AppIcons.Avancar, null, tint = cores.outline, modifier = Modifier.size(20.dp))
+            Icon(AppIcons.Forward, null, tint = colors.outline, modifier = Modifier.size(20.dp))
         }
 
         BandBars(
-            faixas = listOf(
-                estado.mastered to cores.tertiary,
-                estado.familiares to cores.tertiary.copy(alpha = 0.55f),
-                estado.aprendendo to cores.outlineVariant,
+            strips = listOf(
+                state.mastered to colors.tertiary,
+                state.familiar to colors.tertiary.copy(alpha = 0.55f),
+                state.learning to colors.outlineVariant,
             ),
             modifier = Modifier.padding(top = 14.dp),
         )
 
         StockLegend(
-            rotulos = listOf(
-                "${estado.mastered} dominadas",
-                "${estado.familiares} familiares",
-                "${estado.aprendendo} aprendendo",
+            labels = listOf(
+                "${state.mastered} dominadas",
+                "${state.familiar} familiares",
+                "${state.learning} aprendendo",
             ),
-            cor = cores.onSurfaceVariant,
+            color = colors.onSurfaceVariant,
             modifier = Modifier.padding(top = 10.dp),
         )
     }
@@ -370,10 +370,10 @@ private fun StockCard(estado: ProgressState, vazio: Boolean, aoAbrir: () -> Unit
  * três nomes ficam sozinhos, sem número — é o rótulo do lugar, não um placar.
  */
 @Composable
-private fun StockLegend(rotulos: List<String>, cor: Color, modifier: Modifier = Modifier) {
+private fun StockLegend(labels: List<String>, color: Color, modifier: Modifier = Modifier) {
     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = modifier.fillMaxWidth()) {
-        rotulos.forEach { rotulo ->
-            Text(text = rotulo, style = MaterialTheme.typography.bodySmall, color = cor)
+        labels.forEach { label ->
+            Text(text = label, style = MaterialTheme.typography.bodySmall, color = color)
         }
     }
 }
@@ -387,40 +387,40 @@ private fun StockLegend(rotulos: List<String>, cor: Color, modifier: Modifier = 
  * que outro toque a fecha.
  */
 @Composable
-private fun CoursePill(target: String, aberta: Boolean, aoClicar: () -> Unit) {
-    val cores = MaterialTheme.colorScheme
+private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
     val language = languageOf(target)
     val toque = rememberHaptics()
-    val giro by animateFloatAsState(
-        targetValue = if (aberta) 180f else 0f,
+    val spin by animateFloatAsState(
+        targetValue = if (opened) 180f else 0f,
         animationSpec = tween(Motion.DEFAULT),
         label = "giroDaPilula",
     )
 
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         shape = CircleShape,
-        color = if (aberta) cores.secondaryContainer else cores.surface,
-        border = if (aberta) BorderStroke(1.5.dp, cores.primary) else cardOutline(),
+        color = if (opened) colors.secondaryContainer else colors.surface,
+        border = if (opened) BorderStroke(1.5.dp, colors.primary) else cardOutline(),
         interactionSource = toque,
-        modifier = Modifier.encolheAoTocar(toque, minimo = 0.94f),
+        modifier = Modifier.shrinkOnTouch(toque, minimum = 0.94f),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(7.dp),
             modifier = Modifier.padding(start = 5.dp, end = 9.dp, top = 5.dp, bottom = 5.dp),
         ) {
-            CircularFlag(language, tamanho = 20.dp)
+            CircularFlag(language, size = 20.dp)
             Text(
                 text = language.displayName,
                 style = MaterialTheme.typography.labelMedium,
-                color = if (aberta) cores.primary else cores.onSurfaceVariant,
+                color = if (opened) colors.primary else colors.onSurfaceVariant,
             )
             Icon(
-                imageVector = AppIcons.Expandir,
+                imageVector = AppIcons.Expand,
                 contentDescription = "Trocar idioma",
-                tint = cores.primary,
-                modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = giro },
+                tint = colors.primary,
+                modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = spin },
             )
         }
     }
@@ -436,11 +436,11 @@ private fun CoursePill(target: String, aberta: Boolean, aoClicar: () -> Unit) {
 @Composable
 private fun CourseDrawer(
     courses: List<CourseSummary>,
-    olhado: String,
-    aoEscolher: (String) -> Unit,
-    aoAdicionar: () -> Unit,
+    viewed: String,
+    onChoose: (String) -> Unit,
+    onAdd: () -> Unit,
 ) {
-    val cores = MaterialTheme.colorScheme
+    val colors = MaterialTheme.colorScheme
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
@@ -457,15 +457,15 @@ private fun CourseDrawer(
         courses.forEach { course ->
             DrawerRow(
                 course = course,
-                escolhido = course.languagePair.target == olhado,
-                aoClicar = { aoEscolher(course.languagePair.target) },
+                chosen = course.languagePair.target == viewed,
+                onClick = { onChoose(course.languagePair.target) },
             )
         }
 
         DashedBox(
             modifier = Modifier.fillMaxWidth(),
-            aoClicar = aoAdicionar,
-            recheio = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+            onClick = onAdd,
+            filling = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -473,11 +473,11 @@ private fun CourseDrawer(
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(32.dp).background(cores.surfaceVariant, CircleShape),
+                    modifier = Modifier.size(32.dp).background(colors.surfaceVariant, CircleShape),
                 ) {
-                    Icon(AppIcons.Mais, null, tint = cores.primary, modifier = Modifier.size(18.dp))
+                    Icon(AppIcons.Plus, null, tint = colors.primary, modifier = Modifier.size(18.dp))
                 }
-                Text("Adicionar idioma", style = MaterialTheme.typography.titleSmall, color = cores.primary)
+                Text("Adicionar idioma", style = MaterialTheme.typography.titleSmall, color = colors.primary)
             }
         }
 
@@ -486,31 +486,31 @@ private fun CourseDrawer(
 }
 
 @Composable
-private fun DrawerRow(course: CourseSummary, escolhido: Boolean, aoClicar: () -> Unit) {
-    val cores = MaterialTheme.colorScheme
+private fun DrawerRow(course: CourseSummary, chosen: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
     val language = languageOf(course.languagePair.target)
     val toque = rememberHaptics()
 
     Surface(
-        onClick = aoClicar,
+        onClick = onClick,
         shape = RoundedCornerShape(18.dp),
-        color = if (escolhido) cores.secondaryContainer else cores.surface,
-        border = if (escolhido) BorderStroke(1.5.dp, cores.primary) else cardOutline(),
+        color = if (chosen) colors.secondaryContainer else colors.surface,
+        border = if (chosen) BorderStroke(1.5.dp, colors.primary) else cardOutline(),
         interactionSource = toque,
-        modifier = Modifier.fillMaxWidth().encolheAoTocar(toque),
+        modifier = Modifier.fillMaxWidth().shrinkOnTouch(toque),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
-            CircularFlag(language, tamanho = 32.dp)
+            CircularFlag(language, size = 32.dp)
             Column(Modifier.weight(1f)) {
                 Text(language.displayName, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = courseSummaryText(course),
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (escolhido) cores.primary else cores.onSurfaceVariant,
+                    color = if (chosen) colors.primary else colors.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
@@ -519,12 +519,12 @@ private fun DrawerRow(course: CourseSummary, escolhido: Boolean, aoClicar: () ->
                 modifier = Modifier
                     .size(22.dp)
                     .then(
-                        if (escolhido) Modifier.background(cores.primary, CircleShape)
-                        else Modifier.border(2.dp, cores.outline, CircleShape),
+                        if (chosen) Modifier.background(colors.primary, CircleShape)
+                        else Modifier.border(2.dp, colors.outline, CircleShape),
                     ),
             ) {
-                if (escolhido) {
-                    Icon(AppIcons.Check, null, tint = cores.onPrimary, modifier = Modifier.size(13.dp))
+                if (chosen) {
+                    Icon(AppIcons.Check, null, tint = colors.onPrimary, modifier = Modifier.size(13.dp))
                 }
             }
         }

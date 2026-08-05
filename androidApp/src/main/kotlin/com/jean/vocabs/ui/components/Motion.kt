@@ -29,86 +29,61 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 /**
- * O vocabulário de movimento do app.
+ * The app's motion vocabulary — three durations and three springs, and every
+ * animation in the app comes from one of them.
  *
- * Existe pelo mesmo motivo que `Base.kt` existe para as formas: o mesmo gesto
- * aparecia com duração diferente em cada tela — o chip trocava de cor em 180 ms,
- * a barra de memória em 500, o anel do Início não animava nada — e a soma disso é
- * uma interface que parece feita por três pessoas. Aqui há **três** durações e
- * duas molas, e toda animação do app sai de uma delas.
- *
- * A regra que governa os números: nada do que a pessoa **espera** passa de
- * [PADRAO]. Só o que ela já pode ler enquanto acontece — o anel se preenchendo, o
- * número subindo — chega a [AMPLO], e mesmo esses são interrompíveis, porque
- * `animate*AsState` persegue o alvo novo de onde estiver em vez de terminar o
- * trajeto antigo. Nenhuma tela espera uma animação acabar para responder a um
- * toque.
+ * Nothing the person *waits on* exceeds [DEFAULT]. Only what can be read while
+ * it runs reaches [WIDE], and even those are interruptible: `animate*AsState`
+ * chases a new target from wherever it is rather than finishing the old path.
  */
 object Motion {
-    /** Reação imediata: cor de um chip, opacidade de um rótulo que troca. */
     const val FAST = 150
 
-    /** O padrão: entrar, sair, girar, trocar de estado. */
     const val DEFAULT = 240
 
-    /**
-     * Só para o que se lê enquanto corre: o arco do anel, a barra da quota, a
-     * contagem de um número grande. Nunca para o que bloqueia um toque.
-     */
+    /** Only for what is read while it runs. Never for what blocks a tap. */
     const val WIDE = 620
 
     /**
-     * O intervalo entre um item e o seguinte numa entrada escalonada.
-     *
-     * Curto de propósito. O escalonamento serve para dar direção à leitura, não
-     * para encenar a chegada da tela: com 34 ms e o teto de [ITENS_ESCALONADOS],
-     * o último item sai do lugar 170 ms depois do primeiro — abaixo do que se
-     * percebe como demora, acima do que se percebe como nada.
+     * Short on purpose: staggering gives reading a direction, it does not stage
+     * the screen's arrival. At 34 ms with the [STAGGERED_ITEMS] cap the last
+     * item leaves 170 ms after the first — below what reads as a delay.
      */
     const val STAGGER_STEP = 34L
 
     /**
-     * A partir daqui todo item entra junto.
-     *
-     * Sem este teto, o décimo cartão de uma lista esperaria meio segundo para
-     * aparecer, e o vigésimo mais de um — o escalonamento viraria justamente o
-     * gargalo que ele deveria evitar.
+     * Past this, every item enters together. Without the cap the tenth card in a
+     * list would wait half a second, making the stagger the bottleneck it exists
+     * to avoid.
      */
     const val STAGGERED_ITEMS = 5
 
-    /** A mola de toda mudança de forma: sem oscilação visível, com peso. */
-    fun <T> mola() = spring<T>(dampingRatio = 0.78f, stiffness = Spring.StiffnessMediumLow)
+    fun <T> standardSpring() = spring<T>(dampingRatio = 0.78f, stiffness = Spring.StiffnessMediumLow)
 
-    /** A mola do que comemora — o tique de "Guardado", o selo que aparece. */
-    fun <T> molaElastica() = spring<T>(dampingRatio = 0.52f, stiffness = Spring.StiffnessMediumLow)
+    /** For what celebrates — the "Saved" tick, a badge appearing. */
+    fun <T> elasticSpring() = spring<T>(dampingRatio = 0.52f, stiffness = Spring.StiffnessMediumLow)
 
     /**
-     * A mola de quem sai do lugar sob o dedo — os alvos do leque de captura.
-     *
-     * Mais dura que [mola] porque a distância é grande e o gesto está em curso:
-     * um alvo que leva 300 ms para chegar ao lugar é um alvo que ainda está
-     * viajando quando o dedo já decidiu para onde vai.
+     * Stiffer than [standardSpring] because the capture fan's targets move far while the
+     * gesture is still running: a target taking 300 ms to arrive is still
+     * travelling when the finger has already chosen.
      */
-    fun <T> molaDeGesto() = spring<T>(dampingRatio = 0.72f, stiffness = Spring.StiffnessMedium)
+    fun <T> gestureSpring() = spring<T>(dampingRatio = 0.72f, stiffness = Spring.StiffnessMedium)
 }
 
 /**
- * Se o aparelho está com as animações desligadas.
+ * Whether the device has animations turned off.
  *
- * "Reduzir movimento" no Android é a escala de duração dos animadores em zero,
- * nas opções de acessibilidade e nas de desenvolvedor. Quem liga isso não quer o
- * halo do botão de captura respirando no canto da tela para sempre — e a regra
- * do handoff é que, nesse caso, o botão simplesmente fica parado.
- *
- * Lido uma vez por composição e não observado: a chave vive em Configurações do
- * sistema, e voltar para o app recompõe tudo de qualquer jeito.
+ * "Reduce motion" on Android is the animator duration scale at zero. Read once
+ * per composition and not observed: the switch lives in system Settings, and
+ * returning to the app recomposes everything anyway.
  */
 @Composable
 fun reducedMotion(): Boolean {
-    val contexto = LocalContext.current
-    return remember(contexto) {
+    val context = LocalContext.current
+    return remember(context) {
         Settings.Global.getFloat(
-            contexto.contentResolver,
+            context.contentResolver,
             Settings.Global.ANIMATOR_DURATION_SCALE,
             1f,
         ) == 0f
@@ -116,139 +91,120 @@ fun reducedMotion(): Boolean {
 }
 
 /**
- * Encolhe o que está sendo tocado.
+ * Shrinks what is being touched, so cards read as objects rather than painted
+ * rectangles. Costs nothing: `graphicsLayer` scales in the draw phase, with no
+ * remeasure or relayout.
  *
- * O ripple do Material diz *onde* o dedo tocou; ele não diz que o alvo é um
- * objeto. Um cartão que cede 3% sob o dedo e volta ao soltar dá aos cartões deste
- * app a única coisa que faltava para parecerem coisas em vez de retângulos
- * pintados — e custa nada, porque `graphicsLayer` aplica a escala na fase de
- * desenho, sem remedir nem reposicionar ninguém.
- *
- * Recebe a mesma [fonte] passada ao `Surface`/`clickable`: quem desenha o ripple
- * e quem encolhe precisam reagir ao mesmo toque, senão o cartão volta ao tamanho
- * antes de o ripple sumir.
+ * Takes the same [source] passed to the `Surface`/`clickable` — whoever draws
+ * the ripple and whoever shrinks must react to the same touch.
  */
 @Composable
-fun Modifier.encolheAoTocar(
-    fonte: MutableInteractionSource,
-    minimo: Float = 0.97f,
+fun Modifier.shrinkOnTouch(
+    source: MutableInteractionSource,
+    minimum: Float = 0.97f,
 ): Modifier {
-    val pressionado by fonte.collectIsPressedAsState()
-    val escala by animateFloatAsState(
-        targetValue = if (pressionado) minimo else 1f,
-        animationSpec = Motion.mola(),
-        label = "escalaDeToque",
+    val pressed by source.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) minimum else 1f,
+        animationSpec = Motion.standardSpring(),
+        label = "touchScale",
     )
     return graphicsLayer {
-        scaleX = escala
-        scaleY = escala
+        scaleX = scale
+        scaleY = scale
     }
 }
 
-/** A fonte de interação que [encolheAoTocar] e o ripple do `Surface` compartilham. */
 @Composable
 fun rememberHaptics(): MutableInteractionSource = remember { MutableInteractionSource() }
 
 /**
- * A entrada de um elemento na tela: sobe um pouco e aparece.
+ * Rises slightly and fades in, staggered by [index] within one list.
  *
- * [indice] escalona a chegada dentro de uma mesma lista — o primeiro parte na
- * hora, o segundo 34 ms depois, e a partir do sexto todos partem juntos.
- *
- * **Não use em `LazyColumn`/`LazyRow`.** Lá o item é composto de novo toda vez
- * que entra no viewport, e a animação recomeçaria a cada rolagem: a lista
- * pareceria estar carregando o tempo todo. Nessas listas o certo é
- * `Modifier.animateItem()`, que anima só o que de fato entrou, saiu ou mudou de
- * lugar — e é o que Vocabulários e Pendentes já usam.
+ * **Not for `LazyColumn`/`LazyRow`.** There an item is recomposed every time it
+ * re-enters the viewport, so the animation would restart on every scroll and the
+ * list would look permanently loading. Those use `Modifier.animateItem()`, which
+ * animates only what actually entered, left or moved.
  */
 @Composable
-fun Modifier.entradaSuave(
+fun Modifier.smoothEntrance(
     index: Int = 0,
-    deslocamento: Dp = 12.dp,
+    offset: Dp = 12.dp,
 ): Modifier {
-    var chegou by remember { mutableStateOf(false) }
+    var arrived by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        val espera = index.coerceIn(0, Motion.STAGGERED_ITEMS) * Motion.STAGGER_STEP
-        if (espera > 0) delay(espera)
-        chegou = true
+        val wait = index.coerceIn(0, Motion.STAGGERED_ITEMS) * Motion.STAGGER_STEP
+        if (wait > 0) delay(wait)
+        arrived = true
     }
-    val avanco by animateFloatAsState(
-        targetValue = if (chegou) 1f else 0f,
+    val progress by animateFloatAsState(
+        targetValue = if (arrived) 1f else 0f,
         animationSpec = tween(Motion.DEFAULT, easing = FastOutSlowInEasing),
-        label = "entradaSuave",
+        label = "smoothEntrance",
     )
-    val alturaEmPx = with(LocalDensity.current) { deslocamento.toPx() }
+    val heightInPx = with(LocalDensity.current) { offset.toPx() }
     return graphicsLayer {
-        alpha = avanco
-        translationY = (1f - avanco) * alturaEmPx
+        alpha = progress
+        translationY = (1f - progress) * heightInPx
     }
 }
 
 /**
- * Uma fração que parte do zero na primeira vez e persegue o alvo depois.
+ * A fraction that starts from zero the first time and chases the target after.
+ * An answered review pushes the bar from where it is, without returning to zero.
  *
- * É o que transforma o anel do Início e as barras de progresso de um desenho
- * estático num gesto: a tela abre e o arco se preenche até onde a memória chegou.
- * Passado o primeiro quadro ela vira simplesmente uma fração animada — uma
- * revisão respondida empurra a barra do valor atual para o novo, sem voltar ao
- * zero para recomeçar.
- *
- * Devolve o `State` e não o `Float` de propósito: quem desenha num `Canvas` ou
- * num `drawBehind` lê `.value` **dentro** da lambda de desenho, e aí só a fase de
- * desenho é invalidada a cada quadro. Devolver o número puro obrigaria o
- * composable inteiro a recompor 60 vezes por segundo para animar um arco.
+ * Returns the `State` rather than the `Float` so a `Canvas` or `drawBehind`
+ * caller reads `.value` *inside* the draw lambda and invalidates only the draw
+ * phase. Returning the number would recompose the whole composable every frame.
  */
 @Composable
-fun animatedFraction(target: Float, rotulo: String = "fracao"): State<Float> {
-    var partiu by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { partiu = true }
+fun animatedFraction(target: Float, label: String = "fraction"): State<Float> {
+    var started by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { started = true }
     return animateFloatAsState(
-        targetValue = if (partiu) target.coerceIn(0f, 1f) else 0f,
+        targetValue = if (started) target.coerceIn(0f, 1f) else 0f,
         animationSpec = tween(Motion.WIDE, easing = FastOutSlowInEasing),
-        label = rotulo,
+        label = label,
     )
 }
 
 /**
- * O mesmo para um número que se lê: ele conta do zero até o valor.
+ * The same for a number that is read: it counts up from zero.
  *
- * Vale para o que é conquista acumulada — quantas palavras são suas, quantos
- * acertos a sessão teve, a força média do curso. **Não** vale para o que é fila
- * ou dívida: ver "12 na fila" contar de zero a doze premiaria o atraso.
+ * For accumulated achievement, never for a queue or a debt — watching "12 due"
+ * count up from zero would celebrate falling behind.
  */
 @Composable
-fun animatedCount(target: Int, rotulo: String = "contagem"): Int {
-    var partiu by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { partiu = true }
+fun animatedCount(target: Int, label: String = "count"): Int {
+    var started by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { started = true }
     val value by animateIntAsState(
-        targetValue = if (partiu) target else 0,
+        targetValue = if (started) target else 0,
         animationSpec = tween(Motion.WIDE, easing = FastOutSlowInEasing),
-        label = rotulo,
+        label = label,
     )
     return value
 }
 
 /**
- * O respiro de quem está esperando por algo de fora — a ficha sendo montada, a
- * transcrição correndo.
+ * The breathing of something waiting on the outside world — a card being built,
+ * a transcription running.
  *
- * Sempre condicionado ao estado que o justifica: quando [ativo] é falso o
- * modifier não instala transição nenhuma. Uma animação infinita que continuasse
- * depois de o trabalho terminar manteria o Compose recompondo a tela para
- * sempre, que é o jeito mais fácil de gastar bateria parado.
+ * Always conditioned on the state that justifies it: an infinite animation
+ * outliving its work keeps Compose recomposing forever.
  */
 @Composable
-fun Modifier.respirando(ativo: Boolean, minimo: Float = 0.45f): Modifier {
-    if (!ativo) return this
-    val transicao = rememberInfiniteTransition(label = "respiro")
-    val opacidade by transicao.animateFloat(
+fun Modifier.breathing(active: Boolean, minimum: Float = 0.45f): Modifier {
+    if (!active) return this
+    val transition = rememberInfiniteTransition(label = "breath")
+    val opacity by transition.animateFloat(
         initialValue = 1f,
-        targetValue = minimo,
+        targetValue = minimum,
         animationSpec = infiniteRepeatable(
             animation = tween(900, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse,
         ),
-        label = "opacidadeDoRespiro",
+        label = "breathOpacity",
     )
-    return graphicsLayer { alpha = opacidade }
+    return graphicsLayer { alpha = opacity }
 }

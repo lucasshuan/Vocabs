@@ -50,20 +50,20 @@ data class ProgressState(
     val dayStreak: Int = 0,
     val quota: DailyQuota = DailyQuota(done = 0, inQueue = 0),
     val words: List<Entry> = emptyList(),
-    val eventos: List<Event> = emptyList(),
+    val events: List<Event> = emptyList(),
 ) {
     val total: Int get() = words.size
 
     /** Contadas por degrau: é o número que não muda sozinho enquanto a pessoa dorme. */
-    val porNivel: Map<MemoryLevel, List<Entry>>
+    val byLevel: Map<MemoryLevel, List<Entry>>
         get() = words.groupBy { Steps.level(it.step) }
 
-    val mastered: Int get() = porNivel[MemoryLevel.MASTERED]?.size ?: 0
-    val familiares: Int get() = porNivel[MemoryLevel.FAMILIAR]?.size ?: 0
-    val aprendendo: Int get() = total - mastered - familiares
+    val mastered: Int get() = byLevel[MemoryLevel.MASTERED]?.size ?: 0
+    val familiar: Int get() = byLevel[MemoryLevel.FAMILIAR]?.size ?: 0
+    val learning: Int get() = total - mastered - familiar
 
     /** As que estão a um acerto de mudar de nome — o "3 estão perto de virar". */
-    val pertoDeVirar: List<Entry>
+    val closeToLeveling: List<Entry>
         get() = words.filter { entry ->
             val step = entry.step
             Steps.hitsToLevelUp(step) == 1
@@ -75,7 +75,7 @@ data class ProgressDay(
     val data: LocalDate,
     val reviews: Int,
     val today: Boolean,
-    val futuro: Boolean,
+    val future: Boolean,
 )
 
 /**
@@ -98,12 +98,12 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
         target?.let(Scope::Course) ?: Scope.ActiveCourse
     }
 
-    val estado: StateFlow<ProgressState> = scope.flatMapLatest { recorte ->
+    val state: StateFlow<ProgressState> = scope.flatMapLatest { crop ->
         /** Em duas etapas: `combine` só tem sobrecarga tipada até cinco fluxos. */
-        val semanaEQuota = combine(
-            repository.observeReviewSummary(recorte),
+        val weekAndQuota = combine(
+            repository.observeReviewSummary(crop),
             repository.observeActivity(84),
-        ) { revisao, activity ->
+        ) { review, activity ->
             val today = LocalDate.now()
             ProgressState(
                 semana = weekOf(today, activity),
@@ -111,21 +111,21 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
                 // A sequência conta atividade em qualquer idioma; a quota é do
                 // curso. São perguntas diferentes: hábito é da pessoa, carga é
                 // da matéria.
-                dayStreak = revisao.dayStreak,
-                quota = revisao.quota,
+                dayStreak = review.dayStreak,
+                quota = review.quota,
             )
         }
 
         combine(
-            semanaEQuota,
-            repository.observeReady(recorte),
-            repository.observeEvents(84, recorte),
+            weekAndQuota,
+            repository.observeReady(crop),
+            repository.observeEvents(84, crop),
             preferences.observeLanguagePair(),
-        ) { base, prontas, eventos, languagePair ->
+        ) { base, readyEntries, events, languagePair ->
             base.copy(
-                languagePair = parDe(recorte, languagePair),
-                words = prontas,
-                eventos = eventos,
+                languagePair = pairOf(crop, languagePair),
+                words = readyEntries,
+                events = events,
             )
         }
             // Trocar de curso zera a tela antes de o banco responder.
@@ -135,13 +135,13 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
             // e o rótulo "Quota de hoje no espanhol" sobre o "6 de 10" do inglês
             // é uma frase errada, não uma frase atrasada. O esqueleto é o único
             // estado honesto enquanto a resposta não chega.
-            .onStart { emit(ProgressState(languagePair = parDe(recorte, preferences.languagePair))) }
+            .onStart { emit(ProgressState(languagePair = pairOf(crop, preferences.languagePair))) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressState())
 
     /** O curso do recorte, com o nativo de quem lê — [Scope.CursoAberto] cai no aberto. */
-    private fun parDe(recorte: Scope, aberto: LanguagePair) = LanguagePair(
-        native = aberto.native,
-        target = (recorte as? Scope.Course)?.target ?: aberto.target,
+    private fun pairOf(crop: Scope, activePair: LanguagePair) = LanguagePair(
+        native = activePair.native,
+        target = (crop as? Scope.Course)?.target ?: activePair.target,
     )
 
     /**
@@ -151,7 +151,7 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
      * daí ela recarregar os dois cartões sem mexer na página da Início nem no
      * destino do `+`.
      */
-    fun abrir(target: String?) {
+    fun open(target: String?) {
         course.value = target?.takeIf { it.isNotBlank() }
     }
 
@@ -160,11 +160,11 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Quantos cursos existem — remover o último deixaria o app sem página nenhuma. */
-    val podeRemover: StateFlow<Boolean> = preferences.observeCourses()
+    val canRemove: StateFlow<Boolean> = preferences.observeCourses()
         .map { it.size > 1 }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    fun removerCurso(target: String) = preferences.unenroll(target)
+    fun removeCourse(target: String) = preferences.unenroll(target)
 }
 
 /**
@@ -174,15 +174,15 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
  * sequência de estudo é uma semana de trabalho, não de calendário americano.
  */
 internal fun weekOf(today: LocalDate, activity: List<DailyActivity>): List<ProgressDay> {
-    val segunda = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-    val porDia = activity.associate { it.day to it.reviews }
-    return (0L until 7L).map { deslocamento ->
-        val data = segunda.plusDays(deslocamento)
+    val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    val byDay = activity.associate { it.day to it.reviews }
+    return (0L until 7L).map { offset ->
+        val data = monday.plusDays(offset)
         ProgressDay(
             data = data,
-            reviews = porDia[data.toEpochDay() + JULIAN_DAY_OF_EPOCH] ?: 0,
+            reviews = byDay[data.toEpochDay() + JULIAN_DAY_OF_EPOCH] ?: 0,
             today = data == today,
-            futuro = data.isAfter(today),
+            future = data.isAfter(today),
         )
     }
 }

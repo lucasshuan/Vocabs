@@ -15,112 +15,112 @@ import kotlinx.coroutines.launch
 enum class ReviewFeedback { CORRETA, INCORRETA, NAO_LEMBRO }
 
 sealed interface ReviewState {
-    data object Carregando : ReviewState
+    data object Loading : ReviewState
     data object Empty : ReviewState
     data class CardSurface(
         val entry: Entry,
         val answer: String = "",
         val feedback: ReviewFeedback? = null,
-        val posicao: Int,
+        val position: Int,
         val total: Int,
     ) : ReviewState
     data class Summary(
         val hits: Int,
         val misses: Int,
-        val errados: List<String>,
+        val wrong: List<String>,
         val dayStreak: Int,
-        val restantes: Int,
+        val rest: Int,
     ) : ReviewState
 }
 
 class ReviewViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
-    private val _estado = MutableStateFlow<ReviewState>(ReviewState.Carregando)
-    val estado: StateFlow<ReviewState> = _estado.asStateFlow()
+    private val _estado = MutableStateFlow<ReviewState>(ReviewState.Loading)
+    val state: StateFlow<ReviewState> = _estado.asStateFlow()
 
-    private var cartas = ArrayDeque<Entry>()
+    private var cards = ArrayDeque<Entry>()
     private val respondidos = mutableSetOf<Long>()
-    private val recolocados = mutableSetOf<Long>()
+    private val restored = mutableSetOf<Long>()
     private var hits = 0
     private var misses = 0
-    private var errados = mutableListOf<String>()
+    private var wrong = mutableListOf<String>()
     private var total = 0
-    private var restantes = 0
+    private var rest = 0
 
-    init { novaRodada() }
+    init { newRound() }
 
-    fun novaRodada() {
+    fun newRound() {
         viewModelScope.launch {
-            _estado.value = ReviewState.Carregando
-            val fila = repository.observeReviewQueue().first()
-            restantes = (fila.size - SESSION_CAP).coerceAtLeast(0)
+            _estado.value = ReviewState.Loading
+            val queue = repository.observeReviewQueue().first()
+            rest = (queue.size - SESSION_CAP).coerceAtLeast(0)
             hits = 0
             misses = 0
-            errados.clear()
+            wrong.clear()
             respondidos.clear()
-            recolocados.clear()
-            cartas = ArrayDeque(fila.take(SESSION_CAP).shuffled())
-            total = cartas.size
-            _estado.value = if (cartas.isEmpty()) ReviewState.Empty else proximoCartao()
+            restored.clear()
+            cards = ArrayDeque(queue.take(SESSION_CAP).shuffled())
+            total = cards.size
+            _estado.value = if (cards.isEmpty()) ReviewState.Empty else nextCard()
         }
     }
 
-    fun editarResposta(value: String) {
+    fun editAnswer(value: String) {
         val current = _estado.value as? ReviewState.CardSurface ?: return
         if (current.feedback == null) _estado.value = current.copy(answer = value)
     }
 
-    fun confirmar() {
+    fun confirm() {
         val current = _estado.value as? ReviewState.CardSurface ?: return
         if (current.feedback != null || current.answer.isBlank()) return
-        avaliar(isAnswerCorrect(current.answer, current.entry.target.orEmpty()), naoLembrou = false)
+        rate(isAnswerCorrect(current.answer, current.entry.target.orEmpty()), didntRemember = false)
     }
 
-    fun naoLembro() {
+    fun dontRemember() {
         val current = _estado.value as? ReviewState.CardSurface ?: return
-        if (current.feedback == null) avaliar(correct = false, naoLembrou = true)
+        if (current.feedback == null) rate(correct = false, didntRemember = true)
     }
 
-    private fun avaliar(correct: Boolean, naoLembrou: Boolean) {
+    private fun rate(correct: Boolean, didntRemember: Boolean) {
         val current = _estado.value as? ReviewState.CardSurface ?: return
         if (respondidos.add(current.entry.id)) {
             if (correct) hits++ else {
                 misses++
-                errados += current.entry.title
+                wrong += current.entry.title
             }
             AppContainer.scope.launch { repository.recordAnswer(current.entry.id, correct) }
         }
         _estado.value = current.copy(
             feedback = when {
                 correct -> ReviewFeedback.CORRETA
-                naoLembrou -> ReviewFeedback.NAO_LEMBRO
+                didntRemember -> ReviewFeedback.NAO_LEMBRO
                 else -> ReviewFeedback.INCORRETA
             },
         )
     }
 
-    fun avancar() {
+    fun advance() {
         val current = _estado.value as? ReviewState.CardSurface ?: return
         val feedback = current.feedback ?: return
-        val carta = cartas.removeFirstOrNull() ?: return
-        if (feedback != ReviewFeedback.CORRETA && recolocados.add(carta.id)) cartas.addLast(carta)
+        val card = cards.removeFirstOrNull() ?: return
+        if (feedback != ReviewFeedback.CORRETA && restored.add(card.id)) cards.addLast(card)
 
-        if (cartas.isEmpty()) {
-            viewModelScope.launch { _estado.value = resumo() }
+        if (cards.isEmpty()) {
+            viewModelScope.launch { _estado.value = summary() }
         } else {
-            _estado.value = proximoCartao()
+            _estado.value = nextCard()
         }
     }
 
-    private fun proximoCartao() = ReviewState.CardSurface(
-        entry = cartas.first(),
-        posicao = (respondidos.size + 1).coerceAtMost(total.coerceAtLeast(1)),
+    private fun nextCard() = ReviewState.CardSurface(
+        entry = cards.first(),
+        position = (respondidos.size + 1).coerceAtMost(total.coerceAtLeast(1)),
         total = total,
     )
 
-    private suspend fun resumo(): ReviewState.Summary {
+    private suspend fun summary(): ReviewState.Summary {
         val streak = repository.observeReviewSummary().first()
-        return ReviewState.Summary(hits, misses, errados.toList(), streak.dayStreak, restantes)
+        return ReviewState.Summary(hits, misses, wrong.toList(), streak.dayStreak, rest)
     }
 
     private companion object { const val SESSION_CAP = 20 }

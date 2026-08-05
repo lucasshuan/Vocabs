@@ -73,9 +73,9 @@ class VocabRepositoryImpl(
     override fun observeActiveCourse(): Flow<LanguagePair> = activeCourse
 
     override fun observeCourses(): Flow<List<CourseSummary>> =
-        allReady().map { prontas ->
+        allReady().map { readyEntries ->
             val instant = now()
-            prontas
+            readyEntries
                 .groupBy { it.languagePair }
                 .map { (languagePair, entries) ->
                     CourseSummary(
@@ -91,18 +91,18 @@ class VocabRepositoryImpl(
         }
 
     private fun allReady(): Flow<List<Entry>> =
-        queries.listReady().asFlow().mapToList(io).map { linhas -> linhas.map(::toDomain) }
+        queries.listReady().asFlow().mapToList(io).map { lines -> lines.map(::toDomain) }
 
     override fun observeReady(scope: Scope): Flow<List<Entry>> =
         allReady().no(scope) { it.languagePair }
 
     override fun observeInbox(scope: Scope): Flow<List<Entry>> =
-        queries.listInbox().asFlow().mapToList(io).map { linhas -> linhas.map(::toDomain) }
+        queries.listInbox().asFlow().mapToList(io).map { lines -> lines.map(::toDomain) }
             .no(scope) { it.languagePair }
 
     override fun observePendingCaptures(scope: Scope): Flow<List<Capture>> =
         queries.listPendingCaptures().asFlow().mapToList(io)
-            .map { linhas -> linhas.map(::captureToDomain) }
+            .map { lines -> lines.map(::captureToDomain) }
             .no(scope) { it.languagePair }
 
     /**
@@ -120,7 +120,7 @@ class VocabRepositoryImpl(
     private fun fitsScope(scope: Scope): Flow<(LanguagePair) -> Boolean> = when (scope) {
         Scope.All -> flowOf({ _: LanguagePair -> true })
         is Scope.Course -> flowOf({ languagePair: LanguagePair -> languagePair.target == scope.target })
-        Scope.ActiveCourse -> activeCourse.map { aberto -> { languagePair: LanguagePair -> languagePair == aberto } }
+        Scope.ActiveCourse -> activeCourse.map { activePair -> { languagePair: LanguagePair -> languagePair == activePair } }
     }
 
     override fun observeCaptureById(id: Long): Flow<Capture?> =
@@ -135,13 +135,13 @@ class VocabRepositoryImpl(
         // da tela de confirmação enquanto o argumento de navegação não chegou.
         if (ids.isEmpty()) return flowOf(emptyList())
         return queries.listEntriesByIds(ids).asFlow().mapToList(io)
-            .map { linhas -> linhas.map(::toDomain) }
+            .map { lines -> lines.map(::toDomain) }
     }
 
     override fun observeReviewQueue(scope: Scope): Flow<List<Entry>> =
-        observeReady(scope).map { prontas ->
+        observeReady(scope).map { readyEntries ->
             val instant = now()
-            prontas
+            readyEntries
                 .filter { it.needsReview(instant) }
                 .sortedBy { it.retention?.pointsAt(instant) ?: 0.0 }
         }
@@ -149,14 +149,14 @@ class VocabRepositoryImpl(
     override fun observeReviewSummary(scope: Scope): Flow<ReviewSummary> = combine(
         observeReady(scope),
         queries.listReviewedDays().asFlow().mapToList(io),
-    ) { prontas, days ->
+    ) { readyEntries, days ->
         val instant = now()
         val today = localDayOf(instant)
         val streak = streakOf(days, today)
-        val inQueue = prontas.count { it.needsReview(instant) }
+        val inQueue = readyEntries.count { it.needsReview(instant) }
         ReviewSummary(
             inQueue = inQueue,
-            nextInMillis = prontas
+            nextInMillis = readyEntries
                 .mapNotNull { it.retention?.nextReviewIn(instant) }
                 .minOrNull(),
             dayStreak = streak.dayStreak,
@@ -171,7 +171,7 @@ class VocabRepositoryImpl(
             // palavra a cada emissão do fluxo. Nenhuma revisão de hoje pode estar
             // fora dessa janela, então o corte não muda a resposta.
             quota = DailyQuota(
-                done = prontas.count { entry ->
+                done = readyEntries.count { entry ->
                     val retention = entry.retention ?: return@count false
                     retention.reviews > 0 &&
                         instant - retention.lastInteraction < TWO_DAYS_IN_MILLIS &&
@@ -204,7 +204,7 @@ class VocabRepositoryImpl(
 
     override fun observeEvents(days: Int, scope: Scope): Flow<List<Event>> {
         val firstDay = localDayOf(now()) - (days.coerceAtLeast(1) - 1)
-        return queries.listEventsSince(firstDay) { id, entryId, day, instant, type, detail, target, native, alvoIdioma ->
+        return queries.listEventsSince(firstDay) { id, entryId, day, instant, type, detail, target, native, languageTarget ->
             Event(
                 id = id,
                 entryId = entryId,
@@ -212,7 +212,7 @@ class VocabRepositoryImpl(
                 instant = instant,
                 type = EventType.of(type),
                 target = target,
-                languagePair = LanguagePair(native = native, target = alvoIdioma),
+                languagePair = LanguagePair(native = native, target = languageTarget),
                 detail = detail,
             )
         }.asFlow().mapToList(io).no(scope) { it.languagePair }
@@ -220,8 +220,8 @@ class VocabRepositoryImpl(
 
     override fun observeAiUsage(): Flow<AiUsage> {
         val month = localMonthOf(now())
-        return queries.observeAiUsageOfMonth(month).asFlow().mapToOneOrNull(io).map { geracoes ->
-            AiUsage(month = month, used = geracoes?.toInt() ?: 0)
+        return queries.observeAiUsageOfMonth(month).asFlow().mapToOneOrNull(io).map { generations ->
+            AiUsage(month = month, used = generations?.toInt() ?: 0)
         }
     }
 
@@ -244,13 +244,13 @@ class VocabRepositoryImpl(
 
     override suspend fun captureText(
         snippet: String,
-        alvos: List<SelectedTarget>,
+        targets: List<SelectedTarget>,
         languagePair: LanguagePair?,
     ): List<Long> = withContext(io) {
         val text = snippet
         require(text.isNotBlank()) { "O snippet é obrigatório." }
-        require(alvos.isNotEmpty()) { "Selecione ao menos um target." }
-        require(alvos.all { it.isValidIn(text) }) { "Há uma seleção fora do snippet current." }
+        require(targets.isNotEmpty()) { "Selecione ao menos um target." }
+        require(targets.all { it.isValidIn(text) }) { "Há uma seleção fora do snippet current." }
 
         val course = courseOfCapture(languagePair)
         queries.transactionWithResult {
@@ -260,7 +260,7 @@ class VocabRepositoryImpl(
                 format = CaptureFormat.TEXT,
                 course = course,
             )
-            insertTargets(captureId, alvos)
+            insertTargets(captureId, targets)
         }
     }
 
@@ -346,23 +346,23 @@ class VocabRepositoryImpl(
     override suspend fun confirmCapture(
         id: Long,
         snippet: String,
-        alvos: List<SelectedTarget>,
+        targets: List<SelectedTarget>,
     ): List<Long> = withContext(io) {
         val text = snippet
         require(text.isNotBlank()) { "O snippet é obrigatório." }
-        require(alvos.isNotEmpty()) { "Selecione ao menos um target." }
-        require(alvos.all { it.isValidIn(text) }) { "Há uma seleção fora do snippet current." }
+        require(targets.isNotEmpty()) { "Selecione ao menos um target." }
+        require(targets.all { it.isValidIn(text) }) { "Há uma seleção fora do snippet current." }
 
         queries.transactionWithResult {
-            val existentes = queries.listIdsOfCapture(id).executeAsList()
-            if (existentes.isNotEmpty()) return@transactionWithResult existentes
+            val existing = queries.listIdsOfCapture(id).executeAsList()
+            if (existing.isNotEmpty()) return@transactionWithResult existing
             queries.processCapture(snippet = text, id = id)
-            insertTargets(id, alvos)
+            insertTargets(id, targets)
         }
     }
 
-    private fun insertTargets(captureId: Long, alvos: List<SelectedTarget>): List<Long> =
-        alvos.distinctBy { it.start to it.end }.map { target ->
+    private fun insertTargets(captureId: Long, targets: List<SelectedTarget>): List<Long> =
+        targets.distinctBy { it.start to it.end }.map { target ->
             queries.insertEntry(
                 capture_id = captureId,
                 target = target.text.trim(),
@@ -372,7 +372,7 @@ class VocabRepositoryImpl(
                 status = EntryStatus.PENDING.name,
             )
             val id = queries.lastInsertedId().executeAsOne()
-            anotar(id, EventType.CAPTURED)
+            note(id, EventType.CAPTURED)
             id
         }
 
@@ -380,7 +380,7 @@ class VocabRepositoryImpl(
      * Uma linha na linha do tempo. Sempre dentro da transação de quem chamou —
      * um evento sem o fato que ele descreve seria pior que evento nenhum.
      */
-    private fun anotar(entryId: Long, type: EventType, detail: String? = null) {
+    private fun note(entryId: Long, type: EventType, detail: String? = null) {
         val instant = now()
         queries.recordEvent(
             entry_id = entryId,
@@ -400,7 +400,7 @@ class VocabRepositoryImpl(
 
         queries.markStatus(status = EntryStatus.GENERATING.name, id = id)
         try {
-            val card = api.gerar(
+            val card = api.generate(
                 snippet = snippet,
                 target = target,
                 type = type,
@@ -430,33 +430,33 @@ class VocabRepositoryImpl(
                     )
                     // Só na primeira vez: regerar uma ficha que já existia não é
                     // um acontecimento do dia, é conserto.
-                    anotar(id, EventType.CARD_READY)
+                    note(id, EventType.CARD_READY)
                 }
                 val month = localMonthOf(now())
                 queries.openAiMonth(month)
                 queries.addAiGeneration(month)
             }
             true
-        } catch (cancelamento: CancellationException) {
+        } catch (cancellation: CancellationException) {
             queries.markStatus(status = EntryStatus.PENDING.name, id = id)
-            throw cancelamento
-        } catch (falha: Exception) {
+            throw cancellation
+        } catch (failure: Exception) {
             // Anything that is not a CardException came from this side, not from
             // the server, so it has no code of its own to record.
-            val error = falha as? CardException
+            val error = failure as? CardException
             queries.markError(
                 status = EntryStatus.ERROR.name,
                 error_code = (error?.code ?: ErrorCode.GENERATION_FAILED).name,
-                error_detail = error?.detail ?: falha.message,
+                error_detail = error?.detail ?: failure.message,
                 id = id,
             )
             false
         }
     }
 
-    override suspend fun generateCards(ids: List<Long>, concorrencia: Int): List<Boolean> =
+    override suspend fun generateCards(ids: List<Long>, concurrency: Int): List<Boolean> =
         coroutineScope {
-            val limit = Semaphore(concorrencia.coerceAtLeast(1))
+            val limit = Semaphore(concurrency.coerceAtLeast(1))
             ids.map { id -> async { limit.withPermit { generateCard(id) } } }.awaitAll()
         }
 
@@ -464,38 +464,38 @@ class VocabRepositoryImpl(
         val row = queries.findEntryById(id).executeAsOneOrNull() ?: return@withContext
         val instant = now()
         val previous = buildRetention(row)
-        val nova = previous.after(correct = correct, now = instant)
+        val fresh = previous.after(correct = correct, now = instant)
         val day = localDayOf(instant)
 
         queries.transaction {
             queries.saveRetention(
-                points = nova.points,
-                decay_rate = nova.decayRate,
-                last_interaction_at = nova.lastInteraction,
-                reviews = nova.reviews.toLong(),
-                correct_count = nova.hits.toLong(),
-                incorrect_count = nova.misses.toLong(),
+                points = fresh.points,
+                decay_rate = fresh.decayRate,
+                last_interaction_at = fresh.lastInteraction,
+                reviews = fresh.reviews.toLong(),
+                correct_count = fresh.hits.toLong(),
+                incorrect_count = fresh.misses.toLong(),
                 id = id,
             )
             queries.openDay(day)
             queries.addReview(day)
 
-            anotar(
+            note(
                 entryId = id,
                 type = if (correct) EventType.CORRECT else EventType.INCORRECT,
-                detail = nova.reviews.toString(),
+                detail = fresh.reviews.toString(),
             )
             // A mudança de nível é o que a linha do tempo chama de "virou
             // dominada", e ela só existe comparando antes e depois — depois de
             // gravado, o antes some.
-            val subiu = Steps.level(Steps.of(nova))
-            if (subiu != Steps.level(Steps.of(previous))) {
-                anotar(entryId = id, type = EventType.LEVELED_UP, detail = subiu.name)
+            val rose = Steps.level(Steps.of(fresh))
+            if (rose != Steps.level(Steps.of(previous))) {
+                note(entryId = id, type = EventType.LEVELED_UP, detail = rose.name)
             }
         }
     }
 
-    override suspend fun excluir(id: Long) = withContext(io) {
+    override suspend fun delete(id: Long) = withContext(io) {
         val path = queries.transactionWithResult {
             val row = queries.findEntryById(id).executeAsOneOrNull()
                 ?: return@transactionWithResult null
@@ -574,13 +574,13 @@ class VocabRepositoryImpl(
     private fun buildCard(row: EntryRow, type: TargetType) = CardResponse(
         type = type,
         translation = row.translation.orEmpty(),
-        definitions = row.definitions_json.listaJson(),
+        definitions = row.definitions_json.jsonList(),
         example = row.example.orEmpty(),
         pronunciation = row.pronunciation.orEmpty(),
-        related = row.related_json.listaJson(),
+        related = row.related_json.jsonList(),
     )
 
-    private fun String?.listaJson(): List<String> = this
+    private fun String?.jsonList(): List<String> = this
         ?.let { runCatching { json.decodeFromString<List<String>>(it) }.getOrNull() }
         ?: emptyList()
 
