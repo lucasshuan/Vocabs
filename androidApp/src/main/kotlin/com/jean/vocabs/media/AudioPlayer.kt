@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 
 /** De quanto em quanto tempo a agulha é lida do player enquanto toca. */
-private const val INTERVALO_DA_AGULHA = 60L
+private const val NEEDLE_INTERVAL = 60L
 
 /** Estado de reprodução de um memo de voz, já amarrado ao ciclo de vida da tela. */
 class AudioState internal constructor(private val path: String) {
@@ -80,7 +80,7 @@ class AudioState internal constructor(private val path: String) {
     internal suspend fun acompanhar() {
         while (tocandoInterno) {
             posicaoInterna = player?.currentPosition?.toLong() ?: 0L
-            delay(INTERVALO_DA_AGULHA)
+            delay(NEEDLE_INTERVAL)
         }
     }
 }

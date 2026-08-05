@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.stateIn
  * de uma para a outra enquanto cada uma refizesse suas contas.
  */
 data class ProgressState(
-    val languagePair: LanguagePair = LanguagePair.PADRAO,
+    val languagePair: LanguagePair = LanguagePair.DEFAULT,
     /**
      * A semana de hoje, vazia, enquanto o banco não responde.
      *
@@ -56,7 +56,7 @@ data class ProgressState(
 
     /** Contadas por degrau: é o número que não muda sozinho enquanto a pessoa dorme. */
     val porNivel: Map<MemoryLevel, List<Entry>>
-        get() = words.groupBy { Steps.level(it.degrau) }
+        get() = words.groupBy { Steps.level(it.step) }
 
     val mastered: Int get() = porNivel[MemoryLevel.MASTERED]?.size ?: 0
     val familiares: Int get() = porNivel[MemoryLevel.FAMILIAR]?.size ?: 0
@@ -65,8 +65,8 @@ data class ProgressState(
     /** As que estão a um acerto de mudar de nome — o "3 estão perto de virar". */
     val pertoDeVirar: List<Entry>
         get() = words.filter { entry ->
-            val degrau = entry.degrau
-            Steps.hitsToLevelUp(degrau) == 1
+            val step = entry.step
+            Steps.hitsToLevelUp(step) == 1
         }
 }
 
@@ -95,7 +95,7 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
     private val course = MutableStateFlow<String?>(null)
 
     private val scope: Flow<Scope> = course.map { target ->
-        target?.let(Scope::Curso) ?: Scope.CursoAberto
+        target?.let(Scope::Course) ?: Scope.ActiveCourse
     }
 
     val estado: StateFlow<ProgressState> = scope.flatMapLatest { recorte ->
@@ -141,7 +141,7 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
     /** O curso do recorte, com o nativo de quem lê — [Scope.CursoAberto] cai no aberto. */
     private fun parDe(recorte: Scope, aberto: LanguagePair) = LanguagePair(
         native = aberto.native,
-        target = (recorte as? Scope.Curso)?.target ?: aberto.target,
+        target = (recorte as? Scope.Course)?.target ?: aberto.target,
     )
 
     /**
@@ -180,7 +180,7 @@ internal fun weekOf(today: LocalDate, activity: List<DailyActivity>): List<Progr
         val data = segunda.plusDays(deslocamento)
         ProgressDay(
             data = data,
-            reviews = porDia[data.toEpochDay() + DIA_JULIANO_DA_EPOCA] ?: 0,
+            reviews = porDia[data.toEpochDay() + JULIAN_DAY_OF_EPOCH] ?: 0,
             today = data == today,
             futuro = data.isAfter(today),
         )
@@ -194,14 +194,14 @@ internal fun weekOf(today: LocalDate, activity: List<DailyActivity>): List<Progr
  * do dia siga o fuso do aparelho sem o Kotlin comum precisar de uma biblioteca
  * de datas. Quem lê aqui converte uma vez, em vez de espalhar a soma.
  */
-private const val DIA_JULIANO_DA_EPOCA = 2_440_588L
+private const val JULIAN_DAY_OF_EPOCH = 2_440_588L
 
-private val MESES = listOf(
+private val MONTHS = listOf(
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 )
 
 /** Escrito à mão porque `Locale("pt","BR")` depende dos dados de ICU do aparelho. */
-internal fun monthName(data: LocalDate): String = MESES[data.monthValue - 1]
+internal fun monthName(data: LocalDate): String = MONTHS[data.monthValue - 1]
 
-internal val SIGLAS_DA_SEMANA = listOf("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
+internal val WEEKDAY_LABELS = listOf("seg", "ter", "qua", "qui", "sex", "sáb", "dom")

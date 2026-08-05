@@ -8,13 +8,13 @@ class DegrausTest {
     private val now = 1_000_000L
 
     @Test
-    fun `cada hit sobe exatamente um degrau, ate o quinto`() {
-        var retention = Retention.inicial(now)
-        assertEquals(1, Steps.de(retention))
+    fun `cada hit sobe exatamente um step, ate o quinto`() {
+        var retention = Retention.initial(now)
+        assertEquals(1, Steps.of(retention))
 
         val subida = (1..6).map {
-            retention = retention.apos(acertou = true, now = now)
-            Steps.de(retention)
+            retention = retention.after(correct = true, now = now)
+            Steps.of(retention)
         }
         assertEquals(listOf(2, 3, 4, 5, 5, 5), subida)
     }
@@ -37,26 +37,26 @@ class DegrausTest {
     }
 
     @Test
-    fun `errar derruba a escada, e o degrau nao cai com o tempo`() {
-        var retention = Retention.inicial(now)
-        repeat(3) { retention = retention.apos(acertou = true, now = now) }
-        assertEquals(4, Steps.de(retention))
+    fun `errar derruba a escada, e o step nao cai com o tempo`() {
+        var retention = Retention.initial(now)
+        repeat(3) { retention = retention.after(correct = true, now = now) }
+        assertEquals(4, Steps.of(retention))
 
         // Um mês parado zera a força de memória, mas o degrau é o que já foi
         // feito — ele não anda para trás sozinho.
         val umMes = now + 30L * 86_400_000L
         assertEquals(0.0, retention.pointsAt(umMes))
-        assertEquals(4, Steps.de(retention))
+        assertEquals(4, Steps.of(retention))
 
         // Um erro desfaz 2,7 acertos (MULTIPLICADOR_ERRO = 3 contra DIVISOR_ACERTO
         // = 1,5), então quem estava no quarto degrau volta para o primeiro. A
         // escada herda o rigor do modelo de retenção em vez de ter o seu próprio.
-        retention = retention.apos(acertou = false, now = umMes)
-        assertEquals(1, Steps.de(retention))
+        retention = retention.after(correct = false, now = umMes)
+        assertEquals(1, Steps.of(retention))
     }
 
     @Test
-    fun `melhor streak acha a maior corrida de days seguidos`() {
+    fun `best streak acha a maior corrida de days seguidos`() {
         // Em ordem decrescente e sem repetição, como sai do banco.
         assertEquals(0, bestStreakOf(emptyList()))
         assertEquals(1, bestStreakOf(listOf(10L)))
@@ -65,10 +65,10 @@ class DegrausTest {
     }
 
     @Test
-    fun `quota empty nao divide por zero e ja nasce batida`() {
+    fun `quota empty nao divide por zero e ja nasce met`() {
         val empty = DailyQuota(done = 0, inQueue = 0)
         assertEquals(0, empty.total)
-        assertEquals(1f, empty.fracao)
-        assertEquals(true, empty.batida)
+        assertEquals(1f, empty.fraction)
+        assertEquals(true, empty.met)
     }
 }

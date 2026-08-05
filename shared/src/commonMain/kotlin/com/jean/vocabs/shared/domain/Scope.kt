@@ -1,29 +1,21 @@
 package com.jean.vocabs.shared.domain
 
 /**
- * Que fatia do banco uma leitura enxerga.
+ * Which slice of the database a read sees.
  *
- * Nasceu quando o idioma deixou de recortar o app inteiro e passou a recortar só
- * a Início. Antes disso o par de idiomas era contexto implícito de tudo, e a
- * regra cabia numa frase; agora convivem três recortes ao mesmo tempo — a Início
- * mostra um curso por página, Vocabulários e Pendentes mostram os três juntos, e
- * "Seu progresso" mostra um curso que não é necessariamente o aberto.
+ * Three slices coexist since language stopped cutting the whole app: Home shows
+ * one course per page, Words and Pending show all of them, and "Your progress"
+ * shows a course that is not necessarily the open one.
  *
- * Ser um parâmetro com padrão, e não três famílias de métodos, é o que evita a
- * segunda API paralela: quem esquecer de escolher continua no curso aberto, que
- * é a resposta certa na maioria das telas.
+ * A defaulted parameter rather than three families of methods, so forgetting to
+ * choose lands on the active course — the right answer on most screens.
  */
 sealed interface Scope {
 
-    /** O course que a pessoa está usando now. O padrão de quase toda leitura. */
-    data object CursoAberto : Scope
+    data object ActiveCourse : Scope
 
-    /**
-     * Um curso nomeado, aberto ou não — o que "Seu progresso · francês" precisa
-     * para existir sem trocar o curso ativo por baixo de quem só queria olhar.
-     */
-    data class Curso(val target: String) : Scope
+    /** A named course, open or not, so "Your progress · French" can exist without switching. */
+    data class Course(val target: String) : Scope
 
-    /** Todos os courses juntos: Vocabulários, Pendentes e Você. */
-    data object Todos : Scope
+    data object All : Scope
 }

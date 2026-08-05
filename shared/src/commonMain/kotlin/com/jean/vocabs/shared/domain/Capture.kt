@@ -14,10 +14,10 @@ data class Capture(
     val durationMs: Long?,
     val transcriptionError: String?,
     /** O course em que ela nasceu. Um snippet está numa língua só. */
-    val languagePair: LanguagePair = LanguagePair.PADRAO,
+    val languagePair: LanguagePair = LanguagePair.DEFAULT,
 ) {
     val awaitingSelection: Boolean get() = status == CaptureStatus.AWAITING_SELECTION
-    val transcrevendo: Boolean get() = status == CaptureStatus.TRANSCRIBING
+    val transcribing: Boolean get() = status == CaptureStatus.TRANSCRIBING
 }
 
 enum class CaptureStatus {
@@ -26,7 +26,7 @@ enum class CaptureStatus {
     PROCESSED;
 
     companion object {
-        fun de(value: String): CaptureStatus =
+        fun of(value: String): CaptureStatus =
             entries.firstOrNull { it.name == value } ?: AWAITING_SELECTION
     }
 }
@@ -47,12 +47,12 @@ data class DailyActivity(
 data class AiUsage(
     val month: String,
     val used: Int,
-    val limit: Int = LIMITE_MENSAL_IA,
+    val limit: Int = MONTHLY_AI_LIMIT,
 ) {
-    val fracao: Float get() = (used.toFloat() / limit.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val fraction: Float get() = (used.toFloat() / limit.coerceAtLeast(1)).coerceIn(0f, 1f)
 
     companion object {
-        const val LIMITE_MENSAL_IA = 100
+        const val MONTHLY_AI_LIMIT = 100
     }
 }
 

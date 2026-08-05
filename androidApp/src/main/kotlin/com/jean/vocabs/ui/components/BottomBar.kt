@@ -68,7 +68,7 @@ fun BottomBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .height(ALTURA_DA_BARRA)
+                    .height(BAR_HEIGHT)
                     .padding(horizontal = 8.dp),
             ) {
                 abasEsquerda.forEach { TabItem(it, rotaAtual == it.rota, { aoNavegar(it.rota) }, Modifier.weight(1f)) }
@@ -80,7 +80,7 @@ fun BottomBar(
 }
 
 /** A altura da fileira de ícones, sem os insets. O botão de captura se alinha por ela. */
-val ALTURA_DA_BARRA = 68.dp
+val BAR_HEIGHT = 68.dp
 
 /**
  * Um dos quatro lugares.
@@ -95,7 +95,7 @@ val ALTURA_DA_BARRA = 68.dp
 private fun TabItem(aba: Tab, selecionada: Boolean, aoClicar: () -> Unit, modifier: Modifier) {
     val tinta by animateColorAsState(
         targetValue = if (selecionada) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = tween(Motion.PADRAO),
+        animationSpec = tween(Motion.DEFAULT),
         label = "tintaDaAba",
     )
     val escala by animateFloatAsState(
@@ -126,8 +126,8 @@ private fun TabItem(aba: Tab, selecionada: Boolean, aoClicar: () -> Unit, modifi
                 // "chegou algo" — se lê como um defeito de desenho.
                 AnimatedVisibility(
                     visible = aba.badge > 0,
-                    enter = scaleIn(Motion.molaElastica()) + fadeIn(tween(Motion.RAPIDO)),
-                    exit = scaleOut(tween(Motion.RAPIDO)) + fadeOut(tween(Motion.RAPIDO)),
+                    enter = scaleIn(Motion.molaElastica()) + fadeIn(tween(Motion.FAST)),
+                    exit = scaleOut(tween(Motion.FAST)) + fadeOut(tween(Motion.FAST)),
                     modifier = Modifier.align(Alignment.TopEnd),
                 ) {
                     Badge { Text(aba.badge.coerceAtMost(99).toString()) }

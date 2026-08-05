@@ -442,10 +442,10 @@ private fun ErrorNotice(text: String) {
 }
 
 /** O que a barra mais baixa ainda ocupa, para o silêncio virar linha e não sumiço. */
-private val ALTURA_MINIMA_DA_ONDA = 3.dp
+private val MIN_WAVE_HEIGHT = 3.dp
 
 /** Quanto a barra ainda não tocada se apaga em relação à já ouvida. */
-private const val OPACIDADE_POR_TOCAR = 0.3f
+private const val PRESS_OPACITY = 0.3f
 
 /**
  * A onda desenhada, com barra de largura fixa em vez de dez barras esticadas.
@@ -470,18 +470,18 @@ private fun AudioWave(
     Canvas(modifier = modifier.height(26.dp)) {
         val largura = 3.dp.toPx()
         val passo = largura * 2
-        val minima = ALTURA_MINIMA_DA_ONDA.toPx()
+        val minima = MIN_WAVE_HEIGHT.toPx()
         val quantidade = (size.width / passo).toInt().coerceAtLeast(1)
         val agulha = size.width * progresso
-        repeat(quantidade) { indice ->
-            val altura = minima + (size.height - minima) * perfil.picoDaBarra(indice, quantidade)
-            val x = indice * passo
+        repeat(quantidade) { index ->
+            val altura = minima + (size.height - minima) * perfil.picoDaBarra(index, quantidade)
+            val x = index * passo
             drawRoundRect(
                 color = cor,
                 topLeft = Offset(x, (size.height - altura) / 2f),
                 size = Size(largura, altura),
                 cornerRadius = CornerRadius(largura / 2f),
-                alpha = if (x + largura <= agulha) 1f else OPACIDADE_POR_TOCAR,
+                alpha = if (x + largura <= agulha) 1f else PRESS_OPACITY,
             )
         }
     }

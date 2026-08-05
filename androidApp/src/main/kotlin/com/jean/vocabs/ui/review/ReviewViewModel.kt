@@ -26,7 +26,7 @@ sealed interface ReviewState {
     ) : ReviewState
     data class Summary(
         val hits: Int,
-        val errors: Int,
+        val misses: Int,
         val errados: List<String>,
         val dayStreak: Int,
         val restantes: Int,
@@ -42,7 +42,7 @@ class ReviewViewModel(app: Application) : AndroidViewModel(app) {
     private val respondidos = mutableSetOf<Long>()
     private val recolocados = mutableSetOf<Long>()
     private var hits = 0
-    private var errors = 0
+    private var misses = 0
     private var errados = mutableListOf<String>()
     private var total = 0
     private var restantes = 0
@@ -53,13 +53,13 @@ class ReviewViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _estado.value = ReviewState.Carregando
             val fila = repository.observeReviewQueue().first()
-            restantes = (fila.size - TETO_SESSAO).coerceAtLeast(0)
+            restantes = (fila.size - SESSION_CAP).coerceAtLeast(0)
             hits = 0
-            errors = 0
+            misses = 0
             errados.clear()
             respondidos.clear()
             recolocados.clear()
-            cartas = ArrayDeque(fila.take(TETO_SESSAO).shuffled())
+            cartas = ArrayDeque(fila.take(SESSION_CAP).shuffled())
             total = cartas.size
             _estado.value = if (cartas.isEmpty()) ReviewState.Empty else proximoCartao()
         }
@@ -78,21 +78,21 @@ class ReviewViewModel(app: Application) : AndroidViewModel(app) {
 
     fun naoLembro() {
         val current = _estado.value as? ReviewState.CardSurface ?: return
-        if (current.feedback == null) avaliar(acertou = false, naoLembrou = true)
+        if (current.feedback == null) avaliar(correct = false, naoLembrou = true)
     }
 
-    private fun avaliar(acertou: Boolean, naoLembrou: Boolean) {
+    private fun avaliar(correct: Boolean, naoLembrou: Boolean) {
         val current = _estado.value as? ReviewState.CardSurface ?: return
         if (respondidos.add(current.entry.id)) {
-            if (acertou) hits++ else {
-                errors++
+            if (correct) hits++ else {
+                misses++
                 errados += current.entry.title
             }
-            AppContainer.scope.launch { repository.recordAnswer(current.entry.id, acertou) }
+            AppContainer.scope.launch { repository.recordAnswer(current.entry.id, correct) }
         }
         _estado.value = current.copy(
             feedback = when {
-                acertou -> ReviewFeedback.CORRETA
+                correct -> ReviewFeedback.CORRETA
                 naoLembrou -> ReviewFeedback.NAO_LEMBRO
                 else -> ReviewFeedback.INCORRETA
             },
@@ -120,8 +120,8 @@ class ReviewViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun resumo(): ReviewState.Summary {
         val streak = repository.observeReviewSummary().first()
-        return ReviewState.Summary(hits, errors, errados.toList(), streak.dayStreak, restantes)
+        return ReviewState.Summary(hits, misses, errados.toList(), streak.dayStreak, restantes)
     }
 
-    private companion object { const val TETO_SESSAO = 20 }
+    private companion object { const val SESSION_CAP = 20 }
 }

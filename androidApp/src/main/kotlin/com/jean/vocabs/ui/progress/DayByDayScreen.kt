@@ -91,9 +91,9 @@ fun DayByDayScreen(
                 )
             }
             WeekStrip(
-                days = estado.semana.mapIndexed { indice, day ->
+                days = estado.semana.mapIndexed { index, day ->
                     WeekDay(
-                        sigla = SIGLAS_DA_SEMANA[indice],
+                        sigla = WEEKDAY_LABELS[index],
                         numero = day.data.dayOfMonth,
                         reviews = day.reviews,
                         today = day.today,
@@ -158,8 +158,8 @@ private fun DayGroup(grupo: EventDay, ultimo: Boolean, aoAbrirFicha: (Long) -> U
                 // O último dia não tem para onde continuar: a linha pararia no ar,
                 // sugerindo um passado que a tela não tem como mostrar.
                 if (ultimo) return@drawBehind
-                val meio = LARGURA_DO_TRILHO.toPx() / 2f
-                val comeco = (TOPO_DO_PONTO + TAMANHO_DO_PONTO + FOLGA_DO_TRILHO).toPx()
+                val meio = TRACK_WIDTH.toPx() / 2f
+                val comeco = (DOT_TOP + DOT_SIZE + TRACK_GAP).toPx()
                 drawLine(
                     color = trilho,
                     start = Offset(meio, comeco),
@@ -168,11 +168,11 @@ private fun DayGroup(grupo: EventDay, ultimo: Boolean, aoAbrirFicha: (Long) -> U
                 )
             },
     ) {
-        Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.width(LARGURA_DO_TRILHO)) {
+        Box(contentAlignment = Alignment.TopCenter, modifier = Modifier.width(TRACK_WIDTH)) {
             Box(
                 Modifier
-                    .padding(top = TOPO_DO_PONTO)
-                    .size(TAMANHO_DO_PONTO)
+                    .padding(top = DOT_TOP)
+                    .size(DOT_SIZE)
                     .background(ponto, CircleShape),
             )
         }
@@ -257,12 +257,12 @@ private fun eventColor(type: EventType): Color = when (type) {
 }
 
 /** O ponto do dia e a linha que desce dele ficam nesta coluna, à esquerda de tudo. */
-private val LARGURA_DO_TRILHO = 20.dp
+private val TRACK_WIDTH = 20.dp
 
 /** Alinha o ponto com a primeira linha do título do dia, e não com o topo do bloco. */
-private val TOPO_DO_PONTO = 5.dp
-private val TAMANHO_DO_PONTO = 10.dp
-private val FOLGA_DO_TRILHO = 4.dp
+private val DOT_TOP = 5.dp
+private val DOT_SIZE = 10.dp
+private val TRACK_GAP = 4.dp
 
 /** Um dia da linha do tempo, com o que aconteceu nele. */
 internal data class EventDay(
@@ -288,7 +288,7 @@ internal fun groupByDay(
 ): List<EventDay> {
     if (eventos.isEmpty()) return emptyList()
     val porDia = eventos.groupBy { it.day }
-    val diaDeHoje = today.toEpochDay() + DIA_JULIANO_DA_EPOCA_UI
+    val diaDeHoje = today.toEpochDay() + JULIAN_DAY_OF_EPOCH_UI
     val maisAntigo = porDia.keys.min()
     val maisRecente = maxOf(porDia.keys.max(), diaDeHoje)
 
@@ -305,10 +305,10 @@ internal fun groupByDay(
     }
 }
 
-private const val DIA_JULIANO_DA_EPOCA_UI = 2_440_588L
+private const val JULIAN_DAY_OF_EPOCH_UI = 2_440_588L
 
 private fun dayTitle(day: Long, today: Long): String {
-    val data = LocalDate.ofEpochDay(day - DIA_JULIANO_DA_EPOCA_UI)
+    val data = LocalDate.ofEpochDay(day - JULIAN_DAY_OF_EPOCH_UI)
     val name = "${data.dayOfMonth} de ${monthName(data).lowercase()}"
     return when (day) {
         today -> "$name · hoje"

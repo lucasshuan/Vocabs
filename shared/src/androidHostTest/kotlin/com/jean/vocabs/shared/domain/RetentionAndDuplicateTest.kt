@@ -9,11 +9,11 @@ import kotlin.test.assertSame
 class RetencaoEDuplicataTest {
     @Test
     fun `error e hit atualizam retention e placar`() {
-        val inicial = Retention.inicial(1_000)
-        val error = inicial.apos(false, 2_000)
+        val initial = Retention.initial(1_000)
+        val error = initial.after(false, 2_000)
         assertEquals(0.0, error.points)
-        assertEquals(1, error.errors)
-        val hit = error.apos(true, 3_000)
+        assertEquals(1, error.misses)
+        val hit = error.after(true, 3_000)
         assertEquals(100.0, hit.points)
         assertEquals(1, hit.hits)
         assertEquals(2, hit.reviews)

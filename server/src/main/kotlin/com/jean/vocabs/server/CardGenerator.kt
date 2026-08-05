@@ -95,14 +95,14 @@ class CardGenerator(
 
     // Configurável para dar para comparar modelos sem recompilar. O padrão é o
     // mais capaz para produzir definições contextualizadas e termos relacionados.
-    private val model: String = Config["MODELO"] ?: MODELO_PADRAO
+    private val model: String = Config["MODELO"] ?: DEFAULT_MODEL
 
     /** Haiku 4.5 rejeita `effort` com 400; Opus e Sonnet aceitam. */
     private val supportsEffort: Boolean = !model.startsWith("claude-haiku")
 
     /** Interno, e não privado, para o teste conferir que o prompt cita os dois languages. */
     internal companion object {
-        const val MODELO_PADRAO = "claude-opus-5"
+        const val DEFAULT_MODEL = "claude-opus-5"
 
         /**
          * O prompt é a única coisa deste projeto escrita em inglês — todo o resto,

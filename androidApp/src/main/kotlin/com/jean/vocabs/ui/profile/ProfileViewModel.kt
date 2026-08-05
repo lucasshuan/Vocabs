@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.stateIn
  * três números do topo somam tudo, e a lista logo abaixo é que reparte.
  */
 data class ProfileState(
-    val languagePair: LanguagePair = LanguagePair.PADRAO,
+    val languagePair: LanguagePair = LanguagePair.DEFAULT,
     /** Todos os cursos matriculados, na ordem da faixa — inclusive os vazios. */
     val courses: List<CourseSummary> = emptyList(),
     val dayStreak: Int = 0,
@@ -42,7 +42,7 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         preferences.observeLanguagePair(),
         // De todos os cursos: a sequência de dias conta atividade em qualquer
         // idioma, e é o único número desta tela que já era assim antes.
-        repository.observeReviewSummary(Scope.Todos),
+        repository.observeReviewSummary(Scope.All),
         repository.observeAiUsage(),
     ) { listaDeCursos, languagePair, revisao, aiUsage ->
         ProfileState(
@@ -55,6 +55,6 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Quantos idiomas ainda dá para escolher — o "37 idiomas" da tela Novo idioma. */
     val disponiveis: StateFlow<Int> = preferences.observeCourses()
-        .map { matriculados -> com.jean.vocabs.contracts.Languages.CATALOGO.count { it.code !in matriculados } }
+        .map { matriculados -> com.jean.vocabs.contracts.Languages.CATALOG.count { it.code !in matriculados } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 }

@@ -63,7 +63,7 @@ class VocabRepositoryImpl(
      * que faz todas as telas se refazerem sozinhas quando a pessoa troca de
      * idioma na faixa — sem isso cada ViewModel teria que se reinscrever.
      */
-    private val activeCourse: Flow<LanguagePair> = flowOf(LanguagePair.PADRAO),
+    private val activeCourse: Flow<LanguagePair> = flowOf(LanguagePair.DEFAULT),
     private val removeFile: (String) -> Unit = {},
 ) : VocabRepository {
 
@@ -81,7 +81,7 @@ class VocabRepositoryImpl(
                     CourseSummary(
                         languagePair = languagePair,
                         total = entries.size,
-                        mastered = entries.count { Steps.level(it.degrau) == MemoryLevel.MASTERED },
+                        mastered = entries.count { Steps.level(it.step) == MemoryLevel.MASTERED },
                         inQueue = entries.count { it.needsReview(instant) },
                         nextInMillis = entries
                             .mapNotNull { it.retention?.nextReviewIn(instant) }
@@ -118,9 +118,9 @@ class VocabRepositoryImpl(
         combine(fitsScope(scope)) { itens, cabe -> itens.filter { cabe(languagePair(it)) } }
 
     private fun fitsScope(scope: Scope): Flow<(LanguagePair) -> Boolean> = when (scope) {
-        Scope.Todos -> flowOf({ _: LanguagePair -> true })
-        is Scope.Curso -> flowOf({ languagePair: LanguagePair -> languagePair.target == scope.target })
-        Scope.CursoAberto -> activeCourse.map { aberto -> { languagePair: LanguagePair -> languagePair == aberto } }
+        Scope.All -> flowOf({ _: LanguagePair -> true })
+        is Scope.Course -> flowOf({ languagePair: LanguagePair -> languagePair.target == scope.target })
+        Scope.ActiveCourse -> activeCourse.map { aberto -> { languagePair: LanguagePair -> languagePair == aberto } }
     }
 
     override fun observeCaptureById(id: Long): Flow<Capture?> =
@@ -174,7 +174,7 @@ class VocabRepositoryImpl(
                 done = prontas.count { entry ->
                     val retention = entry.retention ?: return@count false
                     retention.reviews > 0 &&
-                        instant - retention.lastInteraction < DOIS_DIAS_EM_MILLIS &&
+                        instant - retention.lastInteraction < TWO_DAYS_IN_MILLIS &&
                         localDayOf(retention.lastInteraction) == today
                 },
                 inQueue = inQueue,
@@ -191,7 +191,7 @@ class VocabRepositoryImpl(
             nextInMillis = retention.nextReviewIn(instant),
             reviews = retention.reviews,
             hits = retention.hits,
-            errors = retention.errors,
+            misses = retention.misses,
         )
     }
 
@@ -210,7 +210,7 @@ class VocabRepositoryImpl(
                 entryId = entryId,
                 day = day,
                 instant = instant,
-                type = EventType.de(type),
+                type = EventType.of(type),
                 target = target,
                 languagePair = LanguagePair(native = native, target = alvoIdioma),
                 detail = detail,
@@ -396,7 +396,7 @@ class VocabRepositoryImpl(
         val snippet = row.snippet?.takeIf { it.isNotBlank() } ?: return@withContext false
         val target = row.target.takeIf { it.isNotBlank() } ?: return@withContext false
         val type = typeOf(row.type)
-        val wasAlreadyReady = EntryStatus.de(row.status) == EntryStatus.READY
+        val wasAlreadyReady = EntryStatus.of(row.status) == EntryStatus.READY
 
         queries.markStatus(status = EntryStatus.GENERATING.name, id = id)
         try {
@@ -418,14 +418,14 @@ class VocabRepositoryImpl(
                     id = id,
                 )
                 if (!wasAlreadyReady) {
-                    val inicial = Retention.inicial(now())
+                    val initial = Retention.initial(now())
                     queries.saveRetention(
-                        points = inicial.points,
-                        decay_rate = inicial.taxa,
-                        last_interaction_at = inicial.lastInteraction,
-                        reviews = inicial.reviews.toLong(),
-                        correct_count = inicial.hits.toLong(),
-                        incorrect_count = inicial.errors.toLong(),
+                        points = initial.points,
+                        decay_rate = initial.decayRate,
+                        last_interaction_at = initial.lastInteraction,
+                        reviews = initial.reviews.toLong(),
+                        correct_count = initial.hits.toLong(),
+                        incorrect_count = initial.misses.toLong(),
                         id = id,
                     )
                     // Só na primeira vez: regerar uma ficha que já existia não é
@@ -460,21 +460,21 @@ class VocabRepositoryImpl(
             ids.map { id -> async { limit.withPermit { generateCard(id) } } }.awaitAll()
         }
 
-    override suspend fun recordAnswer(id: Long, acertou: Boolean) = withContext(io) {
+    override suspend fun recordAnswer(id: Long, correct: Boolean) = withContext(io) {
         val row = queries.findEntryById(id).executeAsOneOrNull() ?: return@withContext
         val instant = now()
         val previous = buildRetention(row)
-        val nova = previous.apos(acertou = acertou, now = instant)
+        val nova = previous.after(correct = correct, now = instant)
         val day = localDayOf(instant)
 
         queries.transaction {
             queries.saveRetention(
                 points = nova.points,
-                decay_rate = nova.taxa,
+                decay_rate = nova.decayRate,
                 last_interaction_at = nova.lastInteraction,
                 reviews = nova.reviews.toLong(),
                 correct_count = nova.hits.toLong(),
-                incorrect_count = nova.errors.toLong(),
+                incorrect_count = nova.misses.toLong(),
                 id = id,
             )
             queries.openDay(day)
@@ -482,14 +482,14 @@ class VocabRepositoryImpl(
 
             anotar(
                 entryId = id,
-                type = if (acertou) EventType.CORRECT else EventType.INCORRECT,
+                type = if (correct) EventType.CORRECT else EventType.INCORRECT,
                 detail = nova.reviews.toString(),
             )
             // A mudança de nível é o que a linha do tempo chama de "virou
             // dominada", e ela só existe comparando antes e depois — depois de
             // gravado, o antes some.
-            val subiu = Steps.level(Steps.de(nova))
-            if (subiu != Steps.level(Steps.de(previous))) {
+            val subiu = Steps.level(Steps.of(nova))
+            if (subiu != Steps.level(Steps.of(previous))) {
                 anotar(entryId = id, type = EventType.LEVELED_UP, detail = subiu.name)
             }
         }
@@ -530,8 +530,8 @@ class VocabRepositoryImpl(
         snippet = row.snippet,
         source = row.source,
         createdAt = row.created_at,
-        status = CaptureStatus.de(row.status),
-        format = CaptureFormat.de(row.format),
+        status = CaptureStatus.of(row.status),
+        format = CaptureFormat.of(row.format),
         mediaPath = row.media_path,
         durationMs = row.duration_ms,
         transcriptionError = row.transcription_error,
@@ -539,7 +539,7 @@ class VocabRepositoryImpl(
     )
 
     private fun toDomain(row: EntryRow): Entry {
-        val status = EntryStatus.de(row.status)
+        val status = EntryStatus.of(row.status)
         val type = typeOf(row.type)
         return Entry(
             id = row.id,
@@ -552,7 +552,7 @@ class VocabRepositoryImpl(
             source = row.source,
             createdAt = row.created_at,
             status = status,
-            format = CaptureFormat.de(row.format),
+            format = CaptureFormat.of(row.format),
             mediaPath = row.media_path,
             card = if (status == EntryStatus.READY) buildCard(row, type) else null,
             retention = if (status == EntryStatus.READY) buildRetention(row) else null,
@@ -564,11 +564,11 @@ class VocabRepositoryImpl(
 
     private fun buildRetention(row: EntryRow) = Retention(
         points = row.points,
-        taxa = row.decay_rate,
+        decayRate = row.decay_rate,
         lastInteraction = row.last_interaction_at,
         reviews = row.reviews.toInt(),
         hits = row.correct_count.toInt(),
-        errors = row.incorrect_count.toInt(),
+        misses = row.incorrect_count.toInt(),
     )
 
     private fun buildCard(row: EntryRow, type: TargetType) = CardResponse(
@@ -588,6 +588,6 @@ class VocabRepositoryImpl(
         runCatching { TargetType.valueOf(value) }.getOrDefault(TargetType.WORD)
 
     private companion object {
-        const val DOIS_DIAS_EM_MILLIS = 2 * 86_400_000L
+        const val TWO_DAYS_IN_MILLIS = 2 * 86_400_000L
     }
 }

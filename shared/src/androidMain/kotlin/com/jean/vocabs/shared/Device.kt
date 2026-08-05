@@ -22,7 +22,7 @@ object Device {
      * Genymotion e `gce_x86`/`cutf` são os emuladores de nuvem usados em CI.
      */
     val isEmulator: Boolean by lazy {
-        Build.HARDWARE.lowercase() in HARDWARES_EMULADOS ||
+        Build.HARDWARE.lowercase() in EMULATED_HARDWARE ||
             // Rede de segurança para emuladores de fabricantes que não estão na
             // lista: o nome do produto praticamente sempre entrega.
             Build.PRODUCT.lowercase().let { produto ->
@@ -30,5 +30,5 @@ object Device {
             }
     }
 
-    private val HARDWARES_EMULADOS = setOf("goldfish", "ranchu", "vbox86", "gce_x86", "cutf")
+    private val EMULATED_HARDWARE = setOf("goldfish", "ranchu", "vbox86", "gce_x86", "cutf")
 }

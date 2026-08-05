@@ -126,7 +126,7 @@ class AudioTranscriber(private val context: Context) {
             thread(name = "Vocabu-stt", isDaemon = true) {
                 runCatching {
                     FileInputStream(path).use { entry ->
-                        entry.skip(AudioRecorder.CABECALHO_WAV.toLong())
+                        entry.skip(AudioRecorder.WAV_HEADER.toLong())
                         ParcelFileDescriptor.AutoCloseOutputStream(escrita).use { saida ->
                             entry.copyTo(saida)
                         }
@@ -143,7 +143,7 @@ class AudioTranscriber(private val context: Context) {
                 putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE, leitura)
                 putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_CHANNEL_COUNT, 1)
                 putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_ENCODING, AudioFormat.ENCODING_PCM_16BIT)
-                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, AudioRecorder.TAXA_AMOSTRAGEM)
+                putExtra(RecognizerIntent.EXTRA_AUDIO_SOURCE_SAMPLING_RATE, AudioRecorder.SAMPLE_RATE)
             }
             reconhecedor.startListening(intencao)
         }

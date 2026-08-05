@@ -176,7 +176,7 @@ fun CardScreen(id: Long, aoVoltar: () -> Unit, vm: CardViewModel = viewModel()) 
             // texto, e o que foi a resposta chegando parece um erro de desenho.
             AnimatedContent(
                 targetState = item.status,
-                transitionSpec = { fadeIn(tween(Motion.PADRAO)) togetherWith fadeOut(tween(Motion.RAPIDO)) },
+                transitionSpec = { fadeIn(tween(Motion.DEFAULT)) togetherWith fadeOut(tween(Motion.FAST)) },
                 label = "corpoDaFicha",
             ) { status -> when (status) {
                 EntryStatus.GENERATING, EntryStatus.PENDING -> Surface(
@@ -277,8 +277,8 @@ private fun CardReady(
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             SectionLabel("Definições")
-            card.definitions.forEachIndexed { indice, definicao ->
-                Text("${indice + 1}. $definicao", style = MaterialTheme.typography.bodyMedium)
+            card.definitions.forEachIndexed { index, definicao ->
+                Text("${index + 1}. $definicao", style = MaterialTheme.typography.bodyMedium)
             }
             card.example.takeIf(String::isNotBlank)?.let {
                 Text(
@@ -359,7 +359,7 @@ private fun rememberTts(etiqueta: String): TextToSpeech? {
         var motor: TextToSpeech? = null
         motor = TextToSpeech(contexto) { status ->
             val disponivel = status == TextToSpeech.SUCCESS &&
-                motor?.setLanguage(Locale.forLanguageTag(etiqueta)) !in VOZ_AUSENTE
+                motor?.setLanguage(Locale.forLanguageTag(etiqueta)) !in NO_VOICE
             tts = motor.takeIf { disponivel }
         }
         onDispose {
@@ -371,4 +371,4 @@ private fun rememberTts(etiqueta: String): TextToSpeech? {
     return tts
 }
 
-private val VOZ_AUSENTE = setOf(TextToSpeech.LANG_MISSING_DATA, TextToSpeech.LANG_NOT_SUPPORTED, null)
+private val NO_VOICE = setOf(TextToSpeech.LANG_MISSING_DATA, TextToSpeech.LANG_NOT_SUPPORTED, null)

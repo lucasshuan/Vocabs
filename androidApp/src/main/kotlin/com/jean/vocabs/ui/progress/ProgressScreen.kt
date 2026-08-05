@@ -205,9 +205,9 @@ private fun WeekCard(estado: ProgressState, vazio: Boolean, aoAbrir: () -> Unit)
         }
 
         WeekStrip(
-            days = estado.semana.mapIndexed { indice, day ->
+            days = estado.semana.mapIndexed { index, day ->
                 WeekDay(
-                    sigla = SIGLAS_DA_SEMANA[indice],
+                    sigla = WEEKDAY_LABELS[index],
                     numero = day.data.dayOfMonth,
                     reviews = day.reviews,
                     today = day.today,
@@ -237,7 +237,7 @@ private fun WeekCard(estado: ProgressState, vazio: Boolean, aoAbrir: () -> Unit)
         // Sem barra no vazio: uma trilha cinza de ponta a ponta é uma promessa de
         // que existe alguma coisa para preencher hoje, e não existe ainda.
         if (!vazio) {
-            val avanco by animatedFraction(estado.quota.fracao, "fracaoDaQuota")
+            val avanco by animatedFraction(estado.quota.fraction, "fracaoDaQuota")
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -313,7 +313,7 @@ private fun StockCard(estado: ProgressState, vazio: Boolean, aoAbrir: () -> Unit
     ScreenCard(aoClicar = aoAbrir, recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             ProgressRing(
-                fracao = estado.mastered.toFloat() / estado.total,
+                fraction = estado.mastered.toFloat() / estado.total,
                 tamanho = 78.dp,
                 espessura = 9.dp,
             ) {
@@ -393,7 +393,7 @@ private fun CoursePill(target: String, aberta: Boolean, aoClicar: () -> Unit) {
     val toque = rememberHaptics()
     val giro by animateFloatAsState(
         targetValue = if (aberta) 180f else 0f,
-        animationSpec = tween(Motion.PADRAO),
+        animationSpec = tween(Motion.DEFAULT),
         label = "giroDaPilula",
     )
 
@@ -546,13 +546,13 @@ internal fun quotaText(quota: DailyQuota): String =
 
 /** A linha do anel vazio: quando é que ele passa a existir. */
 internal fun whenItAppearsText(): String =
-    "aparece depois de ${NUMEROS_POR_EXTENSO[Steps.TOTAL - 1].lowercase()} revisões"
+    "aparece depois de ${SPELLED_NUMBERS[Steps.TOTAL - 1].lowercase()} revisões"
 
 /** "9 de 24 já são suas" — ou a falta delas, sem número inventado. */
 internal fun courseSummaryText(course: CourseSummary): String =
     if (course.total == 0) "nenhuma palavra ainda" else "${course.mastered} de ${course.total} já são suas"
 
-private val NUMEROS_POR_EXTENSO = listOf(
+private val SPELLED_NUMBERS = listOf(
     "Nenhuma", "Uma", "Duas", "Três", "Quatro", "Cinco", "Seis", "Sete", "Oito", "Nove", "Dez",
 )
 
@@ -565,12 +565,12 @@ private val NUMEROS_POR_EXTENSO = listOf(
 internal fun stockTitle(mastered: Int): String = when {
     mastered == 0 -> "Nenhuma palavra é sua ainda"
     mastered == 1 -> "Uma palavra já é sua"
-    mastered <= 10 -> "${NUMEROS_POR_EXTENSO[mastered]} palavras já são suas"
+    mastered <= 10 -> "${SPELLED_NUMBERS[mastered]} palavras já são suas"
     else -> "$mastered palavras já são suas"
 }
 
-internal fun closeToLevelingText(quantas: Int): String = when (quantas) {
+internal fun closeToLevelingText(count: Int): String = when (count) {
     0 -> "Nenhuma está perto de virar."
     1 -> "1 está perto de virar."
-    else -> "$quantas estão perto de virar."
+    else -> "$count estão perto de virar."
 }

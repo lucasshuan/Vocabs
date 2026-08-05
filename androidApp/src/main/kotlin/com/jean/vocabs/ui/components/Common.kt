@@ -254,7 +254,7 @@ fun MemoryBar(
     modifier: Modifier = Modifier,
     altura: Dp = 8.dp,
 ) {
-    val fracao by animateFloatAsState(
+    val fraction by animateFloatAsState(
         targetValue = (points / 100.0).toFloat().coerceIn(0f, 1f),
         animationSpec = tween(500),
         label = "fracaoMemoria",
@@ -267,7 +267,7 @@ fun MemoryBar(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(fracao)
+                .fillMaxWidth(fraction)
                 .fillMaxHeight()
                 .background(levelColor(level), RoundedCornerShape(altura / 2)),
         )

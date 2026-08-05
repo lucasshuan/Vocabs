@@ -86,8 +86,8 @@ fun LanguageStrip(
         contentPadding = recheio,
         modifier = modifier.fillMaxWidth(),
     ) {
-        items(courses.size, key = { courses[it].languagePair.target }) { indice ->
-            val course = courses[indice]
+        items(courses.size, key = { courses[it].languagePair.target }) { index ->
+            val course = courses[index]
             LanguageChip(
                 language = languageOf(course.languagePair.target),
                 badge = course.badge,
@@ -116,12 +116,12 @@ fun LanguageChip(
     val cores = MaterialTheme.colorScheme
     val fundo by animateColorAsState(
         targetValue = if (selecionado) cores.primary else cores.surface,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "fundoDoChip",
     )
     val text by animateColorAsState(
         targetValue = if (selecionado) cores.onPrimary else cores.onSurfaceVariant,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "textoDoChip",
     )
 
@@ -159,15 +159,15 @@ fun LanguageChip(
 private fun CourseBadgeView(badge: CourseBadge, invertido: Boolean) {
     val cores = MaterialTheme.colorScheme
     val fundo = when {
-        badge is CourseBadge.Revisar && invertido -> cores.onPrimary
-        badge is CourseBadge.Revisar -> cores.secondaryContainer
-        badge is CourseBadge.EmDia -> cores.tertiaryContainer
+        badge is CourseBadge.Review && invertido -> cores.onPrimary
+        badge is CourseBadge.Review -> cores.secondaryContainer
+        badge is CourseBadge.UpToDate -> cores.tertiaryContainer
         else -> cores.surfaceVariant
     }
     val tinta = when {
-        badge is CourseBadge.Revisar && invertido -> cores.primary
-        badge is CourseBadge.Revisar -> cores.primary
-        badge is CourseBadge.EmDia -> cores.tertiary
+        badge is CourseBadge.Review && invertido -> cores.primary
+        badge is CourseBadge.Review -> cores.primary
+        badge is CourseBadge.UpToDate -> cores.tertiary
         else -> cores.onSurfaceVariant
     }
 
@@ -179,8 +179,8 @@ private fun CourseBadgeView(badge: CourseBadge, invertido: Boolean) {
             .background(fundo, CircleShape),
     ) {
         when (badge) {
-            is CourseBadge.Revisar -> AnimatedContent(
-                targetState = badge.quantas,
+            is CourseBadge.Review -> AnimatedContent(
+                targetState = badge.count,
                 transitionSpec = {
                     val subindo = targetState < initialState
                     val entry = slideInVertically { altura -> if (subindo) altura else -altura } + fadeIn(tween(140))
@@ -188,16 +188,16 @@ private fun CourseBadgeView(badge: CourseBadge, invertido: Boolean) {
                     entry togetherWith saida
                 },
                 label = "contagemDoSelo",
-            ) { quantas ->
+            ) { count ->
                 Text(
-                    text = quantas.coerceAtMost(99).toString(),
+                    text = count.coerceAtMost(99).toString(),
                     style = MaterialTheme.typography.labelMedium,
                     color = tinta,
                     modifier = Modifier.padding(horizontal = 6.dp),
                 )
             }
-            CourseBadge.EmDia -> Icon(AppIcons.Check, null, tint = tinta, modifier = Modifier.size(12.dp))
-            CourseBadge.Vazio -> Icon(AppIcons.Ampulheta, null, tint = tinta, modifier = Modifier.size(12.dp))
+            CourseBadge.UpToDate -> Icon(AppIcons.Check, null, tint = tinta, modifier = Modifier.size(12.dp))
+            CourseBadge.Empty -> Icon(AppIcons.Ampulheta, null, tint = tinta, modifier = Modifier.size(12.dp))
         }
     }
 }
@@ -237,7 +237,7 @@ fun LanguageFilterPill(
     val cores = MaterialTheme.colorScheme
     val fundo by animateColorAsState(
         targetValue = if (selecionado) cores.primary else cores.surface,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "fundoDoFiltro",
     )
     Row(
@@ -287,8 +287,8 @@ fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
     if (total <= 1) return
     val cores = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = modifier) {
-        repeat(total) { indice ->
-            val aberto = indice == current
+        repeat(total) { index ->
+            val aberto = index == current
             val largura by androidx.compose.animation.core.animateDpAsState(
                 targetValue = if (aberto) 16.dp else 5.dp,
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
@@ -296,7 +296,7 @@ fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
             )
             val cor by animateColorAsState(
                 targetValue = if (aberto) cores.primary else cores.outlineVariant,
-                animationSpec = tween(Motion.RAPIDO),
+                animationSpec = tween(Motion.FAST),
                 label = "corDoPonto",
             )
             Box(Modifier.width(largura).height(5.dp).background(cor, CircleShape))
@@ -305,7 +305,7 @@ fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
 }
 
 private fun badgeDescription(name: String, badge: CourseBadge): String = when (badge) {
-    is CourseBadge.Revisar -> "$name, ${badge.quantas} para revisar"
-    CourseBadge.EmDia -> "$name, em dia"
-    CourseBadge.Vazio -> "$name, nada agendado"
+    is CourseBadge.Review -> "$name, ${badge.count} para revisar"
+    CourseBadge.UpToDate -> "$name, em dia"
+    CourseBadge.Empty -> "$name, nada agendado"
 }

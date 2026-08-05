@@ -11,16 +11,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Quantos pontos o perfil guarda — sempre mais barras do que a tela desenha. */
-private const val PONTOS_DO_PERFIL = 180
+private const val PROFILE_POINTS = 180
 
 /** Quantas amostras cada ponto olha antes de dar o pico por bom. */
-private const val AMOSTRAS_POR_PONTO = 48
+private const val SAMPLES_PER_POINT = 48
 
 /** O maior tamanho aceito para um bloco que não é o de dados. */
-private const val BLOCO_MAXIMO = 1_000_000
+private const val MAX_BLOCK = 1_000_000
 
 /** Um WAV são de verdade tem dois ou três blocos antes dos dados; isto é a guarda. */
-private const val BLOCOS_MAXIMOS = 12
+private const val MAX_BLOCKS = 12
 
 /**
  * O desenho da fala guardada, lido do próprio arquivo.
@@ -47,10 +47,10 @@ fun rememberWaveformProfile(path: String): State<FloatArray> =
  * então a barra pega o **maior** ponto do pedaço que lhe cabe, e não o primeiro:
  * reduzir por amostragem apagaria justamente os estalos que dão o relevo.
  */
-fun FloatArray.picoDaBarra(indice: Int, barras: Int): Float {
+fun FloatArray.picoDaBarra(index: Int, barras: Int): Float {
     if (isEmpty() || barras <= 0) return 0f
-    val start = (indice.toLong() * size / barras).toInt().coerceIn(0, size - 1)
-    val end = ((indice + 1).toLong() * size / barras).toInt().coerceIn(start + 1, size)
+    val start = (index.toLong() * size / barras).toInt().coerceIn(0, size - 1)
+    val end = ((index + 1).toLong() * size / barras).toInt().coerceIn(start + 1, size)
     var pico = 0f
     for (i in start until end) pico = max(pico, this[i])
     return pico
@@ -58,7 +58,7 @@ fun FloatArray.picoDaBarra(indice: Int, barras: Int): Float {
 
 private fun wavProfile(path: String): FloatArray {
     val file = File(path)
-    if (!file.isFile || file.length() <= AudioRecorder.CABECALHO_WAV) return FloatArray(0)
+    if (!file.isFile || file.length() <= AudioRecorder.WAV_HEADER) return FloatArray(0)
 
     return runCatching {
         file.inputStream().buffered().use { entry ->
@@ -72,12 +72,12 @@ private fun wavProfile(path: String): FloatArray {
             var bits = 0
             var canais = 0
             val topo = ByteArray(8)
-            repeat(BLOCOS_MAXIMOS) {
+            repeat(MAX_BLOCKS) {
                 fluxo.readFully(topo)
                 val id = mark(topo, 0)
                 val tamanho = readInt(topo, 4)
                 if (id == "data") return@use peaksOf(fluxo, tamanho, bits, canais)
-                if (tamanho !in 0..BLOCO_MAXIMO) return@use FloatArray(0)
+                if (tamanho !in 0..MAX_BLOCK) return@use FloatArray(0)
                 val body = ByteArray(tamanho + (tamanho and 1))
                 fluxo.readFully(body)
                 if (id == "fmt " && body.size >= 16) {
@@ -106,8 +106,8 @@ private fun peaksOf(fluxo: DataInputStream, bytesDeDados: Int, bits: Int, canais
     val quadros = bytesDeDados / bytesPorQuadro
     if (quadros <= 0) return FloatArray(0)
 
-    val perfil = FloatArray(PONTOS_DO_PERFIL)
-    val passo = max(1, quadros / (PONTOS_DO_PERFIL * AMOSTRAS_POR_PONTO))
+    val perfil = FloatArray(PROFILE_POINTS)
+    val passo = max(1, quadros / (PROFILE_POINTS * SAMPLES_PER_POINT))
     val buffer = ByteArray(16 * 1_024)
     var restante = bytesDeDados
     var quadro = 0
@@ -123,7 +123,7 @@ private fun peaksOf(fluxo: DataInputStream, bytesDeDados: Int, bits: Int, canais
             while (i + 1 < pedaco) {
                 val amostra = ((buffer[i + 1].toInt() shl 8) or (buffer[i].toInt() and 0xFF)).toShort().toInt()
                 val modulo = (if (amostra < 0) -amostra else amostra) / 32_767f
-                val ponto = (quadro.toLong() * PONTOS_DO_PERFIL / quadros).toInt().coerceIn(0, PONTOS_DO_PERFIL - 1)
+                val ponto = (quadro.toLong() * PROFILE_POINTS / quadros).toInt().coerceIn(0, PROFILE_POINTS - 1)
                 if (modulo > perfil[ponto]) perfil[ponto] = modulo
                 quadro += passo
                 i += passo * bytesPorQuadro
@@ -133,16 +133,16 @@ private fun peaksOf(fluxo: DataInputStream, bytesDeDados: Int, bits: Int, canais
 
     val maior = perfil.max()
     if (maior <= 0f) return FloatArray(0)
-    val escala = 1f / max(maior, PISO_DO_PICO)
-    for (i in perfil.indices) perfil[i] = (perfil[i] * escala).coerceAtMost(1f).pow(CURVA_PERCEPTUAL)
+    val escala = 1f / max(maior, PEAK_FLOOR)
+    for (i in perfil.indices) perfil[i] = (perfil[i] * escala).coerceAtMost(1f).pow(PERCEPTUAL_CURVE)
     return perfil
 }
 
 /** Abaixo disto a gravação é sussurro, e sussurro desenha baixo mesmo. */
-private const val PISO_DO_PICO = 0.22f
+private const val PEAK_FLOOR = 0.22f
 
 /** A fala normal vive na parte de baixo da escala linear; a raiz a traz para cima. */
-private const val CURVA_PERCEPTUAL = 0.55f
+private const val PERCEPTUAL_CURVE = 0.55f
 
 private fun mark(bytes: ByteArray, posicao: Int) = String(bytes, posicao, 4, Charsets.US_ASCII)
 

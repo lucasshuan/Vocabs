@@ -1,42 +1,27 @@
 package com.jean.vocabs.contracts
 
 /**
- * Que idiomas existem, com um nome só para os dois lados da conversa.
+ * One catalog for both sides. If each kept its own, the day one of them gained
+ * a language would be the day cards started being born in the wrong one.
  *
- * Mora no contrato porque app e servidor precisam concordar sobre a mesma coisa
- * por motivos diferentes: a interface mostra a bandeira e um nome que vem dos
- * recursos do app, o prompt cita [Language.englishName], e o banco guarda
- * [Language.code]. Se cada lado tivesse a sua lista, o dia em que uma delas
- * ganhasse um idioma a mais seria o dia em que fichas passariam a nascer com o
- * idioma errado, sem ninguém ver.
- *
- * O nome de exibição não mora aqui: ele muda com o idioma da interface, e este
- * módulo é compilado também pelo servidor, que não tem recursos do Android.
- *
- * [Language.code] é a chave estável: está gravada em cada entrada do banco, e
- * renomeá-la transformaria fichas antigas em órfãs.
+ * No display name here: that changes with the interface language, and this
+ * module is compiled by the server too, which has no Android resources.
  */
 data class Language(
-    /** Chave estável, gravada no banco. Curta quando basta ("en"), com região quando não ("pt-BR"). */
+    /** Stable key, stored in the database. Renaming one orphans its cards. */
     val code: String,
-    /** Que bandeira representa o language — código do país, como o file do desenho. */
+    /** Country code, matching the flag drawable. */
     val country: String,
-    /** Como o prompt o cita — o prompt é escrito em inglês. */
+    /** How the prompt refers to it; the prompt is written in English. */
     val englishName: String,
-    /** BCP-47 completo, para voz e formatação. É o que o TTS entende. */
+    /** Full BCP-47, for TTS and formatting. */
     val tag: String,
 )
 
 object Languages {
 
-    /**
-     * Em que ordem a lista de "Novo idioma" aparece.
-     *
-     * Não é alfabética de propósito: quem abre a tela quase sempre quer um dos
-     * primeiros, e uma lista alfabética faria a pessoa rolar até o M para achar
-     * mandarim. A busca resolve o resto.
-     */
-    val CATALOGO: List<Language> = listOf(
+    /** Ordered by expected popularity, not alphabetically. Search covers the rest. */
+    val CATALOG: List<Language> = listOf(
         Language("en", "us", "English", "en-US"),
         Language("es", "es", "Spanish", "es-ES"),
         Language("fr", "fr", "French", "fr-FR"),
@@ -82,22 +67,18 @@ object Languages {
         Language("bn", "bd", "Bengali", "bn-BD"),
     )
 
-    private val porCodigo: Map<String, Language> = CATALOGO.associateBy { it.code }
+    private val byCode: Map<String, Language> = CATALOG.associateBy { it.code }
 
-    /** O par com que o app nasceu, e o que entries antigas recebem na migração. */
-    const val NATIVO_PADRAO: String = "pt-BR"
-    const val ALVO_PADRAO: String = "en"
+    const val DEFAULT_NATIVE: String = "pt-BR"
+    const val DEFAULT_TARGET: String = "en"
 
-    val PORTUGUES: Language = porCodigo.getValue(NATIVO_PADRAO)
-    val INGLES: Language = porCodigo.getValue(ALVO_PADRAO)
+    val PORTUGUESE: Language = byCode.getValue(DEFAULT_NATIVE)
+    val ENGLISH: Language = byCode.getValue(DEFAULT_TARGET)
 
     /**
-     * Nulo para código desconhecido — e quem chama decide o que fazer.
-     *
-     * Um idioma pode sumir do catálogo enquanto ainda existe gravado em entradas
-     * antigas. Devolver um substituto silencioso faria essas fichas mudarem de
-     * idioma sozinhas; quem mostra a lista prefere pular a linha, e quem gera a
-     * ficha prefere recusar.
+     * Null for an unknown code, so the caller decides. A language can leave the
+     * catalog while still stored on old entries; substituting silently would
+     * make those cards change language on their own.
      */
-    fun de(codigo: String?): Language? = codigo?.let(porCodigo::get)
+    fun of(code: String?): Language? = code?.let(byCode::get)
 }

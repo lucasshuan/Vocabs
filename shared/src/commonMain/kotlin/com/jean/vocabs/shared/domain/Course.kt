@@ -3,139 +3,114 @@ package com.jean.vocabs.shared.domain
 import com.jean.vocabs.contracts.Languages
 
 /**
- * Em que língua se lê e que língua se aprende — o par em que uma captura nasceu.
- *
- * São códigos do catálogo de [Languages], e não os objetos: o par é gravado no
- * banco e comparado o tempo todo, e um código estável sobrevive ao dia em que o
- * catálogo mudar um nome.
+ * Catalog codes rather than [Languages] objects: the pair is stored and compared
+ * constantly, and a stable code survives the catalog renaming something.
  */
 data class LanguagePair(
     val native: String,
     val target: String,
 ) {
     companion object {
-        val PADRAO = LanguagePair(native = Languages.NATIVO_PADRAO, target = Languages.ALVO_PADRAO)
+        val DEFAULT = LanguagePair(native = Languages.DEFAULT_NATIVE, target = Languages.DEFAULT_TARGET)
     }
 }
 
 /**
- * Quanto vocabulário existe num curso — o "9 de 24" da faixa de idiomas.
- *
- * [dominadas] conta degraus, não pontos: a faixa mostraria um número diferente a
- * cada hora se contasse força de memória, porque ela decai sozinha. O que a
- * pessoa quer ver ali é o quanto já subiu, e isso não desce enquanto ela dorme.
- *
- * [inQueue] e [nextInMillis] existem para o selo: são a mesma pergunta que o
- * cartão da Início faz, respondida por curso, e sem elas a faixa teria que ler a
- * fila de cada idioma por conta própria.
+ * [mastered] counts steps, not points: memory strength decays on its own, so
+ * counting it would change the number every hour. What the strip should show is
+ * how far someone climbed, and that does not drop while they sleep.
  */
 data class CourseSummary(
     val languagePair: LanguagePair,
     val total: Int,
     val mastered: Int,
     val inQueue: Int = 0,
-    /** Millis até a próxima card deste course pedir revisão. Nulo quando não há nenhuma. */
+    /** Millis until this course's next card is due. Null when none is. */
     val nextInMillis: Long? = null,
 ) {
     val badge: CourseBadge
         get() = when {
-            inQueue > 0 -> CourseBadge.Revisar(inQueue)
-            nextInMillis != null -> CourseBadge.EmDia
-            else -> CourseBadge.Vazio
+            inQueue > 0 -> CourseBadge.Review(inQueue)
+            nextInMillis != null -> CourseBadge.UpToDate
+            else -> CourseBadge.Empty
         }
 }
 
 /**
- * O estado que toda bandeira da faixa carrega — nunca vazia, nunca um "0" escrito.
- *
- * São três e não quatro: "sem nada agendado" ([Vazio]) é curso novo, e é
- * diferente de "em dia", que é uma conquista. Escrever zero no lugar do tique
- * transformaria a única boa notícia da faixa num placar de nada feito.
+ * Three states, not four. [Empty] is a new course and differs from [UpToDate],
+ * which is an achievement — writing a zero where the tick goes would turn the
+ * strip's only good news into a scoreboard of nothing done.
  */
 sealed interface CourseBadge {
-    data class Revisar(val quantas: Int) : CourseBadge
-    data object EmDia : CourseBadge
-    data object Vazio : CourseBadge
+    data class Review(val count: Int) : CourseBadge
+    data object UpToDate : CourseBadge
+    data object Empty : CourseBadge
 }
 
 /**
- * A escada de cinco degraus da tela "O que falta".
+ * The five-step ladder behind the "What's left" screen.
  *
- * Não é a mesma coisa que [MemoryLevel], e a diferença é o ponto: força de
- * memória responde "quanto você lembra **agora**" e por isso decai sozinha;
- * degrau responde "quão longe você chegou" e só se mexe quando você responde um
- * cartão. Uma tela chamada "O que falta" precisa da segunda pergunta — uma barra
- * que anda para trás enquanto a pessoa dorme não diz o que falta fazer.
+ * Deliberately not [MemoryLevel]: memory strength answers "how much do you
+ * remember **now**" and so decays, while a step answers "how far did you get"
+ * and only moves when a card is answered. A progress bar that walks backwards
+ * while someone sleeps does not say what is left to do.
  *
- * O degrau sai da **taxa de decaimento**, que já é o histórico de acertos
- * comprimido num número: cada acerto a divide por [Retention.DIVISOR_ACERTO] e
- * cada erro a multiplica por [Retention.MULTIPLICADOR_ERRO]. Não é preciso guardar
- * nada de novo para saber em que degrau alguém está.
+ * The step is derived from the decay rate, which is already the hit history
+ * compressed into one number — nothing extra is stored.
  */
 object Steps {
     const val TOTAL = 5
 
     /**
-     * Os limites de taxa de cada degrau: 40, 26.7, 17.8, 11.9, 7.9.
-     *
-     * Cada um é o anterior dividido pelo ganho de um acerto — subir um degrau é
-     * literalmente acertar mais uma vez.
+     * Rate boundaries: 40, 26.7, 17.8, 11.9, 7.9 — each the previous divided by
+     * one hit, so climbing a step is literally answering right once more.
      */
-    private val LIMITES: List<Double> = generateSequence(Retention.TAXA_INICIAL) { it / Retention.DIVISOR_ACERTO }
+    private val LIMITS: List<Double> = generateSequence(Retention.INITIAL_RATE) { it / Retention.HIT_DIVISOR }
         .take(TOTAL)
         .toList()
 
-    /** De 1 a [TOTAL]. Palavra nunca revisada está no primeiro. */
-    fun de(retention: Retention?): Int {
+    /** 1 to [TOTAL]. A never-reviewed word sits on the first. */
+    fun of(retention: Retention?): Int {
         if (retention == null || retention.reviews == 0) return 1
-        val alcancados = LIMITES.count { retention.taxa <= it + TOLERANCIA }
-        return alcancados.coerceIn(1, TOTAL)
+        val reached = LIMITS.count { retention.decayRate <= it + TOLERANCE }
+        return reached.coerceIn(1, TOTAL)
     }
 
-    /**
-     * O nome do degrau. Coincide de propósito com os nomes de [MemoryLevel]:
-     * duas escalas já são o limite do que uma pessoa aceita aprender; dois
-     * vocabulários seriam demais.
-     */
-    fun level(degrau: Int): MemoryLevel = when {
-        degrau >= TOTAL -> MemoryLevel.MASTERED
-        degrau == TOTAL - 1 -> MemoryLevel.FAMILIAR
+    /** Shares [MemoryLevel]'s names on purpose: two scales is already the limit. */
+    fun level(step: Int): MemoryLevel = when {
+        step >= TOTAL -> MemoryLevel.MASTERED
+        step == TOTAL - 1 -> MemoryLevel.FAMILIAR
         else -> MemoryLevel.LEARNING
     }
 
-    /** Quantos hits faltam para o degrau mudar de name. Zero quando já é o topo. */
-    fun hitsToLevelUp(degrau: Int): Int {
-        val current = level(degrau)
-        val proximo = (degrau..TOTAL).firstOrNull { level(it) != current } ?: return 0
-        return proximo - degrau
+    /** Hits left before the step changes name. Zero at the top. */
+    fun hitsToLevelUp(step: Int): Int {
+        val current = level(step)
+        val next = (step..TOTAL).firstOrNull { level(it) != current } ?: return 0
+        return next - step
     }
 
-    /** Uma comparação de doubles que sobreviveu a cinco divisões seguidas. */
-    private const val TOLERANCIA = 1e-9
+    /** A double comparison that survived five consecutive divisions. */
+    private const val TOLERANCE = 1e-9
 }
 
 /**
- * A quota do dia: quantas revisões já saíram e quantas o dia ainda tem.
- *
- * [total] não é uma meta escolhida no dedo — é o que o próprio decaimento pediu
- * hoje, já feito mais o que ainda está na fila. Uma meta fixa mentiria nos dois
- * sentidos: seria inalcançável no dia em que 30 palavras vencem juntas e já
- * estaria batida num dia sem nada para revisar.
+ * [total] is not a chosen goal — it is what decay asked for today, done plus
+ * still queued. A fixed goal would lie both ways: unreachable on the day thirty
+ * words come due together, already met on a day with nothing to review.
  */
 data class DailyQuota(
     val done: Int,
     val inQueue: Int,
 ) {
     val total: Int get() = done + inQueue
-    val batida: Boolean get() = inQueue == 0
-    val fracao: Float get() = if (total == 0) 1f else (done.toFloat() / total).coerceIn(0f, 1f)
+    val met: Boolean get() = inQueue == 0
+    val fraction: Float get() = if (total == 0) 1f else (done.toFloat() / total).coerceIn(0f, 1f)
 }
 
 /**
- * Uma coisa que aconteceu com uma palavra, num dia.
- *
- * A retenção guarda só o estado de agora; a linha do tempo precisa do que
- * aconteceu, e nenhum dos dois se reconstrói a partir do outro.
+ * Retention holds only the state of now; the timeline needs what happened.
+ * Neither reconstructs the other.
  */
 data class Event(
     val id: Long,
@@ -145,7 +120,7 @@ data class Event(
     val type: EventType,
     val target: String,
     val languagePair: LanguagePair,
-    /** Número da revisão em [EventType.CORRECT]/[EventType.INCORRECT], nível novo em [EventType.LEVELED_UP]. */
+    /** Review number on CORRECT/INCORRECT, new level on LEVELED_UP. */
     val detail: String?,
 )
 
@@ -157,22 +132,18 @@ enum class EventType {
     LEVELED_UP;
 
     companion object {
-        fun de(value: String): EventType = entries.firstOrNull { it.name == value } ?: CAPTURED
+        fun of(value: String): EventType = entries.firstOrNull { it.name == value } ?: CAPTURED
     }
 }
 
-/**
- * A maior sequência de dias seguidos que já houve, para o "11 melhor sequência".
- *
- * [dias] vem em ordem decrescente e sem repetição, como sai do banco.
- */
+/** [days] arrives descending and without repeats, as it comes out of the database. */
 fun bestStreakOf(days: List<Long>): Int {
     if (days.isEmpty()) return 0
-    var melhor = 1
+    var best = 1
     var current = 1
-    for (indice in 1 until days.size) {
-        if (days[indice] == days[indice - 1] - 1) current++ else current = 1
-        if (current > melhor) melhor = current
+    for (index in 1 until days.size) {
+        if (days[index] == days[index - 1] - 1) current++ else current = 1
+        if (current > best) best = current
     }
-    return melhor
+    return best
 }

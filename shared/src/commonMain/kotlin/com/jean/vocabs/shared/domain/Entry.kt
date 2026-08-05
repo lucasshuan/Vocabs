@@ -36,12 +36,12 @@ data class Entry(
     /** O que não se traduz: a frase crua do provedor, ou o status HTTP. */
     val errorDetail: String?,
     /** Herdado da capture: o par em que esta card nasceu e no qual ela é regerada. */
-    val languagePair: LanguagePair = LanguagePair.PADRAO,
+    val languagePair: LanguagePair = LanguagePair.DEFAULT,
 ) {
     fun needsReview(now: Long): Boolean = retention?.needsReview(now) == true
 
     /** Em que degrau da escada de "O que falta" ela está. */
-    val degrau: Int get() = Steps.de(retention)
+    val step: Int get() = Steps.of(retention)
 
     /** O que mostrar como título quando ainda não há target digitado. */
     val title: String
@@ -57,15 +57,15 @@ private val targetSpaces = Regex("\\s+")
 fun duplicateOfTarget(
     target: String,
     entries: Iterable<Entry>,
-    ignorarId: Long? = null,
+    ignoreId: Long? = null,
 ): Entry? {
-    val procurado = normalizeTarget(target)
-    if (procurado.isBlank()) return null
+    val wanted = normalizeTarget(target)
+    if (wanted.isBlank()) return null
 
     return entries
         .asSequence()
-        .filter { entry -> entry.id != ignorarId }
-        .filter { entry -> normalizeTarget(entry.target) == procurado }
+        .filter { entry -> entry.id != ignoreId }
+        .filter { entry -> normalizeTarget(entry.target) == wanted }
         .sortedWith(
             compareBy<Entry> { duplicatePriority(it.status) }
                 .thenByDescending { it.createdAt },
@@ -96,7 +96,7 @@ enum class CaptureFormat {
     AUDIO;
 
     companion object {
-        fun de(value: String?): CaptureFormat =
+        fun of(value: String?): CaptureFormat =
             entries.firstOrNull { it.name == value } ?: TEXT
     }
 }
@@ -115,7 +115,7 @@ enum class EntryStatus {
     ERROR;
 
     companion object {
-        fun de(value: String): EntryStatus =
+        fun of(value: String): EntryStatus =
             entries.firstOrNull { it.name == value } ?: PENDING
     }
 }

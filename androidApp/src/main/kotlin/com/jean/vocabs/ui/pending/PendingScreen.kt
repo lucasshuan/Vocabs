@@ -109,9 +109,9 @@ fun PendingScreen(
                             aoClicar = { filtro = null },
                         )
                     }
-                    items(languages.entries.toList(), key = { it.key }) { (codigo, quantas) ->
+                    items(languages.entries.toList(), key = { it.key }) { (codigo, count) ->
                         LanguageFilterPill(
-                            rotulo = "${languageOf(codigo).displayName} · $quantas",
+                            rotulo = "${languageOf(codigo).displayName} · $count",
                             language = languageOf(codigo),
                             selecionado = filtro == codigo,
                             aoClicar = { filtro = if (filtro == codigo) null else codigo },

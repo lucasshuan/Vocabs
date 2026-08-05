@@ -16,7 +16,7 @@ import com.jean.vocabs.contracts.Language
 
 /** Replaces the display name that used to live on `Language` in `:contracts`. */
 val Language.displayName: String
-    get() = NOMES_TEMPORARIOS[code] ?: code
+    get() = TEMPORARY_NAMES[code] ?: code
 
 /** Was the sentence the server used to send, before it sent a code. */
 fun temporaryErrorText(code: ErrorCode?): String = when (code) {
@@ -28,7 +28,7 @@ fun temporaryErrorText(code: ErrorCode?): String = when (code) {
     ErrorCode.GENERATION_FAILED, null -> "Não foi possível gerar a ficha."
 }
 
-private val NOMES_TEMPORARIOS: Map<String, String> = mapOf(
+private val TEMPORARY_NAMES: Map<String, String> = mapOf(
     "en" to "Inglês",
     "es" to "Espanhol",
     "fr" to "Francês",

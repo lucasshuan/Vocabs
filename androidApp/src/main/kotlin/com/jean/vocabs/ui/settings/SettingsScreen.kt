@@ -128,7 +128,7 @@ fun SettingsScreen(
         // As seções chegam escalonadas, de cima para baixo. É a mesma entrada das
         // outras telas de dentro, e aqui ela faz um trabalho a mais: dá ordem de
         // leitura a quatro blocos que, parados, têm todos o mesmo peso.
-        Section(icon = AppIcons.Globo, title = "Language", indice = 0) {
+        Section(icon = AppIcons.Globo, title = "Language", index = 0) {
             ListRow(
                 aoClicar = aoTrocarIdiomaNativo,
                 start = { NativeFlag(native) },
@@ -145,8 +145,8 @@ fun SettingsScreen(
                 AnimatedContent(
                     targetState = language.displayName,
                     transitionSpec = {
-                        (fadeIn(tween(Motion.PADRAO)) + scaleIn(tween(Motion.PADRAO), initialScale = 0.92f))
-                            .togetherWith(fadeOut(tween(Motion.RAPIDO)))
+                        (fadeIn(tween(Motion.DEFAULT)) + scaleIn(tween(Motion.DEFAULT), initialScale = 0.92f))
+                            .togetherWith(fadeOut(tween(Motion.FAST)))
                     },
                     label = "nomeDoNativo",
                 ) { name ->
@@ -158,7 +158,7 @@ fun SettingsScreen(
 
         Divider()
 
-        Section(icon = themeIcon(theme), title = "Aparência", indice = 1) {
+        Section(icon = themeIcon(theme), title = "Aparência", index = 1) {
             ScreenCard(recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
                 Text("Tema", style = MaterialTheme.typography.titleSmall)
                 Text(
@@ -177,7 +177,7 @@ fun SettingsScreen(
 
         Divider()
 
-        Section(icon = AppIcons.Exportar, title = "Dados", indice = 2) {
+        Section(icon = AppIcons.Exportar, title = "Dados", index = 2) {
             val cores = MaterialTheme.colorScheme
             ListRow(
                 aoClicar = {
@@ -194,7 +194,7 @@ fun SettingsScreen(
                     // falsa por alguns segundos.
                     AnimatedContent(
                         targetState = exportando,
-                        transitionSpec = { fadeIn(tween(Motion.RAPIDO)).togetherWith(fadeOut(tween(Motion.RAPIDO))) },
+                        transitionSpec = { fadeIn(tween(Motion.FAST)).togetherWith(fadeOut(tween(Motion.FAST))) },
                         label = "fimDaExportacao",
                     ) { emCurso ->
                         if (emCurso) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
@@ -223,7 +223,7 @@ fun SettingsScreen(
 
         Divider()
 
-        Section(icon = AppIcons.Informacao, title = "Sobre", indice = 3) {
+        Section(icon = AppIcons.Informacao, title = "Sobre", index = 3) {
             Signature()
         }
 
@@ -242,12 +242,12 @@ fun SettingsScreen(
 private fun Section(
     icon: ImageVector,
     title: String,
-    indice: Int,
+    index: Int,
     conteudo: @Composable () -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.entradaSuave(indice).fillMaxWidth().padding(top = 4.dp),
+        modifier = Modifier.entradaSuave(index).fillMaxWidth().padding(top = 4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             // Três dos quatro ícones nunca mudam, e para eles isto não anima
@@ -258,8 +258,8 @@ private fun Section(
             AnimatedContent(
                 targetState = icon,
                 transitionSpec = {
-                    (scaleIn(Motion.mola(), initialScale = 0.4f) + fadeIn(tween(Motion.RAPIDO)))
-                        .togetherWith(scaleOut(tween(Motion.RAPIDO), targetScale = 0.4f) + fadeOut(tween(Motion.RAPIDO)))
+                    (scaleIn(Motion.mola(), initialScale = 0.4f) + fadeIn(tween(Motion.FAST)))
+                        .togetherWith(scaleOut(tween(Motion.FAST), targetScale = 0.4f) + fadeOut(tween(Motion.FAST)))
                 },
                 label = "iconeDaSecao",
             ) { desenho ->
@@ -307,7 +307,7 @@ private fun SectionNote(text: String) {
 private fun SwappingDetail(text: String) {
     AnimatedContent(
         targetState = text,
-        transitionSpec = { fadeIn(tween(Motion.PADRAO)).togetherWith(fadeOut(tween(Motion.RAPIDO))) },
+        transitionSpec = { fadeIn(tween(Motion.DEFAULT)).togetherWith(fadeOut(tween(Motion.FAST))) },
         label = "detalheDaLinha",
     ) { current ->
         Text(
@@ -332,8 +332,8 @@ private fun NativeFlag(codigo: String) {
     AnimatedContent(
         targetState = codigo,
         transitionSpec = {
-            (scaleIn(Motion.molaElastica(), initialScale = 0.5f) + fadeIn(tween(Motion.PADRAO)))
-                .togetherWith(scaleOut(tween(Motion.RAPIDO), targetScale = 0.5f) + fadeOut(tween(Motion.RAPIDO)))
+            (scaleIn(Motion.molaElastica(), initialScale = 0.5f) + fadeIn(tween(Motion.DEFAULT)))
+                .togetherWith(scaleOut(tween(Motion.FAST), targetScale = 0.5f) + fadeOut(tween(Motion.FAST)))
         },
         label = "bandeiraDoNativo",
     ) { current ->
@@ -468,7 +468,7 @@ private fun ThemeSegmented(
                 Modifier
                     .offset { IntOffset((destino * largura.toPx()).roundToInt(), 0) }
                     .width(largura)
-                    .height(ALTURA_DO_SEGMENTO)
+                    .height(SEGMENT_HEIGHT)
                     .background(cores.primary, forma),
             )
 
@@ -477,7 +477,7 @@ private fun ThemeSegmented(
                     val ativa = opcao == selecionada
                     val tinta by animateColorAsState(
                         targetValue = if (ativa) cores.onPrimary else cores.onSurfaceVariant,
-                        animationSpec = tween(Motion.PADRAO),
+                        animationSpec = tween(Motion.DEFAULT),
                         label = "tintaDoSegmento",
                     )
                     val toque = rememberHaptics()
@@ -486,7 +486,7 @@ private fun ThemeSegmented(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .width(largura)
-                            .height(ALTURA_DO_SEGMENTO)
+                            .height(SEGMENT_HEIGHT)
                             .clip(forma)
                             .clickable(
                                 interactionSource = toque,
@@ -514,4 +514,4 @@ private fun ThemeSegmented(
 }
 
 /** 44 dp: o mínimo de toque, e a altura da pastilha e dos três alvos. */
-private val ALTURA_DO_SEGMENTO = 44.dp
+private val SEGMENT_HEIGHT = 44.dp

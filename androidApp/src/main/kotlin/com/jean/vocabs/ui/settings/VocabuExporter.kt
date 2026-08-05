@@ -72,11 +72,11 @@ object VocabuExporter {
                 put("errorDetail", entry.errorDetail)
                 put("retention", entry.retention?.let { retention -> JSONObject()
                     .put("points", retention.points)
-                    .put("decayRate", retention.taxa)
+                    .put("decayRate", retention.decayRate)
                     .put("lastInteractionAt", retention.lastInteraction)
                     .put("reviews", retention.reviews)
                     .put("correctCount", retention.hits)
-                    .put("incorrectCount", retention.errors)
+                    .put("incorrectCount", retention.misses)
                 })
             }) }
         })

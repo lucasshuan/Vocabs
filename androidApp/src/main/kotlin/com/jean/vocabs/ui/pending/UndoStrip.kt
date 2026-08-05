@@ -73,7 +73,7 @@ fun UndoStrip(
     LaunchedEffect(exclusao?.key) {
         if (exclusao == null) return@LaunchedEffect
         restante.snapTo(1f)
-        restante.animateTo(0f, tween(JANELA_VISIVEL_MS, easing = LinearEasing))
+        restante.animateTo(0f, tween(VISIBLE_WINDOW_MS, easing = LinearEasing))
         // Quem apaga de verdade é o ViewModel, no fim da mesma janela. A barra
         // só desenha o tempo passando: dois relógios disputando quem manda
         // fariam a faixa sumir antes ou depois da exclusão acontecer.
@@ -82,9 +82,9 @@ fun UndoStrip(
     AnimatedVisibility(
         visible = exclusao != null,
         enter = slideInVertically(Motion.mola()) { it / 2 } +
-            fadeIn(tween(Motion.PADRAO)) +
+            fadeIn(tween(Motion.DEFAULT)) +
             scaleIn(Motion.mola(), initialScale = 0.94f),
-        exit = fadeOut(tween(Motion.RAPIDO)) + slideOutVertically(tween(Motion.RAPIDO)) { it / 3 },
+        exit = fadeOut(tween(Motion.FAST)) + slideOutVertically(tween(Motion.FAST)) { it / 3 },
         modifier = modifier,
     ) {
         ultima?.let { conteudo ->
@@ -97,7 +97,7 @@ fun UndoStrip(
  * Os mesmos 5 s da janela do ViewModel, escritos aqui porque quem desenha o
  * relógio não decide a hora — só a mostra.
  */
-private const val JANELA_VISIVEL_MS = 5_000
+private const val VISIBLE_WINDOW_MS = 5_000
 
 @Composable
 private fun CardSurface(

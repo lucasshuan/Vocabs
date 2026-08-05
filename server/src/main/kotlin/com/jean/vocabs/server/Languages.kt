@@ -35,9 +35,9 @@ data class LanguagePairSpec(
     val target: TargetLanguageSpec,
 ) {
     companion object {
-        val PADRAO = LanguagePairSpec(
-            native = Languages.PORTUGUES,
-            target = targetOf(Languages.INGLES),
+        val DEFAULT = LanguagePairSpec(
+            native = Languages.PORTUGUESE,
+            target = targetOf(Languages.ENGLISH),
         )
 
         /**
@@ -48,19 +48,19 @@ data class LanguagePairSpec(
          * lendo. Um 400 diz o que aconteceu.
          */
         fun de(codigoNativo: String, codigoAlvo: String): LanguagePairSpec? {
-            val native = Languages.de(codigoNativo) ?: return null
-            val target = Languages.de(codigoAlvo) ?: return null
+            val native = Languages.of(codigoNativo) ?: return null
+            val target = Languages.of(codigoAlvo) ?: return null
             return LanguagePairSpec(native = native, target = targetOf(target))
         }
     }
 }
 
 /** IPA por padrão; a exceção é o language cuja pronúncia ninguém escreve em IPA. */
-private fun targetOf(language: Language) = TargetLanguageSpec(language, pronunciationNotation = NOTACOES[language.code] ?: IPA)
+private fun targetOf(language: Language) = TargetLanguageSpec(language, pronunciationNotation = NOTATIONS[language.code] ?: IPA)
 
 private const val IPA = "IPA, without slashes"
 
-private val NOTACOES: Map<String, String> = mapOf(
+private val NOTATIONS: Map<String, String> = mapOf(
     "zh" to "Hanyu Pinyin with tone marks",
     "ja" to "the kana reading, followed by Hepburn romaji in parentheses",
     "ko" to "Revised Romanization of Korean",

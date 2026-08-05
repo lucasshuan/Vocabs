@@ -82,7 +82,7 @@ fun SavedScreen(
 
     LaunchedEffect(estado.trabalhando, estado.entries.isEmpty(), interagiu) {
         if (estado.entries.isEmpty() || estado.trabalhando || interagiu) return@LaunchedEffect
-        delay(FECHA_SOZINHO_EM_MS)
+        delay(AUTO_CLOSE_MS)
         aoFechar()
     }
 
@@ -117,8 +117,8 @@ fun SavedScreen(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            estado.entries.forEachIndexed { indice, entry ->
-                SavedRow(entry, Modifier.entradaSuave(indice))
+            estado.entries.forEachIndexed { index, entry ->
+                SavedRow(entry, Modifier.entradaSuave(index))
             }
         }
 
@@ -204,7 +204,7 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
                 Text(entry.title, style = MaterialTheme.typography.titleMedium)
                 AnimatedContent(
                     targetState = entry.status,
-                    transitionSpec = { fadeIn(tween(Motion.PADRAO)) togetherWith fadeOut(tween(Motion.RAPIDO)) },
+                    transitionSpec = { fadeIn(tween(Motion.DEFAULT)) togetherWith fadeOut(tween(Motion.FAST)) },
                     label = "estadoDaLinha",
                 ) { status ->
                     when (status) {
@@ -240,8 +240,8 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
             // é a única coisa da linha que a pessoa pode estar esperando ver.
             AnimatedVisibility(
                 visible = pronta,
-                enter = scaleIn(Motion.molaElastica()) + fadeIn(tween(Motion.PADRAO)),
-                exit = fadeOut(tween(Motion.RAPIDO)),
+                enter = scaleIn(Motion.molaElastica()) + fadeIn(tween(Motion.DEFAULT)),
+                exit = fadeOut(tween(Motion.FAST)),
             ) {
                 Surface(shape = CircleShape, color = cores.tertiaryContainer) {
                     Row(
@@ -273,13 +273,13 @@ private fun IndeterminateBar() {
     val cores = MaterialTheme.colorScheme
     var cheia by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { cheia = true }
-    val fracao by animateFloatAsState(
+    val fraction by animateFloatAsState(
         targetValue = if (cheia) 0.72f else 0.12f,
         animationSpec = tween(2_400),
         label = "fracaoDaGeracao",
     )
     Box(Modifier.width(54.dp).height(5.dp).background(cores.outlineVariant, CircleShape)) {
-        Box(Modifier.fillMaxWidth(fracao).height(5.dp).background(cores.primary, CircleShape))
+        Box(Modifier.fillMaxWidth(fraction).height(5.dp).background(cores.primary, CircleShape))
     }
 }
 
@@ -299,4 +299,4 @@ private fun ExitAction(text: String, modifier: Modifier = Modifier, aoClicar: ()
 }
 
 /** Tempo de leitura de duas linhas curtas, e nada além disso. */
-private const val FECHA_SOZINHO_EM_MS = 3_500L
+private const val AUTO_CLOSE_MS = 3_500L

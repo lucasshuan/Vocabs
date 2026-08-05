@@ -20,10 +20,10 @@ data class RetentionNow(
     val nextInMillis: Long,
     val reviews: Int,
     val hits: Int,
-    val errors: Int,
+    val misses: Int,
 ) {
-    val respondidas: Int get() = hits + errors
-    val hitRate: Double? get() = if (respondidas == 0) null else hits.toDouble() / respondidas
+    val answered: Int get() = hits + misses
+    val hitRate: Double? get() = if (answered == 0) null else hits.toDouble() / answered
 }
 
 /**
@@ -44,13 +44,13 @@ interface VocabRepository {
     fun observeCourses(): Flow<List<CourseSummary>>
 
     /** Só o que já virou card. */
-    fun observeReady(scope: Scope = Scope.CursoAberto): Flow<List<Entry>>
+    fun observeReady(scope: Scope = Scope.ActiveCourse): Flow<List<Entry>>
 
     /** Entradas que ainda estão na fila da IA, sendo geradas ou falharam. */
-    fun observeInbox(scope: Scope = Scope.CursoAberto): Flow<List<Entry>>
+    fun observeInbox(scope: Scope = Scope.ActiveCourse): Flow<List<Entry>>
 
     /** Capturas ainda aguardando transcrição ou seleção confirmada. */
-    fun observePendingCaptures(scope: Scope = Scope.CursoAberto): Flow<List<Capture>>
+    fun observePendingCaptures(scope: Scope = Scope.ActiveCourse): Flow<List<Capture>>
 
     fun observeCaptureById(id: Long): Flow<Capture?>
 
@@ -60,16 +60,16 @@ interface VocabRepository {
     fun observeEntries(ids: List<Long>): Flow<List<Entry>>
 
     /** A fila de now: fichas cuja força de memória já caiu abaixo do limiar. */
-    fun observeReviewQueue(scope: Scope = Scope.CursoAberto): Flow<List<Entry>>
+    fun observeReviewQueue(scope: Scope = Scope.ActiveCourse): Flow<List<Entry>>
 
-    fun observeReviewSummary(scope: Scope = Scope.CursoAberto): Flow<ReviewSummary>
+    fun observeReviewSummary(scope: Scope = Scope.ActiveCourse): Flow<ReviewSummary>
 
     fun observeRetention(id: Long): Flow<RetentionNow?>
 
     fun observeActivity(days: Int = 84): Flow<List<DailyActivity>>
 
     /** A row do tempo da tela Dia a day, do mais recente para o mais antigo. */
-    fun observeEvents(days: Int = 84, scope: Scope = Scope.CursoAberto): Flow<List<Event>>
+    fun observeEvents(days: Int = 84, scope: Scope = Scope.ActiveCourse): Flow<List<Event>>
 
     fun observeAiUsage(): Flow<AiUsage>
 
@@ -128,7 +128,7 @@ interface VocabRepository {
     suspend fun generateCards(ids: List<Long>, concorrencia: Int = 2): List<Boolean>
 
     /** Grava o result de um cartão e marca o day no calendário de revisões. */
-    suspend fun recordAnswer(id: Long, acertou: Boolean)
+    suspend fun recordAnswer(id: Long, correct: Boolean)
 
     /** Descarta a entry e o file de míday, se houver. */
     suspend fun excluir(id: Long)

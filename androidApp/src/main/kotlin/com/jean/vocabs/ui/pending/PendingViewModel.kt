@@ -62,7 +62,7 @@ data class PendingDeletion(
  * da faixa mostra quanto sobra, para que ignorá-la seja uma escolha e não um
  * susto.
  */
-private const val JANELA_DE_DESFAZER_MS = 5_000L
+private const val UNDO_WINDOW_MS = 5_000L
 
 class PendingViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
@@ -83,8 +83,8 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
      * sai de `total`, que sai daqui, os dois nunca discordam.
      */
     val estado: StateFlow<PendingState> = combine(
-        repository.observePendingCaptures(Scope.Todos),
-        repository.observeInbox(Scope.Todos),
+        repository.observePendingCaptures(Scope.All),
+        repository.observeInbox(Scope.All),
         _exclusao,
     ) { captures, cards, exclusao ->
         PendingState(
@@ -127,7 +127,7 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
         _exclusao.value?.let(::confirmar)
         _exclusao.value = nova
         contagem = viewModelScope.launch {
-            delay(JANELA_DE_DESFAZER_MS)
+            delay(UNDO_WINDOW_MS)
             confirmar(nova)
             _exclusao.compareAndSet(nova, null)
         }

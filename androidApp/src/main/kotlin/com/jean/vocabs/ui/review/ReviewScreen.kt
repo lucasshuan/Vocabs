@@ -64,7 +64,7 @@ import com.jean.vocabs.ui.components.animatedCount
 import com.jean.vocabs.ui.components.animatedFraction
 import com.jean.vocabs.ui.components.entradaSuave
 
-private const val LACUNA = "________"
+private const val GAP = "________"
 
 @Composable
 fun ReviewScreen(aoVoltar: () -> Unit, vm: ReviewViewModel = viewModel()) {
@@ -77,7 +77,7 @@ fun ReviewScreen(aoVoltar: () -> Unit, vm: ReviewViewModel = viewModel()) {
             CircularButton(AppIcons.Fechar, "Fechar revisão", aoVoltar)
             val cartao = estado as? ReviewState.CardSurface
             ProgressBar(
-                fracao = cartao?.let { it.posicao.toFloat() / it.total.coerceAtLeast(1) } ?: 0f,
+                fraction = cartao?.let { it.posicao.toFloat() / it.total.coerceAtLeast(1) } ?: 0f,
                 modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
             )
             Text(
@@ -104,8 +104,8 @@ fun ReviewScreen(aoVoltar: () -> Unit, vm: ReviewViewModel = viewModel()) {
  * fim à vista.
  */
 @Composable
-private fun ProgressBar(fracao: Float, modifier: Modifier = Modifier) {
-    val avanco by animatedFraction(fracao, "avancoDaSessao")
+private fun ProgressBar(fraction: Float, modifier: Modifier = Modifier) {
+    val avanco by animatedFraction(fraction, "avancoDaSessao")
     Box(
         modifier = modifier
             .height(6.dp)
@@ -144,8 +144,8 @@ private fun CardSurface(estado: ReviewState.CardSurface, vm: ReviewViewModel) {
         AnimatedContent(
             targetState = estado.entry,
             transitionSpec = {
-                (slideInHorizontally(tween(Motion.PADRAO)) { largura -> largura / 4 } + fadeIn(tween(Motion.PADRAO)))
-                    .togetherWith(slideOutHorizontally(tween(Motion.RAPIDO)) { largura -> -largura / 4 } + fadeOut(tween(Motion.RAPIDO)))
+                (slideInHorizontally(tween(Motion.DEFAULT)) { largura -> largura / 4 } + fadeIn(tween(Motion.DEFAULT)))
+                    .togetherWith(slideOutHorizontally(tween(Motion.FAST)) { largura -> -largura / 4 } + fadeOut(tween(Motion.FAST)))
             },
             contentKey = { it.id },
             label = "cartaoDaRevisao",
@@ -157,7 +157,7 @@ private fun CardSurface(estado: ReviewState.CardSurface, vm: ReviewViewModel) {
             ) {
                 SectionLabel("COMPLETE O SEU TRECHO")
                 Text(
-                    text = annotatedCloze(clozeSnippet(entry, LACUNA)),
+                    text = annotatedCloze(clozeSnippet(entry, GAP)),
                     style = MaterialTheme.typography.headlineSmall.copy(lineHeight = MaterialTheme.typography.headlineLarge.lineHeight),
                     modifier = Modifier.padding(vertical = 22.dp),
                 )
@@ -187,8 +187,8 @@ private fun CardSurface(estado: ReviewState.CardSurface, vm: ReviewViewModel) {
         // respondeu" de "a tela já estava assim".
         AnimatedVisibility(
             visible = estado.feedback != null,
-            enter = expandVertically(tween(Motion.PADRAO)) + fadeIn(tween(Motion.PADRAO)),
-            exit = shrinkVertically(tween(Motion.RAPIDO)) + fadeOut(tween(Motion.RAPIDO)),
+            enter = expandVertically(tween(Motion.DEFAULT)) + fadeIn(tween(Motion.DEFAULT)),
+            exit = shrinkVertically(tween(Motion.FAST)) + fadeOut(tween(Motion.FAST)),
         ) {
             // Ao vivo enquanto o feedback existe, pela cópia enquanto ele sai —
             // assim a caixa nunca fica um quadro sem conteúdo na entrada nem
@@ -196,17 +196,17 @@ private fun CardSurface(estado: ReviewState.CardSurface, vm: ReviewViewModel) {
             val veredito = estado.feedback?.let { it to estado.entry.target.orEmpty() } ?: ultimoVeredito
             if (veredito != null) {
                 val (feedback, answer) = veredito
-                val acertou = feedback == ReviewFeedback.CORRETA
+                val correct = feedback == ReviewFeedback.CORRETA
                 Surface(
-                    color = if (acertou) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
-                    contentColor = if (acertou) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onErrorContainer,
+                    color = if (correct) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
+                    contentColor = if (correct) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onErrorContainer,
                     shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Text(
                             when {
-                                acertou -> "Boa — você lembrou"
+                                correct -> "Boa — você lembrou"
                                 feedback == ReviewFeedback.NAO_LEMBRO -> "Tudo bem. A resposta é:"
                                 else -> "Quase. A resposta é:"
                             },
@@ -231,16 +231,16 @@ private fun CardSurface(estado: ReviewState.CardSurface, vm: ReviewViewModel) {
 /** A lacuna vira um traço de ameixa: no handoff ela é um sublinhado, não underscores. */
 @Composable
 private fun annotatedCloze(snippet: String) = buildAnnotatedString {
-    val corte = snippet.indexOf(LACUNA)
+    val corte = snippet.indexOf(GAP)
     if (corte < 0) {
         append(snippet)
         return@buildAnnotatedString
     }
     append(snippet.substring(0, corte))
     pushStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline))
-    append(LACUNA)
+    append(GAP)
     pop()
-    append(snippet.substring(corte + LACUNA.length))
+    append(snippet.substring(corte + GAP.length))
 }
 
 @Composable
@@ -272,7 +272,7 @@ private fun Summary(estado: ReviewState.Summary, vm: ReviewViewModel, aoVoltar: 
         // crescente ali transformaria o erro em placar.
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
             MetricCard("${animatedCount(estado.hits, "hits")}", "acertos", Modifier.weight(1f), destaque = true)
-            MetricCard("${estado.errors}", "para reforçar", Modifier.weight(1f))
+            MetricCard("${estado.misses}", "para reforçar", Modifier.weight(1f))
             MetricCard(
                 value = "${animatedCount(estado.dayStreak, "dayStreak")}",
                 rotulo = "dias seguidos",
@@ -285,10 +285,10 @@ private fun Summary(estado: ReviewState.Summary, vm: ReviewViewModel, aoVoltar: 
                 "Voltam para a fila: ${estado.errados.distinct().joinToString()}",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.entradaSuave(indice = 2).padding(top = 20.dp),
+                modifier = Modifier.entradaSuave(index = 2).padding(top = 20.dp),
             )
         }
-        PrimaryButton("Concluir", aoVoltar, Modifier.entradaSuave(indice = 3).padding(top = 28.dp))
+        PrimaryButton("Concluir", aoVoltar, Modifier.entradaSuave(index = 3).padding(top = 28.dp))
         if (estado.restantes > 0) SecondaryAction("Mais uma rodada (${estado.restantes})", vm::novaRodada)
         Spacer(Modifier.navigationBarsPadding().height(20.dp))
     }

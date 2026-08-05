@@ -64,14 +64,14 @@ class WordsViewModel(app: Application) : AndroidViewModel(app) {
     private val recorte = combine(filtro, busca, ::Pair)
 
     val estado: StateFlow<WordsState> = combine(
-        repository.observeReady(Scope.Todos),
+        repository.observeReady(Scope.All),
         preferences.observeCourses(),
         preferences.observeLanguagePair(),
         preferences.observeCollapsedGroups(),
         recorte,
     ) { prontas, matriculados, languagePair, recolhidos, (filtroAtual, termo) ->
         val now = System.currentTimeMillis()
-        val procurado = termo.normalizado()
+        val wanted = termo.normalizado()
         val porCurso = prontas.groupBy { it.languagePair.target }
 
         WordsState(
@@ -82,7 +82,7 @@ class WordsViewModel(app: Application) : AndroidViewModel(app) {
                 val doCurso = porCurso[target].orEmpty()
                 LanguageGroup(
                     languagePair = LanguagePair(native = languagePair.native, target = target),
-                    entries = doCurso.filter { cabe(it, filtroAtual, procurado, now) },
+                    entries = doCurso.filter { cabe(it, filtroAtual, wanted, now) },
                     total = doCurso.size,
                     inQueue = doCurso.count { it.needsReview(now) },
                     recolhido = target in recolhidos,
@@ -91,12 +91,12 @@ class WordsViewModel(app: Application) : AndroidViewModel(app) {
             filtro = filtroAtual,
             busca = termo,
             total = prontas.size,
-            mastered = prontas.count { Steps.level(it.degrau) == MemoryLevel.MASTERED },
+            mastered = prontas.count { Steps.level(it.step) == MemoryLevel.MASTERED },
             carregado = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WordsState())
 
-    private fun cabe(entry: Entry, filtro: MemoryFilter, procurado: String, now: Long): Boolean {
+    private fun cabe(entry: Entry, filtro: MemoryFilter, wanted: String, now: Long): Boolean {
         val level = entry.retention?.levelAt(now) ?: MemoryLevel.NEW
         val bateNivel = when (filtro) {
             MemoryFilter.TODAS -> true
@@ -104,9 +104,9 @@ class WordsViewModel(app: Application) : AndroidViewModel(app) {
             MemoryFilter.FAMILIAR -> level == MemoryLevel.FAMILIAR
             MemoryFilter.DOMINADA -> level == MemoryLevel.MASTERED
         }
-        val bateBusca = procurado.isBlank() ||
-            entry.target.orEmpty().normalizado().contains(procurado) ||
-            entry.card?.translation.orEmpty().normalizado().contains(procurado)
+        val bateBusca = wanted.isBlank() ||
+            entry.target.orEmpty().normalizado().contains(wanted) ||
+            entry.card?.translation.orEmpty().normalizado().contains(wanted)
         return bateNivel && bateBusca
     }
 

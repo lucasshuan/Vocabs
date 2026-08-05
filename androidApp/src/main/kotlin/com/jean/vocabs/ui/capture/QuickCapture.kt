@@ -108,7 +108,7 @@ class QuickCapture internal constructor() {
  * desfazer. O áudio de alguns décimos que sai daí é o que este número joga fora,
  * e é por isso que ele mede em milissegundos.
  */
-const val MINIMO_DE_GRAVACAO_MS = 800L
+const val MIN_RECORDING_MS = 800L
 
 /**
  * [aoGuardar] recebe a captura pronta e é quem decide o que fazer com ela — sem
@@ -196,7 +196,7 @@ fun rememberQuickCapture(
         val duracao = estado.durationMs
         estado.ultimaDuracaoMs = duracao
         estado.gravando = false
-        val curta = duracao < MINIMO_DE_GRAVACAO_MS
+        val curta = duracao < MIN_RECORDING_MS
         if (!guardar || curta) {
             gravador.cancelar()
             if (guardar && curta) aoRecado("Curto demais para guardar.")

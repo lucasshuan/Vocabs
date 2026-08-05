@@ -41,7 +41,7 @@ class AudioRecorder(private val context: Context) {
         if (gravando) return true
         val tamanho = maxOf(
             AudioRecord.getMinBufferSize(
-                TAXA_AMOSTRAGEM,
+                SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
             ),
@@ -50,7 +50,7 @@ class AudioRecorder(private val context: Context) {
         val gravador = runCatching {
             AudioRecord(
                 MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                TAXA_AMOSTRAGEM,
+                SAMPLE_RATE,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
                 tamanho * 2,
@@ -63,7 +63,7 @@ class AudioRecorder(private val context: Context) {
 
         val destino = MediaFiles.newAudio(context)
         return runCatching {
-            FileOutputStream(destino).use { it.write(ByteArray(CABECALHO_WAV)) }
+            FileOutputStream(destino).use { it.write(ByteArray(WAV_HEADER)) }
             gravador.startRecording()
             escrevendo = true
             audioRecord = gravador
@@ -99,7 +99,7 @@ class AudioRecorder(private val context: Context) {
         gravador.release()
         limparEstado()
 
-        if (destino == null || destino.length() <= CABECALHO_WAV) {
+        if (destino == null || destino.length() <= WAV_HEADER) {
             destino?.delete()
             return null
         }
@@ -145,13 +145,13 @@ class AudioRecorder(private val context: Context) {
             val amostra = ((buffer[i + 1].toInt() shl 8) or (buffer[i].toInt() and 0xFF)).toShort().toInt()
             val modulo = if (amostra < 0) -amostra else amostra
             if (modulo > pico) pico = modulo
-            i += PASSO_DA_AMOSTRAGEM * BYTES_POR_AMOSTRA
+            i += SAMPLING_STEP * BYTES_PER_SAMPLE
         }
         return (pico / 32_767f).coerceIn(0f, 1f)
     }
 
     private fun escreverCabecalho(destino: File) {
-        val dados = destino.length() - CABECALHO_WAV
+        val dados = destino.length() - WAV_HEADER
         RandomAccessFile(destino, "rw").use { wav ->
             wav.seek(0)
             wav.writeBytes("RIFF")
@@ -160,9 +160,9 @@ class AudioRecorder(private val context: Context) {
             wav.writeIntLe(16)
             wav.writeShortLe(1)
             wav.writeShortLe(1)
-            wav.writeIntLe(TAXA_AMOSTRAGEM)
-            wav.writeIntLe(TAXA_AMOSTRAGEM * BYTES_POR_AMOSTRA)
-            wav.writeShortLe(BYTES_POR_AMOSTRA)
+            wav.writeIntLe(SAMPLE_RATE)
+            wav.writeIntLe(SAMPLE_RATE * BYTES_PER_SAMPLE)
+            wav.writeShortLe(BYTES_PER_SAMPLE)
             wav.writeShortLe(16)
             wav.writeBytes("data")
             wav.writeIntLe(dados.toInt())
@@ -182,9 +182,9 @@ class AudioRecorder(private val context: Context) {
     }
 
     companion object {
-        const val TAXA_AMOSTRAGEM = 16_000
-        const val CABECALHO_WAV = 44
-        private const val BYTES_POR_AMOSTRA = 2
-        private const val PASSO_DA_AMOSTRAGEM = 8
+        const val SAMPLE_RATE = 16_000
+        const val WAV_HEADER = 44
+        private const val BYTES_PER_SAMPLE = 2
+        private const val SAMPLING_STEP = 8
     }
 }

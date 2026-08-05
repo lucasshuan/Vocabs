@@ -46,16 +46,16 @@ import kotlinx.coroutines.delay
  */
 object Motion {
     /** Reação imediata: cor de um chip, opacidade de um rótulo que troca. */
-    const val RAPIDO = 150
+    const val FAST = 150
 
     /** O padrão: entrar, sair, girar, trocar de estado. */
-    const val PADRAO = 240
+    const val DEFAULT = 240
 
     /**
      * Só para o que se lê enquanto corre: o arco do anel, a barra da quota, a
      * contagem de um número grande. Nunca para o que bloqueia um toque.
      */
-    const val AMPLO = 620
+    const val WIDE = 620
 
     /**
      * O intervalo entre um item e o seguinte numa entrada escalonada.
@@ -65,7 +65,7 @@ object Motion {
      * o último item sai do lugar 170 ms depois do primeiro — abaixo do que se
      * percebe como demora, acima do que se percebe como nada.
      */
-    const val PASSO_ESCALONADO = 34L
+    const val STAGGER_STEP = 34L
 
     /**
      * A partir daqui todo item entra junto.
@@ -74,7 +74,7 @@ object Motion {
      * aparecer, e o vigésimo mais de um — o escalonamento viraria justamente o
      * gargalo que ele deveria evitar.
      */
-    const val ITENS_ESCALONADOS = 5
+    const val STAGGERED_ITEMS = 5
 
     /** A mola de toda mudança de forma: sem oscilação visível, com peso. */
     fun <T> mola() = spring<T>(dampingRatio = 0.78f, stiffness = Spring.StiffnessMediumLow)
@@ -163,18 +163,18 @@ fun rememberHaptics(): MutableInteractionSource = remember { MutableInteractionS
  */
 @Composable
 fun Modifier.entradaSuave(
-    indice: Int = 0,
+    index: Int = 0,
     deslocamento: Dp = 12.dp,
 ): Modifier {
     var chegou by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        val espera = indice.coerceIn(0, Motion.ITENS_ESCALONADOS) * Motion.PASSO_ESCALONADO
+        val espera = index.coerceIn(0, Motion.STAGGERED_ITEMS) * Motion.STAGGER_STEP
         if (espera > 0) delay(espera)
         chegou = true
     }
     val avanco by animateFloatAsState(
         targetValue = if (chegou) 1f else 0f,
-        animationSpec = tween(Motion.PADRAO, easing = FastOutSlowInEasing),
+        animationSpec = tween(Motion.DEFAULT, easing = FastOutSlowInEasing),
         label = "entradaSuave",
     )
     val alturaEmPx = with(LocalDensity.current) { deslocamento.toPx() }
@@ -204,7 +204,7 @@ fun animatedFraction(target: Float, rotulo: String = "fracao"): State<Float> {
     LaunchedEffect(Unit) { partiu = true }
     return animateFloatAsState(
         targetValue = if (partiu) target.coerceIn(0f, 1f) else 0f,
-        animationSpec = tween(Motion.AMPLO, easing = FastOutSlowInEasing),
+        animationSpec = tween(Motion.WIDE, easing = FastOutSlowInEasing),
         label = rotulo,
     )
 }
@@ -222,7 +222,7 @@ fun animatedCount(target: Int, rotulo: String = "contagem"): Int {
     LaunchedEffect(Unit) { partiu = true }
     val value by animateIntAsState(
         targetValue = if (partiu) target else 0,
-        animationSpec = tween(Motion.AMPLO, easing = FastOutSlowInEasing),
+        animationSpec = tween(Motion.WIDE, easing = FastOutSlowInEasing),
         label = rotulo,
     )
     return value

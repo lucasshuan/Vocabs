@@ -76,8 +76,8 @@ sealed interface Notice {
 }
 
 /** Quanto tempo cada aviso vive. O recado é mais curto porque não oferece nada. */
-private const val VIDA_DO_GUARDADO_MS = 5_000
-private const val VIDA_DO_RECADO_MS = 3_500
+private const val SAVED_LIFETIME_MS = 5_000
+private const val NOTICE_LIFETIME_MS = 3_500
 
 /**
  * Tela 04 do handoff — o aviso que passa.
@@ -107,7 +107,7 @@ fun NoticeStrip(
     val restante = remember { Animatable(1f) }
     LaunchedEffect(aviso?.key) {
         val current = aviso ?: return@LaunchedEffect
-        val vida = if (current is Notice.Recado) VIDA_DO_RECADO_MS else VIDA_DO_GUARDADO_MS
+        val vida = if (current is Notice.Recado) NOTICE_LIFETIME_MS else SAVED_LIFETIME_MS
         restante.snapTo(1f)
         restante.animateTo(0f, tween(vida, easing = LinearEasing))
         aoExpirar(current.key)
@@ -116,9 +116,9 @@ fun NoticeStrip(
     AnimatedVisibility(
         visible = aviso != null,
         enter = slideInVertically(Motion.mola()) { it / 2 } +
-            fadeIn(tween(Motion.PADRAO)) +
+            fadeIn(tween(Motion.DEFAULT)) +
             scaleIn(Motion.mola(), initialScale = 0.94f),
-        exit = fadeOut(tween(Motion.RAPIDO)) + slideOutVertically(tween(Motion.RAPIDO)) { it / 3 },
+        exit = fadeOut(tween(Motion.FAST)) + slideOutVertically(tween(Motion.FAST)) { it / 3 },
         modifier = modifier,
     ) {
         ultimo?.let { conteudo ->

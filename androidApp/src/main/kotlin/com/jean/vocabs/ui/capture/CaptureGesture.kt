@@ -40,9 +40,9 @@ sealed interface GestureTarget {
  * demais para ser sentida. Descê-los e jogá-los para as bordas separa os vizinhos
  * em ~137 dp de centro a centro, quase 50 dp de folga entre as áreas de toque.
  */
-val DESLOCAMENTO_DO_AUDIO = DpOffset(0.dp, (-152).dp)
-val DESLOCAMENTO_DO_TEXTO = DpOffset((-122).dp, (-90).dp)
-val DESLOCAMENTO_DA_FOTO = DpOffset(122.dp, (-90).dp)
+val AUDIO_OFFSET = DpOffset(0.dp, (-152).dp)
+val TEXT_OFFSET = DpOffset((-122).dp, (-90).dp)
+val PHOTO_OFFSET = DpOffset(122.dp, (-90).dp)
 
 /**
  * Os três alvos nascem iguais.
@@ -52,8 +52,8 @@ val DESLOCAMENTO_DA_FOTO = DpOffset(122.dp, (-90).dp)
  * alguma coisa está em curso — e nada está. [DIAMETRO_DO_ALVO_MARCADO] é o
  * tamanho do que está sob o dedo, e é o único sinal de escolha que existe.
  */
-val DIAMETRO_DO_ALVO = 68.dp
-val DIAMETRO_DO_ALVO_MARCADO = 76.dp
+val TARGET_DIAMETER = 68.dp
+val MARKED_TARGET_DIAMETER = 76.dp
 
 /**
  * O quanto o dedo pode passar perto de um alvo e ainda contar como estando nele.
@@ -64,7 +64,7 @@ val DIAMETRO_DO_ALVO_MARCADO = 76.dp
  * ninguém, e é ali que o gesto não escolhe nada: um alvo que se marcasse por
  * proximidade relativa marcaria alguma coisa em toda a metade de cima da tela.
  */
-val RAIO_DO_ALVO = 44.dp
+val TARGET_RADIUS = 44.dp
 
 /**
  * O raio em volta do `+` onde o gesto ainda não escolheu nada.
@@ -72,10 +72,10 @@ val RAIO_DO_ALVO = 44.dp
  * É a zona de "só toquei": soltar aqui abre o texto, que é o que quem encostou no
  * botão devagar estava pedindo.
  */
-val RAIO_DE_ORIGEM = 56.dp
+val ORIGIN_RADIUS = 56.dp
 
 /** Depois disto o toque virou pressão e o leque abre mesmo sem o dedo ter andado. */
-const val ABERTURA_DO_LEQUE_MS = 180L
+const val FAN_OPEN_MS = 180L
 
 /**
  * O realce do alvo persegue o dedo, e por isso é mais curto que qualquer duração
@@ -85,13 +85,13 @@ const val ABERTURA_DO_LEQUE_MS = 180L
  * toque que já terminou. Aqui o dedo ainda está andando: 90 ms é o teto para o
  * realce chegar antes de a mão duvidar se aquele alvo é mesmo o que está marcado.
  */
-const val REALCE_DO_ALVO_MS = 90
+const val TARGET_HIGHLIGHT_MS = 90
 
 /** O deslocamento de cada modo, para quem desenha os alvos. */
 fun offsetOf(format: CaptureFormat): DpOffset = when (format) {
-    CaptureFormat.TEXT -> DESLOCAMENTO_DO_TEXTO
-    CaptureFormat.AUDIO -> DESLOCAMENTO_DO_AUDIO
-    CaptureFormat.PHOTO -> DESLOCAMENTO_DA_FOTO
+    CaptureFormat.TEXT -> TEXT_OFFSET
+    CaptureFormat.AUDIO -> AUDIO_OFFSET
+    CaptureFormat.PHOTO -> PHOTO_OFFSET
 }
 
 /** Os mesmos três deslocamentos em pixels, prontos para comparar com o dedo. */

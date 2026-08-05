@@ -53,7 +53,7 @@ import androidx.compose.ui.unit.sp
  */
 @Composable
 fun ProgressRing(
-    fracao: Float,
+    fraction: Float,
     modifier: Modifier = Modifier,
     tamanho: Dp = 74.dp,
     espessura: Dp = 8.dp,
@@ -61,7 +61,7 @@ fun ProgressRing(
     miolo: @Composable ColumnScope.() -> Unit,
 ) {
     val trilha = MaterialTheme.colorScheme.outlineVariant
-    val animada = animatedFraction(fracao, "arcoDoAnel")
+    val animada = animatedFraction(fraction, "arcoDoAnel")
     Box(contentAlignment = Alignment.Center, modifier = modifier.size(tamanho)) {
         Canvas(Modifier.fillMaxSize()) {
             val traco = Stroke(espessura.toPx(), cap = StrokeCap.Round)
@@ -109,11 +109,11 @@ fun WeekStrip(
     tracejada: Boolean = false,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = modifier.fillMaxWidth()) {
-        days.forEachIndexed { indice, day ->
+        days.forEachIndexed { index, day ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.weight(1f).entradaSuave(indice, deslocamento = 8.dp),
+                modifier = Modifier.weight(1f).entradaSuave(index, deslocamento = 8.dp),
             ) {
                 Text(
                     text = if (day.today) "hoje" else day.sigla,
@@ -157,7 +157,7 @@ private fun DaySquare(day: WeekDay) {
     val fundoAlvo = when {
         day.today -> cores.secondaryContainer
         day.futuro -> cores.surfaceVariant
-        day.reviews >= REVISOES_DE_DIA_CHEIO -> cores.tertiary
+        day.reviews >= FULL_DAY_REVIEWS -> cores.tertiary
         day.reviews > 0 -> cores.tertiaryContainer
         else -> cores.outlineVariant
     }
@@ -165,11 +165,11 @@ private fun DaySquare(day: WeekDay) {
     // o leva de menta clara a menta forte. A transição é o que faz esse degrau
     // ser notado: repintado de um quadro para o outro, ele só aparece na próxima
     // vez que alguém vier olhar a semana.
-    val fundo by animateColorAsState(fundoAlvo, tween(Motion.PADRAO), label = "fundoDoDia")
+    val fundo by animateColorAsState(fundoAlvo, tween(Motion.DEFAULT), label = "fundoDoDia")
     val text = when {
         day.today -> cores.primary
         day.futuro -> cores.outline
-        day.reviews >= REVISOES_DE_DIA_CHEIO -> cores.onTertiary
+        day.reviews >= FULL_DAY_REVIEWS -> cores.onTertiary
         day.reviews > 0 -> cores.onTertiaryContainer
         else -> cores.onSurfaceVariant
     }
@@ -202,7 +202,7 @@ private fun DaySquare(day: WeekDay) {
 }
 
 /** A partir daqui o dia ganha a menta forte. É o piso da carga diária em regime. */
-private const val REVISOES_DE_DIA_CHEIO = 3
+private const val FULL_DAY_REVIEWS = 3
 
 /**
  * A barra que reparte um total em faixas proporcionais — dominadas, familiares e
@@ -283,7 +283,7 @@ fun InnerHeader(
 @Composable
 fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
-    val fracao by animatedFraction(
+    val fraction by animatedFraction(
         target = used.toFloat() / limit.coerceAtLeast(1),
         rotulo = "fracaoDeUsoDeIa",
     )
@@ -301,7 +301,7 @@ fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
             ) {
                 Box(
                     Modifier
-                        .fillMaxWidth(fracao)
+                        .fillMaxWidth(fraction)
                         .height(6.dp)
                         .background(cores.primary, CircleShape),
                 )

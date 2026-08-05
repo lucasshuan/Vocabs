@@ -39,12 +39,12 @@ class Preferences(context: Context) {
     // ---- idiomas ------------------------------------------------------------
 
     var native: String
-        get() = prefs.getString(NATIVO, null) ?: Languages.NATIVO_PADRAO
-        set(value) = prefs.edit().putString(NATIVO, value).apply()
+        get() = prefs.getString(NATIVE, null) ?: Languages.DEFAULT_NATIVE
+        set(value) = prefs.edit().putString(NATIVE, value).apply()
 
     var target: String
-        get() = prefs.getString(ALVO, null) ?: Languages.ALVO_PADRAO
-        set(value) = prefs.edit().putString(ALVO, value).apply()
+        get() = prefs.getString(TARGET, null) ?: Languages.DEFAULT_TARGET
+        set(value) = prefs.edit().putString(TARGET, value).apply()
 
     /**
      * Os cursos matriculados, na ordem em que a faixa os mostra.
@@ -54,13 +54,13 @@ class Preferences(context: Context) {
      * de ser criado é o oposto do que a tela promete.
      */
     var courses: List<String>
-        get() = prefs.getString(CURSOS, null)
-            ?.split(SEPARADOR)
+        get() = prefs.getString(COURSES, null)
+            ?.split(SEPARATOR)
             ?.filter { it.isNotBlank() }
             ?.takeIf { it.isNotEmpty() }
-            ?: listOf(Languages.ALVO_PADRAO)
+            ?: listOf(Languages.DEFAULT_TARGET)
         set(value) = prefs.edit()
-            .putString(CURSOS, value.distinct().joinToString(SEPARADOR))
+            .putString(COURSES, value.distinct().joinToString(SEPARATOR))
             .apply()
 
     val languagePair: LanguagePair get() = LanguagePair(native = native, target = target)
@@ -101,8 +101,8 @@ class Preferences(context: Context) {
      * tudo aberto — um idioma novo aparece expandido sem precisar ser inscrito.
      */
     var collapsedGroups: Set<String>
-        get() = prefs.getStringSet(RECOLHIDOS, emptySet()).orEmpty()
-        set(value) = prefs.edit().putStringSet(RECOLHIDOS, value).apply()
+        get() = prefs.getStringSet(COLLAPSED, emptySet()).orEmpty()
+        set(value) = prefs.edit().putStringSet(COLLAPSED, value).apply()
 
     fun toggleGroup(codigo: String) {
         collapsedGroups = collapsedGroups.let { if (codigo in it) it - codigo else it + codigo }
@@ -111,8 +111,8 @@ class Preferences(context: Context) {
     // ---- tema ---------------------------------------------------------------
 
     var theme: ThemePreference
-        get() = ThemePreference.de(prefs.getString(TEMA, null))
-        set(value) = prefs.edit().putString(TEMA, value.name).apply()
+        get() = ThemePreference.de(prefs.getString(THEME, null))
+        set(value) = prefs.edit().putString(THEME, value.name).apply()
 
     // ---- observação ---------------------------------------------------------
 
@@ -137,26 +137,26 @@ class Preferences(context: Context) {
         .conflate()
         .distinctUntilChanged()
 
-    fun observeLanguagePair(): Flow<LanguagePair> = observar(NATIVO, ALVO) { languagePair }
+    fun observeLanguagePair(): Flow<LanguagePair> = observar(NATIVE, TARGET) { languagePair }
 
-    fun observeCourses(): Flow<List<String>> = observar(CURSOS) { courses }
+    fun observeCourses(): Flow<List<String>> = observar(COURSES) { courses }
 
-    fun observeTheme(): Flow<ThemePreference> = observar(TEMA) { theme }
+    fun observeTheme(): Flow<ThemePreference> = observar(THEME) { theme }
 
-    fun observeCollapsedGroups(): Flow<Set<String>> = observar(RECOLHIDOS) { collapsedGroups }
+    fun observeCollapsedGroups(): Flow<Set<String>> = observar(COLLAPSED) { collapsedGroups }
 
     /** O native sozinho, para a row "Meu language" da tela Configurações. */
     fun observeNativeLanguage(): Flow<String> = observeLanguagePair().map { it.native }
 
     private companion object {
-        const val NATIVO = "native_language"
-        const val ALVO = "target_language"
-        const val CURSOS = "courses"
-        const val TEMA = "theme"
-        const val RECOLHIDOS = "collapsed_groups"
+        const val NATIVE = "native_language"
+        const val TARGET = "target_language"
+        const val COURSES = "courses"
+        const val THEME = "theme"
+        const val COLLAPSED = "collapsed_groups"
 
         /** Vírgula não aparece em código de language nenhum do catálogo. */
-        const val SEPARADOR = ","
+        const val SEPARATOR = ","
     }
 }
 

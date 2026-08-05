@@ -55,7 +55,7 @@ import kotlinx.coroutines.launch
  * "decidi jogar isto fora". Abaixo disso o cartão volta sozinho; acima, soltar
  * exclui.
  */
-private const val FRACAO_DO_LIMIAR = 0.32f
+private const val THRESHOLD_FRACTION = 0.32f
 
 /**
  * O piso do limiar, para cartões estreitos.
@@ -63,7 +63,7 @@ private const val FRACAO_DO_LIMIAR = 0.32f
  * A fração sozinha faria um cartão pequeno ser descartado por um arrasto de dois
  * centímetros — perto demais do deslize acidental.
  */
-private val LIMIAR_MINIMO = 96.dp
+private val MIN_THRESHOLD = 96.dp
 
 /**
  * O arremesso: a partir daqui a velocidade decide no lugar da distância.
@@ -72,8 +72,8 @@ private val LIMIAR_MINIMO = 96.dp
  * porque o dedo saiu da tela antes do terço. Exige metade do limiar percorrida
  * para que um roçar veloz na diagonal não exclua nada.
  */
-private const val VELOCIDADE_DE_DESCARTE = 1_100f
-private const val FRACAO_MINIMA_DO_ARREMESSO = 0.5f
+private const val DISMISS_VELOCITY = 1_100f
+private const val MIN_FLING_FRACTION = 0.5f
 
 /**
  * O quanto o cartão pesa depois de passar do limiar.
@@ -82,7 +82,7 @@ private const val FRACAO_MINIMA_DO_ARREMESSO = 0.5f
  * dedo. É o sinal físico de que dali para a frente não falta mais nada: a
  * decisão já está tomada e o que resta é soltar.
  */
-private const val RESISTENCIA_APOS_O_LIMIAR = 0.42f
+private const val RESISTANCE_PAST_THRESHOLD = 0.42f
 
 /**
  * Arrastar o cartão para o lado para excluir o que está nele.
@@ -120,7 +120,7 @@ fun SwipeToDelete(
     val cores = MaterialTheme.colorScheme
     val haptico = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
-    val pisoDoLimiar = with(LocalDensity.current) { LIMIAR_MINIMO.toPx() }
+    val pisoDoLimiar = with(LocalDensity.current) { MIN_THRESHOLD.toPx() }
 
     val deslocamento = remember { Animatable(0f) }
     var largura by remember { mutableIntStateOf(0) }
@@ -128,7 +128,7 @@ fun SwipeToDelete(
     // novo o traz de volta, e `aoExcluir` não pode ser chamado duas vezes.
     var descartando by remember { mutableStateOf(false) }
 
-    val limiar = if (largura == 0) pisoDoLimiar else maxOf(largura * FRACAO_DO_LIMIAR, pisoDoLimiar)
+    val limiar = if (largura == 0) pisoDoLimiar else maxOf(largura * THRESHOLD_FRACTION, pisoDoLimiar)
 
     // `derivedStateOf` porque o deslocamento muda a cada quadro e isto aqui só
     // muda duas vezes por gesto: sem ele, arrastar um cartão recomporia a linha
@@ -144,12 +144,12 @@ fun SwipeToDelete(
 
     val fundo by animateColorAsState(
         targetValue = if (armado) cores.error else cores.errorContainer,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "fundoDoDescarte",
     )
     val tinta by animateColorAsState(
         targetValue = if (armado) cores.onError else cores.error,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "tintaDoDescarte",
     )
     val escalaDaLixeira by animateFloatAsState(
@@ -159,14 +159,14 @@ fun SwipeToDelete(
     )
     val opacidadeDoRotulo by animateFloatAsState(
         targetValue = if (armado) 1f else 0f,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "opacidadeDoRotulo",
     )
 
     val arrasto = rememberDraggableState { passo ->
         val current = deslocamento.value
         val avancando = current == 0f || sign(passo) == sign(current)
-        val andado = if (avancando && abs(current) >= limiar) passo * RESISTENCIA_APOS_O_LIMIAR else passo
+        val andado = if (avancando && abs(current) >= limiar) passo * RESISTANCE_PAST_THRESHOLD else passo
         scope.launch { deslocamento.snapTo(current + andado) }
     }
 
@@ -179,9 +179,9 @@ fun SwipeToDelete(
                 enabled = !descartando,
                 onDragStopped = { velocidade ->
                     val andado = deslocamento.value
-                    val arremesso = abs(velocidade) > VELOCIDADE_DE_DESCARTE &&
+                    val arremesso = abs(velocidade) > DISMISS_VELOCITY &&
                         sign(velocidade) == sign(andado) &&
-                        abs(andado) >= limiar * FRACAO_MINIMA_DO_ARREMESSO
+                        abs(andado) >= limiar * MIN_FLING_FRACTION
                     if (abs(andado) >= limiar || arremesso) {
                         descartando = true
                         haptico.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -191,7 +191,7 @@ fun SwipeToDelete(
                         // piscar de tela em que nada é legível.
                         deslocamento.animateTo(
                             targetValue = sign(andado) * (largura.toFloat() + pisoDoLimiar),
-                            animationSpec = tween(Motion.RAPIDO, easing = FastOutLinearInEasing),
+                            animationSpec = tween(Motion.FAST, easing = FastOutLinearInEasing),
                         )
                         aoExcluir()
                     } else {

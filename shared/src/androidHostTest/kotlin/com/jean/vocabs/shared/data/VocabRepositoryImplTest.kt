@@ -51,7 +51,7 @@ class VocabRepositoryImplTest {
             try {
                 delay(60)
                 if (chamadas.getAndIncrement() == 1) HttpStatusCode.InternalServerError to "{\"mensagem\":\"falhou\"}"
-                else HttpStatusCode.OK to FICHA
+                else HttpStatusCode.OK to CARD_JSON
             } finally {
                 ativas.decrementAndGet()
             }
@@ -101,7 +101,7 @@ class VocabRepositoryImplTest {
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
         assertTrue(repo.generateCard(id))
-        repo.recordAnswer(id, acertou = true)
+        repo.recordAnswer(id, correct = true)
         assertEquals(1, repo.observeActivity(84).first().single().reviews)
         assertEquals(1, repo.observeAiUsage().first().used)
 
@@ -130,7 +130,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `scope Todos ve os tres languages e scope Curso ve so o nomeado`() = runBlocking {
+    fun `scope All ve os tres languages e scope Curso ve so o nomeado`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "en"))
         val repo = repository(course = course)
 
@@ -143,10 +143,10 @@ class VocabRepositoryImplTest {
         // Vocabulários, Pendentes e Você leem assim: tudo, sempre.
         assertEquals(
             setOf("fence", "Zaun"),
-            repo.observeInbox(Scope.Todos).first().mapNotNull { it.target }.toSet(),
+            repo.observeInbox(Scope.All).first().mapNotNull { it.target }.toSet(),
         )
         // "Seu progresso · inglês" lê assim, sem trocar o curso aberto.
-        assertEquals(listOf("fence"), repo.observeInbox(Scope.Curso("en")).first().map { it.target })
+        assertEquals(listOf("fence"), repo.observeInbox(Scope.Course("en")).first().map { it.target })
         assertEquals(LanguagePair("pt-BR", "de"), course.value)
     }
 
@@ -158,7 +158,7 @@ class VocabRepositoryImplTest {
         val espanhol = "se puso las botas"
         val id = repo.captureSnippet(espanhol, LanguagePair("pt-BR", "es"))
 
-        val pendente = repo.observePendingCaptures(Scope.Todos).first().single()
+        val pendente = repo.observePendingCaptures(Scope.All).first().single()
         assertEquals(id, pendente.id)
         assertEquals("es", pendente.languagePair.target)
         // E some do curso aberto, que continua sendo o inglês.
@@ -190,10 +190,10 @@ class VocabRepositoryImplTest {
         val emDia = repo.observeCourses().first().single()
         assertEquals(0, emDia.inQueue)
         assertTrue(emDia.nextInMillis!! > 0)
-        assertEquals(CourseBadge.EmDia, emDia.badge)
+        assertEquals(CourseBadge.UpToDate, emDia.badge)
 
         now += 2 * 86_400_000L
-        assertEquals(CourseBadge.Revisar(1), repo.observeCourses().first().single().badge)
+        assertEquals(CourseBadge.Review(1), repo.observeCourses().first().single().badge)
     }
 
     @Test
@@ -213,7 +213,7 @@ class VocabRepositoryImplTest {
     }
 
     @Test
-    fun `a card e regerada no language em que nasceu, mesmo apos trocar de course`() = runBlocking {
+    fun `a card e regerada no language em que nasceu, mesmo after trocar de course`() = runBlocking {
         val course = MutableStateFlow(LanguagePair("pt-BR", "de"))
         val pedidos = mutableListOf<String>()
         val repo = repository(course = course, aoPedir = pedidos::add)
@@ -240,9 +240,9 @@ class VocabRepositoryImplTest {
         now += 2 * 86_400_000L
         assertEquals(DailyQuota(done = 0, inQueue = 1), repo.observeReviewSummary().first().quota)
 
-        repo.recordAnswer(id, acertou = true)
+        repo.recordAnswer(id, correct = true)
         assertEquals(DailyQuota(done = 1, inQueue = 0), repo.observeReviewSummary().first().quota)
-        assertTrue(repo.observeReviewSummary().first().quota.batida)
+        assertTrue(repo.observeReviewSummary().first().quota.met)
     }
 
     @Test
@@ -251,7 +251,7 @@ class VocabRepositoryImplTest {
         val snippet = "verdant field"
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
         assertTrue(repo.generateCard(id))
-        repo.recordAnswer(id, acertou = true)
+        repo.recordAnswer(id, correct = true)
 
         val tipos = repo.observeEvents(84).first().map { it.type }
         assertTrue(EventType.CAPTURED in tipos)
@@ -263,16 +263,16 @@ class VocabRepositoryImplTest {
         assertEquals("verdant", hit.target)
 
         // Três acertos depois ela cruza para familiar, e só aí um SUBIU_NIVEL sai.
-        repeat(3) { repo.recordAnswer(id, acertou = true) }
+        repeat(3) { repo.recordAnswer(id, correct = true) }
         val subidas = repo.observeEvents(84).first().filter { it.type == EventType.LEVELED_UP }
         assertEquals(listOf(MemoryLevel.MASTERED.name, MemoryLevel.FAMILIAR.name), subidas.map { it.detail })
     }
 
     private fun repository(
         remover: (String) -> Unit = {},
-        course: Flow<LanguagePair> = flowOf(LanguagePair.PADRAO),
+        course: Flow<LanguagePair> = flowOf(LanguagePair.DEFAULT),
         aoPedir: (String) -> Unit = {},
-        answer: suspend () -> Pair<HttpStatusCode, String> = { HttpStatusCode.OK to FICHA },
+        answer: suspend () -> Pair<HttpStatusCode, String> = { HttpStatusCode.OK to CARD_JSON },
     ): VocabRepositoryImpl {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         VocabsDatabase.Schema.create(driver)
@@ -299,7 +299,7 @@ class VocabRepositoryImplTest {
     }
 
     private companion object {
-        const val FICHA = """{
+        const val CARD_JSON = """{
             "type":"WORD",
             "translation":"verdejante",
             "definitions":["Muito verde"],

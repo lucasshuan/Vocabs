@@ -66,7 +66,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.shared.domain.CaptureFormat
-import com.jean.vocabs.ui.components.ALTURA_DA_BARRA
+import com.jean.vocabs.ui.components.BAR_HEIGHT
 import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.formatColors
@@ -151,7 +151,7 @@ fun CaptureHub(
     // o app é o contexto da decisão.
     val veu = animateFloatAsState(
         targetValue = if (aberto) 0.46f else 0f,
-        animationSpec = tween(Motion.RAPIDO, easing = FastOutSlowInEasing),
+        animationSpec = tween(Motion.FAST, easing = FastOutSlowInEasing),
         label = "veu",
     )
 
@@ -159,7 +159,7 @@ fun CaptureHub(
         Box(
             Modifier
                 .fillMaxSize()
-                .drawBehind { if (veu.value > 0.001f) drawRect(NOITE, alpha = veu.value) },
+                .drawBehind { if (veu.value > 0.001f) drawRect(NIGHT, alpha = veu.value) },
         )
 
         Box(
@@ -168,7 +168,7 @@ fun CaptureHub(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
                 .fillMaxWidth()
-                .height(ALTURA_DA_ANCORA)
+                .height(ANCHOR_HEIGHT)
                 // O `+` fica debaixo da tela de gravação, que é opaca. Deixá-lo
                 // no alcance do leitor de tela ofereceria "Capturar" no meio de
                 // uma gravação em curso.
@@ -177,7 +177,7 @@ fun CaptureHub(
                 // medidas de ninguém, e desce até o centro dela coincidir com o
                 // centro do botão. Daí em diante todo alvo é um `offset` puro a
                 // partir do `+`, que é como o handoff descreve as posições.
-                .offset(y = ALTURA_DA_ANCORA / 2 - ALTURA_DA_BARRA / 2 - ELEVACAO_DO_BOTAO),
+                .offset(y = ANCHOR_HEIGHT / 2 - BAR_HEIGHT / 2 - BUTTON_ELEVATION),
         ) {
             if (desenhandoLeque) {
                 GuideToTarget(target, aberto)
@@ -186,7 +186,7 @@ fun CaptureHub(
                         format = format,
                         marcado = target == GestureTarget.Modo(format),
                         visivel = aberto,
-                        atraso = ATRASO_DE_ENTRADA.getValue(format),
+                        atraso = ENTER_DELAY.getValue(format),
                         reduzido = reduzido,
                     )
                 }
@@ -198,7 +198,7 @@ fun CaptureHub(
                 gravando = gravando,
                 reduzido = reduzido,
                 modifier = Modifier
-                    .offset(y = -ELEVACAO_DO_BOTAO)
+                    .offset(y = -BUTTON_ELEVATION)
                     .semantics {
                         contentDescription = "Capturar"
                         // O arrasto não tem equivalente para quem navega por
@@ -217,8 +217,8 @@ fun CaptureHub(
                     }
                     .pointerInput(Unit) {
                         val alvos = alvosEmPixels()
-                        val raioDoAlvoPx = RAIO_DO_ALVO.toPx()
-                        val raioDeOrigemPx = RAIO_DE_ORIGEM.toPx()
+                        val raioDoAlvoPx = TARGET_RADIUS.toPx()
+                        val raioDeOrigemPx = ORIGIN_RADIUS.toPx()
                         val folga = viewConfiguration.touchSlop
 
                         awaitEachGesture {
@@ -231,7 +231,7 @@ fun CaptureHub(
                             // abre. O limiar do sistema (500 ms) é longo demais
                             // para um gesto que precisa render antes de a frase
                             // terminar de passar.
-                            val soltouCedo = withTimeoutOrNull(ABERTURA_DO_LEQUE_MS) {
+                            val soltouCedo = withTimeoutOrNull(FAN_OPEN_MS) {
                                 var solto: PointerInputChange? = null
                                 while (true) {
                                     val mudanca = proximaMudanca(primeiro) ?: break
@@ -309,7 +309,7 @@ fun CaptureHub(
  * a animação de saída ter tido tempo de correr.
  */
 @Composable
-private fun stillOnScreen(ativo: Boolean, sobra: Long = Motion.PADRAO.toLong() + 80): Boolean {
+private fun stillOnScreen(ativo: Boolean, sobra: Long = Motion.DEFAULT.toLong() + 80): Boolean {
     var presente by remember { mutableStateOf(ativo) }
     LaunchedEffect(ativo) {
         if (ativo) {
@@ -374,10 +374,10 @@ private fun finish(
 }
 
 /** Cor única do véu e do fundo da gravação: ameixa quase preta, nos dois temas. */
-internal val NOITE = Color(0xFF17111F)
+internal val NIGHT = Color(0xFF17111F)
 
 /** O quanto o botão sobe em relação ao centro da fileira de ícones da barra. */
-private val ELEVACAO_DO_BOTAO = 10.dp
+private val BUTTON_ELEVATION = 10.dp
 
 /**
  * O diâmetro do `+`.
@@ -389,7 +389,7 @@ private val ELEVACAO_DO_BOTAO = 10.dp
  * — sobe [ELEVACAO_DO_BOTAO] e rompe a **borda de cima** da barra, que no Android
  * é a borda que está livre.
  */
-val DIAMETRO_DO_BOTAO = 76.dp
+val BUTTON_DIAMETER = 76.dp
 
 /**
  * Alta o bastante para o leque inteiro caber dentro dela.
@@ -397,10 +397,10 @@ val DIAMETRO_DO_BOTAO = 76.dp
  * Meia-altura de 260 dp contra 194 dp do topo do alvo mais alto e 238 dp da dica
  * que vai acima dele.
  */
-private val ALTURA_DA_ANCORA = 520.dp
+private val ANCHOR_HEIGHT = 520.dp
 
 /** O áudio parte primeiro: é o alvo mais provável, e é dele que o olho precisa antes. */
-private val ATRASO_DE_ENTRADA = mapOf(
+private val ENTER_DELAY = mapOf(
     CaptureFormat.AUDIO to 0L,
     CaptureFormat.TEXT to 20L,
     CaptureFormat.PHOTO to 40L,
@@ -428,17 +428,17 @@ private fun HubButton(
 
     val fundo by animateColorAsState(
         targetValue = if (aberto) Color.Transparent else cores.primary,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "fundoDoBotao",
     )
     val contorno by animateColorAsState(
         targetValue = if (aberto) Color.White.copy(alpha = 0.38f) else Color.Transparent,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "contornoDoBotao",
     )
     val tinta by animateColorAsState(
         targetValue = if (aberto) Color.White.copy(alpha = 0.5f) else cores.onPrimary,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "tintaDoBotao",
     )
     val escala = animateFloatAsState(
@@ -450,7 +450,7 @@ private fun HubButton(
     // e só borra o contorno tracejado.
     val sombra = animateFloatAsState(
         targetValue = if (aberto) 0f else 1f,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "sombraDoBotao",
     )
 
@@ -470,7 +470,7 @@ private fun HubButton(
                 ambientShadowColor = cores.primary
                 spotShadowColor = cores.primary
             }
-            .size(DIAMETRO_DO_BOTAO)
+            .size(BUTTON_DIAMETER)
             .halo(ativo = emRepouso, cor = cores.primary)
             .respiroDoHub(ativo = emRepouso)
             .background(fundo, CircleShape)
@@ -558,8 +558,8 @@ private fun Modifier.contornoCircularTracejado(cor: () -> Color): Modifier = dra
 }
 
 /** O quanto o alvo cresce ao ser alcançado: de 68 dp para 76 dp. */
-private val CRESCIMENTO_DO_REALCE =
-    DIAMETRO_DO_ALVO_MARCADO.value / DIAMETRO_DO_ALVO.value - 1f
+private val HIGHLIGHT_GROWTH =
+    MARKED_TARGET_DIAMETER.value / TARGET_DIAMETER.value - 1f
 
 /**
  * Um dos três alvos, saindo de dentro do `+`.
@@ -598,12 +598,12 @@ private fun FanTarget(
 
     val realce = animateFloatAsState(
         targetValue = if (marcado) 1f else 0f,
-        animationSpec = tween(REALCE_DO_ALVO_MS, easing = LinearOutSlowInEasing),
+        animationSpec = tween(TARGET_HIGHLIGHT_MS, easing = LinearOutSlowInEasing),
         label = "realceDoAlvo",
     )
     val tinta by animateColorAsState(
         targetValue = if (marcado) Color.White else paleta.cor,
-        animationSpec = tween(REALCE_DO_ALVO_MS),
+        animationSpec = tween(TARGET_HIGHLIGHT_MS),
         label = "tintaDoAlvo",
     )
 
@@ -615,13 +615,13 @@ private fun FanTarget(
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .requiredSize(DIAMETRO_DO_ALVO)
+            .requiredSize(TARGET_DIAMETER)
             .graphicsLayer {
                 val f = avanco.value
                 translationX = destino.x.toPx() * f
                 translationY = destino.y.toPx() * f
                 alpha = f.coerceIn(0f, 1f)
-                val crescimento = (0.62f + 0.38f * f) * (1f + CRESCIMENTO_DO_REALCE * realce.value)
+                val crescimento = (0.62f + 0.38f * f) * (1f + HIGHLIGHT_GROWTH * realce.value)
                 scaleX = crescimento
                 scaleY = crescimento
             }
@@ -651,14 +651,14 @@ private fun FanTarget(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .requiredWidth(112.dp)
-                .offset(y = DIAMETRO_DO_ALVO + 9.dp)
+                .offset(y = TARGET_DIAMETER + 9.dp)
                 .graphicsLayer { alpha = 0.78f + 0.22f * realce.value },
         )
     }
 }
 
 /** O comprimento do toco que aponta para cima enquanto nenhum alvo está marcado. */
-private val TOCO_DA_GUIA = 46.dp
+private val GUIDE_STUB = 46.dp
 
 /**
  * A linha pontilhada do `+` até o alvo.
@@ -677,7 +677,7 @@ private fun GuideToTarget(target: GestureTarget, aberto: Boolean) {
     val densidade = LocalDensity.current
     val marcado = (target as? GestureTarget.Modo)?.format
     val destino = with(densidade) {
-        val ponto = marcado?.let(::offsetOf) ?: DpOffset(0.dp, -(RAIO_DE_ORIGEM + TOCO_DA_GUIA))
+        val ponto = marcado?.let(::offsetOf) ?: DpOffset(0.dp, -(ORIGIN_RADIUS + GUIDE_STUB))
         Offset(ponto.x.toPx(), ponto.y.toPx())
     }
 
@@ -686,12 +686,12 @@ private fun GuideToTarget(target: GestureTarget, aberto: Boolean) {
 
     val presenca = animateFloatAsState(
         targetValue = if (aberto) 1f else 0f,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "guia",
     )
     val realce = animateFloatAsState(
         targetValue = if (marcado != null) 1f else 0f,
-        animationSpec = tween(REALCE_DO_ALVO_MS),
+        animationSpec = tween(TARGET_HIGHLIGHT_MS),
         label = "realceDaGuia",
     )
 
@@ -702,7 +702,7 @@ private fun GuideToTarget(target: GestureTarget, aberto: Boolean) {
             val end = ponta.value
             val distancia = end.getDistance()
             if (distancia < 1f) return@drawBehind
-            val start = end * (RAIO_DE_ORIGEM.toPx() / distancia)
+            val start = end * (ORIGIN_RADIUS.toPx() / distancia)
             drawLine(
                 color = Color.White,
                 start = center + start,
@@ -734,13 +734,13 @@ private fun GestureHint(target: GestureTarget, aberto: Boolean) {
         null -> "arraste e solte no alvo"
     }
     val fundo by animateColorAsState(
-        targetValue = marcado?.let { formatColors(it).cor } ?: NOITE.copy(alpha = 0.82f),
-        animationSpec = tween(REALCE_DO_ALVO_MS),
+        targetValue = marcado?.let { formatColors(it).cor } ?: NIGHT.copy(alpha = 0.82f),
+        animationSpec = tween(TARGET_HIGHLIGHT_MS),
         label = "fundoDaDica",
     )
     val presenca = animateFloatAsState(
         targetValue = if (aberto) 1f else 0f,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "dica",
     )
 
@@ -751,7 +751,7 @@ private fun GestureHint(target: GestureTarget, aberto: Boolean) {
             .graphicsLayer { alpha = presenca.value }
             // A frase troca de tamanho junto com o alvo: sem isto a pílula daria
             // um salto de largura a cada vez que o dedo entra num disco.
-            .animateContentSize(tween(REALCE_DO_ALVO_MS, easing = LinearOutSlowInEasing))
+            .animateContentSize(tween(TARGET_HIGHLIGHT_MS, easing = LinearOutSlowInEasing))
             .background(fundo, CircleShape)
             .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {

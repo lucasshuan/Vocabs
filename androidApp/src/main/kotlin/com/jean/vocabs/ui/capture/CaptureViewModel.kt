@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
  * captura": ele seria mais um estado para divergir do que a tela mostra.
  */
 data class CaptureState(
-    val languagePair: LanguagePair = LanguagePair.PADRAO,
+    val languagePair: LanguagePair = LanguagePair.DEFAULT,
     val courses: List<String> = emptyList(),
 )
 

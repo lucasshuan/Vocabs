@@ -165,7 +165,7 @@ private fun ProgressByLanguage(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(cores.surfaceVariant, RoundedCornerShape(22.dp))
-                .heightIn(max = ALTURA_MAXIMA_DA_LISTA)
+                .heightIn(max = MAX_LIST_HEIGHT)
                 .verticalScroll(rememberScrollState())
                 .padding(8.dp),
         ) {
@@ -199,7 +199,7 @@ private fun ProgressByLanguage(
 @Composable
 private fun CourseRow(course: CourseSummary, aoClicar: () -> Unit) {
     val cores = MaterialTheme.colorScheme
-    val fracao by animatedFraction(
+    val fraction by animatedFraction(
         target = if (course.total == 0) 0f else course.mastered.toFloat() / course.total,
         rotulo = "fracaoDoCurso",
     )
@@ -230,7 +230,7 @@ private fun CourseRow(course: CourseSummary, aoClicar: () -> Unit) {
         ) {
             Box(
                 Modifier
-                    .fillMaxWidth(fracao)
+                    .fillMaxWidth(fraction)
                     .height(6.dp)
                     .background(cores.tertiary, CircleShape),
             )
@@ -257,4 +257,4 @@ private fun VerticalDivider() {
 }
 
 /** Três linhas e meia: a meia diz que há mais, e o rodapé de conta continua na tela. */
-private val ALTURA_MAXIMA_DA_LISTA = 232.dp
+private val MAX_LIST_HEIGHT = 232.dp

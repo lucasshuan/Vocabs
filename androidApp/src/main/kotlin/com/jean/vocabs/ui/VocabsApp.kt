@@ -49,7 +49,7 @@ import com.jean.vocabs.ui.capture.NoticeStrip
 import com.jean.vocabs.ui.capture.TextDrawer
 import com.jean.vocabs.ui.capture.rememberQuickCapture
 import com.jean.vocabs.ui.card.CardScreen
-import com.jean.vocabs.ui.components.ALTURA_DA_BARRA
+import com.jean.vocabs.ui.components.BAR_HEIGHT
 import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.BottomBar
 import com.jean.vocabs.ui.components.Motion
@@ -187,13 +187,13 @@ fun VocabsApp() {
         if (emGesto) {
             desfocando = true
         } else {
-            delay(Motion.PADRAO.toLong() + 80)
+            delay(Motion.DEFAULT.toLong() + 80)
             desfocando = false
         }
     }
     val desfoque = animateFloatAsState(
         targetValue = if (emGesto) 1f else 0f,
-        animationSpec = tween(Motion.PADRAO),
+        animationSpec = tween(Motion.DEFAULT),
         label = "desfoqueDoFundo",
     )
 
@@ -222,8 +222,8 @@ fun VocabsApp() {
             // chega em 98% e assenta. Um fundido puro entre quatro telas que têm
             // o mesmo fundo e a mesma barra embaixo não se lê como troca — se lê
             // como o conteúdo sendo repintado no lugar.
-            enterTransition = { fadeIn(tween(Motion.PADRAO)) + scaleIn(tween(Motion.PADRAO), initialScale = 0.98f) },
-            exitTransition = { fadeOut(tween(Motion.RAPIDO)) },
+            enterTransition = { fadeIn(tween(Motion.DEFAULT)) + scaleIn(tween(Motion.DEFAULT), initialScale = 0.98f) },
+            exitTransition = { fadeOut(tween(Motion.FAST)) },
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
@@ -370,8 +370,8 @@ fun VocabsApp() {
             )
             AnimatedVisibility(
                 visible = barraVisivel,
-                enter = slideInVertically(tween(Motion.PADRAO)) { it } + fadeIn(tween(Motion.PADRAO)),
-                exit = slideOutVertically(tween(Motion.RAPIDO)) { it } + fadeOut(tween(Motion.RAPIDO)),
+                enter = slideInVertically(tween(Motion.DEFAULT)) { it } + fadeIn(tween(Motion.DEFAULT)),
+                exit = slideOutVertically(tween(Motion.FAST)) { it } + fadeOut(tween(Motion.FAST)),
             ) {
                 BottomBar(
                     abasEsquerda = listOf(Tab(Routes.HOME, AppIcons.Casa, "Início"), Tab(Routes.WORDS, AppIcons.Cartas, "Palavras")),
@@ -390,11 +390,11 @@ fun VocabsApp() {
         // tela: o hub é do tamanho da tela, mas a única coisa visível dele fora
         // de um gesto é o `+` — e ele tem que descer junto com a barra em que
         // está encaixado, não vindo de um andar abaixo.
-        val passoDaBarra = with(LocalDensity.current) { ALTURA_DA_BARRA.roundToPx() }
+        val passoDaBarra = with(LocalDensity.current) { BAR_HEIGHT.roundToPx() }
         AnimatedVisibility(
             visible = barraVisivel,
-            enter = fadeIn(tween(Motion.PADRAO)) + slideInVertically(tween(Motion.PADRAO)) { passoDaBarra },
-            exit = fadeOut(tween(Motion.RAPIDO)) + slideOutVertically(tween(Motion.RAPIDO)) { passoDaBarra },
+            enter = fadeIn(tween(Motion.DEFAULT)) + slideInVertically(tween(Motion.DEFAULT)) { passoDaBarra },
+            exit = fadeOut(tween(Motion.FAST)) + slideOutVertically(tween(Motion.FAST)) { passoDaBarra },
             modifier = Modifier.fillMaxSize(),
         ) {
             CaptureHub(
@@ -431,10 +431,10 @@ fun VocabsApp() {
  * decidiu sair, e cada milissegundo a mais ali é espera pura.
  */
 private fun up() =
-    slideInVertically(tween(Motion.PADRAO, easing = FastOutSlowInEasing)) { it / 5 } + fadeIn(tween(Motion.PADRAO))
+    slideInVertically(tween(Motion.DEFAULT, easing = FastOutSlowInEasing)) { it / 5 } + fadeIn(tween(Motion.DEFAULT))
 
 private fun down() =
-    slideOutVertically(tween(Motion.RAPIDO)) { it / 5 } + fadeOut(tween(Motion.RAPIDO))
+    slideOutVertically(tween(Motion.FAST)) { it / 5 } + fadeOut(tween(Motion.FAST))
 
 private fun NavHostController.irParaAba(rota: String) {
     navigate(rota) {

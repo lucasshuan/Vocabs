@@ -65,7 +65,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     val estado: StateFlow<HomeState> = combine(
         preferences.observeLanguagePair(),
         preferences.observeCourses(),
-        repository.observeReady(Scope.Todos),
+        repository.observeReady(Scope.All),
     ) { languagePair, matriculados, prontas ->
         val now = System.currentTimeMillis()
         val today = LocalDate.now()
@@ -100,12 +100,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 // Por degrau, como em toda tela de número: contar por força de
                 // memória faria o mesmo total aparecer diferente em cada uma,
                 // porque ela decai entre a leitura de uma e a da outra.
-                mastered = entries.count { Steps.level(it.degrau) == MemoryLevel.MASTERED },
+                mastered = entries.count { Steps.level(it.step) == MemoryLevel.MASTERED },
                 inQueue = entries.count { it.needsReview(now) },
                 nextInMillis = faltas.filter { it > 0L }.minOrNull(),
             ),
             forcaMedia = entries.mapNotNull { it.retention?.pointsAt(now) }.mediaOuZero().toInt(),
-            proximasEm24h = faltas.count { it in 1..UM_DIA_EM_MILLIS },
+            proximasEm24h = faltas.count { it in 1..ONE_DAY_IN_MILLIS },
             capturadasHoje = entries
                 .filter { Instant.ofEpochMilli(it.createdAt).atZone(ZoneId.systemDefault()).toLocalDate() == today }
                 .take(3),
@@ -116,7 +116,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     fun openCourse(codigo: String) = preferences.openCourse(codigo)
 
     private companion object {
-        const val UM_DIA_EM_MILLIS = 86_400_000L
+        const val ONE_DAY_IN_MILLIS = 86_400_000L
     }
 }
 

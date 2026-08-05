@@ -26,14 +26,14 @@ import kotlinx.coroutines.launch
 class SelectViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
     private val preferences = AppContainer.preferences(app)
-    private val procurado = MutableStateFlow(Procura())
+    private val wanted = MutableStateFlow(Procura())
 
     private data class Procura(val text: String = "", val target: String = "")
 
     val duplicata: StateFlow<Entry?> = combine(
-        repository.observeReady(Scope.Todos),
-        repository.observeInbox(Scope.Todos),
-        procurado,
+        repository.observeReady(Scope.All),
+        repository.observeInbox(Scope.All),
+        wanted,
     ) { prontas, inbox, busca ->
         if (busca.text.isBlank()) return@combine null
         duplicateOfTarget(busca.text, (prontas + inbox).filter { it.languagePair.target == busca.target })
@@ -47,7 +47,7 @@ class SelectViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun procurarDuplicata(text: String, target: String) {
-        procurado.value = Procura(text, target)
+        wanted.value = Procura(text, target)
     }
 
     /** Ainda dá para trocar aqui: nada nasceu neste par até o "Guardar". */

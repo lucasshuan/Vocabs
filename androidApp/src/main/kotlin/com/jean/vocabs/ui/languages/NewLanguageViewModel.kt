@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 data class NewLanguageState(
     /** Os cursos que já existem — as pílulas de "Você já tem". */
     val jaTem: List<Language> = emptyList(),
-    val native: String = Languages.NATIVO_PADRAO,
+    val native: String = Languages.DEFAULT_NATIVE,
 )
 
 class NewLanguageViewModel(app: Application) : AndroidViewModel(app) {
@@ -24,7 +24,7 @@ class NewLanguageViewModel(app: Application) : AndroidViewModel(app) {
         preferences.observeCourses(),
         preferences.observeLanguagePair(),
     ) { courses, languagePair ->
-        NewLanguageState(jaTem = courses.mapNotNull(Languages::de), native = languagePair.native)
+        NewLanguageState(jaTem = courses.mapNotNull(Languages::of), native = languagePair.native)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NewLanguageState())
 
     /**
@@ -39,7 +39,7 @@ class NewLanguageViewModel(app: Application) : AndroidViewModel(app) {
     fun disponiveis(): List<Language> {
         val current = estado.value
         val ocupados = current.jaTem.map { it.code } + current.native
-        return Languages.CATALOGO.filter { it.code !in ocupados }
+        return Languages.CATALOG.filter { it.code !in ocupados }
     }
 
     fun enroll(codigo: String) = preferences.enroll(codigo)

@@ -330,12 +330,12 @@ fun SelectablePill(
     // das duas diz de onde a seleção veio.
     val fundo by animateColorAsState(
         targetValue = if (selecionada) cores.primary else cores.surface,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "fundoDaPilula",
     )
     val tinta by animateColorAsState(
         targetValue = if (selecionada) cores.onPrimary else cores.onSurfaceVariant,
-        animationSpec = tween(Motion.RAPIDO),
+        animationSpec = tween(Motion.FAST),
         label = "tintaDaPilula",
     )
     Surface(
@@ -435,16 +435,16 @@ fun EmptyState(
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.entradaSuave(indice = 1).padding(top = 16.dp),
+            modifier = Modifier.entradaSuave(index = 1).padding(top = 16.dp),
         )
         Text(
             text = detail,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.entradaSuave(indice = 2).padding(top = 4.dp),
+            modifier = Modifier.entradaSuave(index = 2).padding(top = 4.dp),
         )
         acao?.let {
-            Box(Modifier.entradaSuave(indice = 3).padding(top = 20.dp)) { it() }
+            Box(Modifier.entradaSuave(index = 3).padding(top = 20.dp)) { it() }
         }
     }
 }

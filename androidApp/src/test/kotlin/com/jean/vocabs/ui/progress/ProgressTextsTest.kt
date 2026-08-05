@@ -87,9 +87,9 @@ class ProgressTextsTest {
     /** `semanaDe` depends on this ordering. */
     @Test
     fun `the week has seven labels and starts on Monday`() {
-        assertEquals(7, SIGLAS_DA_SEMANA.size)
-        assertEquals("seg", SIGLAS_DA_SEMANA.first())
-        assertEquals("dom", SIGLAS_DA_SEMANA.last())
+        assertEquals(7, WEEKDAY_LABELS.size)
+        assertEquals("seg", WEEKDAY_LABELS.first())
+        assertEquals("dom", WEEKDAY_LABELS.last())
     }
 
     @Test

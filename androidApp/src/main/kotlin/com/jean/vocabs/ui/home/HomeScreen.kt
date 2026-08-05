@@ -95,8 +95,8 @@ fun HomeScreen(
 
     LaunchedEffect(posicionado) {
         if (!posicionado) return@LaunchedEffect
-        snapshotFlow { pager.settledPage }.collect { indice ->
-            paginas.getOrNull(indice)?.let { vm.openCourse(it.languagePair.target) }
+        snapshotFlow { pager.settledPage }.collect { index ->
+            paginas.getOrNull(index)?.let { vm.openCourse(it.languagePair.target) }
         }
     }
 
@@ -134,8 +134,8 @@ fun HomeScreen(
             state = pager,
             beyondViewportPageCount = 1,
             modifier = Modifier.weight(1f),
-        ) { indice ->
-            paginas.getOrNull(indice)?.let { pagina ->
+        ) { index ->
+            paginas.getOrNull(index)?.let { pagina ->
                 CoursePage(
                     pagina = pagina,
                     aoRevisar = aoRevisar,
@@ -152,7 +152,7 @@ fun HomeScreen(
             current = pager.currentPage,
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 10.dp),
         )
-        Spacer(Modifier.navigationBarsPadding().height(ESPACO_DA_BARRA))
+        Spacer(Modifier.navigationBarsPadding().height(BAR_SPACING))
     }
 }
 
@@ -210,8 +210,8 @@ private fun CoursePage(
             if (pagina.capturadasHoje.isEmpty()) {
                 CaptureInvite(language.displayName.lowercase(), aoCapturar)
             } else {
-                pagina.capturadasHoje.forEachIndexed { indice, entry ->
-                    CapturedRow(entry, Modifier.entradaSuave(indice))
+                pagina.capturadasHoje.forEachIndexed { index, entry ->
+                    CapturedRow(entry, Modifier.entradaSuave(index))
                 }
             }
         }
@@ -231,7 +231,7 @@ private fun CourseRing(pagina: HomePage) {
     val cores = MaterialTheme.colorScheme
     val emDia = pagina.resumo.inQueue == 0 && pagina.resumo.total > 0
     ProgressRing(
-        fracao = if (emDia) 1f else pagina.forcaMedia / 100f,
+        fraction = if (emDia) 1f else pagina.forcaMedia / 100f,
         tamanho = 70.dp,
         espessura = 8.dp,
     ) {
@@ -336,4 +336,4 @@ private fun courseDetail(total: Int, mastered: Int, inQueue: Int): String {
 }
 
 /** A barra de baixo mais o vão do botão de captura, que passa dela para cima. */
-private val ESPACO_DA_BARRA = 92.dp
+private val BAR_SPACING = 92.dp

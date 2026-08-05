@@ -119,7 +119,7 @@ internal fun RecordingScreen(
     val presenca = animateFloatAsState(
         targetValue = if (gravando) 1f else 0f,
         animationSpec = tween(
-            if (gravando) Motion.PADRAO else Motion.RAPIDO,
+            if (gravando) Motion.DEFAULT else Motion.FAST,
             easing = FastOutSlowInEasing,
         ),
         label = "telaDeGravacao",
@@ -129,7 +129,7 @@ internal fun RecordingScreen(
         modifier = modifier
             .fillMaxSize()
             .graphicsLayer { alpha = presenca.value }
-            .drawBehind { drawRect(NOITE) }
+            .drawBehind { drawRect(NIGHT) }
             .then(if (gravando) Modifier.barraToques() else Modifier),
     ) {
         RecordingBadge(
@@ -218,9 +218,9 @@ private fun Modifier.barraToques(): Modifier = pointerInput(Unit) {
  * dividem a tela. Puxar o `error` do tema para cá criaria um segundo vermelho
  * quase igual ao primeiro, que é o jeito garantido de tornar os dois ilegíveis.
  */
-private val MENTA_NA_NOITE = VocabuColors.Mint
-private val SALMAO_NA_NOITE = VocabuColors.PapagaioEscuro
-private val VERDE_CHEIO = VocabuColors.MintDark
+private val MINT_AT_NIGHT = VocabuColors.Mint
+private val SALMON_AT_NIGHT = VocabuColors.PapagaioEscuro
+private val FULL_GREEN = VocabuColors.MintDark
 
 /**
  * O selo de "está gravando", no alto.
@@ -243,7 +243,7 @@ private fun RecordingBadge(gravando: Boolean, modifier: Modifier = Modifier) {
             Modifier
                 .requiredSize(8.dp)
                 .respirando(ativo = gravando, minimo = 0.25f)
-                .drawBehind { drawCircle(SALMAO_NA_NOITE) },
+                .drawBehind { drawCircle(SALMON_AT_NIGHT) },
         )
         Text(
             text = "gravando",
@@ -259,8 +259,8 @@ private fun Modifier.pilulaEscura(): Modifier = drawBehind {
 }
 
 /** Altura e canto dos dois botões da base. */
-private val ALTURA_DA_ACAO = 68.dp
-private val CANTO_DA_ACAO = 22.dp
+private val ACTION_HEIGHT = 68.dp
+private val ACTION_CORNER = 22.dp
 
 /**
  * Descartar à esquerda, guardar à direita, um toque cada.
@@ -286,7 +286,7 @@ private fun RecordingActions(
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        modifier = modifier.fillMaxWidth().height(ALTURA_DA_ACAO),
+        modifier = modifier.fillMaxWidth().height(ACTION_HEIGHT),
     ) {
         DiscardButton(aoDescartar)
         BotaoDeGuardar(aoGuardar)
@@ -298,10 +298,10 @@ private fun DiscardButton(aoClicar: () -> Unit) {
     val toque = rememberHaptics()
     Surface(
         onClick = aoClicar,
-        shape = RoundedCornerShape(CANTO_DA_ACAO),
+        shape = RoundedCornerShape(ACTION_CORNER),
         color = Color.Transparent,
-        contentColor = SALMAO_NA_NOITE,
-        border = BorderStroke(1.dp, SALMAO_NA_NOITE.copy(alpha = 0.45f)),
+        contentColor = SALMON_AT_NIGHT,
+        border = BorderStroke(1.dp, SALMON_AT_NIGHT.copy(alpha = 0.45f)),
         interactionSource = toque,
         modifier = Modifier
             .width(86.dp)
@@ -328,8 +328,8 @@ private fun RowScope.BotaoDeGuardar(aoClicar: () -> Unit) {
     val toque = rememberHaptics()
     Surface(
         onClick = aoClicar,
-        shape = RoundedCornerShape(CANTO_DA_ACAO),
-        color = VERDE_CHEIO,
+        shape = RoundedCornerShape(ACTION_CORNER),
+        color = FULL_GREEN,
         contentColor = Color.White,
         interactionSource = toque,
         modifier = Modifier
@@ -351,8 +351,8 @@ private fun RowScope.BotaoDeGuardar(aoClicar: () -> Unit) {
 }
 
 /** Quantas barras a onda tem, e de quanto em quanto tempo entra uma nova. */
-private const val BARRAS_DA_ONDA = 22
-private const val INTERVALO_DA_ONDA = 70L
+private const val WAVE_BARS = 22
+private const val WAVE_INTERVAL = 70L
 
 /**
  * A onda: o pico real do microfone, uma barra a cada 70 ms.
@@ -369,7 +369,7 @@ private const val INTERVALO_DA_ONDA = 70L
  */
 @Composable
 private fun MicWave(gravando: Boolean, level: () -> Float) {
-    val historico = remember { FloatArray(BARRAS_DA_ONDA) }
+    val historico = remember { FloatArray(WAVE_BARS) }
     var cursor by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(gravando) {
@@ -377,9 +377,9 @@ private fun MicWave(gravando: Boolean, level: () -> Float) {
         historico.fill(0f)
         cursor = 0
         while (true) {
-            historico[cursor % BARRAS_DA_ONDA] = level()
+            historico[cursor % WAVE_BARS] = level()
             cursor++
-            delay(INTERVALO_DA_ONDA)
+            delay(WAVE_INTERVAL)
         }
     }
 
@@ -391,18 +391,18 @@ private fun MicWave(gravando: Boolean, level: () -> Float) {
                 val largura = 4.dp.toPx()
                 val vao = 5.5.dp.toPx()
                 val minima = 4.dp.toPx()
-                for (i in 0 until BARRAS_DA_ONDA) {
+                for (i in 0 until WAVE_BARS) {
                     // A mais recente à direita, as antigas caminhando à esquerda.
-                    val indice = ((posicao - 1 - i) % BARRAS_DA_ONDA + BARRAS_DA_ONDA) % BARRAS_DA_ONDA
-                    val altura = minima + (size.height - minima) * historico[indice].coerceIn(0f, 1f).pow(0.42f)
+                    val index = ((posicao - 1 - i) % WAVE_BARS + WAVE_BARS) % WAVE_BARS
+                    val altura = minima + (size.height - minima) * historico[index].coerceIn(0f, 1f).pow(0.42f)
                     val x = size.width - largura - i * vao
                     if (x < 0) break
                     drawRoundRect(
-                        color = MENTA_NA_NOITE,
+                        color = MINT_AT_NIGHT,
                         topLeft = Offset(x, (size.height - altura) / 2f),
                         size = Size(largura, altura),
                         cornerRadius = CornerRadius(largura / 2f),
-                        alpha = 1f - 0.5f * (i.toFloat() / BARRAS_DA_ONDA),
+                        alpha = 1f - 0.5f * (i.toFloat() / WAVE_BARS),
                     )
                 }
             },

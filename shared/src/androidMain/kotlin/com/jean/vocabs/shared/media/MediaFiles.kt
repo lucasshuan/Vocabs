@@ -12,14 +12,14 @@ import java.io.File
  */
 object MediaFiles {
 
-    private const val PASTA = "captures"
+    private const val FOLDER = "captures"
 
     fun newPhoto(context: Context): File = novo(context, "photo", "jpg")
 
     fun newAudio(context: Context): File = novo(context, "audio", "wav")
 
     private fun novo(context: Context, prefixo: String, extensao: String): File {
-        val folder = File(context.filesDir, PASTA).apply { mkdirs() }
+        val folder = File(context.filesDir, FOLDER).apply { mkdirs() }
         return File(folder, "$prefixo-${System.currentTimeMillis()}.$extensao")
     }
 

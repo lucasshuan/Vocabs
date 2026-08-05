@@ -41,7 +41,7 @@ class SavedViewModel(app: Application) : AndroidViewModel(app) {
     val estado: StateFlow<SavedState> = ids.flatMapLatest { lista ->
         combine(
             repository.observeEntries(lista),
-            repository.observeReady(Scope.Todos),
+            repository.observeReady(Scope.All),
         ) { entries, prontas ->
             val course = entries.firstOrNull()?.languagePair
             SavedState(

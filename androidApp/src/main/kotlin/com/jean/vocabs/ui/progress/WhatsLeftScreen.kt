@@ -65,8 +65,8 @@ fun WhatsLeftScreen(
 
     val perto = estado.pertoDeVirar
     val lista = remember(estado.words, soPerto) {
-        val base = if (soPerto) perto else estado.words.filter { Steps.level(it.degrau) != MemoryLevel.MASTERED }
-        base.sortedBy { it.degrau }
+        val base = if (soPerto) perto else estado.words.filter { Steps.level(it.step) != MemoryLevel.MASTERED }
+        base.sortedBy { it.step }
     }
     val mastered = estado.mastered
 
@@ -126,9 +126,9 @@ fun WhatsLeftScreen(
 @Composable
 private fun WordRow(entry: Entry, aoClicar: () -> Unit) {
     val cores = MaterialTheme.colorScheme
-    val degrau = entry.degrau
-    val level = Steps.level(degrau)
-    val faltam = Steps.hitsToLevelUp(degrau)
+    val step = entry.step
+    val level = Steps.level(step)
+    val faltam = Steps.hitsToLevelUp(step)
     val proxima = nextReviewText(entry.retention, System.currentTimeMillis())
 
     ScreenCard(
@@ -161,9 +161,9 @@ private fun WordRow(entry: Entry, aoClicar: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
         ) {
-            StepLadder(degrau, Modifier.weight(1f))
+            StepLadder(step, Modifier.weight(1f))
             Text(
-                text = "${levelLabel(level)} · degrau $degrau de ${Steps.TOTAL}",
+                text = "${levelLabel(level)} · degrau $step de ${Steps.TOTAL}",
                 style = MaterialTheme.typography.bodySmall,
                 color = cores.onSurfaceVariant,
                 modifier = Modifier.padding(start = 10.dp),
@@ -172,7 +172,7 @@ private fun WordRow(entry: Entry, aoClicar: () -> Unit) {
 
         if (faltam > 0) {
             Text(
-                text = whatsLeftText(faltam, Steps.level(degrau + faltam)),
+                text = whatsLeftText(faltam, Steps.level(step + faltam)),
                 style = MaterialTheme.typography.bodySmall,
                 color = cores.primary,
                 modifier = Modifier.padding(top = 4.dp),
@@ -189,11 +189,11 @@ private fun WordRow(entry: Entry, aoClicar: () -> Unit) {
  * justamente o que a força de memória mostra, na outra tela.
  */
 @Composable
-private fun StepLadder(degrau: Int, modifier: Modifier = Modifier) {
+private fun StepLadder(step: Int, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = modifier) {
-        repeat(Steps.TOTAL) { indice ->
-            val alcancado = indice < degrau
+        repeat(Steps.TOTAL) { index ->
+            val alcancado = index < step
             Box(
                 Modifier
                     .weight(1f)
