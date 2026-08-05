@@ -107,9 +107,7 @@ Bundled art and fonts. Code dependencies are in `gradle/libs.versions.toml`.
 | [Figtree](https://github.com/erikdkennedy/figtree) | Body text | OFL 1.1 |
 | [Bricolage Grotesque](https://github.com/ateliertriay/bricolage) | Titles, numbers, terms | OFL 1.1 |
 
-Both licences allow bundling and redistribution, and both require their notice to
-travel with the app. The APK carries none — there is no licences screen yet, which
-is a real obligation and not just tidiness. Tracked in [NOTES.md](NOTES.md).
+Both licences allow bundling and redistribution, and both require their notice to travel with the app.
 
 Vocabu itself has no licence file, so default copyright applies: all rights
 reserved. Add one before publishing or accepting contributions.

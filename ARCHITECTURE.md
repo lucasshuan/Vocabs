@@ -1,4 +1,4 @@
-# Vocabu architecture
+# Architecture
 
 _Updated: 2026-08-05_
 
@@ -11,18 +11,12 @@ _Updated: 2026-08-05_
 
 ## General
 
-### Names that are not brand
+### Names
 
-`applicationId` and `vocabs.db` are storage identifiers. Renaming either migrates
-nothing — it creates an empty place beside what exists. Both were changed during
-the English rewrite because the data was being wiped; **that window is closed**.
-From here each changes only with a migration that reads the old one, and
-`applicationId` not even then: once published it is permanent.
-
-`vocabs.db` keeps the old name deliberately — the app is Vocabu, `vocabs` is what
-it was called first. Renaming buys nothing and costs a migration. Do not "fix" it.
-
-Routes were never on this list; nothing persists them.
+The product name is provisional. `applicationId` and `vocabs.db` are not it —
+they are storage identities, so renaming one opens an empty place beside the data
+instead of moving it. Rebrand freely; touch those two only with a migration that
+reads the old one, and `applicationId` not even then once published.
 
 ### Data model
 
