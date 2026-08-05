@@ -1,20 +1,24 @@
 # Vocabu
 
-Vocabu is a vocabulary app that captures words and phrases at the moment they show up —
-while gaming, reading, watching — and turns each capture into an AI-generated card.
+Captures words and phrases the moment they show up — gaming, reading, watching — and
+turns each into an AI-generated card. Data stays on the device; the server only brokers
+the AI call. Interface in English and Brazilian Portuguese.
 
-The data stays on the device. The server only brokers the AI call.
+## Requirements
 
-**State:** the Vocabu identity and the local-first flow are in. One capture can produce several
-cards; photo uses local OCR, audio attempts local transcription on Android 13+, and both keep
-manual editing. Review is a typed cloze, the profile shows 84 days of activity, and export produces
-a versioned ZIP with JSON and media. The interface ships in English and Brazilian Portuguese, and
-follows the device unless you pick a language in Settings.
+**Android Studio** — brings the JDK and the Android SDK. Nothing else is needed.
 
-## Prerequisites
+## Setup
 
-Android Studio (it brings the JDK and the Android SDK). `JAVA_HOME` and `ANDROID_HOME` are already
-set on this machine — if `gradlew` complains about `JAVA_HOME is not set`, this is what is missing:
+**1. Point Gradle at the JDK and the SDK.** For the current terminal only:
+
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
+$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
+```
+
+To keep them across terminals, set them once in the user environment — through
+Windows' "Edit environment variables for your account", or:
 
 ```powershell
 [Environment]::SetEnvironmentVariable('JAVA_HOME', "C:\Program Files\Android\Android Studio\jbr", 'User')
@@ -22,130 +26,72 @@ set on this machine — if `gradlew` complains about `JAVA_HOME is not set`, thi
 # open a new terminal afterwards
 ```
 
-Secrets live in `.env` at the root (git-ignored, template in `.env.example`). Paste the Anthropic
-key and you are done — no retyping in every new terminal:
+Paths differ per machine; check yours if Gradle says `JAVA_HOME is not set`.
 
-```
-ANTHROPIC_API_KEY=sk-ant-...
-APP_TOKEN=local-test-token
+**2. Create the `.env`** (git-ignored) and paste the Anthropic key:
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-Environment variables, when set, take precedence over the file — that is how CI and production
-override without depending on it.
+### Environment variables
+
+Read from `.env` at the repository root. An actual environment variable of the same
+name wins, which is how CI overrides without the file.
+
+| Name | Needed by | Required | Default |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | server | yes | — |
+| `APP_TOKEN` | server + app | yes | — |
+| `PORT` | server | no | 8080 |
+| `MODEL` | server | no | `claude-opus-5` |
+| `SERVER_LAN` | app build | no | this machine's LAN address, detected |
+
+`APP_TOKEN` is read by the app at build time, so both sides always match.
+`MODEL` and `PORT` also take a per-run override that leaves `.env` alone:
+`.\gradlew.bat :server:run -PMODEL=claude-haiku-4-5`.
 
 ## Running
 
-Three PowerShell tabs, in this order. The first two hold the terminal; the third runs and gives
-the prompt back.
-
-**1. Emulator.** `emulator` and `adb` do not join the PATH along with `ANDROID_HOME`, so they go by
-full path. `vocabs` is the AVD already created on this machine:
+Three terminals, in order. The first two stay occupied.
 
 ```powershell
-& "$env:ANDROID_HOME\emulator\emulator.exe" -list-avds    # see what exists
-& "$env:ANDROID_HOME\emulator\emulator.exe" -avd vocabs
+& "$env:ANDROID_HOME\emulator\emulator.exe" -avd vocabs   # 1. emulator
+.\gradlew.bat :server:run                                 # 2. backend on :8080
+.\gradlew.bat :androidApp:installDebug                    # 3. build + install
 ```
 
-Without a terminal it comes to the same thing: Android Studio → **Device Manager** → ▶ on `vocabs`.
+Step 1 can also be Android Studio → **Device Manager** → ▶. `installDebug` installs on
+every connected device without opening the app — the icon appears in the drawer.
 
-**2. Server.**
+**Physical phone:** enable "USB debugging", connect by cable, accept the popup. Same
+Wi-Fi as the PC, port 8080 open in the firewall. No address to configure — the build
+detects it.
 
-```powershell
-.\gradlew.bat :server:run               # backend on localhost:8080
-```
+## Building
 
-**3. Build and install.**
+| Command | Output | Installs? |
+|---|---|---|
+| `assembleDebug` | `androidApp\build\outputs\apk\debug\` | Yes, anywhere — shareable today |
+| `assembleRelease` | `...\apk\release\` (unsigned) | No, until signed |
+| `bundleRelease` | `...\bundle\release\` (`.aab`) | Play Store format, also needs signing |
 
-```powershell
-.\gradlew.bat :androidApp:installDebug
-```
+Debug uses the local debug key — installs anywhere, refused by the Play Store. Release
+has no `signingConfig` on purpose: a release key is a secret that should not enter the
+repository. Sign with `keytool` + `apksigner` (in `$env:ANDROID_HOME\build-tools\`).
 
-`installDebug` builds the debug APK and **installs it on every connected device** — emulator,
-physical phone over USB, or both. It does not start an emulator and does not open the app: the
-Vocabu icon appears in the drawer.
+> Release ships **unminified**. Enabling minification without ProGuard rules breaks
+> `kotlinx.serialization` silently, and only in production.
 
-For a **physical phone**: enable "USB debugging" in Developer options, connect by cable and accept
-the authorisation popup on the device screen. `adb devices -l` then lists the phone alongside any
-running emulator.
+## Common problems
 
-**No address to configure.** The app works out where the server is: on the emulator it uses
-`10.0.2.2` (your machine's localhost as seen from inside it) and on a physical phone it uses this
-machine's address on the local network, detected at build time. The token comes from the same
-`.env` the server reads, so the two sides always match. If the detection guesses wrong — several
-network adapters, server on another machine — set `SERVER_LAN` in `.env` and rebuild. For a
-physical phone the two devices have to be on the same Wi-Fi, and you may need to open port 8080 in
-the Windows firewall.
-
-### Common problems
-
-**`installDebug` fails with `No connected devices!`** — that is step 1 missing, the cause of very
-nearly every failure of it. Check with `& "$env:ANDROID_HOME\platform-tools\adb.exe" devices`:
-there has to be a line ending in `device`. An empty list means no device; `offline` means the
-emulator is still starting, so wait and repeat.
-
-**`INSTALL_FAILED_USER_RESTRICTED: Install canceled by user`** on a physical phone is a
-manufacturer lock, not Gradle. On Xiaomi/MIUI: Settings → Additional settings → Developer options →
-enable **"Install via USB"**. If the toggle is greyed out, MIUI requires a signed-in Mi account and
-an active internet connection at the moment you turn it on.
-
-**Mangled accents in the console** (`Vari├ível`) — the terminal is on a legacy code page;
-`chcp 65001` fixes it for the session.
-
-## Building the APK
-
-`installDebug` is for developing, but it produces nothing you can send to anyone. For that there
-are two APKs, and the difference between them is the signature — not the contents.
-
-**Debug: the file you can share today.**
-
-```powershell
-.\gradlew.bat :androidApp:assembleDebug
-# androidApp\build\outputs\apk\debug\androidApp-debug.apk
-```
-
-It comes signed with the debug key Android Studio generates on its own
-(`~\.android\debug.keystore`), so it **installs on any device** — send the file and open it, with
-"install from unknown sources" allowed. What it is no good for is publishing: the debug key is the
-same on every machine in the world and the Play Store refuses it.
-
-**Release: needs a key of your own.**
-
-```powershell
-.\gradlew.bat :androidApp:assembleRelease
-# androidApp\build\outputs\apk\release\androidApp-release-unsigned.apk
-```
-
-The `-unsigned` in the name is not a detail: **this file installs nowhere** until it is signed. The
-project has no `signingConfig` in [androidApp/build.gradle.kts](androidApp/build.gradle.kts), on
-purpose — a release key is a secret that should not enter the repository.
-
-Create the key once (keep the password; **losing this key means never being able to update the
-published app**):
-
-```powershell
-& "$env:JAVA_HOME\bin\keytool.exe" -genkeypair -v `
-  -keystore $HOME\Vocabu-release.jks -alias Vocabu `
-  -keyalg RSA -keysize 2048 -validity 10000
-```
-
-And sign it — `apksigner` lives in build-tools, which also does not join the PATH (swap `37.0.0`
-for the installed version, visible in `$env:ANDROID_HOME\build-tools`):
-
-```powershell
-& "$env:ANDROID_HOME\build-tools\37.0.0\apksigner.bat" sign `
-  --ks $HOME\Vocabu-release.jks --ks-key-alias Vocabu `
-  --out Vocabu.apk `
-  androidApp\build\outputs\apk\release\androidApp-release-unsigned.apk
-```
-
-Automating this means pointing a `signingConfig` at the same `.jks`, reading the passwords from
-`.env` the way `ANTHROPIC_API_KEY` already is — then `assembleRelease` comes out signed by itself.
-For the Play Store the format is `bundleRelease` (`.aab`), not APK.
-
-> `assembleRelease` currently comes out **without minification** (`isMinifyEnabled = false`): the
-> APK is larger and the code ships readable. That is the right call while no ProGuard rules are
-> written — turning minification on without them breaks `kotlinx.serialization` silently, and the
-> app only fails in production.
+| Symptom | Cause |
+|---|---|
+| `JAVA_HOME is not set` | Step 1 of Setup missing in this terminal. |
+| `No connected devices!` | No emulator or phone. Check `adb devices`; `offline` means still booting. |
+| `INSTALL_FAILED_USER_RESTRICTED` | Manufacturer lock. On MIUI: Developer options → enable "Install via USB". |
+| Mangled accents in the console | Legacy code page; `chcp 65001` fixes the session. |
+| Old app still installed after the package rename | `adb uninstall com.jean.vocabs` — Android sees the new package as a different app. |
 
 ## Documentation
 
