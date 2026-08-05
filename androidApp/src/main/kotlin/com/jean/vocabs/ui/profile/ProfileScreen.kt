@@ -29,9 +29,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.R
 import com.jean.vocabs.shared.domain.CourseSummary
 import com.jean.vocabs.ui.components.AiUsageRow
 import com.jean.vocabs.ui.components.AppIcons
@@ -75,12 +78,12 @@ fun ProfileScreen(
             .statusBarsPadding()
             .padding(horizontal = 20.dp),
     ) {
-        Text("Você", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
+        Text(stringResource(R.string.profile_title), style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
 
         ScreenCard(filling = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
-            Text("No total", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.profile_total), style = MaterialTheme.typography.titleLarge)
             Text(
-                text = "somando todos os idiomas",
+                text = stringResource(R.string.profile_across_languages),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -90,21 +93,21 @@ fun ProfileScreen(
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
                 SummaryNumber(
                     value = "${animatedCount(state.totalMastered, "masteredTotal")}",
-                    label = if (state.totalMastered == 1) "dominada" else "dominadas",
+                    label = stringResource(if (state.totalMastered == 1) R.string.profile_mastered_one else R.string.profile_mastered_other),
                     color = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.weight(1f),
                 )
                 VerticalDivider()
                 SummaryNumber(
                     value = "${animatedCount(state.dayStreak, "totalDayStreak")}",
-                    label = if (state.dayStreak == 1) "dia seguido" else "dias seguidos",
+                    label = stringResource(if (state.dayStreak == 1) R.string.profile_day_streak_one else R.string.profile_day_streak_other),
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
                 VerticalDivider()
                 SummaryNumber(
                     value = "${animatedCount(state.totalCards, "cardsTotal")}",
-                    label = if (state.totalCards == 1) "ficha" else "fichas",
+                    label = stringResource(if (state.totalCards == 1) R.string.profile_cards_one else R.string.profile_cards_other),
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f),
                 )
@@ -125,8 +128,8 @@ fun ProfileScreen(
         // this screen and is now one tap deeper. Without naming it here, anyone
         // looking where it was has no clue where to look instead.
         ListRow(
-            title = "Configurações",
-            detail = "meu idioma, tema e meus dados",
+            title = stringResource(R.string.profile_settings),
+            detail = stringResource(R.string.profile_settings_detail),
             onClick = onOpenSettings,
             start = { IconDisc(AppIcons.Gear, null, color = MaterialTheme.colorScheme.onSurfaceVariant, background = MaterialTheme.colorScheme.surfaceVariant) },
             end = { RowChevron() },
@@ -153,9 +156,9 @@ private fun ProgressByLanguage(
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-            SectionLabel("Progresso por idioma", Modifier.weight(1f))
+            SectionLabel(stringResource(R.string.profile_progress_by_language), Modifier.weight(1f))
             if (scrollable) {
-                Text("role para ver", style = MaterialTheme.typography.bodySmall, color = colors.outline)
+                Text(stringResource(R.string.profile_scroll_hint), style = MaterialTheme.typography.bodySmall, color = colors.outline)
             }
         }
         Column(
@@ -183,7 +186,7 @@ private fun ProgressByLanguage(
                         Icon(AppIcons.Plus, null, tint = colors.primary, modifier = Modifier.size(18.dp))
                     }
                     Text(
-                        text = "Adicionar idioma",
+                        text = stringResource(R.string.add_language),
                         style = MaterialTheme.typography.titleSmall,
                         color = colors.primary,
                         modifier = Modifier.padding(start = 12.dp),
@@ -214,7 +217,7 @@ private fun CourseRow(course: CourseSummary, onClick: () -> Unit) {
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = "${course.mastered} de ${course.total}",
+                text = stringResource(R.string.fraction, course.mastered, course.total),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
             )

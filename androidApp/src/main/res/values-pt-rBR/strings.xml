@@ -178,6 +178,102 @@
     <string name="a11y_stop">Parar</string>
     <string name="a11y_play">Ouvir</string>
 
+    <string name="cancel">Cancelar</string>
+    <string name="keep">Manter</string>
+    <string name="delete">Excluir</string>
+    <string name="try_again">Tentar de novo</string>
+    <string name="fraction">%1$d de %2$d</string>
+
+    <string name="card_delete_title">Excluir esta ficha?</string>
+    <string name="card_delete_body">A mídia compartilhada será preservada enquanto houver outra ficha da mesma captura.</string>
+    <string name="card_share">Compartilhar</string>
+    <string name="card_share_chooser">Compartilhar ficha</string>
+    <string name="card_being_created">A ficha está sendo criada…</string>
+    <string name="card_memory_strength">Força de memória</string>
+    <string name="card_level_points">%1$s · %2$d</string>
+    <string name="card_in_queue_now">Está na fila de revisão agora.</string>
+    <string name="card_returns_for_review">Volta para revisão %1$s.</string>
+    <string name="card_your_context">Seu contexto</string>
+    <string name="card_definitions">Definições</string>
+    <string name="card_numbered_definition">%1$d. %2$s</string>
+    <string name="card_example">Exemplo: %1$s</string>
+    <string name="card_related">Puxa outras palavras</string>
+    <string name="card_see_more">ver mais</string>
+    <string name="card_see_less">ver menos</string>
+    <string name="a11y_more_options">Mais opções</string>
+    <string name="a11y_hear_pronunciation">Ouvir pronúncia</string>
+
+    <string name="profile_title">Você</string>
+    <string name="profile_total">No total</string>
+    <string name="profile_across_languages">somando todos os idiomas</string>
+    <string name="profile_settings">Configurações</string>
+    <string name="profile_settings_detail">meu idioma, tema e meus dados</string>
+    <string name="profile_progress_by_language">Progresso por idioma</string>
+    <string name="profile_scroll_hint">role para ver</string>
+    <string name="add_language">Adicionar idioma</string>
+    <string name="profile_mastered_one">dominada</string>
+    <string name="profile_mastered_other">dominadas</string>
+    <string name="profile_day_streak_one">dia seguido</string>
+    <string name="profile_day_streak_other">dias seguidos</string>
+    <string name="profile_cards_one">ficha</string>
+    <string name="profile_cards_other">fichas</string>
+
+    <!-- "Sair do inglês?", "no inglês": contração masculina, como todo idioma em pt. -->
+    <string name="progress_leave_title">Sair do %1$s?</string>
+    <string name="progress_leave_body">As fichas continuam guardadas — o idioma volta com tudo se você matricular de novo.</string>
+    <string name="progress_remove">Remover</string>
+    <string name="progress_title">Seu progresso</string>
+    <string name="progress_remove_from_strip">Remover o %1$s da faixa</string>
+    <string name="progress_today_quota_in">Quota de hoje no %1$s</string>
+    <string name="progress_words_that_are_yours">Palavras que já são suas</string>
+    <string name="progress_of_total">de %1$d</string>
+    <string name="progress_band_mastered">dominadas</string>
+    <string name="progress_band_familiar">familiares</string>
+    <string name="progress_band_learning">aprendendo</string>
+    <string name="progress_count_mastered">%1$d dominadas</string>
+    <string name="progress_count_familiar">%1$d familiares</string>
+    <string name="progress_count_learning">%1$d aprendendo</string>
+    <string name="progress_see_progress_in">Ver progresso em</string>
+
+    <string name="whatsleft_title">O que falta</string>
+    <string name="whatsleft_none_close">Nenhuma está perto</string>
+    <string name="whatsleft_nothing_open">Nada em aberto</string>
+    <string name="whatsleft_get_one_right">Acerte mais uma vez e a palavra aparece aqui.</string>
+    <string name="whatsleft_all_mastered">Todas as palavras já estão dominadas.</string>
+    <string name="whatsleft_monthly">só voltam de mês em mês</string>
+    <string name="whatsleft_filter_close">Perto de virar · %1$d</string>
+    <string name="whatsleft_filter_all">Todas · %1$d</string>
+    <string name="whatsleft_step_of">%1$s · degrau %2$d de %3$d</string>
+    <plurals name="whatsleft_already_mastered">
+        <item quantity="one">%1$d já dominada</item>
+        <item quantity="many">%1$d de já dominadas</item>
+        <item quantity="other">%1$d já dominadas</item>
+    </plurals>
+
+    <string name="pending_title">Pendentes</string>
+    <string name="pending_all_clear_title">Tudo em dia</string>
+    <string name="pending_all_clear_detail">Nenhuma captura ou ficha esperando.</string>
+    <string name="pending_error_suffix"> · %1$s</string>
+    <string name="pending_retry">tentar de novo</string>
+
+    <plurals name="saved_count">
+        <item quantity="one">%1$d guardada</item>
+        <item quantity="many">%1$d de guardadas</item>
+        <item quantity="other">%1$d guardadas</item>
+    </plurals>
+    <string name="saved_in_your_language">no seu %1$s · %2$s agora</string>
+    <string name="saved_note_many">Todas entram na revisão de hoje. Se a IA errar o sentido, você corrige na ficha — nada trava aqui.</string>
+    <string name="saved_note_one">Ela entra na revisão de hoje. Se a IA errar o sentido, você corrige na ficha — nada trava aqui.</string>
+    <string name="saved_capture_another">Capturar outra</string>
+    <string name="saved_see_cards">Ver as fichas</string>
+    <string name="saved_review_now">Revisar agora</string>
+    <string name="saved_still_working">A IA continua montando ao fundo.</string>
+    <string name="saved_closes_itself">Fecha sozinho e volta para onde você estava.</string>
+    <string name="saved_failed">não deu certo — dá para tentar de novo em Pendentes</string>
+    <string name="saved_building">montando o sentido</string>
+    <string name="saved_card_ready">ficha pronta</string>
+    <string name="saved_ai">IA</string>
+
     <!-- Configurações -->
     <string name="settings_section_language">Idioma</string>
     <string name="settings_app_language">Idioma do app</string>

@@ -49,9 +49,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.R
 import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.shared.domain.RetentionNow
@@ -89,43 +91,48 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
     if (confirmDeletion) {
         AlertDialog(
             onDismissRequest = { confirmDeletion = false },
-            title = { Text("Excluir esta ficha?") },
-            text = { Text("A mídia compartilhada será preservada enquanto houver outra ficha da mesma captura.") },
+            title = { Text(stringResource(R.string.card_delete_title)) },
+            text = { Text(stringResource(R.string.card_delete_body)) },
             confirmButton = {
                 TextButton(onClick = { vm.delete(); confirmDeletion = false; onBack() }) {
-                    Text("Excluir", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = { TextButton(onClick = { confirmDeletion = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { confirmDeletion = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
+
+    // Hoisted: the onClick lambda below is not a composable scope.
+    val shareChooserLabel = stringResource(R.string.card_share_chooser)
+    val appName = stringResource(R.string.app_name)
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 8.dp, vertical = 8.dp),
         ) {
-            CircularButton(AppIcons.Back, "Voltar", onBack)
+            CircularButton(AppIcons.Back, stringResource(R.string.back), onBack)
             Spacer(Modifier.weight(1f))
             Box {
-                CircularButton(AppIcons.MoreVertical, "Mais opções", { menu = true })
+                CircularButton(AppIcons.MoreVertical, stringResource(R.string.a11y_more_options), { menu = true })
                 DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                     DropdownMenuItem(
-                        text = { Text("Compartilhar") },
+                        text = { Text(stringResource(R.string.card_share)) },
                         leadingIcon = { Icon(AppIcons.Share, null) },
                         onClick = {
                             menu = false
                             entry?.let { item ->
-                                val text = "$title — ${item.card?.translation.orEmpty()}\n${item.snippet.orEmpty()}\nVocabu"
+                                val text = "$title — ${item.card?.translation.orEmpty()}\n" +
+                                    "${item.snippet.orEmpty()}\n$appName"
                                 context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, text)
-                                }, "Compartilhar ficha"))
+                                }, shareChooserLabel))
                             }
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("Excluir", color = MaterialTheme.colorScheme.error) },
+                        text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
                         leadingIcon = { Icon(AppIcons.Trash, null, tint = MaterialTheme.colorScheme.error) },
                         onClick = { menu = false; confirmDeletion = true },
                     )
@@ -147,13 +154,13 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
                     // its absence, and German in a Portuguese voice is worse yet.
                     tts?.let { voice ->
                         Surface(
-                            onClick = { voice.speak(title, TextToSpeech.QUEUE_FLUSH, null, "Vocabu-ficha") },
+                            onClick = { voice.speak(title, TextToSpeech.QUEUE_FLUSH, null, TTS_UTTERANCE_ID) },
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceVariant,
                         ) {
                             Icon(
                                 imageVector = AppIcons.Play,
-                                contentDescription = "Ouvir pronúncia",
+                                contentDescription = stringResource(R.string.a11y_hear_pronunciation),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(32.dp).padding(8.dp),
                             )
@@ -188,7 +195,7 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(18.dp)) {
                         CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
-                        Text("A ficha está sendo criada…", Modifier.padding(start = 12.dp))
+                        Text(stringResource(R.string.card_being_created), Modifier.padding(start = 12.dp))
                     }
                 }
                 EntryStatus.ERROR -> Surface(
@@ -212,7 +219,7 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
                                 modifier = Modifier.padding(top = 4.dp),
                             )
                         }
-                        Button(onClick = vm::tryAgain, modifier = Modifier.padding(top = 12.dp)) { Text("Tentar de novo") }
+                        Button(onClick = vm::tryAgain, modifier = Modifier.padding(top = 12.dp)) { Text(stringResource(R.string.try_again)) }
                     }
                 }
                 EntryStatus.READY -> CardReady(
@@ -246,17 +253,17 @@ private fun CardReady(
         memory?.let { retention ->
             ScreenCard(shape = MaterialTheme.shapes.medium, filling = PaddingValues(15.dp), modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    SectionLabel("Força de memória", Modifier.weight(1f))
+                    SectionLabel(stringResource(R.string.card_memory_strength), Modifier.weight(1f))
                     Text(
-                        "${levelLabel(retention.level)} · ${retention.points.toInt()}",
+                        stringResource(R.string.card_level_points, levelLabel(retention.level), retention.points.toInt()),
                         style = MaterialTheme.typography.bodySmall,
                         color = levelLabelColor(retention.level),
                     )
                 }
                 MemoryBar(retention.points, retention.level, Modifier.fillMaxWidth().padding(top = 9.dp))
                 Text(
-                    text = if (retention.nextInMillis <= 0L) "Está na fila de revisão agora."
-                    else "Volta para revisão ${timeUntil(retention.nextInMillis)}.",
+                    text = if (retention.nextInMillis <= 0L) stringResource(R.string.card_in_queue_now)
+                    else stringResource(R.string.card_returns_for_review, timeUntil(retention.nextInMillis)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 9.dp),
@@ -266,7 +273,7 @@ private fun CardReady(
 
         entry.snippet?.takeIf(String::isNotBlank)?.let { snippet ->
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SectionLabel("Seu contexto")
+                SectionLabel(stringResource(R.string.card_your_context))
                 HighlightedSnippet(snippet)
                 Text(
                     text = listOfNotNull(entry.source?.takeIf(String::isNotBlank), relativeTime(entry.createdAt)).joinToString(" · "),
@@ -277,13 +284,13 @@ private fun CardReady(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SectionLabel("Definições")
+            SectionLabel(stringResource(R.string.card_definitions))
             card.definitions.forEachIndexed { index, definition ->
-                Text("${index + 1}. $definition", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.card_numbered_definition, index + 1, definition), style = MaterialTheme.typography.bodyMedium)
             }
             card.example.takeIf(String::isNotBlank)?.let {
                 Text(
-                    "Exemplo: $it",
+                    stringResource(R.string.card_example, it),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -292,7 +299,7 @@ private fun CardReady(
 
         if (card.related.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                SectionLabel("Puxa outras palavras")
+                SectionLabel(stringResource(R.string.card_related))
                 // `animateContentSize` because "see more" changes the block's
                 // height: without it the rest of the card jumps down between
                 // frames and nobody sees where the new pills came from.
@@ -306,7 +313,7 @@ private fun CardReady(
                     }
                     if (card.related.size > 3) {
                         Pill(
-                            text = if (didExpand) "ver menos" else "ver mais",
+                            text = stringResource(if (didExpand) R.string.card_see_less else R.string.card_see_more),
                             highlight = true,
                             onClick = onToggleRelated,
                         )
@@ -371,3 +378,6 @@ private fun rememberTts(tag: String): TextToSpeech? {
 }
 
 private val NO_VOICE = setOf(TextToSpeech.LANG_MISSING_DATA, TextToSpeech.LANG_NOT_SUPPORTED, null)
+
+/** Identifies this app's own utterance to the TTS engine; never shown. */
+private const val TTS_UTTERANCE_ID = "vocabu-card"

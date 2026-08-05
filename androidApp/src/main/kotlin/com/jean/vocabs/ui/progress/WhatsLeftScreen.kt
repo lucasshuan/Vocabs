@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,9 +67,9 @@ fun WhatsLeftScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     var onlyClose by remember { mutableStateOf(true) }
 
-    val perto = state.closeToLeveling
+    val close = state.closeToLeveling
     val list = remember(state.words, onlyClose) {
-        val base = if (onlyClose) perto else state.words.filter { Steps.level(it.step) != MemoryLevel.MASTERED }
+        val base = if (onlyClose) close else state.words.filter { Steps.level(it.step) != MemoryLevel.MASTERED }
         base.sortedBy { it.step }
     }
     val mastered = state.mastered
@@ -77,16 +78,16 @@ fun WhatsLeftScreen(
         verticalArrangement = Arrangement.spacedBy(13.dp),
         modifier = Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp),
     ) {
-        InnerHeader("O que falta", onBack, Modifier.padding(top = 8.dp))
+        InnerHeader(stringResource(R.string.whatsleft_title), onBack, Modifier.padding(top = 8.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             SelectablePill(
-                label = "Perto de virar · ${perto.size}",
+                label = stringResource(R.string.whatsleft_filter_close, close.size),
                 isSelected = onlyClose,
                 onClick = { onlyClose = true },
             )
             SelectablePill(
-                label = "Todas · ${state.total}",
+                label = stringResource(R.string.whatsleft_filter_all, state.total),
                 isSelected = !onlyClose,
                 onClick = { onlyClose = false },
             )
@@ -95,11 +96,11 @@ fun WhatsLeftScreen(
         if (list.isEmpty()) {
             EmptyState(
                 icon = AppIcons.Check,
-                title = if (onlyClose) "Nenhuma está perto" else "Nada em aberto",
+                title = stringResource(if (onlyClose) R.string.whatsleft_none_close else R.string.whatsleft_nothing_open),
                 detail = if (onlyClose) {
-                    "Acerte mais uma vez e a palavra aparece aqui."
+                    stringResource(R.string.whatsleft_get_one_right)
                 } else {
-                    "Todas as palavras já estão dominadas."
+                    stringResource(R.string.whatsleft_all_mastered)
                 },
                 modifier = Modifier.weight(1f),
             )
@@ -114,8 +115,8 @@ fun WhatsLeftScreen(
                 if (mastered > 0) {
                     item {
                         ListRow(
-                            title = "$mastered já ${if (mastered == 1) "dominada" else "mastered"}",
-                            detail = "só voltam de mês em mês",
+                            title = pluralStringResource(R.plurals.whatsleft_already_mastered, mastered, mastered),
+                            detail = stringResource(R.string.whatsleft_monthly),
                             modifier = Modifier.padding(top = 9.dp),
                         )
                     }
@@ -132,7 +133,12 @@ private fun WordRow(entry: Entry, onClick: () -> Unit) {
     val step = entry.step
     val level = Steps.level(step)
     val remain = Steps.hitsToLevelUp(step)
-    val next = nextReviewText(entry.retention, System.currentTimeMillis())
+    val now = System.currentTimeMillis()
+    val next = nextReviewText(entry.retention, now)
+    // Compared against the schedule, not against the rendered text: the same
+    // check read `it == "revisar agora"` and would have gone silently false the
+    // moment that string was English.
+    val due = (entry.retention?.nextReviewIn(now) ?: 1L) <= 0L
 
     ScreenCard(
         onClick = onClick,
@@ -146,7 +152,7 @@ private fun WordRow(entry: Entry, onClick: () -> Unit) {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = if (it == "revisar agora") colors.primary else colors.onSurfaceVariant,
+                    color = if (due) colors.primary else colors.onSurfaceVariant,
                 )
             }
         }
@@ -166,7 +172,7 @@ private fun WordRow(entry: Entry, onClick: () -> Unit) {
         ) {
             StepLadder(step, Modifier.weight(1f))
             Text(
-                text = "${levelLabel(level)} · degrau $step de ${Steps.TOTAL}",
+                text = stringResource(R.string.whatsleft_step_of, levelLabel(level), step, Steps.TOTAL),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
                 modifier = Modifier.padding(start = 10.dp),
