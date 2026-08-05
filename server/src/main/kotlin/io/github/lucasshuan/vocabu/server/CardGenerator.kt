@@ -87,14 +87,13 @@ class CardGenerator(
 
         val text = answer.content()
             .firstNotNullOfOrNull { bloco -> bloco.text().orElse(null)?.text() }
-            ?: error("A Claude API não devolveu nenhum bloco de text.")
+            ?: error("The Claude API returned no text block.")
 
         val card = json.decodeFromString<CardResponse>(text)
         return applyLocalDecisions(request, card)
     }
 
-    // Configurable so models can be compared without recompiling. The default is
-    // the most capable, for contextual definitions and related terms.
+    // Configurable so models can be compared without recompiling.
     private val model: String = Config["MODEL"] ?: DEFAULT_MODEL
 
     /** Haiku 4.5 rejects `effort` with a 400; Opus and Sonnet accept it. */
@@ -102,7 +101,11 @@ class CardGenerator(
 
     /** Internal, not private, so a test can check the prompt names both languages. */
     internal companion object {
-        const val DEFAULT_MODEL = "claude-opus-5"
+        // Haiku by default: the card is a short, well-specified extraction, and
+        // the type it is graded on is decided on the device and reinjected, not
+        // asked of the model. Raise it through MODEL if definitions or related
+        // terms come out thin.
+        const val DEFAULT_MODEL = "claude-haiku-4-5"
 
         /**
          * The instruction's language and the output's are independent: the model

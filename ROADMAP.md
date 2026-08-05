@@ -35,8 +35,8 @@ Prove the capture habit works **before** building anything.
 > `claude-opus-5`. End to end inside the app (tapping "Save" until `status =
 > READY`): **6.65s**. Straight against the server, 5 samples: 4.61 / 4.98 / 5.10 /
 > 5.50 / 6.24s — average 5.05s. The 60s ceiling has nearly 90% headroom left, so
-> there is no reason to swap in a faster model: the WORD vs PHRASE classification
-> got 5 out of 5.
+> latency was never the reason to change model — cost was, and the default is now
+> `claude-haiku-4-5`. These numbers are the Opus measurement, unrepeated since.
 >
 > The entry turns `GENERATING` in **0.13s**, meaning saving genuinely does not
 > wait for the AI. The app cold-starts in ~1.05s.

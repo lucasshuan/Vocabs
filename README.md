@@ -1,6 +1,3 @@
-<!-- A copy of drawable-nodpi/logo_vocabu.png, kept here on purpose: pointing at the
-     app resource would leave this image dead the day that path changes, with nothing
-     failing the build. Re-copy it if the logo is ever redrawn. -->
 <img src="docs/logo.png" width="104" align="right" alt="">
 
 # Vocabu
@@ -41,12 +38,12 @@ name wins, which is how CI overrides without the file.
 | `ANTHROPIC_API_KEY` | server | yes | — |
 | `APP_TOKEN` | server + app | yes | — |
 | `PORT` | server | no | 8080 |
-| `MODEL` | server | no | `claude-opus-5` |
+| `MODEL` | server | no | `claude-haiku-4-5` |
 | `SERVER_LAN` | app build | no | this machine's LAN address, detected |
 
 `APP_TOKEN` is read by the app at build time, so both sides always match.
 `MODEL` and `PORT` also take a per-run override that leaves `.env` alone:
-`.\gradlew.bat :server:run -PMODEL=claude-haiku-4-5`.
+`.\gradlew.bat :server:run -PMODEL=claude-opus-5`.
 
 ## Running
 
