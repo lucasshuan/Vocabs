@@ -25,8 +25,8 @@ import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
 
 fun main() {
-    val porta = Config["PORT"]?.toIntOrNull() ?: 8080
-    embeddedServer(Netty, port = porta, host = "0.0.0.0", module = Application::module)
+    val port = Config["PORT"]?.toIntOrNull() ?: 8080
+    embeddedServer(Netty, port = port, host = "0.0.0.0", module = Application::module)
         .start(wait = true)
 }
 
@@ -35,9 +35,9 @@ fun Application.module() {
 
     // Falhar no boot é melhor que falhar na primeira captura: sem token, todo
     // request seria 401 e você descobriria isso com o celular na mão.
-    val tokenEsperado = Config.obrigatorio("APP_TOKEN")
+    val expectedToken = Config.obrigatorio("APP_TOKEN")
 
-    val gerador = GeradorDeFicha()
+    val generator = CardGenerator()
 
     install(ContentNegotiation) {
         json(Json { ignoreUnknownKeys = true })
@@ -46,22 +46,22 @@ fun Application.module() {
     install(StatusPages) {
         // Antes do handler geral: um par de idiomas que não existe não melhora
         // se o app tentar de novo, e 503 faria o app tentar.
-        exception<IdiomaDesconhecido> { call, causa ->
+        exception<UnknownLanguagePair> { call, causa ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse(ErrorCode.UNKNOWN_LANGUAGE_PAIR.name, causa.message))
         }
         exception<Throwable> { call, causa ->
-            log.error("Falha ao gerar ficha", causa)
+            log.error("Falha ao gerar card", causa)
             // 503 e não 500: para o app isso é "tente de novo", não "desista".
             // A causa completa fica no log; para a tela vai só a primeira linha,
             // limitada — senão um erro da API vira um dump de JSON no celular.
-            val detalhe = causa.message
+            val detail = causa.message
                 ?.lineSequence()
                 ?.firstOrNull()
                 ?.take(140)
                 ?: causa::class.simpleName.orEmpty()
             call.respond(
                 HttpStatusCode.ServiceUnavailable,
-                ErrorResponse(ErrorCode.GENERATION_FAILED.name, detalhe),
+                ErrorResponse(ErrorCode.GENERATION_FAILED.name, detail),
             )
         }
     }
@@ -69,14 +69,14 @@ fun Application.module() {
     routing {
         get("/health") { call.respondText("ok") }
 
-        post("/v1/ficha") {
-            if (call.request.headers[HttpHeaders.Authorization] != "Bearer $tokenEsperado") {
+        post("/v1/card") {
+            if (call.request.headers[HttpHeaders.Authorization] != "Bearer $expectedToken") {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse(ErrorCode.INVALID_TOKEN.name))
                 return@post
             }
 
-            val pedido = call.receive<GenerateCardRequest>()
-            if (pedido.snippet.isBlank() || pedido.target.isBlank()) {
+            val request = call.receive<GenerateCardRequest>()
+            if (request.snippet.isBlank() || request.target.isBlank()) {
                 call.respond(
                     HttpStatusCode.BadRequest,
                     ErrorResponse(ErrorCode.MISSING_FIELDS.name),
@@ -85,8 +85,8 @@ fun Application.module() {
             }
 
             // O SDK da Anthropic é bloqueante; sem isto ele trava uma thread do Netty.
-            val ficha = withContext(Dispatchers.IO) { gerador.gerar(pedido) }
-            call.respond(ficha)
+            val card = withContext(Dispatchers.IO) { generator.gerar(request) }
+            call.respond(card)
         }
     }
 }

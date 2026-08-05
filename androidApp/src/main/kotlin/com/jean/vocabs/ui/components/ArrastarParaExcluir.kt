@@ -119,7 +119,7 @@ fun ArrastarParaExcluir(
 ) {
     val cores = MaterialTheme.colorScheme
     val haptico = LocalHapticFeedback.current
-    val escopo = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     val pisoDoLimiar = with(LocalDensity.current) { LIMIAR_MINIMO.toPx() }
 
     val deslocamento = remember { Animatable(0f) }
@@ -164,10 +164,10 @@ fun ArrastarParaExcluir(
     )
 
     val arrasto = rememberDraggableState { passo ->
-        val atual = deslocamento.value
-        val avancando = atual == 0f || sign(passo) == sign(atual)
-        val andado = if (avancando && abs(atual) >= limiar) passo * RESISTENCIA_APOS_O_LIMIAR else passo
-        escopo.launch { deslocamento.snapTo(atual + andado) }
+        val current = deslocamento.value
+        val avancando = current == 0f || sign(passo) == sign(current)
+        val andado = if (avancando && abs(current) >= limiar) passo * RESISTENCIA_APOS_O_LIMIAR else passo
+        scope.launch { deslocamento.snapTo(current + andado) }
     }
 
     Box(
@@ -251,9 +251,9 @@ fun ArrastarParaExcluir(
 }
 
 @Composable
-private fun RotuloDoDescarte(texto: String, cor: androidx.compose.ui.graphics.Color, opacidade: Float) {
+private fun RotuloDoDescarte(text: String, cor: androidx.compose.ui.graphics.Color, opacidade: Float) {
     Text(
-        text = texto,
+        text = text,
         style = MaterialTheme.typography.labelMedium,
         color = cor,
         maxLines = 1,

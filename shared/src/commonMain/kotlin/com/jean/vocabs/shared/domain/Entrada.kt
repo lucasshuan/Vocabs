@@ -11,72 +11,72 @@ import com.jean.vocabs.contracts.TargetType
  * domínio seria uma cópia a mais para manter em sincronia, sem ganho nenhum.
  *
  * [trecho] pode ser nulo apenas em dados legados incompletos. Capturas cruas de
- * mídia vivem em [Captura] e só ganham entradas depois da seleção.
+ * mídia vivem em [Capture] e só ganham entradas depois da seleção.
  *
  * [retencao] segue a mesma regra de [ficha]: existe se e somente se há ficha
  * para revisar.
  */
-data class Entrada(
+data class Entry(
     val id: Long,
-    val capturaId: Long,
-    val trecho: String?,
-    val alvo: String?,
-    val inicio: Int?,
-    val fim: Int?,
-    val tipo: TargetType,
-    val origem: String?,
-    val criadoEm: Long,
+    val captureId: Long,
+    val snippet: String?,
+    val target: String?,
+    val start: Int?,
+    val end: Int?,
+    val type: TargetType,
+    val source: String?,
+    val createdAt: Long,
     val status: EntryStatus,
-    val formato: CaptureFormat,
-    val midiaCaminho: String?,
-    val ficha: CardResponse?,
-    val retencao: Retencao?,
-    /** Qual falha, para a tela escolher o texto. Nulo quando não houve. */
+    val format: CaptureFormat,
+    val mediaPath: String?,
+    val card: CardResponse?,
+    val retention: Retention?,
+    /** Qual falha, para a tela escolher o text. Nulo quando não houve. */
     val errorCode: ErrorCode?,
     /** O que não se traduz: a frase crua do provedor, ou o status HTTP. */
     val errorDetail: String?,
-    /** Herdado da captura: o par em que esta ficha nasceu e no qual ela é regerada. */
-    val par: ParIdiomas = ParIdiomas.PADRAO,
+    /** Herdado da capture: o par em que esta card nasceu e no qual ela é regerada. */
+    val languagePair: LanguagePair = LanguagePair.PADRAO,
 ) {
-    fun precisaRevisar(agora: Long): Boolean = retencao?.precisaRevisar(agora) == true
+    fun needsReview(now: Long): Boolean = retention?.needsReview(now) == true
 
     /** Em que degrau da escada de "O que falta" ela está. */
-    val degrau: Int get() = Degraus.de(retencao)
+    val degrau: Int get() = Steps.de(retention)
 
-    /** O que mostrar como título quando ainda não há alvo digitado. */
-    val titulo: String
-        get() = alvo?.takeIf { it.isNotBlank() } ?: when (formato) {
+    /** O que mostrar como título quando ainda não há target digitado. */
+    val title: String
+        get() = target?.takeIf { it.isNotBlank() } ?: when (format) {
             CaptureFormat.PHOTO -> "Foto sem transcrição"
             CaptureFormat.AUDIO -> "Áudio sem transcrição"
             CaptureFormat.TEXT -> "Sem título"
     }
 }
 
-private val espacosDoAlvo = Regex("\\s+")
+private val targetSpaces = Regex("\\s+")
 
-fun duplicataDeAlvo(
-    alvo: String,
-    entradas: Iterable<Entrada>,
+fun duplicateOfTarget(
+    target: String,
+    entries: Iterable<Entry>,
     ignorarId: Long? = null,
-): Entrada? {
-    val procurado = normalizarAlvo(alvo)
+): Entry? {
+    val procurado = normalizeTarget(target)
     if (procurado.isBlank()) return null
 
-    return entradas
+    return entries
         .asSequence()
-        .filter { entrada -> entrada.id != ignorarId }
-        .filter { entrada -> normalizarAlvo(entrada.alvo) == procurado }
+        .filter { entry -> entry.id != ignorarId }
+        .filter { entry -> normalizeTarget(entry.target) == procurado }
         .sortedWith(
-            compareBy<Entrada> { prioridadeDuplicata(it.status) }
-                .thenByDescending { it.criadoEm },
+            compareBy<Entry> { duplicatePriority(it.status) }
+                .thenByDescending { it.createdAt },
         )
         .firstOrNull()
 }
 
-private fun normalizarAlvo(valor: String?): String =
-    valor.orEmpty().trim().lowercase().replace(espacosDoAlvo, " ")
+private fun normalizeTarget(value: String?): String =
+    value.orEmpty().trim().lowercase().replace(targetSpaces, " ")
 
-private fun prioridadeDuplicata(status: EntryStatus): Int = when (status) {
+private fun duplicatePriority(status: EntryStatus): Int = when (status) {
     EntryStatus.READY -> 0
     EntryStatus.GENERATING -> 1
     EntryStatus.PENDING -> 2
@@ -96,8 +96,8 @@ enum class CaptureFormat {
     AUDIO;
 
     companion object {
-        fun de(valor: String?): CaptureFormat =
-            entries.firstOrNull { it.name == valor } ?: TEXT
+        fun de(value: String?): CaptureFormat =
+            entries.firstOrNull { it.name == value } ?: TEXT
     }
 }
 
@@ -105,7 +105,7 @@ enum class CaptureFormat {
  * O que sustenta o critério de saída da Fase 1: a captura grava e volta na hora
  * (PENDING), e a geração da ficha acontece depois, em background.
  *
- * O rascunho agora pertence a [Captura]; uma entrada só existe depois que um
+ * O rascunho agora pertence a [Capture]; uma entrada só existe depois que um
  * alvo foi confirmado.
  */
 enum class EntryStatus {
@@ -115,7 +115,7 @@ enum class EntryStatus {
     ERROR;
 
     companion object {
-        fun de(valor: String): EntryStatus =
-            entries.firstOrNull { it.name == valor } ?: PENDING
+        fun de(value: String): EntryStatus =
+            entries.firstOrNull { it.name == value } ?: PENDING
     }
 }

@@ -4,9 +4,9 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.domain.Captura
-import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.Escopo
+import com.jean.vocabs.shared.domain.Capture
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.Scope
 import com.jean.vocabs.ui.components.tituloDaCaptura
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -28,14 +28,14 @@ import kotlinx.coroutines.launch
  * outro. O selo da aba conta tudo pela mesma razão.
  */
 data class PendentesEstado(
-    val capturas: List<Captura> = emptyList(),
-    val fichas: List<Entrada> = emptyList(),
+    val captures: List<Capture> = emptyList(),
+    val cards: List<Entry> = emptyList(),
 ) {
-    val total: Int get() = capturas.size + fichas.size
+    val total: Int get() = captures.size + cards.size
 
     /** Quantas capturas cruas por idioma — o número que cada chip de filtro mostra. */
     val porIdioma: Map<String, Int>
-        get() = (capturas.map { it.par.alvo } + fichas.map { it.par.alvo })
+        get() = (captures.map { it.languagePair.target } + cards.map { it.languagePair.target })
             .groupingBy { it }
             .eachCount()
 }
@@ -48,10 +48,10 @@ data class PendentesEstado(
  * reiniciar a contagem em vez de continuar a anterior.
  */
 data class ExclusaoPendente(
-    val chave: Long,
+    val key: Long,
     val id: Long,
     val ehCaptura: Boolean,
-    val titulo: String,
+    val title: String,
 )
 
 /**
@@ -65,7 +65,7 @@ data class ExclusaoPendente(
 private const val JANELA_DE_DESFAZER_MS = 5_000L
 
 class PendentesViewModel(app: Application) : AndroidViewModel(app) {
-    private val repositorio = AppContainer.repositorio(app)
+    private val repository = AppContainer.repository(app)
 
     private val _exclusao = MutableStateFlow<ExclusaoPendente?>(null)
 
@@ -83,13 +83,13 @@ class PendentesViewModel(app: Application) : AndroidViewModel(app) {
      * sai de `total`, que sai daqui, os dois nunca discordam.
      */
     val estado: StateFlow<PendentesEstado> = combine(
-        repositorio.observarCapturasPendentes(Escopo.Todos),
-        repositorio.observarInbox(Escopo.Todos),
+        repository.observePendingCaptures(Scope.Todos),
+        repository.observeInbox(Scope.Todos),
         _exclusao,
-    ) { capturas, fichas, exclusao ->
+    ) { captures, cards, exclusao ->
         PendentesEstado(
-            capturas = capturas.filterNot { exclusao != null && exclusao.ehCaptura && exclusao.id == it.id },
-            fichas = fichas.filterNot { exclusao != null && !exclusao.ehCaptura && exclusao.id == it.id },
+            captures = captures.filterNot { exclusao != null && exclusao.ehCaptura && exclusao.id == it.id },
+            cards = cards.filterNot { exclusao != null && !exclusao.ehCaptura && exclusao.id == it.id },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PendentesEstado())
 
@@ -97,15 +97,15 @@ class PendentesViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
     fun tentarDeNovo(id: Long) {
-        AppContainer.escopo.launch { repositorio.gerarFicha(id) }
+        AppContainer.scope.launch { repository.generateCard(id) }
     }
 
-    fun excluirCaptura(captura: Captura) {
-        agendar(ExclusaoPendente(System.nanoTime(), captura.id, ehCaptura = true, titulo = tituloDaCaptura(captura)))
+    fun deleteCapture(capture: Capture) {
+        agendar(ExclusaoPendente(System.nanoTime(), capture.id, ehCaptura = true, title = tituloDaCaptura(capture)))
     }
 
-    fun excluirFicha(entrada: Entrada) {
-        agendar(ExclusaoPendente(System.nanoTime(), entrada.id, ehCaptura = false, titulo = entrada.titulo))
+    fun excluirFicha(entry: Entry) {
+        agendar(ExclusaoPendente(System.nanoTime(), entry.id, ehCaptura = false, title = entry.title))
     }
 
     /** O gesto foi um engano: o item volta para a fila e nada chega ao banco. */
@@ -142,8 +142,8 @@ class PendentesViewModel(app: Application) : AndroidViewModel(app) {
      * ela terminar, o item simplesmente continua na fila — o erro seguro dos dois.
      */
     private fun confirmar(exclusao: ExclusaoPendente) {
-        AppContainer.escopo.launch {
-            if (exclusao.ehCaptura) repositorio.excluirCaptura(exclusao.id) else repositorio.excluir(exclusao.id)
+        AppContainer.scope.launch {
+            if (exclusao.ehCaptura) repository.deleteCapture(exclusao.id) else repository.excluir(exclusao.id)
         }
     }
 }

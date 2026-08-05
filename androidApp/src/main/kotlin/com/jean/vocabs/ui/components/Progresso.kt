@@ -82,8 +82,8 @@ fun AnelDeProgresso(
 data class DiaDaSemana(
     val sigla: String,
     val numero: Int,
-    val revisoes: Int,
-    val hoje: Boolean,
+    val reviews: Int,
+    val today: Boolean,
     val futuro: Boolean,
 )
 
@@ -104,27 +104,27 @@ data class DiaDaSemana(
  */
 @Composable
 fun FaixaDaSemana(
-    dias: List<DiaDaSemana>,
+    days: List<DiaDaSemana>,
     modifier: Modifier = Modifier,
     tracejada: Boolean = false,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = modifier.fillMaxWidth()) {
-        dias.forEachIndexed { indice, dia ->
+        days.forEachIndexed { indice, day ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.weight(1f).entradaSuave(indice, deslocamento = 8.dp),
             ) {
                 Text(
-                    text = if (dia.hoje) "hoje" else dia.sigla,
+                    text = if (day.today) "hoje" else day.sigla,
                     style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
                     color = when {
-                        dia.hoje -> MaterialTheme.colorScheme.primary
-                        tracejada || dia.futuro -> MaterialTheme.colorScheme.outline
+                        day.today -> MaterialTheme.colorScheme.primary
+                        tracejada || day.futuro -> MaterialTheme.colorScheme.outline
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                 )
-                if (tracejada && !dia.hoje) QuadradoVazio() else QuadradoDoDia(dia)
+                if (tracejada && !day.today) QuadradoVazio() else QuadradoDoDia(day)
             }
         }
     }
@@ -149,16 +149,16 @@ private fun QuadradoVazio() {
 }
 
 @Composable
-private fun QuadradoDoDia(dia: DiaDaSemana) {
+private fun QuadradoDoDia(day: DiaDaSemana) {
     val cores = MaterialTheme.colorScheme
     // Dois tons de menta e não um gradiente: a faixa tem sete quadrados de 40 dp,
     // e uma escala fina neles não é legível — o que precisa ficar claro é
     // "trabalhei" contra "trabalhei bastante".
     val fundoAlvo = when {
-        dia.hoje -> cores.secondaryContainer
-        dia.futuro -> cores.surfaceVariant
-        dia.revisoes >= REVISOES_DE_DIA_CHEIO -> cores.tertiary
-        dia.revisoes > 0 -> cores.tertiaryContainer
+        day.today -> cores.secondaryContainer
+        day.futuro -> cores.surfaceVariant
+        day.reviews >= REVISOES_DE_DIA_CHEIO -> cores.tertiary
+        day.reviews > 0 -> cores.tertiaryContainer
         else -> cores.outlineVariant
     }
     // O quadrado de hoje muda de cor no meio da sessão, quando a terceira revisão
@@ -166,11 +166,11 @@ private fun QuadradoDoDia(dia: DiaDaSemana) {
     // ser notado: repintado de um quadro para o outro, ele só aparece na próxima
     // vez que alguém vier olhar a semana.
     val fundo by animateColorAsState(fundoAlvo, tween(Movimento.PADRAO), label = "fundoDoDia")
-    val texto = when {
-        dia.hoje -> cores.primary
-        dia.futuro -> cores.outline
-        dia.revisoes >= REVISOES_DE_DIA_CHEIO -> cores.onTertiary
-        dia.revisoes > 0 -> cores.onTertiaryContainer
+    val text = when {
+        day.today -> cores.primary
+        day.futuro -> cores.outline
+        day.reviews >= REVISOES_DE_DIA_CHEIO -> cores.onTertiary
+        day.reviews > 0 -> cores.onTertiaryContainer
         else -> cores.onSurfaceVariant
     }
 
@@ -181,21 +181,21 @@ private fun QuadradoDoDia(dia: DiaDaSemana) {
             .aspectRatio(1f)
             .background(fundo, RoundedCornerShape(12.dp))
             .then(
-                if (dia.hoje) Modifier.border(2.dp, cores.primary, RoundedCornerShape(12.dp)) else Modifier,
+                if (day.today) Modifier.border(2.dp, cores.primary, RoundedCornerShape(12.dp)) else Modifier,
             )
             .semantics {
                 contentDescription = when {
-                    dia.futuro -> "dia ${dia.numero}, ainda não chegou"
-                    dia.revisoes == 0 -> "dia ${dia.numero}, sem revisões"
-                    dia.revisoes == 1 -> "dia ${dia.numero}, 1 revisão"
-                    else -> "dia ${dia.numero}, ${dia.revisoes} revisões"
+                    day.futuro -> "dia ${day.numero}, ainda não chegou"
+                    day.reviews == 0 -> "dia ${day.numero}, sem revisões"
+                    day.reviews == 1 -> "dia ${day.numero}, 1 revisão"
+                    else -> "dia ${day.numero}, ${day.reviews} revisões"
                 }
             },
     ) {
         Text(
-            text = dia.numero.toString(),
+            text = day.numero.toString(),
             style = MaterialTheme.typography.bodySmall,
-            color = texto,
+            color = text,
             textAlign = TextAlign.Center,
         )
     }
@@ -249,10 +249,10 @@ fun BarraDeFaixas(faixas: List<Pair<Int, Color>>, modifier: Modifier = Modifier,
  */
 @Composable
 fun CabecalhoDeDentro(
-    titulo: String,
+    title: String,
     aoVoltar: () -> Unit,
     modifier: Modifier = Modifier,
-    fim: (@Composable () -> Unit)? = null,
+    end: (@Composable () -> Unit)? = null,
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -265,11 +265,11 @@ fun CabecalhoDeDentro(
             cor = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = titulo,
+            text = title,
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.weight(1f).padding(start = 4.dp),
         )
-        fim?.invoke()
+        end?.invoke()
     }
 }
 
@@ -281,18 +281,18 @@ fun CabecalhoDeDentro(
  * segurança, e por isso a barra é de apoio e não um alerta.
  */
 @Composable
-fun LinhaDeUsoDeIa(usadas: Int, limite: Int, modifier: Modifier = Modifier) {
+fun LinhaDeUsoDeIa(used: Int, limit: Int, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
     val fracao by fracaoAnimada(
-        alvo = usadas.toFloat() / limite.coerceAtLeast(1),
+        target = used.toFloat() / limit.coerceAtLeast(1),
         rotulo = "fracaoDeUsoDeIa",
     )
     LinhaDeLista(
-        titulo = "Gerações por IA",
-        detalhe = "$usadas de $limite este mês",
+        title = "Gerações por IA",
+        detail = "$used de $limit este mês",
         modifier = modifier,
-        inicio = { DiscoDeIcone(Icones.Brilho, null, cor = cores.primary, fundo = cores.primaryContainer) },
-        fim = {
+        start = { DiscoDeIcone(Icones.Brilho, null, cor = cores.primary, fundo = cores.primaryContainer) },
+        end = {
             Box(
                 Modifier
                     .width(52.dp)
@@ -312,10 +312,10 @@ fun LinhaDeUsoDeIa(usadas: Int, limite: Int, modifier: Modifier = Modifier) {
 
 /** O rótulo de contagem discreto do canto de uma seção ("37 idiomas", "Todas · 24"). */
 @Composable
-fun ContagemDeSecao(texto: String, modifier: Modifier = Modifier) {
+fun ContagemDeSecao(text: String, modifier: Modifier = Modifier) {
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, modifier = modifier) {
         Text(
-            text = texto,
+            text = text,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),

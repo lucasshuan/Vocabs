@@ -5,7 +5,7 @@ import com.jean.vocabs.contracts.ErrorCode
 import com.jean.vocabs.contracts.ErrorResponse
 import com.jean.vocabs.contracts.GenerateCardRequest
 import com.jean.vocabs.contracts.TargetType
-import com.jean.vocabs.shared.domain.ParIdiomas
+import com.jean.vocabs.shared.domain.LanguagePair
 import kotlinx.coroutines.CancellationException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -23,12 +23,12 @@ import io.ktor.http.isSuccess
  * [detail] é o que não dá para traduzir: a frase crua do provedor de IA, ou o
  * status HTTP. Existe para diagnóstico e nunca substitui o código.
  */
-class FichaException(
+class CardException(
     val code: ErrorCode,
     val detail: String? = null,
 ) : Exception(detail ?: code.name)
 
-class FichaApi(
+class CardApi(
     private val baseUrl: String,
     private val token: String,
     private val client: HttpClient,
@@ -38,18 +38,18 @@ class FichaApi(
      * antiga depois de trocar de curso tem que devolvê-la no idioma em que ela
      * nasceu.
      */
-    suspend fun gerar(trecho: String, alvo: String, tipo: TargetType, par: ParIdiomas): CardResponse {
-        val resposta = try {
-            client.post("$baseUrl/v1/ficha") {
+    suspend fun gerar(snippet: String, target: String, type: TargetType, languagePair: LanguagePair): CardResponse {
+        val answer = try {
+            client.post("$baseUrl/v1/card") {
                 contentType(ContentType.Application.Json)
                 header(HttpHeaders.Authorization, "Bearer $token")
                 setBody(
                     GenerateCardRequest(
-                        snippet = trecho,
-                        target = alvo,
-                        type = tipo,
-                        nativeLanguage = par.nativo,
-                        targetLanguage = par.alvo,
+                        snippet = snippet,
+                        target = target,
+                        type = type,
+                        nativeLanguage = languagePair.native,
+                        targetLanguage = languagePair.target,
                     ),
                 )
             }
@@ -59,15 +59,15 @@ class FichaApi(
             // Servidor desligado, rede fora, DNS: para quem lê é tudo a mesma
             // coisa, e a frase do sistema operacional vem em inglês de qualquer
             // jeito. O texto original fica no detalhe, para diagnóstico.
-            throw FichaException(ErrorCode.UNREACHABLE, falha.message)
+            throw CardException(ErrorCode.UNREACHABLE, falha.message)
         }
 
-        if (!resposta.status.isSuccess()) {
-            val corpo = runCatching { resposta.body<ErrorResponse>() }.getOrNull()
-                ?: throw FichaException(ErrorCode.HTTP_ERROR, resposta.status.value.toString())
-            throw FichaException(ErrorCode.of(corpo.code), corpo.detail)
+        if (!answer.status.isSuccess()) {
+            val body = runCatching { answer.body<ErrorResponse>() }.getOrNull()
+                ?: throw CardException(ErrorCode.HTTP_ERROR, answer.status.value.toString())
+            throw CardException(ErrorCode.of(body.code), body.detail)
         }
 
-        return resposta.body()
+        return answer.body()
     }
 }

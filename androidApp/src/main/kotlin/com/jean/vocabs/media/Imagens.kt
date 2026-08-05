@@ -20,14 +20,14 @@ import kotlinx.coroutines.withContext
  * configuração do que o problema pede.
  */
 @Composable
-fun lembrarFoto(caminho: String, larguraAlvo: Int = 1080): State<ImageBitmap?> =
-    produceState<ImageBitmap?>(initialValue = null, caminho, larguraAlvo) {
-        value = withContext(Dispatchers.IO) { decodificar(caminho, larguraAlvo) }
+fun lembrarFoto(path: String, larguraAlvo: Int = 1080): State<ImageBitmap?> =
+    produceState<ImageBitmap?>(initialValue = null, path, larguraAlvo) {
+        value = withContext(Dispatchers.IO) { decodificar(path, larguraAlvo) }
     }
 
-private fun decodificar(caminho: String, larguraAlvo: Int): ImageBitmap? {
+private fun decodificar(path: String, larguraAlvo: Int): ImageBitmap? {
     val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(caminho, medidas)
+    BitmapFactory.decodeFile(path, medidas)
     if (medidas.outWidth <= 0) return null
 
     var amostra = 1
@@ -36,5 +36,5 @@ private fun decodificar(caminho: String, larguraAlvo: Int): ImageBitmap? {
     }
 
     val opcoes = BitmapFactory.Options().apply { inSampleSize = amostra }
-    return BitmapFactory.decodeFile(caminho, opcoes)?.asImageBitmap()
+    return BitmapFactory.decodeFile(path, opcoes)?.asImageBitmap()
 }

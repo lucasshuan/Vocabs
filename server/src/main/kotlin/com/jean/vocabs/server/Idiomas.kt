@@ -15,12 +15,12 @@ import com.jean.vocabs.contracts.Languages
  * O idioma **nativo** não precisa de nada disso: ele só diz em que língua
  * escrever a tradução e as definições, e para isso o nome basta.
  */
-data class IdiomaAlvo(
-    val idioma: Language,
-    /** Como preencher o campo `pronuncia` da ficha. */
-    val notacaoDePronuncia: String,
+data class TargetLanguageSpec(
+    val language: Language,
+    /** Como preencher o campo `pronuncia` da card. */
+    val pronunciationNotation: String,
 ) {
-    val nome: String get() = idioma.englishName
+    val name: String get() = language.englishName
 }
 
 /**
@@ -30,14 +30,14 @@ data class IdiomaAlvo(
  * entrada: uma ficha de alemão regerada depois de a pessoa trocar de curso
  * precisa voltar em alemão.
  */
-data class ParDeIdiomas(
-    val nativo: Language,
-    val alvo: IdiomaAlvo,
+data class LanguagePairSpec(
+    val native: Language,
+    val target: TargetLanguageSpec,
 ) {
     companion object {
-        val PADRAO = ParDeIdiomas(
-            nativo = Languages.PORTUGUES,
-            alvo = alvoDe(Languages.INGLES),
+        val PADRAO = LanguagePairSpec(
+            native = Languages.PORTUGUES,
+            target = targetOf(Languages.INGLES),
         )
 
         /**
@@ -47,16 +47,16 @@ data class ParDeIdiomas(
          * receberia uma ficha em inglês para uma palavra alemã e só descobriria
          * lendo. Um 400 diz o que aconteceu.
          */
-        fun de(codigoNativo: String, codigoAlvo: String): ParDeIdiomas? {
-            val nativo = Languages.de(codigoNativo) ?: return null
-            val alvo = Languages.de(codigoAlvo) ?: return null
-            return ParDeIdiomas(nativo = nativo, alvo = alvoDe(alvo))
+        fun de(codigoNativo: String, codigoAlvo: String): LanguagePairSpec? {
+            val native = Languages.de(codigoNativo) ?: return null
+            val target = Languages.de(codigoAlvo) ?: return null
+            return LanguagePairSpec(native = native, target = targetOf(target))
         }
     }
 }
 
-/** IPA por padrão; a exceção é o idioma cuja pronúncia ninguém escreve em IPA. */
-private fun alvoDe(idioma: Language) = IdiomaAlvo(idioma, notacaoDePronuncia = NOTACOES[idioma.code] ?: IPA)
+/** IPA por padrão; a exceção é o language cuja pronúncia ninguém escreve em IPA. */
+private fun targetOf(language: Language) = TargetLanguageSpec(language, pronunciationNotation = NOTACOES[language.code] ?: IPA)
 
 private const val IPA = "IPA, without slashes"
 

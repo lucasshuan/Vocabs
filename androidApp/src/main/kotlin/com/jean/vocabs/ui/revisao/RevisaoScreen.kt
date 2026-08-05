@@ -50,7 +50,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.trechoCloze
+import com.jean.vocabs.shared.domain.clozeSnippet
 import com.jean.vocabs.ui.components.AcaoSecundaria
 import com.jean.vocabs.ui.components.BotaoPrincipal
 import com.jean.vocabs.ui.components.BotaoCircular
@@ -86,11 +86,11 @@ fun RevisaoScreen(aoVoltar: () -> Unit, vm: RevisaoViewModel = viewModel()) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        when (val atual = estado) {
+        when (val current = estado) {
             RevisaoEstado.Carregando -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             RevisaoEstado.Vazia -> Vazia(aoVoltar)
-            is RevisaoEstado.Cartao -> Cartao(atual, vm)
-            is RevisaoEstado.Resumo -> Resumo(atual, vm, aoVoltar)
+            is RevisaoEstado.Cartao -> Cartao(current, vm)
+            is RevisaoEstado.Resumo -> Resumo(current, vm, aoVoltar)
         }
     }
 }
@@ -129,8 +129,8 @@ private fun Cartao(estado: RevisaoEstado.Cartao, vm: RevisaoViewModel) {
     // exibiriam a resposta do cartão **seguinte** — a revisão entregaria de
     // graça a palavra que está prestes a perguntar.
     var ultimoVeredito by remember { mutableStateOf<Pair<FeedbackRevisao, String>?>(null) }
-    LaunchedEffect(estado.feedback, estado.entrada.id) {
-        estado.feedback?.let { ultimoVeredito = it to estado.entrada.alvo.orEmpty() }
+    LaunchedEffect(estado.feedback, estado.entry.id) {
+        estado.feedback?.let { ultimoVeredito = it to estado.entry.target.orEmpty() }
     }
     Column(
         verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -142,14 +142,14 @@ private fun Cartao(estado: RevisaoEstado.Cartao, vm: RevisaoViewModel) {
         // está, com o cursor intacto. Trocar a coluna inteira derrubaria o foco
         // do teclado a cada palavra respondida.
         AnimatedContent(
-            targetState = estado.entrada,
+            targetState = estado.entry,
             transitionSpec = {
                 (slideInHorizontally(tween(Movimento.PADRAO)) { largura -> largura / 4 } + fadeIn(tween(Movimento.PADRAO)))
                     .togetherWith(slideOutHorizontally(tween(Movimento.RAPIDO)) { largura -> -largura / 4 } + fadeOut(tween(Movimento.RAPIDO)))
             },
             contentKey = { it.id },
             label = "cartaoDaRevisao",
-        ) { entrada ->
+        ) { entry ->
             CartaoDaTela(
                 forma = MaterialTheme.shapes.extraLarge,
                 recheio = PaddingValues(24.dp),
@@ -157,12 +157,12 @@ private fun Cartao(estado: RevisaoEstado.Cartao, vm: RevisaoViewModel) {
             ) {
                 RotuloDeSecao("COMPLETE O SEU TRECHO")
                 Text(
-                    text = clozeAnotado(trechoCloze(entrada, LACUNA)),
+                    text = clozeAnotado(clozeSnippet(entry, LACUNA)),
                     style = MaterialTheme.typography.headlineSmall.copy(lineHeight = MaterialTheme.typography.headlineLarge.lineHeight),
                     modifier = Modifier.padding(vertical = 22.dp),
                 )
                 Text(
-                    entrada.ficha?.translation.orEmpty(),
+                    entry.card?.translation.orEmpty(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -170,7 +170,7 @@ private fun Cartao(estado: RevisaoEstado.Cartao, vm: RevisaoViewModel) {
         }
 
         OutlinedTextField(
-            value = estado.resposta,
+            value = estado.answer,
             onValueChange = vm::editarResposta,
             enabled = estado.feedback == null,
             placeholder = { Text("Escreva o termo original") },
@@ -193,9 +193,9 @@ private fun Cartao(estado: RevisaoEstado.Cartao, vm: RevisaoViewModel) {
             // Ao vivo enquanto o feedback existe, pela cópia enquanto ele sai —
             // assim a caixa nunca fica um quadro sem conteúdo na entrada nem
             // mostra o cartão errado na saída.
-            val veredito = estado.feedback?.let { it to estado.entrada.alvo.orEmpty() } ?: ultimoVeredito
+            val veredito = estado.feedback?.let { it to estado.entry.target.orEmpty() } ?: ultimoVeredito
             if (veredito != null) {
-                val (feedback, resposta) = veredito
+                val (feedback, answer) = veredito
                 val acertou = feedback == FeedbackRevisao.CORRETA
                 Surface(
                     color = if (acertou) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer,
@@ -212,14 +212,14 @@ private fun Cartao(estado: RevisaoEstado.Cartao, vm: RevisaoViewModel) {
                             },
                             style = MaterialTheme.typography.titleSmall,
                         )
-                        Text(resposta, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 6.dp))
+                        Text(answer, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 6.dp))
                     }
                 }
             }
         }
 
         if (estado.feedback == null) {
-            BotaoPrincipal("Verificar", { teclado?.hide(); vm.confirmar() }, habilitado = estado.resposta.isNotBlank())
+            BotaoPrincipal("Verificar", { teclado?.hide(); vm.confirmar() }, habilitado = estado.answer.isNotBlank())
             AcaoSecundaria("Não lembro", { teclado?.hide(); vm.naoLembro() })
         } else {
             BotaoPrincipal("Continuar", vm::avancar)
@@ -230,17 +230,17 @@ private fun Cartao(estado: RevisaoEstado.Cartao, vm: RevisaoViewModel) {
 
 /** A lacuna vira um traço de ameixa: no handoff ela é um sublinhado, não underscores. */
 @Composable
-private fun clozeAnotado(trecho: String) = buildAnnotatedString {
-    val corte = trecho.indexOf(LACUNA)
+private fun clozeAnotado(snippet: String) = buildAnnotatedString {
+    val corte = snippet.indexOf(LACUNA)
     if (corte < 0) {
-        append(trecho)
+        append(snippet)
         return@buildAnnotatedString
     }
-    append(trecho.substring(0, corte))
+    append(snippet.substring(0, corte))
     pushStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline))
     append(LACUNA)
     pop()
-    append(trecho.substring(corte + LACUNA.length))
+    append(snippet.substring(corte + LACUNA.length))
 }
 
 @Composable
@@ -248,8 +248,8 @@ private fun Vazia(aoVoltar: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         EstadoVazio(
             icone = Icones.Check,
-            titulo = "Memória em dia",
-            detalhe = "Volte quando alguma ficha pedir reforço.",
+            title = "Memória em dia",
+            detail = "Volte quando alguma ficha pedir reforço.",
             acao = { BotaoPrincipal("Voltar", aoVoltar, Modifier.padding(horizontal = 40.dp)) },
         )
     }
@@ -271,10 +271,10 @@ private fun Resumo(estado: RevisaoEstado.Resumo, vm: RevisaoViewModel, aoVoltar:
         // tela inteira — o terceiro é o que ficou faltando, e uma contagem
         // crescente ali transformaria o erro em placar.
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
-            CartaoMetrica("${contagemAnimada(estado.acertos, "acertos")}", "acertos", Modifier.weight(1f), destaque = true)
-            CartaoMetrica("${estado.erros}", "para reforçar", Modifier.weight(1f))
+            CartaoMetrica("${contagemAnimada(estado.hits, "hits")}", "acertos", Modifier.weight(1f), destaque = true)
+            CartaoMetrica("${estado.errors}", "para reforçar", Modifier.weight(1f))
             CartaoMetrica(
-                valor = "${contagemAnimada(estado.diasSeguidos, "diasSeguidos")}",
+                value = "${contagemAnimada(estado.dayStreak, "dayStreak")}",
                 rotulo = "dias seguidos",
                 modifier = Modifier.weight(1f),
                 destaque = true,

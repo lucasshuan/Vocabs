@@ -2,85 +2,85 @@ package com.jean.vocabs.shared.domain
 
 import kotlinx.coroutines.flow.Flow
 
-/** O que o cartão de revisão da home precisa, já resolvido para o instante atual. */
-data class ResumoRevisao(
-    val naFila: Int,
-    /** Millis até a próxima palavra pedir revisão. Nulo quando não há ficha nenhuma. */
-    val proximaEmMillis: Long?,
-    val diasSeguidos: Int,
-    val revisouHoje: Boolean,
-    val melhorSequencia: Int = 0,
-    val quota: QuotaDoDia = QuotaDoDia(feita = 0, naFila = naFila),
+/** O que o cartão de revisão da home precisa, já resolvido para o instant current. */
+data class ReviewSummary(
+    val inQueue: Int,
+    /** Millis até a próxima word pedir revisão. Nulo quando não há card nenhuma. */
+    val nextInMillis: Long?,
+    val dayStreak: Int,
+    val reviewedToday: Boolean,
+    val bestStreak: Int = 0,
+    val quota: DailyQuota = DailyQuota(done = 0, inQueue = inQueue),
 )
 
-/** A barra da ficha, já resolvida — depende do relógio, e o relógio mora no repositório. */
-data class RetencaoAgora(
-    val pontos: Double,
-    val nivel: MemoryLevel,
-    val proximaEmMillis: Long,
-    val revisoes: Int,
-    val acertos: Int,
-    val erros: Int,
+/** A barra da card, já resolvida — depende do relógio, e o relógio mora no repositório. */
+data class RetentionNow(
+    val points: Double,
+    val level: MemoryLevel,
+    val nextInMillis: Long,
+    val reviews: Int,
+    val hits: Int,
+    val errors: Int,
 ) {
-    val respondidas: Int get() = acertos + erros
-    val taxaDeAcerto: Double? get() = if (respondidas == 0) null else acertos.toDouble() / respondidas
+    val respondidas: Int get() = hits + errors
+    val hitRate: Double? get() = if (respondidas == 0) null else hits.toDouble() / respondidas
 }
 
 /**
  * O curso aberto é o padrão, e não a única resposta possível.
  *
- * Toda leitura recortável aceita um [Escopo], e ele começa em
- * [Escopo.CursoAberto]: uma tela que esquecesse de escolher mostraria o curso em
+ * Toda leitura recortável aceita um [Scope], e ele começa em
+ * [Scope.CursoAberto]: uma tela que esquecesse de escolher mostraria o curso em
  * que a pessoa está, que é o certo em quase todas. Vocabulários, Pendentes e Você
- * pedem [Escopo.Todos] de propósito; "Seu progresso" pede um curso nomeado, que
+ * pedem [Scope.Todos] de propósito; "Seu progresso" pede um curso nomeado, que
  * pode não ser o aberto.
  */
 interface VocabRepository {
 
-    /** Qual curso está aberto agora — o padrão de [Escopo.CursoAberto]. */
-    fun observarCursoAtivo(): Flow<ParIdiomas>
+    /** Qual course está aberto now — o padrão de [Scope.CursoAberto]. */
+    fun observeActiveCourse(): Flow<LanguagePair>
 
-    /** Um resumo por curso, com o selo da faixa já resolvido. Sempre de todos. */
-    fun observarCursos(): Flow<List<ResumoCurso>>
+    /** Um resumo por course, com o badge da faixa já resolvido. Sempre de todos. */
+    fun observeCourses(): Flow<List<CourseSummary>>
 
-    /** Só o que já virou ficha. */
-    fun observarProntas(escopo: Escopo = Escopo.CursoAberto): Flow<List<Entrada>>
+    /** Só o que já virou card. */
+    fun observeReady(scope: Scope = Scope.CursoAberto): Flow<List<Entry>>
 
     /** Entradas que ainda estão na fila da IA, sendo geradas ou falharam. */
-    fun observarInbox(escopo: Escopo = Escopo.CursoAberto): Flow<List<Entrada>>
+    fun observeInbox(scope: Scope = Scope.CursoAberto): Flow<List<Entry>>
 
     /** Capturas ainda aguardando transcrição ou seleção confirmada. */
-    fun observarCapturasPendentes(escopo: Escopo = Escopo.CursoAberto): Flow<List<Captura>>
+    fun observePendingCaptures(scope: Scope = Scope.CursoAberto): Flow<List<Capture>>
 
-    fun observarCapturaPorId(id: Long): Flow<Captura?>
+    fun observeCaptureById(id: Long): Flow<Capture?>
 
-    fun observarPorId(id: Long): Flow<Entrada?>
+    fun observeById(id: Long): Flow<Entry?>
 
-    /** As entradas de um punhado de ids — o que a tela "Guardado" acompanha. */
-    fun observarEntradas(ids: List<Long>): Flow<List<Entrada>>
+    /** As entries de um punhado de ids — o que a tela "Guardado" acompanha. */
+    fun observeEntries(ids: List<Long>): Flow<List<Entry>>
 
-    /** A fila de agora: fichas cuja força de memória já caiu abaixo do limiar. */
-    fun observarFilaDeRevisao(escopo: Escopo = Escopo.CursoAberto): Flow<List<Entrada>>
+    /** A fila de now: fichas cuja força de memória já caiu abaixo do limiar. */
+    fun observeReviewQueue(scope: Scope = Scope.CursoAberto): Flow<List<Entry>>
 
-    fun observarResumoDeRevisao(escopo: Escopo = Escopo.CursoAberto): Flow<ResumoRevisao>
+    fun observeReviewSummary(scope: Scope = Scope.CursoAberto): Flow<ReviewSummary>
 
-    fun observarRetencao(id: Long): Flow<RetencaoAgora?>
+    fun observeRetention(id: Long): Flow<RetentionNow?>
 
-    fun observarAtividade(dias: Int = 84): Flow<List<AtividadeDiaria>>
+    fun observeActivity(days: Int = 84): Flow<List<DailyActivity>>
 
-    /** A linha do tempo da tela Dia a dia, do mais recente para o mais antigo. */
-    fun observarEventos(dias: Int = 84, escopo: Escopo = Escopo.CursoAberto): Flow<List<Evento>>
+    /** A row do tempo da tela Dia a day, do mais recente para o mais antigo. */
+    fun observeEvents(days: Int = 84, scope: Scope = Scope.CursoAberto): Flow<List<Event>>
 
-    fun observarUsoIa(): Flow<UsoIa>
+    fun observeAiUsage(): Flow<AiUsage>
 
     /** Retrato consistente usado pelo ZIP de portabilidade local. */
-    suspend fun dadosParaExportacao(): DadosExportacao
+    suspend fun exportData(): ExportData
 
-    /** Cria uma captura textual e todas as fichas selecionadas numa transação. */
-    suspend fun capturarTexto(
-        trecho: String,
-        alvos: List<AlvoSelecionado>,
-        par: ParIdiomas? = null,
+    /** Cria uma capture textual e todas as fichas selecionadas numa transação. */
+    suspend fun captureText(
+        snippet: String,
+        alvos: List<SelectedTarget>,
+        languagePair: LanguagePair? = null,
     ): List<Long>
 
     /**
@@ -90,17 +90,17 @@ interface VocabRepository {
      * app ou desistir da seleção deixa a captura em Pendentes, no idioma que já
      * foi escolhido, em vez de perder o que a pessoa colou.
      */
-    suspend fun capturarTrecho(trecho: String, par: ParIdiomas? = null): Long
+    suspend fun captureSnippet(snippet: String, languagePair: LanguagePair? = null): Long
 
     /**
      * Guarda foto ou áudio como captura em transcrição. O arquivo fica seguro
      * antes de OCR/voz começar e sempre pode seguir para edição manual.
      */
-    suspend fun capturarMidia(
-        formato: CaptureFormat,
-        caminho: String,
-        duracaoMs: Long? = null,
-        par: ParIdiomas? = null,
+    suspend fun captureMedia(
+        format: CaptureFormat,
+        path: String,
+        durationMs: Long? = null,
+        languagePair: LanguagePair? = null,
     ): Long
 
     /**
@@ -109,29 +109,29 @@ interface VocabRepository {
      * Só faz sentido antes da seleção: depois dela existem fichas nascidas nesse
      * par, e mudá-lo por baixo delas as deixaria órfãs do próprio idioma.
      */
-    suspend fun alterarIdiomaDaCaptura(id: Long, alvo: String)
+    suspend fun changeCaptureLanguage(id: Long, target: String)
 
-    /** Conclui a tentativa automática; erro não impede a edição manual. */
-    suspend fun registrarTranscricao(id: Long, trecho: String?, erro: String? = null)
+    /** Conclui a tentativa automática; error não impede a edição manual. */
+    suspend fun recordTranscription(id: Long, snippet: String?, error: String? = null)
 
-    /** Confirma o texto editado e cria uma entrada por seleção. */
-    suspend fun confirmarCaptura(
+    /** Confirma o text editado e cria uma entry por seleção. */
+    suspend fun confirmCapture(
         id: Long,
-        trecho: String,
-        alvos: List<AlvoSelecionado>,
+        snippet: String,
+        alvos: List<SelectedTarget>,
     ): List<Long>
 
-    /** Chama o servidor e grava o resultado (ou o erro) na entrada. */
-    suspend fun gerarFicha(id: Long): Boolean
+    /** Chama o servidor e grava o result (ou o error) na entry. */
+    suspend fun generateCard(id: Long): Boolean
 
-    /** Processa entradas independentes com no máximo duas requisições simultâneas. */
-    suspend fun gerarFichas(ids: List<Long>, concorrencia: Int = 2): List<Boolean>
+    /** Processa entries independentes com no máximo duas requisições simultâneas. */
+    suspend fun generateCards(ids: List<Long>, concorrencia: Int = 2): List<Boolean>
 
-    /** Grava o resultado de um cartão e marca o dia no calendário de revisões. */
-    suspend fun registrarResposta(id: Long, acertou: Boolean)
+    /** Grava o result de um cartão e marca o day no calendário de revisões. */
+    suspend fun recordAnswer(id: Long, acertou: Boolean)
 
-    /** Descarta a entrada e o arquivo de mídia, se houver. */
+    /** Descarta a entry e o file de míday, se houver. */
     suspend fun excluir(id: Long)
 
-    suspend fun excluirCaptura(id: Long)
+    suspend fun deleteCapture(id: Long)
 }

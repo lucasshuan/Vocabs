@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.ficha
+package com.jean.vocabs.ui.card
 
 import com.jean.vocabs.ui.textoTemporarioDoErro
 import android.content.Intent
@@ -53,8 +53,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.RetencaoAgora
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.RetentionNow
 import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.ui.components.BarraDeMemoria
 import com.jean.vocabs.ui.components.BotaoCircular
@@ -69,20 +69,20 @@ import com.jean.vocabs.ui.components.corDoRotuloDoNivel
 import com.jean.vocabs.ui.components.rotuloDoNivel
 import com.jean.vocabs.ui.components.tempoAte
 import com.jean.vocabs.ui.components.tempoRelativo
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.languages.idiomaDe
 import java.util.Locale
 
 @Composable
 fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()) {
     val entradaFlow = remember(id) { vm.observar(id) }
     val memoriaFlow = remember(id) { vm.observarMemoria(id) }
-    val entrada by entradaFlow.collectAsStateWithLifecycle()
+    val entry by entradaFlow.collectAsStateWithLifecycle()
     val memoria by memoriaFlow.collectAsStateWithLifecycle()
     val contexto = LocalContext.current
     var menu by remember { mutableStateOf(false) }
     var confirmarExclusao by remember { mutableStateOf(false) }
     var expandiu by remember { mutableStateOf(false) }
-    val tts = rememberTts(idiomaDe(entrada?.par?.alvo).tag)
+    val tts = rememberTts(idiomaDe(entry?.languagePair?.target).tag)
 
     if (confirmarExclusao) {
         AlertDialog(
@@ -113,11 +113,11 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                         leadingIcon = { Icon(Icones.Compartilhar, null) },
                         onClick = {
                             menu = false
-                            entrada?.let { item ->
-                                val texto = "${item.titulo} — ${item.ficha?.translation.orEmpty()}\n${item.trecho.orEmpty()}\nVocabu"
+                            entry?.let { item ->
+                                val text = "${item.title} — ${item.card?.translation.orEmpty()}\n${item.snippet.orEmpty()}\nVocabu"
                                 contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, texto)
+                                    putExtra(Intent.EXTRA_TEXT, text)
                                 }, "Compartilhar ficha"))
                             }
                         },
@@ -131,7 +131,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
             }
         }
 
-        val item = entrada
+        val item = entry
         if (item == null) {
             CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally).padding(top = 100.dp))
             return@Column
@@ -139,13 +139,13 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
         Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(horizontal = 20.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(item.titulo, style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f, fill = false))
+                    Text(item.title, style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f, fill = false))
                     // Sem voz instalada para o idioma da ficha o botão não
                     // aparece: um botão que não faz nada é pior que a ausência
                     // dele, e falar alemão com voz portuguesa seria pior ainda.
                     tts?.let { voz ->
                         Surface(
-                            onClick = { voz.speak(item.titulo, TextToSpeech.QUEUE_FLUSH, null, "Vocabu-ficha") },
+                            onClick = { voz.speak(item.title, TextToSpeech.QUEUE_FLUSH, null, "Vocabu-ficha") },
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceVariant,
                         ) {
@@ -159,12 +159,12 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    item.ficha?.pronunciation?.takeIf(String::isNotBlank)?.let {
+                    item.card?.pronunciation?.takeIf(String::isNotBlank)?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    TipoBadge(item.tipo)
+                    TipoBadge(item.type)
                 }
-                item.ficha?.translation?.takeIf(String::isNotBlank)?.let {
+                item.card?.translation?.takeIf(String::isNotBlank)?.let {
                     Text(it, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 2.dp))
                 }
             }
@@ -202,9 +202,9 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                         // Untranslated on purpose: this is the AI provider's own
                         // sentence, kept for diagnosis. Subordinate styling so it
                         // never reads as Vocabu's own copy.
-                        item.errorDetail?.takeIf { it.isNotBlank() }?.let { detalhe ->
+                        item.errorDetail?.takeIf { it.isNotBlank() }?.let { detail ->
                             Text(
-                                detalhe,
+                                detail,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f),
                                 modifier = Modifier.padding(top = 4.dp),
@@ -214,7 +214,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                     }
                 }
                 EntryStatus.READY -> FichaPronta(
-                    entrada = item,
+                    entry = item,
                     memoria = memoria,
                     expandiu = expandiu,
                     aoAlternarRelacionadas = { expandiu = !expandiu },
@@ -235,27 +235,27 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
  */
 @Composable
 private fun FichaPronta(
-    entrada: Entrada,
-    memoria: RetencaoAgora?,
+    entry: Entry,
+    memoria: RetentionNow?,
     expandiu: Boolean,
     aoAlternarRelacionadas: () -> Unit,
 ) {
-    val ficha = entrada.ficha ?: return
+    val card = entry.card ?: return
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        memoria?.let { retencao ->
+        memoria?.let { retention ->
             CartaoDaTela(forma = MaterialTheme.shapes.medium, recheio = PaddingValues(15.dp), modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                     RotuloDeSecao("Força de memória", Modifier.weight(1f))
                     Text(
-                        "${rotuloDoNivel(retencao.nivel)} · ${retencao.pontos.toInt()}",
+                        "${rotuloDoNivel(retention.level)} · ${retention.points.toInt()}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = corDoRotuloDoNivel(retencao.nivel),
+                        color = corDoRotuloDoNivel(retention.level),
                     )
                 }
-                BarraDeMemoria(retencao.pontos, retencao.nivel, Modifier.fillMaxWidth().padding(top = 9.dp))
+                BarraDeMemoria(retention.points, retention.level, Modifier.fillMaxWidth().padding(top = 9.dp))
                 Text(
-                    text = if (retencao.proximaEmMillis <= 0L) "Está na fila de revisão agora."
-                    else "Volta para revisão ${tempoAte(retencao.proximaEmMillis)}.",
+                    text = if (retention.nextInMillis <= 0L) "Está na fila de revisão agora."
+                    else "Volta para revisão ${tempoAte(retention.nextInMillis)}.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 9.dp),
@@ -263,12 +263,12 @@ private fun FichaPronta(
             }
         }
 
-        entrada.trecho?.takeIf(String::isNotBlank)?.let { trecho ->
+        entry.snippet?.takeIf(String::isNotBlank)?.let { snippet ->
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 RotuloDeSecao("Seu contexto")
-                TrechoDestacado(trecho)
+                TrechoDestacado(snippet)
                 Text(
-                    text = listOfNotNull(entrada.origem?.takeIf(String::isNotBlank), tempoRelativo(entrada.criadoEm)).joinToString(" · "),
+                    text = listOfNotNull(entry.source?.takeIf(String::isNotBlank), tempoRelativo(entry.createdAt)).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -277,10 +277,10 @@ private fun FichaPronta(
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             RotuloDeSecao("Definições")
-            ficha.definitions.forEachIndexed { indice, definicao ->
+            card.definitions.forEachIndexed { indice, definicao ->
                 Text("${indice + 1}. $definicao", style = MaterialTheme.typography.bodyMedium)
             }
-            ficha.example.takeIf(String::isNotBlank)?.let {
+            card.example.takeIf(String::isNotBlank)?.let {
                 Text(
                     "Exemplo: $it",
                     style = MaterialTheme.typography.bodyMedium,
@@ -289,7 +289,7 @@ private fun FichaPronta(
             }
         }
 
-        if (ficha.related.isNotEmpty()) {
+        if (card.related.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 RotuloDeSecao("Puxa outras palavras")
                 // `animateContentSize` porque "ver mais" muda a altura do bloco:
@@ -300,12 +300,12 @@ private fun FichaPronta(
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                     modifier = Modifier.animateContentSize(Movimento.mola()),
                 ) {
-                    (if (expandiu) ficha.related else ficha.related.take(3)).forEach { termo ->
+                    (if (expandiu) card.related else card.related.take(3)).forEach { termo ->
                         Pilula(termo)
                     }
-                    if (ficha.related.size > 3) {
+                    if (card.related.size > 3) {
                         Pilula(
-                            texto = if (expandiu) "ver menos" else "ver mais",
+                            text = if (expandiu) "ver menos" else "ver mais",
                             destaque = true,
                             aoClicar = aoAlternarRelacionadas,
                         )
@@ -318,7 +318,7 @@ private fun FichaPronta(
 
 /** O trecho do usuário, com a barra de ameixa que diz "isto é seu, não do dicionário". */
 @Composable
-private fun TrechoDestacado(trecho: String) {
+private fun TrechoDestacado(snippet: String) {
     Surface(
         shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surface,
@@ -332,7 +332,7 @@ private fun TrechoDestacado(trecho: String) {
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)),
             )
-            Text(trecho, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 15.dp, vertical = 13.dp))
+            Text(snippet, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 15.dp, vertical = 13.dp))
         }
     }
 }

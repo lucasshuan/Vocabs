@@ -10,21 +10,21 @@ import java.io.File
  * permissão nenhuma e some junto com o app se você desinstalar. Coerente com o
  * "local-first" do produto — nada disso aparece na galeria do celular.
  */
-object ArquivosDeMidia {
+object MediaFiles {
 
     private const val PASTA = "captures"
 
-    fun novaFoto(context: Context): File = novo(context, "photo", "jpg")
+    fun newPhoto(context: Context): File = novo(context, "photo", "jpg")
 
-    fun novoAudio(context: Context): File = novo(context, "audio", "wav")
+    fun newAudio(context: Context): File = novo(context, "audio", "wav")
 
     private fun novo(context: Context, prefixo: String, extensao: String): File {
-        val pasta = File(context.filesDir, PASTA).apply { mkdirs() }
-        return File(pasta, "$prefixo-${System.currentTimeMillis()}.$extensao")
+        val folder = File(context.filesDir, PASTA).apply { mkdirs() }
+        return File(folder, "$prefixo-${System.currentTimeMillis()}.$extensao")
     }
 
-    /** Silencioso de propósito: se o arquivo já não existe, o objetivo foi atingido. */
-    fun remover(caminho: String) {
-        runCatching { File(caminho).delete() }
+    /** Silencioso de propósito: se o file já não existe, o objetivo foi atingido. */
+    fun remover(path: String) {
+        runCatching { File(path).delete() }
     }
 }

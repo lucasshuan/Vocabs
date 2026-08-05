@@ -4,7 +4,7 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import com.jean.vocabs.shared.media.ArquivosDeMidia
+import com.jean.vocabs.shared.media.MediaFiles
 import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
@@ -14,7 +14,7 @@ import kotlin.concurrent.thread
 class GravadorDeAudio(private val context: Context) {
 
     private var audioRecord: AudioRecord? = null
-    private var arquivo: File? = null
+    private var file: File? = null
     private var trabalhador: Thread? = null
 
     @Volatile
@@ -31,7 +31,7 @@ class GravadorDeAudio(private val context: Context) {
      * torto e nada mais.
      */
     @Volatile
-    var nivel: Float = 0f
+    var level: Float = 0f
         private set
 
     val gravando: Boolean get() = escrevendo
@@ -61,14 +61,14 @@ class GravadorDeAudio(private val context: Context) {
             return false
         }
 
-        val destino = ArquivosDeMidia.novoAudio(context)
+        val destino = MediaFiles.newAudio(context)
         return runCatching {
             FileOutputStream(destino).use { it.write(ByteArray(CABECALHO_WAV)) }
             gravador.startRecording()
             escrevendo = true
             audioRecord = gravador
-            arquivo = destino
-            nivel = 0f
+            file = destino
+            level = 0f
             trabalhador = thread(name = "Vocabu-wav", isDaemon = true) {
                 FileOutputStream(destino, true).use { saida ->
                     val buffer = ByteArray(tamanho)
@@ -76,7 +76,7 @@ class GravadorDeAudio(private val context: Context) {
                         val lidos = gravador.read(buffer, 0, buffer.size)
                         if (lidos > 0) {
                             saida.write(buffer, 0, lidos)
-                            nivel = picoDe(buffer, lidos)
+                            level = picoDe(buffer, lidos)
                         }
                     }
                 }
@@ -92,7 +92,7 @@ class GravadorDeAudio(private val context: Context) {
 
     fun parar(): File? {
         val gravador = audioRecord ?: return null
-        val destino = arquivo
+        val destino = file
         escrevendo = false
         runCatching { gravador.stop() }
         trabalhador?.join(2_000)
@@ -119,15 +119,15 @@ class GravadorDeAudio(private val context: Context) {
             trabalhador?.join(1_000)
             gravador.release()
         }
-        arquivo?.delete()
+        file?.delete()
         limparEstado()
     }
 
     private fun limparEstado() {
         audioRecord = null
-        arquivo = null
+        file = null
         trabalhador = null
-        nivel = 0f
+        level = 0f
     }
 
     /**
@@ -169,16 +169,16 @@ class GravadorDeAudio(private val context: Context) {
         }
     }
 
-    private fun RandomAccessFile.writeIntLe(valor: Int) {
-        write(valor and 0xff)
-        write(valor ushr 8 and 0xff)
-        write(valor ushr 16 and 0xff)
-        write(valor ushr 24 and 0xff)
+    private fun RandomAccessFile.writeIntLe(value: Int) {
+        write(value and 0xff)
+        write(value ushr 8 and 0xff)
+        write(value ushr 16 and 0xff)
+        write(value ushr 24 and 0xff)
     }
 
-    private fun RandomAccessFile.writeShortLe(valor: Int) {
-        write(valor and 0xff)
-        write(valor ushr 8 and 0xff)
+    private fun RandomAccessFile.writeShortLe(value: Int) {
+        write(value and 0xff)
+        write(value ushr 8 and 0xff)
     }
 
     companion object {

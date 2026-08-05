@@ -29,8 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.Captura
-import com.jean.vocabs.shared.domain.Entrada
+import com.jean.vocabs.shared.domain.Capture
+import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.ui.components.ArrastarParaExcluir
 import com.jean.vocabs.ui.components.CartaoDaTela
@@ -44,7 +44,7 @@ import com.jean.vocabs.ui.components.PilulaDeFiltroDeIdioma
 import com.jean.vocabs.ui.components.RotuloDeSecao
 import com.jean.vocabs.ui.components.tempoRelativo
 import com.jean.vocabs.ui.components.tituloDaCaptura
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.languages.idiomaDe
 
 /**
  * Tela 05 do handoff — "Pendentes", de todos os idiomas.
@@ -67,17 +67,17 @@ import com.jean.vocabs.ui.idiomas.idiomaDe
  */
 @Composable
 fun PendentesScreen(
-    aoAbrirCaptura: (Captura) -> Unit,
-    aoAbrirFicha: (Entrada) -> Unit,
+    aoAbrirCaptura: (Capture) -> Unit,
+    aoAbrirFicha: (Entry) -> Unit,
     vm: PendentesViewModel = viewModel(),
 ) {
     val estado by vm.estado.collectAsStateWithLifecycle()
     var filtro by remember { mutableStateOf<String?>(null) }
 
-    val capturas = estado.capturas.filter { filtro == null || it.par.alvo == filtro }
-    val fichas = estado.fichas.filter { filtro == null || it.par.alvo == filtro }
-    val maisAntiga = capturas.minOfOrNull(Captura::criadoEm)
-    val idiomas = estado.porIdioma
+    val captures = estado.captures.filter { filtro == null || it.languagePair.target == filtro }
+    val cards = estado.cards.filter { filtro == null || it.languagePair.target == filtro }
+    val maisAntiga = captures.minOfOrNull(Capture::createdAt)
+    val languages = estado.porIdioma
 
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(9.dp),
@@ -87,7 +87,7 @@ fun PendentesScreen(
         item(key = "cabecalho") {
             Text("Pendentes", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
             Text(
-                text = resumoDaFila(capturas.size, fichas.size, maisAntiga),
+                text = resumoDaFila(captures.size, cards.size, maisAntiga),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 3.dp),
@@ -95,7 +95,7 @@ fun PendentesScreen(
             if (estado.total > 0) DicaDeArrastar()
         }
 
-        if (idiomas.size > 1) {
+        if (languages.size > 1) {
             item(key = "filtros") {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
@@ -104,15 +104,15 @@ fun PendentesScreen(
                     item(key = "tudo") {
                         PilulaDeFiltroDeIdioma(
                             rotulo = "Tudo · ${estado.total}",
-                            idioma = null,
+                            language = null,
                             selecionado = filtro == null,
                             aoClicar = { filtro = null },
                         )
                     }
-                    items(idiomas.entries.toList(), key = { it.key }) { (codigo, quantas) ->
+                    items(languages.entries.toList(), key = { it.key }) { (codigo, quantas) ->
                         PilulaDeFiltroDeIdioma(
                             rotulo = "${idiomaDe(codigo).displayName} · $quantas",
-                            idioma = idiomaDe(codigo),
+                            language = idiomaDe(codigo),
                             selecionado = filtro == codigo,
                             aoClicar = { filtro = if (filtro == codigo) null else codigo },
                         )
@@ -125,47 +125,47 @@ fun PendentesScreen(
             item(key = "vazio") {
                 EstadoVazio(
                     icone = Icones.Check,
-                    titulo = "Tudo em dia",
-                    detalhe = "Nenhuma captura ou ficha esperando.",
+                    title = "Tudo em dia",
+                    detail = "Nenhuma captura ou ficha esperando.",
                 )
             }
         }
 
-        items(capturas, key = { "c${it.id}" }) { captura ->
+        items(captures, key = { "c${it.id}" }) { capture ->
             ArrastarParaExcluir(
-                aoExcluir = { vm.excluirCaptura(captura) },
+                aoExcluir = { vm.deleteCapture(capture) },
                 descricaoDaAcao = "Excluir captura",
                 modifier = Modifier.animateItem().fillMaxWidth(),
             ) {
                 LinhaDeLista(
-                    aoClicar = { aoAbrirCaptura(captura) },
-                    inicio = { DiscoDeCategoria(captura.formato) },
-                    fim = {
+                    aoClicar = { aoAbrirCaptura(capture) },
+                    start = { DiscoDeCategoria(capture.format) },
+                    end = {
                         Text(
-                            text = tempoRelativo(captura.criadoEm),
+                            text = tempoRelativo(capture.createdAt),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline,
                         )
                     },
                 ) {
-                    Text(tituloDaCaptura(captura), style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                    MarcaDeIdioma(idiomaDe(captura.par.alvo), Modifier.padding(top = 3.dp))
+                    Text(tituloDaCaptura(capture), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                    MarcaDeIdioma(idiomaDe(capture.languagePair.target), Modifier.padding(top = 3.dp))
                 }
             }
         }
 
-        if (fichas.isNotEmpty()) {
+        if (cards.isNotEmpty()) {
             item(key = "secao-fichas") { RotuloDeSecao("Fichas sendo geradas", Modifier.padding(top = 10.dp)) }
-            items(fichas, key = { "e${it.id}" }) { entrada ->
+            items(cards, key = { "e${it.id}" }) { entry ->
                 ArrastarParaExcluir(
-                    aoExcluir = { vm.excluirFicha(entrada) },
+                    aoExcluir = { vm.excluirFicha(entry) },
                     descricaoDaAcao = "Excluir ficha",
                     modifier = Modifier.animateItem().fillMaxWidth(),
                 ) {
                     CartaoEntrada(
-                        entrada = entrada,
-                        aoClicar = { aoAbrirFicha(entrada) },
-                        tentar = { vm.tentarDeNovo(entrada.id) },
+                        entry = entry,
+                        aoClicar = { aoAbrirFicha(entry) },
+                        tentar = { vm.tentarDeNovo(entry.id) },
                     )
                 }
             }
@@ -203,19 +203,19 @@ private fun DicaDeArrastar() {
     }
 }
 
-private fun resumoDaFila(capturas: Int, fichas: Int, maisAntiga: Long?): String = when {
-    capturas > 0 -> buildString {
-        append(capturas)
-        append(if (capturas == 1) " captura crua" else " capturas cruas")
+private fun resumoDaFila(captures: Int, cards: Int, maisAntiga: Long?): String = when {
+    captures > 0 -> buildString {
+        append(captures)
+        append(if (captures == 1) " captura crua" else " capturas cruas")
         maisAntiga?.let { append(" · a mais antiga ${tempoRelativo(it)}") }
     }
-    fichas > 0 -> "$fichas ${if (fichas == 1) "ficha em processamento" else "fichas em processamento"}"
+    cards > 0 -> "$cards ${if (cards == 1) "card em processamento" else "cards em processamento"}"
     else -> "Suas capturas e fichas em processamento aparecem aqui."
 }
 
 @Composable
 private fun CartaoEntrada(
-    entrada: Entrada,
+    entry: Entry,
     aoClicar: () -> Unit,
     tentar: () -> Unit,
     modifier: Modifier = Modifier,
@@ -227,12 +227,12 @@ private fun CartaoEntrada(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).clickable(onClick = aoClicar)) {
-                Text(entrada.titulo, style = MaterialTheme.typography.titleSmall)
+                Text(entry.title, style = MaterialTheme.typography.titleSmall)
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 3.dp)) {
-                    MarcaDeIdioma(idiomaDe(entrada.par.alvo))
-                    if (entrada.status == EntryStatus.ERROR) {
+                    MarcaDeIdioma(idiomaDe(entry.languagePair.target))
+                    if (entry.status == EntryStatus.ERROR) {
                         Text(
-                            text = " · ${textoTemporarioDoErro(entrada.errorCode)}",
+                            text = " · ${textoTemporarioDoErro(entry.errorCode)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                             maxLines = 1,
@@ -240,8 +240,8 @@ private fun CartaoEntrada(
                     }
                 }
             }
-            if (entrada.status == EntryStatus.GENERATING) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-            if (entrada.status == EntryStatus.ERROR) Pilula("tentar de novo", destaque = true, aoClicar = tentar)
+            if (entry.status == EntryStatus.GENERATING) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            if (entry.status == EntryStatus.ERROR) Pilula("tentar de novo", destaque = true, aoClicar = tentar)
         }
     }
 }

@@ -1,7 +1,7 @@
 package com.jean.vocabs.shared
 
-import com.jean.vocabs.shared.domain.ParIdiomas
-import com.jean.vocabs.shared.domain.ResumoCurso
+import com.jean.vocabs.shared.domain.LanguagePair
+import com.jean.vocabs.shared.domain.CourseSummary
 import com.jean.vocabs.shared.domain.VocabRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -19,16 +19,16 @@ import kotlinx.coroutines.flow.combine
  * dois jeitos faria os mesmos idiomas aparecerem em quantidades diferentes em
  * duas telas que abrem uma da outra.
  */
-fun cursosMatriculados(
-    repositorio: VocabRepository,
-    preferencias: Preferencias,
-): Flow<List<ResumoCurso>> = combine(
-    preferencias.observarCursos(),
-    preferencias.observarPar(),
-    repositorio.observarCursos(),
-) { matriculados, par, comFichas ->
-    matriculados.map { alvo ->
-        val curso = ParIdiomas(nativo = par.nativo, alvo = alvo)
-        comFichas.firstOrNull { it.par == curso } ?: ResumoCurso(curso, total = 0, dominadas = 0)
+fun enrolledCourses(
+    repository: VocabRepository,
+    preferences: Preferences,
+): Flow<List<CourseSummary>> = combine(
+    preferences.observeCourses(),
+    preferences.observeLanguagePair(),
+    repository.observeCourses(),
+) { matriculados, languagePair, comFichas ->
+    matriculados.map { target ->
+        val course = LanguagePair(native = languagePair.native, target = target)
+        comFichas.firstOrNull { it.languagePair == course } ?: CourseSummary(course, total = 0, mastered = 0)
     }
 }

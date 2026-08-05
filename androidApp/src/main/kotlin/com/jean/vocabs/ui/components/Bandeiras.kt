@@ -12,7 +12,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.contracts.Language
-import com.jean.vocabs.ui.idiomas.bandeiraDe
+import com.jean.vocabs.ui.languages.bandeiraDe
 
 /**
  * A bandeira como disco.
@@ -28,10 +28,10 @@ import com.jean.vocabs.ui.idiomas.bandeiraDe
  * que os dois se trocam no mesmo lugar, e não se trocam mais.
  */
 @Composable
-fun BandeiraCircular(idioma: Language, modifier: Modifier = Modifier, tamanho: Dp = 20.dp) {
+fun BandeiraCircular(language: Language, modifier: Modifier = Modifier, tamanho: Dp = 20.dp) {
     Image(
-        painter = painterResource(bandeiraDe(idioma)),
-        contentDescription = idioma.displayName,
+        painter = painterResource(bandeiraDe(language)),
+        contentDescription = language.displayName,
         contentScale = ContentScale.Crop,
         modifier = modifier.size(tamanho).clip(CircleShape),
     )

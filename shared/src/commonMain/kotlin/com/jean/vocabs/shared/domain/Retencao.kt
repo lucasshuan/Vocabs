@@ -15,13 +15,13 @@ package com.jean.vocabs.shared.domain
  * inventar o seu próprio "agora" — se a barra da ficha e a fila da home
  * consultassem relógios diferentes, elas discordariam sem ninguém entender por quê.
  */
-data class Retencao(
-    val pontos: Double,
+data class Retention(
+    val points: Double,
     val taxa: Double,
-    val ultimaInteracao: Long,
-    val revisoes: Int,
-    val acertos: Int = 0,
-    val erros: Int = 0,
+    val lastInteraction: Long,
+    val reviews: Int,
+    val hits: Int = 0,
+    val errors: Int = 0,
 ) {
 
     /**
@@ -30,7 +30,7 @@ data class Retencao(
      * Nem sempre igual a [revisoes]: as revisões feitas antes de o placar existir
      * contam no total, mas ninguém sabe se foram acerto ou erro.
      */
-    val respondidas: Int get() = acertos + erros
+    val respondidas: Int get() = hits + errors
 
     /**
      * De 0 a 1, ou nulo quando ainda não há resposta com desfecho conhecido.
@@ -39,30 +39,30 @@ data class Retencao(
      * coisas diferentes, e um 0% dito na cara de quem acabou de capturar a palavra
      * seria só desanimador.
      */
-    val taxaDeAcerto: Double? get() = if (respondidas == 0) null else acertos.toDouble() / respondidas
+    val hitRate: Double? get() = if (respondidas == 0) null else hits.toDouble() / respondidas
 
-    /** Quanto resta da memória neste instante. */
-    fun pontosEm(agora: Long): Double {
+    /** Quanto resta da memória neste instant. */
+    fun pointsAt(now: Long): Double {
         // coerceAtLeast porque um acerto de relógio para trás (NTP, troca de
         // fuso) daria uma diferença negativa e a palavra *ganharia* pontos.
-        val dias = (agora - ultimaInteracao).coerceAtLeast(0L) / MILLIS_POR_DIA
-        return (pontos - taxa * dias).coerceIn(0.0, PONTOS_MAX)
+        val days = (now - lastInteraction).coerceAtLeast(0L) / MILLIS_POR_DIA
+        return (points - taxa * days).coerceIn(0.0, PONTOS_MAX)
     }
 
-    fun nivelEm(agora: Long): MemoryLevel = when {
-        revisoes == 0 -> MemoryLevel.NEW
+    fun levelAt(now: Long): MemoryLevel = when {
+        reviews == 0 -> MemoryLevel.NEW
         else -> when {
-            pontosEm(agora) < 30.0 -> MemoryLevel.LEARNING
-            pontosEm(agora) < 70.0 -> MemoryLevel.FAMILIAR
+            pointsAt(now) < 30.0 -> MemoryLevel.LEARNING
+            pointsAt(now) < 70.0 -> MemoryLevel.FAMILIAR
             else -> MemoryLevel.MASTERED
         }
     }
 
-    fun precisaRevisar(agora: Long): Boolean = pontosEm(agora) < LIMIAR_REVISAO
+    fun needsReview(now: Long): Boolean = pointsAt(now) < LIMIAR_REVISAO
 
-    /** Quanto falta, em millis, para a palavra cruzar o limiar. 0 se já cruzou. */
-    fun proximaRevisaoEm(agora: Long): Long {
-        val atuais = pontosEm(agora)
+    /** Quanto falta, em millis, para a word cruzar o limiar. 0 se já cruzou. */
+    fun nextReviewIn(now: Long): Long {
+        val atuais = pointsAt(now)
         if (atuais < LIMIAR_REVISAO) return 0L
         if (taxa <= 0.0) return Long.MAX_VALUE
         return ((atuais - LIMIAR_REVISAO) / taxa * MILLIS_POR_DIA).toLong()
@@ -76,17 +76,17 @@ data class Retencao(
      * sempre verdade, então a palavra **fica na fila continuamente até você
      * acertar** — sem flag de "reaprendizado", sem estado extra, sem coluna nova.
      */
-    fun apos(acertou: Boolean, agora: Long): Retencao = Retencao(
-        pontos = if (acertou) PONTOS_MAX else 0.0,
+    fun apos(acertou: Boolean, now: Long): Retention = Retention(
+        points = if (acertou) PONTOS_MAX else 0.0,
         taxa = if (acertou) {
             (taxa / DIVISOR_ACERTO).coerceIn(TAXA_MINIMA, TAXA_MAXIMA)
         } else {
             (taxa * MULTIPLICADOR_ERRO).coerceIn(TAXA_MINIMA, TAXA_MAXIMA)
         },
-        ultimaInteracao = agora,
-        revisoes = revisoes + 1,
-        acertos = if (acertou) acertos + 1 else acertos,
-        erros = if (acertou) erros else erros + 1,
+        lastInteraction = now,
+        reviews = reviews + 1,
+        hits = if (acertou) hits + 1 else hits,
+        errors = if (acertou) errors else errors + 1,
     )
 
     companion object {
@@ -136,12 +136,12 @@ data class Retencao(
          */
         private const val MILLIS_POR_DIA = 86_400_000.0
 
-        /** O estado em que uma palavra entra no sistema, quando a ficha fica pronta. */
-        fun inicial(agora: Long) = Retencao(
-            pontos = PONTOS_MAX,
+        /** O estado em que uma word entra no sistema, quando a card fica pronta. */
+        fun inicial(now: Long) = Retention(
+            points = PONTOS_MAX,
             taxa = TAXA_INICIAL,
-            ultimaInteracao = agora,
-            revisoes = 0,
+            lastInteraction = now,
+            reviews = 0,
         )
     }
 }
@@ -154,9 +154,9 @@ enum class MemoryLevel {
     MASTERED,
 }
 
-data class Sequencia(
-    val diasSeguidos: Int,
-    val revisouHoje: Boolean,
+data class Streak(
+    val dayStreak: Int,
+    val reviewedToday: Boolean,
 )
 
 /**
@@ -165,23 +165,23 @@ data class Sequencia(
  * [dias] vem em ordem decrescente e sem repetição (é a chave primária da tabela).
  *
  * A sequência pode ancorar em **ontem**: não ter revisado ainda hoje não quebra
- * nada — o dia não acabou. Só pular um dia inteiro quebra. Por isso [Sequencia]
- * separa `revisouHoje`, que é o que a tela usa para dizer se ainda falta.
+ * nada — o dia não acabou. Só pular um dia inteiro quebra. Por isso [Streak]
+ * separa `reviewedToday`, que é o que a tela usa para dizer se ainda falta.
  */
-fun sequenciaDe(dias: List<Long>, hoje: Long): Sequencia {
-    val revisouHoje = dias.firstOrNull() == hoje
-    val inicio = when {
-        revisouHoje -> hoje
-        dias.firstOrNull() == hoje - 1 -> hoje - 1
-        else -> return Sequencia(diasSeguidos = 0, revisouHoje = false)
+fun streakOf(days: List<Long>, today: Long): Streak {
+    val reviewedToday = days.firstOrNull() == today
+    val start = when {
+        reviewedToday -> today
+        days.firstOrNull() == today - 1 -> today - 1
+        else -> return Streak(dayStreak = 0, reviewedToday = false)
     }
 
-    var esperado = inicio
+    var esperado = start
     var total = 0
-    for (dia in dias) {
-        if (dia != esperado) break
+    for (day in days) {
+        if (day != esperado) break
         total++
         esperado--
     }
-    return Sequencia(diasSeguidos = total, revisouHoje = revisouHoje)
+    return Streak(dayStreak = total, reviewedToday = reviewedToday)
 }

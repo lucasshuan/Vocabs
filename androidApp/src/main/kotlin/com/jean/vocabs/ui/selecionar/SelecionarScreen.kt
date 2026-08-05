@@ -58,7 +58,7 @@ import com.jean.vocabs.media.lembrarFoto
 import com.jean.vocabs.media.lembrarPerfilDeOnda
 import com.jean.vocabs.media.picoDaBarra
 import com.jean.vocabs.media.rememberReprodutor
-import com.jean.vocabs.shared.domain.AlvoSelecionado
+import com.jean.vocabs.shared.domain.SelectedTarget
 import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.shared.domain.CaptureStatus
 import com.jean.vocabs.ui.components.AvisoDuplicata
@@ -78,7 +78,7 @@ import com.jean.vocabs.ui.components.formatarDuracaoMs
 import com.jean.vocabs.ui.components.lembrarToque
 import com.jean.vocabs.ui.components.rotuloDoFormato
 import com.jean.vocabs.ui.components.tempoRelativo
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.languages.idiomaDe
 import com.jean.vocabs.ui.theme.LocalTemaEscuro
 
 /**
@@ -103,21 +103,21 @@ fun SelecionarScreen(
     vm: SelecionarViewModel = viewModel(),
 ) {
     val fluxo = remember(id) { vm.observar(id) }
-    val captura by fluxo.collectAsStateWithLifecycle()
+    val capture by fluxo.collectAsStateWithLifecycle()
     val duplicata by vm.duplicata.collectAsStateWithLifecycle()
-    val cursos by vm.cursos.collectAsStateWithLifecycle()
-    var trecho by remember { mutableStateOf("") }
-    val selecoes = remember { mutableStateListOf<AlvoSelecionado>() }
+    val courses by vm.courses.collectAsStateWithLifecycle()
+    var snippet by remember { mutableStateOf("") }
+    val selecoes = remember { mutableStateListOf<SelectedTarget>() }
     var corrigindo by remember { mutableStateOf(false) }
     var confirmarExclusao by remember { mutableStateOf(false) }
 
-    LaunchedEffect(captura?.id, captura?.trecho) {
-        trecho = captura?.trecho.orEmpty()
+    LaunchedEffect(capture?.id, capture?.snippet) {
+        snippet = capture?.snippet.orEmpty()
         selecoes.clear()
-        corrigindo = trecho.isBlank()
+        corrigindo = snippet.isBlank()
     }
-    LaunchedEffect(selecoes.lastOrNull()?.texto, captura?.par?.alvo) {
-        vm.procurarDuplicata(selecoes.lastOrNull()?.texto.orEmpty(), captura?.par?.alvo.orEmpty())
+    LaunchedEffect(selecoes.lastOrNull()?.text, capture?.languagePair?.target) {
+        vm.procurarDuplicata(selecoes.lastOrNull()?.text.orEmpty(), capture?.languagePair?.target.orEmpty())
     }
 
     if (confirmarExclusao) {
@@ -134,7 +134,7 @@ fun SelecionarScreen(
         )
     }
 
-    val atual = captura
+    val current = capture
 
     Column(
         modifier = Modifier
@@ -152,63 +152,63 @@ fun SelecionarScreen(
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.weight(1f).padding(start = 4.dp),
             )
-            atual?.let {
+            current?.let {
                 SeletorDeIdioma(
-                    alvo = it.par.alvo,
-                    cursos = cursos,
+                    target = it.languagePair.target,
+                    courses = courses,
                     aoEscolher = { codigo -> vm.trocarIdioma(id, codigo) },
                 )
             }
         }
 
-        if (atual == null) return@Column
+        if (current == null) return@Column
 
         Column(
             verticalArrangement = Arrangement.spacedBy(13.dp),
             modifier = Modifier.padding(horizontal = 20.dp).padding(top = 12.dp),
         ) {
-            when (atual.formato) {
-                CaptureFormat.PHOTO -> atual.midiaCaminho?.let { PreviaFoto(it) }
-                CaptureFormat.AUDIO -> atual.midiaCaminho?.let {
+            when (current.format) {
+                CaptureFormat.PHOTO -> current.mediaPath?.let { PreviaFoto(it) }
+                CaptureFormat.AUDIO -> current.mediaPath?.let {
                     PlayerAudio(
-                        caminho = it,
-                        duracaoMs = atual.duracaoMs,
+                        path = it,
+                        durationMs = current.durationMs,
                         corrigindo = corrigindo,
                         aoCorrigir = { corrigindo = !corrigindo },
                     )
                 }
-                CaptureFormat.TEXT -> OrigemDoTexto(atual.criadoEm)
+                CaptureFormat.TEXT -> OrigemDoTexto(current.createdAt)
             }
 
             when {
-                atual.status == CaptureStatus.TRANSCRIBING -> AvisoDeProcesso(
-                    texto = "Transcrição local em andamento…",
+                current.status == CaptureStatus.TRANSCRIBING -> AvisoDeProcesso(
+                    text = "Transcrição local em andamento…",
                     comProgresso = true,
                 )
-                atual.erroTranscricao != null -> AvisoDeErro(atual.erroTranscricao.orEmpty())
+                current.transcriptionError != null -> AvisoDeErro(current.transcriptionError.orEmpty())
             }
 
-            if (corrigindo || trecho.isBlank()) {
+            if (corrigindo || snippet.isBlank()) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     RotuloDeSecao("Transcrição")
                     OutlinedTextField(
-                        value = trecho,
-                        onValueChange = { trecho = it; selecoes.clear() },
+                        value = snippet,
+                        onValueChange = { snippet = it; selecoes.clear() },
                         placeholder = { Text("Digite o trecho manualmente") },
                         minLines = 2,
                         shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    if (trecho.isNotBlank()) {
+                    if (snippet.isNotBlank()) {
                         BotaoPrincipal("Pronto, marcar termos", { corrigindo = false })
                     }
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     SeletorDeTermos(
-                        trecho = trecho,
-                        aoSelecionar = { alvo ->
-                            if (selecoes.none { it.inicio == alvo.inicio && it.fim == alvo.fim }) selecoes += alvo
+                        snippet = snippet,
+                        aoSelecionar = { target ->
+                            if (selecoes.none { it.start == target.start && it.end == target.end }) selecoes += target
                         },
                     )
                     Text(
@@ -233,10 +233,10 @@ fun SelecionarScreen(
             duplicata?.let { AvisoDuplicata(it) }
 
             BotaoPrincipal(
-                texto = if (selecoes.isEmpty()) "Selecione o que guardar"
-                else "Guardar ${selecoes.size} ${if (selecoes.size == 1) "captura" else "capturas"}",
-                aoClicar = { vm.guardar(id, trecho, selecoes.toList(), aoGuardar) },
-                habilitado = trecho.isNotBlank() && selecoes.isNotEmpty(),
+                text = if (selecoes.isEmpty()) "Selecione o que guardar"
+                else "Guardar ${selecoes.size} ${if (selecoes.size == 1) "capture" else "captures"}",
+                aoClicar = { vm.guardar(id, snippet, selecoes.toList(), aoGuardar) },
+                habilitado = snippet.isNotBlank() && selecoes.isNotEmpty(),
                 modifier = Modifier.padding(top = 4.dp),
             )
 
@@ -301,7 +301,7 @@ private fun BotaoDeDescartarCaptura(aoClicar: () -> Unit) {
  * conserta aqui, no último instante em que isso ainda é barato.
  */
 @Composable
-private fun SeletorDeIdioma(alvo: String, cursos: List<String>, aoEscolher: (String) -> Unit) {
+private fun SeletorDeIdioma(target: String, courses: List<String>, aoEscolher: (String) -> Unit) {
     var aberto by remember { mutableStateOf(false) }
     val cores = MaterialTheme.colorScheme
 
@@ -317,19 +317,19 @@ private fun SeletorDeIdioma(alvo: String, cursos: List<String>, aoEscolher: (Str
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.padding(start = 5.dp, end = 8.dp, top = 5.dp, bottom = 5.dp),
             ) {
-                BandeiraCircular(idiomaDe(alvo), tamanho = 19.dp)
+                BandeiraCircular(idiomaDe(target), tamanho = 19.dp)
                 Icon(Icones.Expandir, "Trocar idioma", tint = cores.onSurfaceVariant, modifier = Modifier.size(14.dp))
             }
         }
         DropdownMenu(expanded = aberto, onDismissRequest = { aberto = false }) {
-            cursos.forEach { codigo ->
+            courses.forEach { codigo ->
                 DropdownMenuItem(
                     text = { Text(idiomaDe(codigo).displayName) },
                     leadingIcon = { BandeiraCircular(idiomaDe(codigo), tamanho = 20.dp) },
                     trailingIcon = {
-                        if (codigo == alvo) Icon(Icones.Check, null, tint = cores.tertiary, modifier = Modifier.size(16.dp))
+                        if (codigo == target) Icon(Icones.Check, null, tint = cores.tertiary, modifier = Modifier.size(16.dp))
                     },
-                    onClick = { aberto = false; if (codigo != alvo) aoEscolher(codigo) },
+                    onClick = { aberto = false; if (codigo != target) aoEscolher(codigo) },
                 )
             }
         }
@@ -338,16 +338,16 @@ private fun SeletorDeIdioma(alvo: String, cursos: List<String>, aoEscolher: (Str
 
 /** "Texto colado · agora" — de onde este trecho veio, na cor da categoria. */
 @Composable
-private fun OrigemDoTexto(criadoEm: Long) {
+private fun OrigemDoTexto(createdAt: Long) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         DiscoDeCategoria(CaptureFormat.TEXT, tamanho = 22.dp)
-        RotuloDeSecao("${rotuloDoFormato(CaptureFormat.TEXT)} colado · ${tempoRelativo(criadoEm)}")
+        RotuloDeSecao("${rotuloDoFormato(CaptureFormat.TEXT)} colado · ${tempoRelativo(createdAt)}")
     }
 }
 
 @Composable
-private fun PreviaFoto(caminho: String) {
-    val imagem by lembrarFoto(caminho)
+private fun PreviaFoto(path: String) {
+    val imagem by lembrarFoto(path)
     Surface(
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceVariant,
@@ -366,8 +366,8 @@ private fun PreviaFoto(caminho: String) {
  * transcrição local não entrega.
  */
 @Composable
-private fun PlayerAudio(caminho: String, duracaoMs: Long?, corrigindo: Boolean, aoCorrigir: () -> Unit) {
-    val player = rememberReprodutor(caminho)
+private fun PlayerAudio(path: String, durationMs: Long?, corrigindo: Boolean, aoCorrigir: () -> Unit) {
+    val player = rememberReprodutor(path)
     val paleta = coresDoFormato(CaptureFormat.AUDIO)
     CartaoDaTela(recheio = PaddingValues(14.dp), modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(13.dp)) {
@@ -382,7 +382,7 @@ private fun PlayerAudio(caminho: String, duracaoMs: Long?, corrigindo: Boolean, 
                 }
             }
             OndaDeAudio(
-                caminho = caminho,
+                path = path,
                 cor = paleta.cor,
                 progresso = player.progresso,
                 modifier = Modifier.weight(1f),
@@ -391,7 +391,7 @@ private fun PlayerAudio(caminho: String, duracaoMs: Long?, corrigindo: Boolean, 
                 // Tocando, o número anda junto com a onda: quem está ouvindo quer
                 // saber quanto falta, não quanto o arquivo tem.
                 text = if (player.tocando) formatarDuracaoMs(player.posicaoMs)
-                else duracaoMs?.let(::formatarDuracaoMs).orEmpty(),
+                else durationMs?.let(::formatarDuracaoMs).orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -412,7 +412,7 @@ private fun PlayerAudio(caminho: String, duracaoMs: Long?, corrigindo: Boolean, 
 }
 
 @Composable
-private fun AvisoDeProcesso(texto: String, comProgresso: Boolean) {
+private fun AvisoDeProcesso(text: String, comProgresso: Boolean) {
     Surface(
         color = MaterialTheme.colorScheme.secondaryContainer,
         shape = MaterialTheme.shapes.medium,
@@ -420,20 +420,20 @@ private fun AvisoDeProcesso(texto: String, comProgresso: Boolean) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(14.dp)) {
             if (comProgresso) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-            Text(texto, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 12.dp))
+            Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 12.dp))
         }
     }
 }
 
 @Composable
-private fun AvisoDeErro(texto: String) {
+private fun AvisoDeErro(text: String) {
     Surface(
         color = MaterialTheme.colorScheme.errorContainer,
         shape = MaterialTheme.shapes.medium,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Text(
-            text = texto,
+            text = text,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onErrorContainer,
             modifier = Modifier.padding(14.dp),
@@ -461,12 +461,12 @@ private const val OPACIDADE_POR_TOCAR = 0.3f
  */
 @Composable
 private fun OndaDeAudio(
-    caminho: String,
+    path: String,
     cor: androidx.compose.ui.graphics.Color,
     progresso: Float,
     modifier: Modifier = Modifier,
 ) {
-    val perfil by lembrarPerfilDeOnda(caminho)
+    val perfil by lembrarPerfilDeOnda(path)
     Canvas(modifier = modifier.height(26.dp)) {
         val largura = 3.dp.toPx()
         val passo = largura * 2

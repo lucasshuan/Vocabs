@@ -1,7 +1,7 @@
 package com.jean.vocabs.ui.configuracoes
 
 import android.content.Context
-import com.jean.vocabs.shared.domain.DadosExportacao
+import com.jean.vocabs.shared.domain.ExportData
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -13,75 +13,75 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object ExportadorVocabu {
-    suspend fun criar(context: Context, dados: DadosExportacao): File = withContext(Dispatchers.IO) {
-        val pasta = File(context.cacheDir, "exports").apply { mkdirs() }
-        val destino = File(pasta, "Vocabu-${System.currentTimeMillis()}.zip")
+    suspend fun criar(context: Context, dados: ExportData): File = withContext(Dispatchers.IO) {
+        val folder = File(context.cacheDir, "exports").apply { mkdirs() }
+        val destino = File(folder, "Vocabu-${System.currentTimeMillis()}.zip")
         ZipOutputStream(FileOutputStream(destino)).use { zip ->
             zip.putNextEntry(ZipEntry("Vocabu.json"))
             zip.write(json(dados).toString(2).toByteArray(Charsets.UTF_8))
             zip.closeEntry()
 
-            dados.capturas.distinctBy { it.midiaCaminho }.forEach { captura ->
-                val caminho = captura.midiaCaminho ?: return@forEach
-                val arquivo = File(caminho).takeIf(File::isFile) ?: return@forEach
-                zip.putNextEntry(ZipEntry("media/${captura.id}-${arquivo.name}"))
-                FileInputStream(arquivo).use { it.copyTo(zip) }
+            dados.captures.distinctBy { it.mediaPath }.forEach { capture ->
+                val path = capture.mediaPath ?: return@forEach
+                val file = File(path).takeIf(File::isFile) ?: return@forEach
+                zip.putNextEntry(ZipEntry("media/${capture.id}-${file.name}"))
+                FileInputStream(file).use { it.copyTo(zip) }
                 zip.closeEntry()
             }
         }
         destino
     }
 
-    private fun json(dados: DadosExportacao) = JSONObject().apply {
+    private fun json(dados: ExportData) = JSONObject().apply {
         // 2: `ipa` virou `pronuncia` e o par de idiomas deixou de ser um valor
         // fixo do arquivo para ser uma propriedade de cada captura.
-        put("schemaVersion", 2)
+        put("schemaVersion", 3)
         put("app", "Vocabu")
-        put("exportadoEm", System.currentTimeMillis())
-        put("usoIa", JSONObject().put("mes", dados.usoIa.mes).put("geracoes", dados.usoIa.usadas))
-        put("capturas", JSONArray().apply {
-            dados.capturas.forEach { captura -> put(JSONObject().apply {
-                put("id", captura.id)
-                put("trecho", captura.trecho)
-                put("origem", captura.origem)
-                put("criadoEm", captura.criadoEm)
-                put("status", captura.status.name)
-                put("formato", captura.formato.name)
-                put("midia", captura.midiaCaminho?.let { "media/${captura.id}-${File(it).name}" })
-                put("duracaoMs", captura.duracaoMs)
-                put("erroTranscricao", captura.erroTranscricao)
-                put("idiomaNativo", captura.par.nativo)
-                put("idiomaAlvo", captura.par.alvo)
+        put("exportedAt", System.currentTimeMillis())
+        put("aiUsage", JSONObject().put("month", dados.aiUsage.month).put("generations", dados.aiUsage.used))
+        put("captures", JSONArray().apply {
+            dados.captures.forEach { capture -> put(JSONObject().apply {
+                put("id", capture.id)
+                put("snippet", capture.snippet)
+                put("source", capture.source)
+                put("createdAt", capture.createdAt)
+                put("status", capture.status.name)
+                put("format", capture.format.name)
+                put("media", capture.mediaPath?.let { "media/${capture.id}-${File(it).name}" })
+                put("durationMs", capture.durationMs)
+                put("transcriptionError", capture.transcriptionError)
+                put("nativeLanguage", capture.languagePair.native)
+                put("targetLanguage", capture.languagePair.target)
             }) }
         })
-        put("entradas", JSONArray().apply {
-            dados.entradas.forEach { entrada -> put(JSONObject().apply {
-                put("id", entrada.id)
-                put("capturaId", entrada.capturaId)
-                put("alvo", entrada.alvo)
-                put("inicio", entrada.inicio)
-                put("fim", entrada.fim)
-                put("tipo", entrada.tipo.name)
-                put("status", entrada.status.name)
-                put("traducao", entrada.ficha?.translation)
-                put("definicoes", JSONArray(entrada.ficha?.definitions.orEmpty()))
-                put("exemplo", entrada.ficha?.example)
-                put("pronuncia", entrada.ficha?.pronunciation)
-                put("relacionadas", JSONArray(entrada.ficha?.related.orEmpty()))
-                put("erroCodigo", entrada.errorCode?.name)
-                put("erro", entrada.errorDetail)
-                put("retencao", entrada.retencao?.let { retencao -> JSONObject()
-                    .put("pontos", retencao.pontos)
-                    .put("taxaDecaimento", retencao.taxa)
-                    .put("ultimaInteracao", retencao.ultimaInteracao)
-                    .put("revisoes", retencao.revisoes)
-                    .put("acertos", retencao.acertos)
-                    .put("erros", retencao.erros)
+        put("entries", JSONArray().apply {
+            dados.entries.forEach { entry -> put(JSONObject().apply {
+                put("id", entry.id)
+                put("captureId", entry.captureId)
+                put("target", entry.target)
+                put("startIndex", entry.start)
+                put("endIndex", entry.end)
+                put("type", entry.type.name)
+                put("status", entry.status.name)
+                put("translation", entry.card?.translation)
+                put("definitions", JSONArray(entry.card?.definitions.orEmpty()))
+                put("example", entry.card?.example)
+                put("pronunciation", entry.card?.pronunciation)
+                put("related", JSONArray(entry.card?.related.orEmpty()))
+                put("errorCode", entry.errorCode?.name)
+                put("errorDetail", entry.errorDetail)
+                put("retention", entry.retention?.let { retention -> JSONObject()
+                    .put("points", retention.points)
+                    .put("decayRate", retention.taxa)
+                    .put("lastInteractionAt", retention.lastInteraction)
+                    .put("reviews", retention.reviews)
+                    .put("correctCount", retention.hits)
+                    .put("incorrectCount", retention.errors)
                 })
             }) }
         })
-        put("atividade", JSONArray().apply {
-            dados.atividade.forEach { put(JSONObject().put("dia", it.dia).put("revisoes", it.revisoes)) }
+        put("activity", JSONArray().apply {
+            dados.activity.forEach { put(JSONObject().put("day", it.day).put("reviews", it.reviews)) }
         })
     }
 }

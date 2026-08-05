@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.captura
+package com.jean.vocabs.ui.capture
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Density
@@ -23,7 +23,7 @@ sealed interface AlvoDoGesto {
     /** Nem origem nem alvo. Soltar aqui não faz nada. */
     data object Fora : AlvoDoGesto
 
-    data class Modo(val formato: CaptureFormat) : AlvoDoGesto
+    data class Modo(val format: CaptureFormat) : AlvoDoGesto
 }
 
 /**
@@ -88,7 +88,7 @@ const val ABERTURA_DO_LEQUE_MS = 180L
 const val REALCE_DO_ALVO_MS = 90
 
 /** O deslocamento de cada modo, para quem desenha os alvos. */
-fun deslocamentoDe(formato: CaptureFormat): DpOffset = when (formato) {
+fun deslocamentoDe(format: CaptureFormat): DpOffset = when (format) {
     CaptureFormat.TEXT -> DESLOCAMENTO_DO_TEXTO
     CaptureFormat.AUDIO -> DESLOCAMENTO_DO_AUDIO
     CaptureFormat.PHOTO -> DESLOCAMENTO_DA_FOTO
@@ -96,9 +96,9 @@ fun deslocamentoDe(formato: CaptureFormat): DpOffset = when (formato) {
 
 /** Os mesmos três deslocamentos em pixels, prontos para comparar com o dedo. */
 fun Density.alvosEmPixels(): List<Pair<CaptureFormat, Offset>> =
-    CaptureFormat.entries.map { formato ->
-        val destino = deslocamentoDe(formato)
-        formato to Offset(destino.x.toPx(), destino.y.toPx())
+    CaptureFormat.entries.map { format ->
+        val destino = deslocamentoDe(format)
+        format to Offset(destino.x.toPx(), destino.y.toPx())
     }
 
 /**

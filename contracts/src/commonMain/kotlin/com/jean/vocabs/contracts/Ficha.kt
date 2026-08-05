@@ -21,15 +21,15 @@ import kotlinx.serialization.Serializable
 data class GenerateCardRequest(
     val snippet: String,
     val target: String,
-    /** Classificado localmente: um token é palavra; vários, expressão. */
+    /** Classificado localmente: um token é word; vários, expressão. */
     val type: TargetType,
-    /** Código de [Languages]: em que língua a ficha é escrita. */
+    /** Código de [Languages]: em que língua a card é escrita. */
     val nativeLanguage: String,
-    /** Código de [Languages]: que língua a ficha ensina. */
+    /** Código de [Languages]: que língua a card ensina. */
     val targetLanguage: String,
 )
 
-/** O que o servidor devolve: a ficha da Fase 1. */
+/** O que o servidor devolve: a card da Fase 1. */
 @Serializable
 data class CardResponse(
     val type: TargetType,
@@ -93,12 +93,12 @@ enum class ErrorCode {
     /** Só do lado do app: o servidor não respondeu. */
     UNREACHABLE,
 
-    /** Só do lado do app: respondeu, mas não em um formato que dê para ler. */
+    /** Só do lado do app: respondeu, mas não em um format que dê para ler. */
     HTTP_ERROR,
     ;
 
     companion object {
-        fun of(valor: String?): ErrorCode =
-            entries.firstOrNull { it.name == valor } ?: GENERATION_FAILED
+        fun of(value: String?): ErrorCode =
+            entries.firstOrNull { it.name == value } ?: GENERATION_FAILED
     }
 }

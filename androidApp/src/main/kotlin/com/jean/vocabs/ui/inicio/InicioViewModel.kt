@@ -1,15 +1,15 @@
-package com.jean.vocabs.ui.inicio
+package com.jean.vocabs.ui.start
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.domain.Degraus
-import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.Escopo
+import com.jean.vocabs.shared.domain.Steps
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.Scope
 import com.jean.vocabs.shared.domain.MemoryLevel
-import com.jean.vocabs.shared.domain.ParIdiomas
-import com.jean.vocabs.shared.domain.ResumoCurso
+import com.jean.vocabs.shared.domain.LanguagePair
+import com.jean.vocabs.shared.domain.CourseSummary
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -27,32 +27,32 @@ import kotlinx.coroutines.flow.stateIn
  * qualquer um dos dois faltar.
  */
 data class PaginaDoInicio(
-    val resumo: ResumoCurso,
+    val resumo: CourseSummary,
     val forcaMedia: Int,
     /** Quantas vencem ainda nas próximas 24h — o "Próximas 5 em 19h". */
     val proximasEm24h: Int,
-    val capturadasHoje: List<Entrada>,
+    val capturadasHoje: List<Entry>,
 ) {
-    val par: ParIdiomas get() = resumo.par
+    val languagePair: LanguagePair get() = resumo.languagePair
 }
 
 data class InicioEstado(
     val paginas: List<PaginaDoInicio> = emptyList(),
     val ativo: String = "",
-    val nativo: String = "",
+    val native: String = "",
     val carregado: Boolean = false,
 ) {
-    val cursos: List<ResumoCurso> get() = paginas.map { it.resumo }
+    val courses: List<CourseSummary> get() = paginas.map { it.resumo }
 
-    val indiceAtivo: Int get() = paginas.indexOfFirst { it.par.alvo == ativo }.coerceAtLeast(0)
+    val indiceAtivo: Int get() = paginas.indexOfFirst { it.languagePair.target == ativo }.coerceAtLeast(0)
 
     /** Com um curso só não há faixa nem carrossel: não há para onde deslizar. */
     val temCarrossel: Boolean get() = paginas.size > 1
 }
 
 class InicioViewModel(app: Application) : AndroidViewModel(app) {
-    private val repositorio = AppContainer.repositorio(app)
-    private val preferencias = AppContainer.preferencias(app)
+    private val repository = AppContainer.repository(app)
+    private val preferences = AppContainer.preferences(app)
 
     /**
      * Uma leitura só, de todos os cursos, repartida aqui.
@@ -63,57 +63,57 @@ class InicioViewModel(app: Application) : AndroidViewModel(app) {
      * três cartões estejam falando do mesmo instante.
      */
     val estado: StateFlow<InicioEstado> = combine(
-        preferencias.observarPar(),
-        preferencias.observarCursos(),
-        repositorio.observarProntas(Escopo.Todos),
-    ) { par, matriculados, prontas ->
-        val agora = System.currentTimeMillis()
-        val hoje = LocalDate.now()
-        val porCurso = prontas.groupBy { it.par.alvo }
+        preferences.observeLanguagePair(),
+        preferences.observeCourses(),
+        repository.observeReady(Scope.Todos),
+    ) { languagePair, matriculados, prontas ->
+        val now = System.currentTimeMillis()
+        val today = LocalDate.now()
+        val porCurso = prontas.groupBy { it.languagePair.target }
 
         InicioEstado(
-            paginas = matriculados.map { alvo ->
+            paginas = matriculados.map { target ->
                 pagina(
-                    par = ParIdiomas(nativo = par.nativo, alvo = alvo),
-                    entradas = porCurso[alvo].orEmpty(),
-                    agora = agora,
-                    hoje = hoje,
+                    languagePair = LanguagePair(native = languagePair.native, target = target),
+                    entries = porCurso[target].orEmpty(),
+                    now = now,
+                    today = today,
                 )
             },
-            ativo = par.alvo,
-            nativo = par.nativo,
+            ativo = languagePair.target,
+            native = languagePair.native,
             carregado = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InicioEstado())
 
     private fun pagina(
-        par: ParIdiomas,
-        entradas: List<Entrada>,
-        agora: Long,
-        hoje: LocalDate,
+        languagePair: LanguagePair,
+        entries: List<Entry>,
+        now: Long,
+        today: LocalDate,
     ): PaginaDoInicio {
-        val faltas = entradas.mapNotNull { it.retencao?.proximaRevisaoEm(agora) }
+        val faltas = entries.mapNotNull { it.retention?.nextReviewIn(now) }
         return PaginaDoInicio(
-            resumo = ResumoCurso(
-                par = par,
-                total = entradas.size,
+            resumo = CourseSummary(
+                languagePair = languagePair,
+                total = entries.size,
                 // Por degrau, como em toda tela de número: contar por força de
                 // memória faria o mesmo total aparecer diferente em cada uma,
                 // porque ela decai entre a leitura de uma e a da outra.
-                dominadas = entradas.count { Degraus.nivel(it.degrau) == MemoryLevel.MASTERED },
-                naFila = entradas.count { it.precisaRevisar(agora) },
-                proximaEmMillis = faltas.filter { it > 0L }.minOrNull(),
+                mastered = entries.count { Steps.level(it.degrau) == MemoryLevel.MASTERED },
+                inQueue = entries.count { it.needsReview(now) },
+                nextInMillis = faltas.filter { it > 0L }.minOrNull(),
             ),
-            forcaMedia = entradas.mapNotNull { it.retencao?.pontosEm(agora) }.mediaOuZero().toInt(),
+            forcaMedia = entries.mapNotNull { it.retention?.pointsAt(now) }.mediaOuZero().toInt(),
             proximasEm24h = faltas.count { it in 1..UM_DIA_EM_MILLIS },
-            capturadasHoje = entradas
-                .filter { Instant.ofEpochMilli(it.criadoEm).atZone(ZoneId.systemDefault()).toLocalDate() == hoje }
+            capturadasHoje = entries
+                .filter { Instant.ofEpochMilli(it.createdAt).atZone(ZoneId.systemDefault()).toLocalDate() == today }
                 .take(3),
         )
     }
 
     /** Deslizar o carrossel **é** trocar de curso: a revisão e o `+` seguem a página. */
-    fun abrirCurso(codigo: String) = preferencias.abrirCurso(codigo)
+    fun openCourse(codigo: String) = preferences.openCourse(codigo)
 
     private companion object {
         const val UM_DIA_EM_MILLIS = 86_400_000L

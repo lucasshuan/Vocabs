@@ -10,9 +10,9 @@ import androidx.compose.ui.unit.dp
  * Ícones desenhados por path data (viewport 24x24), no traço do Material.
  * Evita puxar a dependência material-icons inteira por meia dúzia de glifos.
  */
-private fun icone(nome: String, dados: String): ImageVector =
+private fun icone(name: String, dados: String): ImageVector =
     ImageVector.Builder(
-        name = nome,
+        name = name,
         defaultWidth = 24.dp,
         defaultHeight = 24.dp,
         viewportWidth = 24f,

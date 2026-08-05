@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.idiomas
+package com.jean.vocabs.ui.languages
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -14,17 +14,17 @@ import kotlinx.coroutines.flow.stateIn
 data class NovoIdiomaEstado(
     /** Os cursos que já existem — as pílulas de "Você já tem". */
     val jaTem: List<Language> = emptyList(),
-    val nativo: String = Languages.NATIVO_PADRAO,
+    val native: String = Languages.NATIVO_PADRAO,
 )
 
 class NovoIdiomaViewModel(app: Application) : AndroidViewModel(app) {
-    private val preferencias = AppContainer.preferencias(app)
+    private val preferences = AppContainer.preferences(app)
 
     val estado: StateFlow<NovoIdiomaEstado> = combine(
-        preferencias.observarCursos(),
-        preferencias.observarPar(),
-    ) { cursos, par ->
-        NovoIdiomaEstado(jaTem = cursos.mapNotNull(Languages::de), nativo = par.nativo)
+        preferences.observeCourses(),
+        preferences.observeLanguagePair(),
+    ) { courses, languagePair ->
+        NovoIdiomaEstado(jaTem = courses.mapNotNull(Languages::de), native = languagePair.native)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NovoIdiomaEstado())
 
     /**
@@ -37,14 +37,14 @@ class NovoIdiomaViewModel(app: Application) : AndroidViewModel(app) {
      * mesmo efeito, visto do outro lado.
      */
     fun disponiveis(): List<Language> {
-        val atual = estado.value
-        val ocupados = atual.jaTem.map { it.code } + atual.nativo
+        val current = estado.value
+        val ocupados = current.jaTem.map { it.code } + current.native
         return Languages.CATALOGO.filter { it.code !in ocupados }
     }
 
-    fun matricular(codigo: String) = preferencias.matricular(codigo)
+    fun enroll(codigo: String) = preferences.enroll(codigo)
 
     fun trocarNativo(codigo: String) {
-        preferencias.nativo = codigo
+        preferences.native = codigo
     }
 }

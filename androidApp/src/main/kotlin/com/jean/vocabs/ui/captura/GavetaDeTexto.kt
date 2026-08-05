@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.captura
+package com.jean.vocabs.ui.capture
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,7 +59,7 @@ fun GavetaDeTexto(
 ) {
     val cores = MaterialTheme.colorScheme
     val prancheta = LocalClipboard.current
-    val escopo = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     val foco = remember { FocusRequester() }
     val exemplo = remember { ExemplosDeTrecho.random() }
     var campo by remember { mutableStateOf(TextFieldValue()) }
@@ -68,7 +68,7 @@ fun GavetaDeTexto(
     LaunchedEffect(Unit) { foco.requestFocus() }
 
     fun colar() {
-        escopo.launch {
+        scope.launch {
             prancheta.getClipEntry()
                 ?.clipData
                 ?.takeIf { it.itemCount > 0 }
@@ -116,7 +116,7 @@ fun GavetaDeTexto(
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Pilula(
-                texto = "Colar",
+                text = "Colar",
                 cor = cores.primary,
                 fundo = cores.secondaryContainer,
                 icone = true,
@@ -127,7 +127,7 @@ fun GavetaDeTexto(
             // lugar de destaque sem nunca poder ser tocado.
             if (temTexto) {
                 Pilula(
-                    texto = "Guardar",
+                    text = "Guardar",
                     cor = cores.onPrimary,
                     fundo = cores.primary,
                     icone = false,
@@ -144,7 +144,7 @@ fun GavetaDeTexto(
 
 @Composable
 private fun Pilula(
-    texto: String,
+    text: String,
     cor: androidx.compose.ui.graphics.Color,
     fundo: androidx.compose.ui.graphics.Color,
     icone: Boolean,
@@ -166,7 +166,7 @@ private fun Pilula(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
         ) {
             if (icone) Icon(Icones.Colar, null, tint = cor, modifier = Modifier.size(15.dp))
-            Text(texto, style = MaterialTheme.typography.labelLarge, color = cor)
+            Text(text, style = MaterialTheme.typography.labelLarge, color = cor)
         }
     }
 }

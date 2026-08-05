@@ -15,19 +15,19 @@ import java.io.File
  */
 object Config {
 
-    private val doArquivo: Map<String, String> by lazy { lerArquivoLocal() }
+    private val doArquivo: Map<String, String> by lazy { readLocalFile() }
 
     // O takeIf nos dois lados importa: `APP_TOKEN=` no arquivo (ou exportada
     // vazia) precisa contar como ausente, senão o servidor sobe com token vazio
     // e aceita qualquer requisição sem header.
-    operator fun get(chave: String): String? =
-        System.getenv(chave)?.takeIf { it.isNotBlank() }
-            ?: doArquivo[chave]?.takeIf { it.isNotBlank() }
+    operator fun get(key: String): String? =
+        System.getenv(key)?.takeIf { it.isNotBlank() }
+            ?: doArquivo[key]?.takeIf { it.isNotBlank() }
 
-    fun obrigatorio(chave: String): String = get(chave) ?: error(
-        "$chave não definida. Use uma das duas opções:\n" +
-            "  1. \$env:$chave = \"valor\"   (só nesta sessão do terminal)\n" +
-            "  2. adicione a linha  $chave=valor  no arquivo .env na raiz do projeto",
+    fun obrigatorio(key: String): String = get(key) ?: error(
+        "$key não definida. Use uma das duas opções:\n" +
+            "  1. \$env:$key = \"value\"   (só nesta sessão do terminal)\n" +
+            "  2. adicione a row  $key=value  no file .env na raiz do projeto",
     )
 
     /**
@@ -37,19 +37,19 @@ object Config {
      * em `server/`, não na raiz do repositório, então procurar só em `.` acharia
      * nada e o arquivo pareceria ignorado.
      */
-    private fun lerArquivoLocal(): Map<String, String> {
-        val arquivo = generateSequence(File("").absoluteFile) { it.parentFile }
+    private fun readLocalFile(): Map<String, String> {
+        val file = generateSequence(File("").absoluteFile) { it.parentFile }
             .map { File(it, ".env") }
             .firstOrNull { it.isFile }
             ?: return emptyMap()
 
-        return arquivo.readLines()
+        return file.readLines()
             .map { it.trim() }
             .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains('=') }
-            .associate { linha ->
-                val chave = linha.substringBefore('=').trim()
-                val valor = linha.substringAfter('=').trim().removeSurrounding("\"").removeSurrounding("'")
-                chave to valor
+            .associate { row ->
+                val key = row.substringBefore('=').trim()
+                val value = row.substringAfter('=').trim().removeSurrounding("\"").removeSurrounding("'")
+                key to value
             }
     }
 }

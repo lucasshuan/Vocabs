@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.idiomas
+package com.jean.vocabs.ui.languages
 
 import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.background
@@ -72,7 +72,7 @@ fun NovoIdiomaScreen(
         modifier = Modifier.fillMaxSize().statusBarsPadding().imePadding().padding(horizontal = 20.dp),
     ) {
         CabecalhoDeDentro(
-            titulo = if (paraNativo) "Qual é o seu idioma?" else "Qual idioma aprender?",
+            title = if (paraNativo) "Qual é o seu idioma?" else "Qual idioma aprender?",
             aoVoltar = aoVoltar,
             modifier = Modifier.padding(top = 8.dp),
         )
@@ -84,12 +84,12 @@ fun NovoIdiomaScreen(
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
-                    estado.jaTem.forEach { idioma -> PilulaDeIdioma(idioma) }
+                    estado.jaTem.forEach { language -> PilulaDeIdioma(language) }
                 }
             }
         }
 
-        CampoDeBusca(valor = busca, aoMudar = { busca = it })
+        CampoDeBusca(value = busca, aoMudar = { busca = it })
 
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             RotuloDeSecao("Escolha agora", Modifier.weight(1f))
@@ -103,18 +103,18 @@ fun NovoIdiomaScreen(
         if (disponiveis.isEmpty()) {
             EstadoVazio(
                 icone = Icones.Lupa,
-                titulo = "Nada com esse nome",
-                detalhe = "Tente outro trecho do nome do idioma.",
+                title = "Nada com esse nome",
+                detail = "Tente outro trecho do nome do idioma.",
                 modifier = Modifier.weight(1f),
             )
         } else {
             CartaoDaTela(recheio = PaddingValues(0.dp), modifier = Modifier.weight(1f).fillMaxWidth()) {
                 LazyColumn {
-                    items(disponiveis, key = { it.code }) { idioma ->
+                    items(disponiveis, key = { it.code }) { language ->
                         LinhaDeIdioma(
-                            idioma = idioma,
-                            selecionado = idioma.code == escolhido?.code,
-                            aoClicar = { escolhido = idioma },
+                            language = language,
+                            selecionado = language.code == escolhido?.code,
+                            aoClicar = { escolhido = language },
                         )
                     }
                 }
@@ -122,13 +122,13 @@ fun NovoIdiomaScreen(
         }
 
         BotaoPrincipal(
-            texto = escolhido
+            text = escolhido
                 ?.let { if (paraNativo) "Usar ${it.displayName.lowercase()}" else "Começar ${it.displayName.lowercase()}" }
                 ?: "Escolha um idioma",
             habilitado = escolhido != null,
             aoClicar = {
-                escolhido?.let { idioma ->
-                    if (paraNativo) vm.trocarNativo(idioma.code) else vm.matricular(idioma.code)
+                escolhido?.let { language ->
+                    if (paraNativo) vm.trocarNativo(language.code) else vm.enroll(language.code)
                     aoVoltar()
                 }
             },
@@ -138,16 +138,16 @@ fun NovoIdiomaScreen(
 }
 
 @Composable
-private fun PilulaDeIdioma(idioma: Language) {
+private fun PilulaDeIdioma(language: Language) {
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, border = contornoDeCartao()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(7.dp),
             modifier = Modifier.padding(start = 7.dp, end = 12.dp, top = 7.dp, bottom = 7.dp),
         ) {
-            BandeiraCircular(idioma, tamanho = 20.dp)
+            BandeiraCircular(language, tamanho = 20.dp)
             Text(
-                text = idioma.displayName,
+                text = language.displayName,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -156,7 +156,7 @@ private fun PilulaDeIdioma(idioma: Language) {
 }
 
 @Composable
-private fun LinhaDeIdioma(idioma: Language, selecionado: Boolean, aoClicar: () -> Unit) {
+private fun LinhaDeIdioma(language: Language, selecionado: Boolean, aoClicar: () -> Unit) {
     val cores = MaterialTheme.colorScheme
     Surface(
         onClick = aoClicar,
@@ -169,8 +169,8 @@ private fun LinhaDeIdioma(idioma: Language, selecionado: Boolean, aoClicar: () -
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 13.dp),
             ) {
-                BandeiraCircular(idioma, tamanho = 30.dp)
-                Text(idioma.displayName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                BandeiraCircular(language, tamanho = 30.dp)
+                Text(language.displayName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 if (selecionado) {
                     Box(
                         contentAlignment = Alignment.Center,
@@ -193,7 +193,7 @@ private fun LinhaDeIdioma(idioma: Language, selecionado: Boolean, aoClicar: () -
  * contorno próprio e uma altura mínima que não cabem nesse desenho.
  */
 @Composable
-private fun CampoDeBusca(valor: String, aoMudar: (String) -> Unit) {
+private fun CampoDeBusca(value: String, aoMudar: (String) -> Unit) {
     val cores = MaterialTheme.colorScheme
     Surface(
         shape = MaterialTheme.shapes.small,
@@ -208,11 +208,11 @@ private fun CampoDeBusca(valor: String, aoMudar: (String) -> Unit) {
         ) {
             Icon(Icones.Lupa, null, tint = cores.outline, modifier = Modifier.size(18.dp))
             Box(Modifier.weight(1f)) {
-                if (valor.isEmpty()) {
+                if (value.isEmpty()) {
                     Text("Buscar idioma", style = MaterialTheme.typography.bodyMedium, color = cores.outline)
                 }
                 BasicTextField(
-                    value = valor,
+                    value = value,
                     onValueChange = aoMudar,
                     singleLine = true,
                     textStyle = LocalTextStyle.current.merge(

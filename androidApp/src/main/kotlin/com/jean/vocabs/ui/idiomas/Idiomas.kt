@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.idiomas
+package com.jean.vocabs.ui.languages
 
 import com.jean.vocabs.ui.displayName
 import androidx.annotation.DrawableRes
@@ -24,7 +24,7 @@ import com.jean.vocabs.contracts.Languages
  * as 43 bandeiras seriam removidas do APK e só a tela mostraria o estrago.
  */
 @DrawableRes
-fun bandeiraDe(idioma: Language): Int = when (idioma.country) {
+fun bandeiraDe(language: Language): Int = when (language.country) {
     "bd" -> R.drawable.bandeira_bd
     "bg" -> R.drawable.bandeira_bg
     "br" -> R.drawable.bandeira_br

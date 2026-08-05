@@ -24,10 +24,10 @@ import com.jean.vocabs.ui.theme.VocabuColors
 data class CoresDeCategoria(val cor: Color, val fundo: Color)
 
 @Composable
-fun coresDoFormato(formato: CaptureFormat): CoresDeCategoria {
+fun coresDoFormato(format: CaptureFormat): CoresDeCategoria {
     val cores = MaterialTheme.colorScheme
     val escuro = LocalTemaEscuro.current
-    return when (formato) {
+    return when (format) {
         CaptureFormat.TEXT -> CoresDeCategoria(cores.primary, cores.secondaryContainer)
         CaptureFormat.AUDIO -> CoresDeCategoria(cores.tertiary, cores.tertiaryContainer)
         CaptureFormat.PHOTO -> if (escuro) {
@@ -38,7 +38,7 @@ fun coresDoFormato(formato: CaptureFormat): CoresDeCategoria {
     }
 }
 
-fun iconeDoFormato(formato: CaptureFormat): ImageVector = when (formato) {
+fun iconeDoFormato(format: CaptureFormat): ImageVector = when (format) {
     CaptureFormat.TEXT -> Icones.Lapis
     CaptureFormat.AUDIO -> Icones.Microfone
     CaptureFormat.PHOTO -> Icones.Camera
@@ -49,7 +49,7 @@ fun iconeDoFormato(formato: CaptureFormat): ImageVector = when (formato) {
  * formatos, e um segundo enum com os mesmos três nomes só criaria a chance de um
  * ganhar um caso a mais que o outro não tem.
  */
-fun rotuloDoFormato(formato: CaptureFormat): String = when (formato) {
+fun rotuloDoFormato(format: CaptureFormat): String = when (format) {
     CaptureFormat.TEXT -> "Texto"
     CaptureFormat.AUDIO -> "Áudio"
     CaptureFormat.PHOTO -> "Foto"
@@ -57,11 +57,11 @@ fun rotuloDoFormato(formato: CaptureFormat): String = when (formato) {
 
 /** O disco da categoria, já com as cores certas — o começo de toda linha de Pendentes. */
 @Composable
-fun DiscoDeCategoria(formato: CaptureFormat, tamanho: Dp = 38.dp) {
-    val paleta = coresDoFormato(formato)
+fun DiscoDeCategoria(format: CaptureFormat, tamanho: Dp = 38.dp) {
+    val paleta = coresDoFormato(format)
     DiscoDeIcone(
-        icone = iconeDoFormato(formato),
-        descricao = rotuloDoFormato(formato),
+        icone = iconeDoFormato(format),
+        descricao = rotuloDoFormato(format),
         cor = paleta.cor,
         fundo = paleta.fundo,
         tamanho = tamanho,

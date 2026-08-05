@@ -17,8 +17,8 @@ import kotlinx.serialization.json.Json
  * Vira 400, e não 503: repetir o mesmo pedido nunca vai dar certo, e o app
  * precisa saber a diferença entre "tente de novo" e "isto não existe".
  */
-class IdiomaDesconhecido(nativo: String, alvo: String) :
-    IllegalArgumentException("Par de idiomas desconhecido: $nativo → $alvo.")
+class UnknownLanguagePair(native: String, target: String) :
+    IllegalArgumentException("Par de languages desconhecido: $native → $target.")
 
 /**
  * Traduz uma captura crua (trecho + alvo) numa ficha completa, via Claude.
@@ -28,7 +28,7 @@ class IdiomaDesconhecido(nativo: String, alvo: String) :
  * o JSON embrulhado em markdown ou com um comentário antes, e você acaba
  * escrevendo regex para extrair — que quebra no primeiro caso estranho.
  */
-class GeradorDeFicha(
+class CardGenerator(
     // Preguiçoso de propósito: sem isto, a falta de ANTHROPIC_API_KEY derruba o
     // servidor no boot e você não consegue nem testar /health ou a autenticação.
     clientFactory: () -> AnthropicClient = {
@@ -48,16 +48,16 @@ class GeradorDeFicha(
      * azar de formatação — o que basta para perder o cache de prompt do outro
      * lado. São poucos pares por instalação; guardar todos custa nada.
      */
-    private val prompts = ConcurrentHashMap<ParDeIdiomas, String>()
+    private val prompts = ConcurrentHashMap<LanguagePairSpec, String>()
 
-    fun gerar(pedido: GenerateCardRequest): CardResponse {
-        val idiomas = ParDeIdiomas.de(pedido.nativeLanguage, pedido.targetLanguage)
-            ?: throw IdiomaDesconhecido(pedido.nativeLanguage, pedido.targetLanguage)
+    fun gerar(request: GenerateCardRequest): CardResponse {
+        val languages = LanguagePairSpec.de(request.nativeLanguage, request.targetLanguage)
+            ?: throw UnknownLanguagePair(request.nativeLanguage, request.targetLanguage)
 
         val params = MessageCreateParams.builder()
-            .model(modelo)
+            .model(model)
             .maxTokens(2048L)
-            .system(prompts.computeIfAbsent(idiomas, ::promptDe))
+            .system(prompts.computeIfAbsent(languages, ::promptFor))
             .outputConfig(
                 OutputConfig.builder()
                     .apply {
@@ -65,7 +65,7 @@ class GeradorDeFicha(
                         // 400 "does not support the effort parameter". Mandar
                         // mesmo assim faz a ficha falhar inteira, então só envia
                         // para quem suporta.
-                        if (suportaEffort) {
+                        if (supportsEffort) {
                             // Tarefa de extração curta e bem definida: não precisa
                             // de raciocínio profundo. É ajuste de custo/latência.
                             effort(OutputConfig.Effort.LOW)
@@ -76,31 +76,31 @@ class GeradorDeFicha(
             )
             .addUserMessage(
                 """
-                Snippet: ${pedido.snippet}
-                Target: ${pedido.target}
-                Type selected by the app: ${pedido.type.name}
+                Snippet: ${request.snippet}
+                Target: ${request.target}
+                Type selected by the app: ${request.type.name}
                 """.trimIndent()
             )
             .build()
 
-        val resposta = client.messages().create(params)
+        val answer = client.messages().create(params)
 
-        val texto = resposta.content()
+        val text = answer.content()
             .firstNotNullOfOrNull { bloco -> bloco.text().orElse(null)?.text() }
-            ?: error("A Claude API não devolveu nenhum bloco de texto.")
+            ?: error("A Claude API não devolveu nenhum bloco de text.")
 
-        val ficha = json.decodeFromString<CardResponse>(texto)
-        return aplicarDecisoesLocais(pedido, ficha)
+        val card = json.decodeFromString<CardResponse>(text)
+        return applyLocalDecisions(request, card)
     }
 
     // Configurável para dar para comparar modelos sem recompilar. O padrão é o
     // mais capaz para produzir definições contextualizadas e termos relacionados.
-    private val modelo: String = Config["MODELO"] ?: MODELO_PADRAO
+    private val model: String = Config["MODELO"] ?: MODELO_PADRAO
 
     /** Haiku 4.5 rejeita `effort` com 400; Opus e Sonnet aceitam. */
-    private val suportaEffort: Boolean = !modelo.startsWith("claude-haiku")
+    private val supportsEffort: Boolean = !model.startsWith("claude-haiku")
 
-    /** Interno, e não privado, para o teste conferir que o prompt cita os dois idiomas. */
+    /** Interno, e não privado, para o teste conferir que o prompt cita os dois languages. */
     internal companion object {
         const val MODELO_PADRAO = "claude-opus-5"
 
@@ -118,14 +118,14 @@ class GeradorDeFicha(
          * Os nomes dos campos e os valores do enum ficam como estão: são o
          * contrato com [CardResponse], não texto para o modelo traduzir.
          */
-        fun promptDe(idiomas: ParDeIdiomas): String {
-            val nativo = idiomas.nativo.englishName
-            val alvo = idiomas.alvo
+        fun promptFor(languages: LanguagePairSpec): String {
+            val native = languages.native.englishName
+            val target = languages.target
 
             return """
-                You help someone whose native language is $nativo learn ${alvo.nome}
+                You help someone whose native language is $native learn ${target.name}
                 by living it — games, shows, books. They capture a snippet of
-                ${alvo.nome} and mark the part of it that caught their attention.
+                ${target.name} and mark the part of it that caught their attention.
                 Your job is to build the study card for that target.
 
                 `type` is supplied by the app. Copy it exactly; never classify or
@@ -133,15 +133,15 @@ class GeradorDeFicha(
                 two or more selected tokens.
 
                 The other fields:
-                - `translation`: in $nativo, the sense the target carries IN THIS
+                - `translation`: in $native, the sense the target carries IN THIS
                   snippet — not the term's most common translation out of context.
-                - `definitions`: 1 or 2 definitions in $nativo, short and direct.
-                - `example`: ONE new sentence in ${alvo.nome} using the target in
+                - `definitions`: 1 or 2 definitions in $native, short and direct.
+                - `example`: ONE new sentence in ${target.name} using the target in
                   the same sense. Do not repeat the original snippet.
                 - `pronunciation`: the target's pronunciation written as
-                  ${alvo.notacaoDePronuncia}. For expressions, transcribe the whole
+                  ${target.pronunciationNotation}. For expressions, transcribe the whole
                   expression.
-                - `related`: 3 to 6 useful terms in ${alvo.nome} that are
+                - `related`: 3 to 6 useful terms in ${target.name} that are
                   semantically related to the target. Return only concise terms,
                   without definitions or numbering.
             """.trimIndent()
@@ -177,7 +177,7 @@ class GeradorDeFicha(
                     // Sem `minItems`/`maxItems`: o structured outputs da API só
                     // aceita `minItems` 0 ou 1 e rejeita o resto com 400, o que
                     // derrubaria toda ficha. A faixa de 3 a 6 fica no prompt, e o
-                    // teto é garantido de verdade em [aplicarDecisoesLocais].
+                    // teto é garantido de verdade em [applyLocalDecisions].
                     "related" to mapOf(
                         "type" to "array",
                         "items" to mapOf("type" to "string"),
@@ -189,13 +189,13 @@ class GeradorDeFicha(
     }
 }
 
-/** A seleção no aparelho é a autoridade; a saída do modelo nunca a sobrescreve. */
-internal fun aplicarDecisoesLocais(
-    pedido: GenerateCardRequest,
-    ficha: CardResponse,
-): CardResponse = ficha.copy(
-    type = pedido.type,
-    related = ficha.related
+/** A seleção no aparelho é a autoridade; a saída do model nunca a sobrescreve. */
+internal fun applyLocalDecisions(
+    request: GenerateCardRequest,
+    card: CardResponse,
+): CardResponse = card.copy(
+    type = request.type,
+    related = card.related
         .map(String::trim)
         .filter(String::isNotEmpty)
         .distinct()

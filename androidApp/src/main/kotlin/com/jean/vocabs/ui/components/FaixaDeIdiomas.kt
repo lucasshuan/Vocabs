@@ -42,9 +42,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.contracts.Language
-import com.jean.vocabs.shared.domain.ResumoCurso
-import com.jean.vocabs.shared.domain.SeloDeCurso
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.shared.domain.CourseSummary
+import com.jean.vocabs.shared.domain.CourseBadge
+import com.jean.vocabs.ui.languages.idiomaDe
 
 /**
  * A faixa de cursos do topo da Início.
@@ -66,7 +66,7 @@ import com.jean.vocabs.ui.idiomas.idiomaDe
  */
 @Composable
 fun FaixaDeIdiomas(
-    cursos: List<ResumoCurso>,
+    courses: List<CourseSummary>,
     ativo: String,
     aoEscolher: (String) -> Unit,
     aoAdicionar: () -> Unit,
@@ -74,7 +74,7 @@ fun FaixaDeIdiomas(
     recheio: PaddingValues = PaddingValues(horizontal = 20.dp),
 ) {
     val estado = rememberLazyListState()
-    val indiceAtivo = cursos.indexOfFirst { it.par.alvo == ativo }
+    val indiceAtivo = courses.indexOfFirst { it.languagePair.target == ativo }
 
     LaunchedEffect(indiceAtivo) {
         if (indiceAtivo >= 0) estado.animateScrollToItem(indiceAtivo)
@@ -86,13 +86,13 @@ fun FaixaDeIdiomas(
         contentPadding = recheio,
         modifier = modifier.fillMaxWidth(),
     ) {
-        items(cursos.size, key = { cursos[it].par.alvo }) { indice ->
-            val curso = cursos[indice]
+        items(courses.size, key = { courses[it].languagePair.target }) { indice ->
+            val course = courses[indice]
             ChipDeIdioma(
-                idioma = idiomaDe(curso.par.alvo),
-                selo = curso.selo,
-                selecionado = curso.par.alvo == ativo,
-                aoClicar = { aoEscolher(curso.par.alvo) },
+                language = idiomaDe(course.languagePair.target),
+                badge = course.badge,
+                selecionado = course.languagePair.target == ativo,
+                aoClicar = { aoEscolher(course.languagePair.target) },
             )
         }
         item(key = "adicionar") { ChipDeAdicionarIdioma(aoAdicionar) }
@@ -107,8 +107,8 @@ fun FaixaDeIdiomas(
  */
 @Composable
 fun ChipDeIdioma(
-    idioma: Language,
-    selo: SeloDeCurso,
+    language: Language,
+    badge: CourseBadge,
     selecionado: Boolean,
     aoClicar: () -> Unit,
     modifier: Modifier = Modifier,
@@ -119,7 +119,7 @@ fun ChipDeIdioma(
         animationSpec = tween(Movimento.RAPIDO),
         label = "fundoDoChip",
     )
-    val texto by animateColorAsState(
+    val text by animateColorAsState(
         targetValue = if (selecionado) cores.onPrimary else cores.onSurfaceVariant,
         animationSpec = tween(Movimento.RAPIDO),
         label = "textoDoChip",
@@ -140,11 +140,11 @@ fun ChipDeIdioma(
             )
             .clickable(interactionSource = toque, indication = ripple(), onClick = aoClicar)
             .padding(start = 8.dp, end = 10.dp)
-            .semantics { contentDescription = descricaoDoSelo(idioma.displayName, selo) },
+            .semantics { contentDescription = descricaoDoSelo(language.displayName, badge) },
     ) {
-        BandeiraCircular(idioma, tamanho = 24.dp)
-        Text(text = idioma.displayName, style = MaterialTheme.typography.titleSmall, color = texto)
-        SeloDeCursoBadge(selo, invertido = selecionado)
+        BandeiraCircular(language, tamanho = 24.dp)
+        Text(text = language.displayName, style = MaterialTheme.typography.titleSmall, color = text)
+        SeloDeCursoBadge(badge, invertido = selecionado)
     }
 }
 
@@ -156,18 +156,18 @@ fun ChipDeIdioma(
  * sem precisar de mais nada na tela.
  */
 @Composable
-private fun SeloDeCursoBadge(selo: SeloDeCurso, invertido: Boolean) {
+private fun SeloDeCursoBadge(badge: CourseBadge, invertido: Boolean) {
     val cores = MaterialTheme.colorScheme
     val fundo = when {
-        selo is SeloDeCurso.Revisar && invertido -> cores.onPrimary
-        selo is SeloDeCurso.Revisar -> cores.secondaryContainer
-        selo is SeloDeCurso.EmDia -> cores.tertiaryContainer
+        badge is CourseBadge.Revisar && invertido -> cores.onPrimary
+        badge is CourseBadge.Revisar -> cores.secondaryContainer
+        badge is CourseBadge.EmDia -> cores.tertiaryContainer
         else -> cores.surfaceVariant
     }
     val tinta = when {
-        selo is SeloDeCurso.Revisar && invertido -> cores.primary
-        selo is SeloDeCurso.Revisar -> cores.primary
-        selo is SeloDeCurso.EmDia -> cores.tertiary
+        badge is CourseBadge.Revisar && invertido -> cores.primary
+        badge is CourseBadge.Revisar -> cores.primary
+        badge is CourseBadge.EmDia -> cores.tertiary
         else -> cores.onSurfaceVariant
     }
 
@@ -178,14 +178,14 @@ private fun SeloDeCursoBadge(selo: SeloDeCurso, invertido: Boolean) {
             .height(20.dp)
             .background(fundo, CircleShape),
     ) {
-        when (selo) {
-            is SeloDeCurso.Revisar -> AnimatedContent(
-                targetState = selo.quantas,
+        when (badge) {
+            is CourseBadge.Revisar -> AnimatedContent(
+                targetState = badge.quantas,
                 transitionSpec = {
                     val subindo = targetState < initialState
-                    val entrada = slideInVertically { altura -> if (subindo) altura else -altura } + fadeIn(tween(140))
+                    val entry = slideInVertically { altura -> if (subindo) altura else -altura } + fadeIn(tween(140))
                     val saida = slideOutVertically { altura -> if (subindo) -altura else altura } + fadeOut(tween(140))
-                    entrada togetherWith saida
+                    entry togetherWith saida
                 },
                 label = "contagemDoSelo",
             ) { quantas ->
@@ -196,8 +196,8 @@ private fun SeloDeCursoBadge(selo: SeloDeCurso, invertido: Boolean) {
                     modifier = Modifier.padding(horizontal = 6.dp),
                 )
             }
-            SeloDeCurso.EmDia -> Icon(Icones.Check, null, tint = tinta, modifier = Modifier.size(12.dp))
-            SeloDeCurso.Vazio -> Icon(Icones.Ampulheta, null, tint = tinta, modifier = Modifier.size(12.dp))
+            CourseBadge.EmDia -> Icon(Icones.Check, null, tint = tinta, modifier = Modifier.size(12.dp))
+            CourseBadge.Vazio -> Icon(Icones.Ampulheta, null, tint = tinta, modifier = Modifier.size(12.dp))
         }
     }
 }
@@ -229,7 +229,7 @@ private fun ChipDeAdicionarIdioma(aoClicar: () -> Unit) {
 @Composable
 fun PilulaDeFiltroDeIdioma(
     rotulo: String,
-    idioma: Language?,
+    language: Language?,
     selecionado: Boolean,
     aoClicar: () -> Unit,
     modifier: Modifier = Modifier,
@@ -249,9 +249,9 @@ fun PilulaDeFiltroDeIdioma(
             .background(fundo)
             .then(if (selecionado) Modifier else Modifier.border(1.dp, cores.outline, CircleShape))
             .clickable(onClick = aoClicar)
-            .padding(start = if (idioma == null) 13.dp else 6.dp, end = 13.dp),
+            .padding(start = if (language == null) 13.dp else 6.dp, end = 13.dp),
     ) {
-        idioma?.let { BandeiraCircular(it, tamanho = 20.dp) }
+        language?.let { BandeiraCircular(it, tamanho = 20.dp) }
         Text(
             text = rotulo,
             style = MaterialTheme.typography.labelMedium,
@@ -266,7 +266,7 @@ fun PilulaDeFiltroDeIdioma(
  */
 @Composable
 fun MarcaDeIdioma(
-    idioma: Language,
+    language: Language,
     modifier: Modifier = Modifier,
     cor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     tamanhoDaBandeira: androidx.compose.ui.unit.Dp = 15.dp,
@@ -276,19 +276,19 @@ fun MarcaDeIdioma(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = modifier,
     ) {
-        BandeiraCircular(idioma, tamanho = tamanhoDaBandeira)
-        Text(idioma.displayName, style = MaterialTheme.typography.bodySmall, color = cor)
+        BandeiraCircular(language, tamanho = tamanhoDaBandeira)
+        Text(language.displayName, style = MaterialTheme.typography.bodySmall, color = cor)
     }
 }
 
 /** O ponto do carrossel: uma barrinha para a página aberta, discos para as outras. */
 @Composable
-fun PontosDePagina(total: Int, atual: Int, modifier: Modifier = Modifier) {
+fun PontosDePagina(total: Int, current: Int, modifier: Modifier = Modifier) {
     if (total <= 1) return
     val cores = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = modifier) {
         repeat(total) { indice ->
-            val aberto = indice == atual
+            val aberto = indice == current
             val largura by androidx.compose.animation.core.animateDpAsState(
                 targetValue = if (aberto) 16.dp else 5.dp,
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
@@ -304,8 +304,8 @@ fun PontosDePagina(total: Int, atual: Int, modifier: Modifier = Modifier) {
     }
 }
 
-private fun descricaoDoSelo(nome: String, selo: SeloDeCurso): String = when (selo) {
-    is SeloDeCurso.Revisar -> "$nome, ${selo.quantas} para revisar"
-    SeloDeCurso.EmDia -> "$nome, em dia"
-    SeloDeCurso.Vazio -> "$nome, nada agendado"
+private fun descricaoDoSelo(name: String, badge: CourseBadge): String = when (badge) {
+    is CourseBadge.Revisar -> "$name, ${badge.quantas} para revisar"
+    CourseBadge.EmDia -> "$name, em dia"
+    CourseBadge.Vazio -> "$name, nada agendado"
 }

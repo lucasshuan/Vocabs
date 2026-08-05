@@ -13,17 +13,17 @@ package com.jean.vocabs.shared.domain
  * segunda API paralela: quem esquecer de escolher continua no curso aberto, que
  * é a resposta certa na maioria das telas.
  */
-sealed interface Escopo {
+sealed interface Scope {
 
-    /** O curso que a pessoa está usando agora. O padrão de quase toda leitura. */
-    data object CursoAberto : Escopo
+    /** O course que a pessoa está usando now. O padrão de quase toda leitura. */
+    data object CursoAberto : Scope
 
     /**
      * Um curso nomeado, aberto ou não — o que "Seu progresso · francês" precisa
      * para existir sem trocar o curso ativo por baixo de quem só queria olhar.
      */
-    data class Curso(val alvo: String) : Escopo
+    data class Curso(val target: String) : Scope
 
-    /** Todos os cursos juntos: Vocabulários, Pendentes e Você. */
-    data object Todos : Escopo
+    /** Todos os courses juntos: Vocabulários, Pendentes e Você. */
+    data object Todos : Scope
 }

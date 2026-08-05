@@ -9,12 +9,12 @@ import com.jean.vocabs.contracts.Languages
  * banco e comparado o tempo todo, e um código estável sobrevive ao dia em que o
  * catálogo mudar um nome.
  */
-data class ParIdiomas(
-    val nativo: String,
-    val alvo: String,
+data class LanguagePair(
+    val native: String,
+    val target: String,
 ) {
     companion object {
-        val PADRAO = ParIdiomas(nativo = Languages.NATIVO_PADRAO, alvo = Languages.ALVO_PADRAO)
+        val PADRAO = LanguagePair(native = Languages.NATIVO_PADRAO, target = Languages.ALVO_PADRAO)
     }
 }
 
@@ -25,23 +25,23 @@ data class ParIdiomas(
  * cada hora se contasse força de memória, porque ela decai sozinha. O que a
  * pessoa quer ver ali é o quanto já subiu, e isso não desce enquanto ela dorme.
  *
- * [naFila] e [proximaEmMillis] existem para o selo: são a mesma pergunta que o
+ * [inQueue] e [nextInMillis] existem para o selo: são a mesma pergunta que o
  * cartão da Início faz, respondida por curso, e sem elas a faixa teria que ler a
  * fila de cada idioma por conta própria.
  */
-data class ResumoCurso(
-    val par: ParIdiomas,
+data class CourseSummary(
+    val languagePair: LanguagePair,
     val total: Int,
-    val dominadas: Int,
-    val naFila: Int = 0,
-    /** Millis até a próxima ficha deste curso pedir revisão. Nulo quando não há nenhuma. */
-    val proximaEmMillis: Long? = null,
+    val mastered: Int,
+    val inQueue: Int = 0,
+    /** Millis até a próxima card deste course pedir revisão. Nulo quando não há nenhuma. */
+    val nextInMillis: Long? = null,
 ) {
-    val selo: SeloDeCurso
+    val badge: CourseBadge
         get() = when {
-            naFila > 0 -> SeloDeCurso.Revisar(naFila)
-            proximaEmMillis != null -> SeloDeCurso.EmDia
-            else -> SeloDeCurso.Vazio
+            inQueue > 0 -> CourseBadge.Revisar(inQueue)
+            nextInMillis != null -> CourseBadge.EmDia
+            else -> CourseBadge.Vazio
         }
 }
 
@@ -52,10 +52,10 @@ data class ResumoCurso(
  * diferente de "em dia", que é uma conquista. Escrever zero no lugar do tique
  * transformaria a única boa notícia da faixa num placar de nada feito.
  */
-sealed interface SeloDeCurso {
-    data class Revisar(val quantas: Int) : SeloDeCurso
-    data object EmDia : SeloDeCurso
-    data object Vazio : SeloDeCurso
+sealed interface CourseBadge {
+    data class Revisar(val quantas: Int) : CourseBadge
+    data object EmDia : CourseBadge
+    data object Vazio : CourseBadge
 }
 
 /**
@@ -68,11 +68,11 @@ sealed interface SeloDeCurso {
  * que anda para trás enquanto a pessoa dorme não diz o que falta fazer.
  *
  * O degrau sai da **taxa de decaimento**, que já é o histórico de acertos
- * comprimido num número: cada acerto a divide por [Retencao.DIVISOR_ACERTO] e
- * cada erro a multiplica por [Retencao.MULTIPLICADOR_ERRO]. Não é preciso guardar
+ * comprimido num número: cada acerto a divide por [Retention.DIVISOR_ACERTO] e
+ * cada erro a multiplica por [Retention.MULTIPLICADOR_ERRO]. Não é preciso guardar
  * nada de novo para saber em que degrau alguém está.
  */
-object Degraus {
+object Steps {
     const val TOTAL = 5
 
     /**
@@ -81,14 +81,14 @@ object Degraus {
      * Cada um é o anterior dividido pelo ganho de um acerto — subir um degrau é
      * literalmente acertar mais uma vez.
      */
-    private val LIMITES: List<Double> = generateSequence(Retencao.TAXA_INICIAL) { it / Retencao.DIVISOR_ACERTO }
+    private val LIMITES: List<Double> = generateSequence(Retention.TAXA_INICIAL) { it / Retention.DIVISOR_ACERTO }
         .take(TOTAL)
         .toList()
 
     /** De 1 a [TOTAL]. Palavra nunca revisada está no primeiro. */
-    fun de(retencao: Retencao?): Int {
-        if (retencao == null || retencao.revisoes == 0) return 1
-        val alcancados = LIMITES.count { retencao.taxa <= it + TOLERANCIA }
+    fun de(retention: Retention?): Int {
+        if (retention == null || retention.reviews == 0) return 1
+        val alcancados = LIMITES.count { retention.taxa <= it + TOLERANCIA }
         return alcancados.coerceIn(1, TOTAL)
     }
 
@@ -97,16 +97,16 @@ object Degraus {
      * duas escalas já são o limite do que uma pessoa aceita aprender; dois
      * vocabulários seriam demais.
      */
-    fun nivel(degrau: Int): MemoryLevel = when {
+    fun level(degrau: Int): MemoryLevel = when {
         degrau >= TOTAL -> MemoryLevel.MASTERED
         degrau == TOTAL - 1 -> MemoryLevel.FAMILIAR
         else -> MemoryLevel.LEARNING
     }
 
-    /** Quantos acertos faltam para o degrau mudar de nome. Zero quando já é o topo. */
-    fun acertosParaSubirDeNivel(degrau: Int): Int {
-        val atual = nivel(degrau)
-        val proximo = (degrau..TOTAL).firstOrNull { nivel(it) != atual } ?: return 0
+    /** Quantos hits faltam para o degrau mudar de name. Zero quando já é o topo. */
+    fun hitsToLevelUp(degrau: Int): Int {
+        val current = level(degrau)
+        val proximo = (degrau..TOTAL).firstOrNull { level(it) != current } ?: return 0
         return proximo - degrau
     }
 
@@ -122,13 +122,13 @@ object Degraus {
  * sentidos: seria inalcançável no dia em que 30 palavras vencem juntas e já
  * estaria batida num dia sem nada para revisar.
  */
-data class QuotaDoDia(
-    val feita: Int,
-    val naFila: Int,
+data class DailyQuota(
+    val done: Int,
+    val inQueue: Int,
 ) {
-    val total: Int get() = feita + naFila
-    val batida: Boolean get() = naFila == 0
-    val fracao: Float get() = if (total == 0) 1f else (feita.toFloat() / total).coerceIn(0f, 1f)
+    val total: Int get() = done + inQueue
+    val batida: Boolean get() = inQueue == 0
+    val fracao: Float get() = if (total == 0) 1f else (done.toFloat() / total).coerceIn(0f, 1f)
 }
 
 /**
@@ -137,16 +137,16 @@ data class QuotaDoDia(
  * A retenção guarda só o estado de agora; a linha do tempo precisa do que
  * aconteceu, e nenhum dos dois se reconstrói a partir do outro.
  */
-data class Evento(
+data class Event(
     val id: Long,
-    val entradaId: Long,
-    val dia: Long,
-    val instante: Long,
-    val tipo: EventType,
-    val alvo: String,
-    val par: ParIdiomas,
+    val entryId: Long,
+    val day: Long,
+    val instant: Long,
+    val type: EventType,
+    val target: String,
+    val languagePair: LanguagePair,
     /** Número da revisão em [EventType.CORRECT]/[EventType.INCORRECT], nível novo em [EventType.LEVELED_UP]. */
-    val detalhe: String?,
+    val detail: String?,
 )
 
 enum class EventType {
@@ -157,7 +157,7 @@ enum class EventType {
     LEVELED_UP;
 
     companion object {
-        fun de(valor: String): EventType = entries.firstOrNull { it.name == valor } ?: CAPTURED
+        fun de(value: String): EventType = entries.firstOrNull { it.name == value } ?: CAPTURED
     }
 }
 
@@ -166,13 +166,13 @@ enum class EventType {
  *
  * [dias] vem em ordem decrescente e sem repetição, como sai do banco.
  */
-fun melhorSequenciaDe(dias: List<Long>): Int {
-    if (dias.isEmpty()) return 0
+fun bestStreakOf(days: List<Long>): Int {
+    if (days.isEmpty()) return 0
     var melhor = 1
-    var atual = 1
-    for (indice in 1 until dias.size) {
-        if (dias[indice] == dias[indice - 1] - 1) atual++ else atual = 1
-        if (atual > melhor) melhor = atual
+    var current = 1
+    for (indice in 1 until days.size) {
+        if (days[indice] == days[indice - 1] - 1) current++ else current = 1
+        if (current > melhor) melhor = current
     }
     return melhor
 }

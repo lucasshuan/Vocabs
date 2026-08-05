@@ -3,10 +3,10 @@ package com.jean.vocabs.shared
 import android.content.Context
 import com.jean.vocabs.shared.data.VocabRepositoryImpl
 import com.jean.vocabs.shared.data.local.AndroidDatabaseDriverFactory
-import com.jean.vocabs.shared.data.remote.FichaApi
+import com.jean.vocabs.shared.data.remote.CardApi
 import com.jean.vocabs.shared.db.VocabsDatabase
 import com.jean.vocabs.shared.domain.VocabRepository
-import com.jean.vocabs.shared.media.ArquivosDeMidia
+import com.jean.vocabs.shared.media.MediaFiles
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
@@ -30,7 +30,7 @@ object AppContainer {
      * rede local ou lê `SERVIDOR_LAN` do `.env`. Fica vazio quando não há rede
      * nenhuma na hora de compilar.
      */
-    var servidorLan: String = ""
+    var lanServer: String = ""
 
     /** Precisa bater com o APP_TOKEN definido no ambiente do servidor. */
     var token: String = "token-de-teste-local"
@@ -39,8 +39,8 @@ object AppContainer {
      * Sobrescreve URL e token quando a nuvem entrar — hoje só o `androidApp`
      * chama isto, passando o que o build assou no APK.
      */
-    fun configurar(servidorLan: String, token: String) {
-        this.servidorLan = servidorLan
+    fun configurar(lanServer: String, token: String) {
+        this.lanServer = lanServer
         this.token = token
     }
 
@@ -50,35 +50,35 @@ object AppContainer {
      * timeout, que é fácil confundir com servidor fora do ar.
      */
     private val baseUrl: String
-        get() = if (Ambiente.ehEmulador) {
+        get() = if (Device.isEmulator) {
             "http://10.0.2.2:8080"
         } else {
-            "http://${servidorLan.ifBlank { "10.0.2.2:8080" }}"
+            "http://${lanServer.ifBlank { "10.0.2.2:8080" }}"
         }
 
     /**
-     * Escopo de aplicação para a geração da ficha.
+     * Scope de aplicação para a geração da ficha.
      *
      * Não pode ser o viewModelScope da tela de captura: assim que ela é fechada
      * (o que acontece imediatamente após salvar, por design), o escopo seria
      * cancelado e a entrada ficaria presa em PENDING para sempre.
      */
-    val escopo: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Volatile
-    private var repositorio: VocabRepository? = null
+    private var repository: VocabRepository? = null
 
     @Volatile
-    private var preferencias: Preferencias? = null
+    private var preferences: Preferences? = null
 
-    fun repositorio(context: Context): VocabRepository =
-        repositorio ?: synchronized(this) {
-            repositorio ?: criar(context.applicationContext).also { repositorio = it }
+    fun repository(context: Context): VocabRepository =
+        repository ?: synchronized(this) {
+            repository ?: criar(context.applicationContext).also { repository = it }
         }
 
-    fun preferencias(context: Context): Preferencias =
-        preferencias ?: synchronized(this) {
-            preferencias ?: Preferencias(context.applicationContext).also { preferencias = it }
+    fun preferences(context: Context): Preferences =
+        preferences ?: synchronized(this) {
+            preferences ?: Preferences(context.applicationContext).also { preferences = it }
         }
 
     private fun criar(context: Context): VocabRepository {
@@ -98,11 +98,11 @@ object AppContainer {
 
         return VocabRepositoryImpl(
             db = VocabsDatabase(driver),
-            api = FichaApi(baseUrl = baseUrl, token = token, client = http),
+            api = CardApi(baseUrl = baseUrl, token = token, client = http),
             io = Dispatchers.IO,
-            agora = { System.currentTimeMillis() },
-            cursoAtivo = preferencias(context).observarPar(),
-            removerArquivo = ArquivosDeMidia::remover,
+            now = { System.currentTimeMillis() },
+            activeCourse = preferences(context).observeLanguagePair(),
+            removeFile = MediaFiles::remover,
         )
     }
 }

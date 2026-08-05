@@ -61,7 +61,7 @@ fun ipDaLan(): String? = runCatching {
  * `:server`, então o IP dela na LAN é a resposta certa quase sempre. `SERVIDOR_LAN`
  * no `.env` sobrescreve — é a saída para quando o servidor estiver noutro lugar.
  */
-val servidorLan: String = doEnv("SERVIDOR_LAN")
+val lanServer: String = doEnv("SERVIDOR_LAN")
     ?: ipDaLan()?.let { "$it:8080" }
     ?: ""
 
@@ -79,7 +79,7 @@ android {
         versionCode = 1
         versionName = "0.1"
 
-        buildConfigField("String", "SERVIDOR_LAN", "\"$servidorLan\"")
+        buildConfigField("String", "LAN_SERVER", "\"$lanServer\"")
         buildConfigField("String", "APP_TOKEN", "\"$appToken\"")
     }
 

@@ -199,11 +199,11 @@ fun Modifier.entradaSuave(
  * composable inteiro a recompor 60 vezes por segundo para animar um arco.
  */
 @Composable
-fun fracaoAnimada(alvo: Float, rotulo: String = "fracao"): State<Float> {
+fun fracaoAnimada(target: Float, rotulo: String = "fracao"): State<Float> {
     var partiu by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { partiu = true }
     return animateFloatAsState(
-        targetValue = if (partiu) alvo.coerceIn(0f, 1f) else 0f,
+        targetValue = if (partiu) target.coerceIn(0f, 1f) else 0f,
         animationSpec = tween(Movimento.AMPLO, easing = FastOutSlowInEasing),
         label = rotulo,
     )
@@ -217,15 +217,15 @@ fun fracaoAnimada(alvo: Float, rotulo: String = "fracao"): State<Float> {
  * ou dívida: ver "12 na fila" contar de zero a doze premiaria o atraso.
  */
 @Composable
-fun contagemAnimada(alvo: Int, rotulo: String = "contagem"): Int {
+fun contagemAnimada(target: Int, rotulo: String = "contagem"): Int {
     var partiu by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { partiu = true }
-    val valor by animateIntAsState(
-        targetValue = if (partiu) alvo else 0,
+    val value by animateIntAsState(
+        targetValue = if (partiu) target else 0,
         animationSpec = tween(Movimento.AMPLO, easing = FastOutSlowInEasing),
         label = rotulo,
     )
-    return valor
+    return value
 }
 
 /**

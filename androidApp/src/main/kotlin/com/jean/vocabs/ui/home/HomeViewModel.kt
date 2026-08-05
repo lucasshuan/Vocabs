@@ -4,11 +4,11 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.domain.Degraus
-import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.Escopo
+import com.jean.vocabs.shared.domain.Steps
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.Scope
 import com.jean.vocabs.shared.domain.MemoryLevel
-import com.jean.vocabs.shared.domain.ParIdiomas
+import com.jean.vocabs.shared.domain.LanguagePair
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,13 +25,13 @@ enum class FiltroMemoria(val rotulo: String) { TODAS("Todas"), APRENDENDO("Apren
  * dela pede revisão, e é isso que faz fechar um grupo não custar informação.
  */
 data class GrupoDeIdioma(
-    val par: ParIdiomas,
-    val entradas: List<Entrada>,
+    val languagePair: LanguagePair,
+    val entries: List<Entry>,
     val total: Int,
-    val naFila: Int,
+    val inQueue: Int,
     val recolhido: Boolean,
 ) {
-    val vazioPorFiltro: Boolean get() = total > 0 && entradas.isEmpty()
+    val vazioPorFiltro: Boolean get() = total > 0 && entries.isEmpty()
 }
 
 data class HomeEstado(
@@ -39,10 +39,10 @@ data class HomeEstado(
     val filtro: FiltroMemoria = FiltroMemoria.TODAS,
     val busca: String = "",
     val total: Int = 0,
-    val dominadas: Int = 0,
+    val mastered: Int = 0,
     val carregado: Boolean = false,
 ) {
-    val encontradas: Int get() = grupos.sumOf { it.entradas.size }
+    val encontradas: Int get() = grupos.sumOf { it.entries.size }
 }
 
 /**
@@ -55,8 +55,8 @@ data class HomeEstado(
  * não segredo.
  */
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
-    private val repositorio = AppContainer.repositorio(app)
-    private val preferencias = AppContainer.preferencias(app)
+    private val repository = AppContainer.repository(app)
+    private val preferences = AppContainer.preferences(app)
     private val filtro = MutableStateFlow(FiltroMemoria.TODAS)
     private val busca = MutableStateFlow("")
 
@@ -64,55 +64,55 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val recorte = combine(filtro, busca, ::Pair)
 
     val estado: StateFlow<HomeEstado> = combine(
-        repositorio.observarProntas(Escopo.Todos),
-        preferencias.observarCursos(),
-        preferencias.observarPar(),
-        preferencias.observarGruposRecolhidos(),
+        repository.observeReady(Scope.Todos),
+        preferences.observeCourses(),
+        preferences.observeLanguagePair(),
+        preferences.observeCollapsedGroups(),
         recorte,
-    ) { prontas, matriculados, par, recolhidos, (filtroAtual, termo) ->
-        val agora = System.currentTimeMillis()
+    ) { prontas, matriculados, languagePair, recolhidos, (filtroAtual, termo) ->
+        val now = System.currentTimeMillis()
         val procurado = termo.normalizado()
-        val porCurso = prontas.groupBy { it.par.alvo }
+        val porCurso = prontas.groupBy { it.languagePair.target }
 
         HomeEstado(
             // A ordem é a da matrícula, e não a da quantidade de fichas: é a mesma
             // ordem da faixa da Início, e trocá-la aqui faria as duas telas
             // discordarem sobre onde fica o francês.
-            grupos = matriculados.map { alvo ->
-                val doCurso = porCurso[alvo].orEmpty()
+            grupos = matriculados.map { target ->
+                val doCurso = porCurso[target].orEmpty()
                 GrupoDeIdioma(
-                    par = ParIdiomas(nativo = par.nativo, alvo = alvo),
-                    entradas = doCurso.filter { cabe(it, filtroAtual, procurado, agora) },
+                    languagePair = LanguagePair(native = languagePair.native, target = target),
+                    entries = doCurso.filter { cabe(it, filtroAtual, procurado, now) },
                     total = doCurso.size,
-                    naFila = doCurso.count { it.precisaRevisar(agora) },
-                    recolhido = alvo in recolhidos,
+                    inQueue = doCurso.count { it.needsReview(now) },
+                    recolhido = target in recolhidos,
                 )
             },
             filtro = filtroAtual,
             busca = termo,
             total = prontas.size,
-            dominadas = prontas.count { Degraus.nivel(it.degrau) == MemoryLevel.MASTERED },
+            mastered = prontas.count { Steps.level(it.degrau) == MemoryLevel.MASTERED },
             carregado = true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeEstado())
 
-    private fun cabe(entrada: Entrada, filtro: FiltroMemoria, procurado: String, agora: Long): Boolean {
-        val nivel = entrada.retencao?.nivelEm(agora) ?: MemoryLevel.NEW
+    private fun cabe(entry: Entry, filtro: FiltroMemoria, procurado: String, now: Long): Boolean {
+        val level = entry.retention?.levelAt(now) ?: MemoryLevel.NEW
         val bateNivel = when (filtro) {
             FiltroMemoria.TODAS -> true
-            FiltroMemoria.APRENDENDO -> nivel == MemoryLevel.NEW || nivel == MemoryLevel.LEARNING
-            FiltroMemoria.FAMILIAR -> nivel == MemoryLevel.FAMILIAR
-            FiltroMemoria.DOMINADA -> nivel == MemoryLevel.MASTERED
+            FiltroMemoria.APRENDENDO -> level == MemoryLevel.NEW || level == MemoryLevel.LEARNING
+            FiltroMemoria.FAMILIAR -> level == MemoryLevel.FAMILIAR
+            FiltroMemoria.DOMINADA -> level == MemoryLevel.MASTERED
         }
         val bateBusca = procurado.isBlank() ||
-            entrada.alvo.orEmpty().normalizado().contains(procurado) ||
-            entrada.ficha?.translation.orEmpty().normalizado().contains(procurado)
+            entry.target.orEmpty().normalizado().contains(procurado) ||
+            entry.card?.translation.orEmpty().normalizado().contains(procurado)
         return bateNivel && bateBusca
     }
 
     fun filtrar(novo: FiltroMemoria) { filtro.value = novo }
-    fun buscar(texto: String) { busca.value = texto }
-    fun alternarGrupo(alvo: String) = preferencias.alternarGrupo(alvo)
+    fun buscar(text: String) { busca.value = text }
+    fun toggleGroup(target: String) = preferences.toggleGroup(target)
 }
 
 private val espacos = Regex("\\s+")

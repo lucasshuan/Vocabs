@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.inicio
+package com.jean.vocabs.ui.start
 
 import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.Image
@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.R
-import com.jean.vocabs.shared.domain.Entrada
+import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.ui.components.AnelDeProgresso
 import com.jean.vocabs.ui.components.BotaoPrincipal
 import com.jean.vocabs.ui.components.CaixaTracejada
@@ -52,7 +52,7 @@ import com.jean.vocabs.ui.components.RotuloDeSecao
 import com.jean.vocabs.ui.components.contagemAnimada
 import com.jean.vocabs.ui.components.entradaSuave
 import com.jean.vocabs.ui.components.tempoAte
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.languages.idiomaDe
 
 /**
  * Tela 01/02 do handoff — a Início, uma página por curso.
@@ -96,7 +96,7 @@ fun InicioScreen(
     LaunchedEffect(posicionado) {
         if (!posicionado) return@LaunchedEffect
         snapshotFlow { pager.settledPage }.collect { indice ->
-            paginas.getOrNull(indice)?.let { vm.abrirCurso(it.par.alvo) }
+            paginas.getOrNull(indice)?.let { vm.openCourse(it.languagePair.target) }
         }
     }
 
@@ -122,9 +122,9 @@ fun InicioScreen(
 
         if (estado.temCarrossel) {
             FaixaDeIdiomas(
-                cursos = estado.cursos,
+                courses = estado.courses,
                 ativo = estado.ativo,
-                aoEscolher = vm::abrirCurso,
+                aoEscolher = vm::openCourse,
                 aoAdicionar = aoAdicionarIdioma,
                 modifier = Modifier.padding(bottom = 14.dp),
             )
@@ -149,7 +149,7 @@ fun InicioScreen(
         // muda acima.
         PontosDePagina(
             total = paginas.size,
-            atual = pager.currentPage,
+            current = pager.currentPage,
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 10.dp),
         )
         Spacer(Modifier.navigationBarsPadding().height(ESPACO_DA_BARRA))
@@ -162,7 +162,7 @@ private fun PaginaDeCurso(
     aoRevisar: () -> Unit,
     aoCapturar: () -> Unit,
 ) {
-    val idioma = idiomaDe(pagina.par.alvo)
+    val language = idiomaDe(pagina.languagePair.target)
     val resumo = pagina.resumo
 
     Column(
@@ -180,9 +180,9 @@ private fun PaginaDeCurso(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AnelDoCurso(pagina)
                 Column(Modifier.weight(1f).padding(start = 15.dp)) {
-                    Text("Seu ${idioma.displayName.lowercase()}", style = MaterialTheme.typography.titleLarge)
+                    Text("Seu ${language.displayName.lowercase()}", style = MaterialTheme.typography.titleLarge)
                     Text(
-                        text = detalheDoCurso(resumo.total, resumo.dominadas, resumo.naFila),
+                        text = detalheDoCurso(resumo.total, resumo.mastered, resumo.inQueue),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -190,9 +190,9 @@ private fun PaginaDeCurso(
                 }
             }
 
-            if (resumo.naFila > 0) {
+            if (resumo.inQueue > 0) {
                 BotaoPrincipal(
-                    texto = "Revisar ${resumo.naFila} ${if (resumo.naFila == 1) "palavra" else "palavras"}",
+                    text = "Revisar ${resumo.inQueue} ${if (resumo.inQueue == 1) "word" else "words"}",
                     aoClicar = aoRevisar,
                     modifier = Modifier.padding(top = 15.dp),
                 )
@@ -206,12 +206,12 @@ private fun PaginaDeCurso(
         // onde ela vê o próprio dia se acumulando — chegar montada faz três
         // capturas parecerem um histórico velho em vez do que aconteceu hoje.
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            RotuloDeSecao("Capturadas hoje em ${idioma.displayName.lowercase()}")
+            RotuloDeSecao("Capturadas hoje em ${language.displayName.lowercase()}")
             if (pagina.capturadasHoje.isEmpty()) {
-                ConviteDeCaptura(idioma.displayName.lowercase(), aoCapturar)
+                ConviteDeCaptura(language.displayName.lowercase(), aoCapturar)
             } else {
-                pagina.capturadasHoje.forEachIndexed { indice, entrada ->
-                    LinhaDeCapturada(entrada, Modifier.entradaSuave(indice))
+                pagina.capturadasHoje.forEachIndexed { indice, entry ->
+                    LinhaDeCapturada(entry, Modifier.entradaSuave(indice))
                 }
             }
         }
@@ -229,7 +229,7 @@ private fun PaginaDeCurso(
 @Composable
 private fun AnelDoCurso(pagina: PaginaDoInicio) {
     val cores = MaterialTheme.colorScheme
-    val emDia = pagina.resumo.naFila == 0 && pagina.resumo.total > 0
+    val emDia = pagina.resumo.inQueue == 0 && pagina.resumo.total > 0
     AnelDeProgresso(
         fracao = if (emDia) 1f else pagina.forcaMedia / 100f,
         tamanho = 70.dp,
@@ -250,7 +250,7 @@ private fun AnelDoCurso(pagina: PaginaDoInicio) {
 @Composable
 private fun LinhaDoQueVem(pagina: PaginaDoInicio, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
-    val proxima = pagina.resumo.proximaEmMillis
+    val proxima = pagina.resumo.nextInMillis
     CartaoDaTela(
         forma = MaterialTheme.shapes.medium,
         cor = cores.surfaceVariant,
@@ -286,16 +286,16 @@ private fun LinhaDoQueVem(pagina: PaginaDoInicio, modifier: Modifier = Modifier)
 }
 
 @Composable
-private fun LinhaDeCapturada(entrada: Entrada, modifier: Modifier = Modifier) {
+private fun LinhaDeCapturada(entry: Entry, modifier: Modifier = Modifier) {
     CartaoDaTela(
         forma = MaterialTheme.shapes.small,
         recheio = PaddingValues(horizontal = 15.dp, vertical = 11.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(entrada.titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(entry.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(
-                text = entrada.ficha?.translation.orEmpty(),
+                text = entry.card?.translation.orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -305,7 +305,7 @@ private fun LinhaDeCapturada(entrada: Entrada, modifier: Modifier = Modifier) {
 
 /** Dia sem captura vira convite, e não tela vazia — o custo de capturar é o ponto do app. */
 @Composable
-private fun ConviteDeCaptura(idioma: String, aoClicar: () -> Unit) {
+private fun ConviteDeCaptura(language: String, aoClicar: () -> Unit) {
     CaixaTracejada(
         modifier = Modifier.fillMaxWidth(),
         recheio = PaddingValues(18.dp),
@@ -317,20 +317,20 @@ private fun ConviteDeCaptura(idioma: String, aoClicar: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         BotaoPrincipal(
-            texto = "Capturar em $idioma",
+            text = "Capturar em $language",
             aoClicar = aoClicar,
             modifier = Modifier.padding(top = 12.dp),
         )
     }
 }
 
-private fun detalheDoCurso(total: Int, dominadas: Int, naFila: Int): String {
-    val estoque = if (total == 0) "nenhuma ficha ainda" else "$total ${if (total == 1) "ficha" else "fichas"} · $dominadas ${if (dominadas == 1) "dominada" else "dominadas"}"
+private fun detalheDoCurso(total: Int, mastered: Int, inQueue: Int): String {
+    val estoque = if (total == 0) "nenhuma ficha ainda" else "$total ${if (total == 1) "card" else "cards"} · $mastered ${if (mastered == 1) "dominada" else "mastered"}"
     val fila = when {
         total == 0 -> "capture a primeira"
-        naFila == 0 -> "nada esfriou hoje"
-        naFila == 1 -> "1 esfriou hoje"
-        else -> "$naFila esfriaram hoje"
+        inQueue == 0 -> "nada esfriou hoje"
+        inQueue == 1 -> "1 esfriou hoje"
+        else -> "$inQueue esfriaram hoje"
     }
     return "$estoque\n$fila"
 }

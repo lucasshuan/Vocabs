@@ -42,7 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.Entrada
+import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.BotaoPrincipal
@@ -51,7 +51,7 @@ import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.Movimento
 import com.jean.vocabs.ui.components.entradaSuave
 import com.jean.vocabs.ui.components.respirando
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.languages.idiomaDe
 import kotlinx.coroutines.delay
 
 /**
@@ -80,8 +80,8 @@ fun GuardadoScreen(
     val cores = MaterialTheme.colorScheme
     var interagiu by remember { mutableStateOf(false) }
 
-    LaunchedEffect(estado.trabalhando, estado.entradas.isEmpty(), interagiu) {
-        if (estado.entradas.isEmpty() || estado.trabalhando || interagiu) return@LaunchedEffect
+    LaunchedEffect(estado.trabalhando, estado.entries.isEmpty(), interagiu) {
+        if (estado.entries.isEmpty() || estado.trabalhando || interagiu) return@LaunchedEffect
         delay(FECHA_SOZINHO_EM_MS)
         aoFechar()
     }
@@ -104,11 +104,11 @@ fun GuardadoScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
             )
-            if (estado.alvo.isNotEmpty()) {
+            if (estado.target.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                    BandeiraCircular(idiomaDe(estado.alvo), tamanho = 18.dp)
+                    BandeiraCircular(idiomaDe(estado.target), tamanho = 18.dp)
                     Text(
-                        text = "no seu ${idiomaDe(estado.alvo).displayName.lowercase()} · ${estado.totalDoCurso} ${if (estado.totalDoCurso == 1) "ficha" else "fichas"} agora",
+                        text = "no seu ${idiomaDe(estado.target).displayName.lowercase()} · ${estado.totalDoCurso} ${if (estado.totalDoCurso == 1) "card" else "cards"} agora",
                         style = MaterialTheme.typography.bodySmall,
                         color = cores.onSurfaceVariant,
                     )
@@ -117,8 +117,8 @@ fun GuardadoScreen(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            estado.entradas.forEachIndexed { indice, entrada ->
-                LinhaGuardada(entrada, Modifier.entradaSuave(indice))
+            estado.entries.forEachIndexed { indice, entry ->
+                LinhaGuardada(entry, Modifier.entradaSuave(indice))
             }
         }
 
@@ -136,7 +136,7 @@ fun GuardadoScreen(
 
         Column(verticalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.padding(bottom = 8.dp)) {
             BotaoPrincipal(
-                texto = "Capturar outra",
+                text = "Capturar outra",
                 aoClicar = { interagiu = true; aoCapturarOutra() },
             )
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
@@ -189,10 +189,10 @@ private fun SeloDeConfirmacao() {
  * da direita — cruzam em vez de trocar de um quadro para o outro.
  */
 @Composable
-private fun LinhaGuardada(entrada: Entrada, modifier: Modifier = Modifier) {
+private fun LinhaGuardada(entry: Entry, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
-    val pronta = entrada.status == EntryStatus.READY
-    val comErro = entrada.status == EntryStatus.ERROR
+    val pronta = entry.status == EntryStatus.READY
+    val comErro = entry.status == EntryStatus.ERROR
 
     CartaoDaTela(
         forma = MaterialTheme.shapes.medium,
@@ -201,15 +201,15 @@ private fun LinhaGuardada(entrada: Entrada, modifier: Modifier = Modifier) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(entrada.titulo, style = MaterialTheme.typography.titleMedium)
+                Text(entry.title, style = MaterialTheme.typography.titleMedium)
                 AnimatedContent(
-                    targetState = entrada.status,
+                    targetState = entry.status,
                     transitionSpec = { fadeIn(tween(Movimento.PADRAO)) togetherWith fadeOut(tween(Movimento.RAPIDO)) },
                     label = "estadoDaLinha",
                 ) { status ->
                     when (status) {
                         EntryStatus.READY -> Text(
-                            text = entrada.ficha?.translation.orEmpty(),
+                            text = entry.card?.translation.orEmpty(),
                             style = MaterialTheme.typography.bodySmall,
                             color = cores.onSurfaceVariant,
                             modifier = Modifier.padding(top = 3.dp),
@@ -284,7 +284,7 @@ private fun BarraIndeterminada() {
 }
 
 @Composable
-private fun AcaoDeSaida(texto: String, modifier: Modifier = Modifier, aoClicar: () -> Unit) {
+private fun AcaoDeSaida(text: String, modifier: Modifier = Modifier, aoClicar: () -> Unit) {
     Surface(
         onClick = aoClicar,
         shape = MaterialTheme.shapes.medium,
@@ -293,7 +293,7 @@ private fun AcaoDeSaida(texto: String, modifier: Modifier = Modifier, aoClicar: 
         modifier = modifier,
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.height(48.dp)) {
-            Text(texto, style = MaterialTheme.typography.titleSmall)
+            Text(text, style = MaterialTheme.typography.titleSmall)
         }
     }
 }

@@ -22,34 +22,34 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 
-data class ResultadoTranscricao(val texto: String? = null, val erro: String? = null)
+data class ResultadoTranscricao(val text: String? = null, val error: String? = null)
 
 class TranscritorDeFoto(private val context: Context) {
-    suspend fun transcrever(caminho: String): ResultadoTranscricao = withContext(Dispatchers.IO) {
+    suspend fun transcrever(path: String): ResultadoTranscricao = withContext(Dispatchers.IO) {
         val reconhecedor = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
         try {
-            val imagem = InputImage.fromFilePath(context, Uri.fromFile(File(caminho)))
+            val imagem = InputImage.fromFilePath(context, Uri.fromFile(File(path)))
             suspendCancellableCoroutine { continuacao ->
                 reconhecedor.process(imagem)
-                    .addOnSuccessListener { resultado ->
+                    .addOnSuccessListener { result ->
                         if (continuacao.isActive) {
-                            val texto = resultado.text.trim().ifBlank { null }
+                            val text = result.text.trim().ifBlank { null }
                             continuacao.resume(
-                                if (texto == null) ResultadoTranscricao(erro = "Nenhum texto foi encontrado na foto.")
-                                else ResultadoTranscricao(texto = texto),
+                                if (text == null) ResultadoTranscricao(error = "Nenhum texto foi encontrado na foto.")
+                                else ResultadoTranscricao(text = text),
                             )
                         }
                     }
                     .addOnFailureListener { falha ->
                         if (continuacao.isActive) {
                             continuacao.resume(
-                                ResultadoTranscricao(erro = falha.message ?: "Não foi possível ler a foto."),
+                                ResultadoTranscricao(error = falha.message ?: "Não foi possível ler a foto."),
                             )
                         }
                     }
             }
         } catch (falha: Exception) {
-            ResultadoTranscricao(erro = falha.message ?: "Não foi possível ler a foto.")
+            ResultadoTranscricao(error = falha.message ?: "Não foi possível ler a foto.")
         } finally {
             reconhecedor.close()
         }
@@ -57,23 +57,23 @@ class TranscritorDeFoto(private val context: Context) {
 }
 
 class TranscritorDeAudio(private val context: Context) {
-    suspend fun transcrever(caminho: String): ResultadoTranscricao =
+    suspend fun transcrever(path: String): ResultadoTranscricao =
         withContext(Dispatchers.Main.immediate) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                 return@withContext ResultadoTranscricao(
-                    erro = "A transcrição automática de arquivos exige Android 13. Digite o trecho manualmente.",
+                    error = "A transcrição automática de arquivos exige Android 13. Digite o trecho manualmente.",
                 )
             }
             if (!SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
                 return@withContext ResultadoTranscricao(
-                    erro = "O modelo de voz local em inglês não está disponível. Digite o trecho manualmente.",
+                    error = "O modelo de voz local em inglês não está disponível. Digite o trecho manualmente.",
                 )
             }
-            reconhecer(caminho)
+            reconhecer(path)
         }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private suspend fun reconhecer(caminho: String): ResultadoTranscricao =
+    private suspend fun reconhecer(path: String): ResultadoTranscricao =
         suspendCancellableCoroutine { continuacao ->
             val descritores = ParcelFileDescriptor.createPipe()
             val leitura = descritores[0]
@@ -81,13 +81,13 @@ class TranscritorDeAudio(private val context: Context) {
             val reconhecedor = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
             var terminou = false
 
-            fun concluir(resultado: ResultadoTranscricao) {
+            fun concluir(result: ResultadoTranscricao) {
                 if (terminou) return
                 terminou = true
                 runCatching { leitura.close() }
                 runCatching { escrita.close() }
                 reconhecedor.destroy()
-                if (continuacao.isActive) continuacao.resume(resultado)
+                if (continuacao.isActive) continuacao.resume(result)
             }
 
             reconhecedor.setRecognitionListener(object : RecognitionListener {
@@ -100,18 +100,18 @@ class TranscritorDeAudio(private val context: Context) {
                 override fun onEvent(eventType: Int, params: Bundle?) = Unit
 
                 override fun onError(error: Int) {
-                    concluir(ResultadoTranscricao(erro = mensagemDoErro(error)))
+                    concluir(ResultadoTranscricao(error = mensagemDoErro(error)))
                 }
 
                 override fun onResults(results: Bundle?) {
-                    val texto = results
+                    val text = results
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull()
                         ?.trim()
                         ?.ifBlank { null }
                     concluir(
-                        if (texto == null) ResultadoTranscricao(erro = "Nenhuma fala foi reconhecida.")
-                        else ResultadoTranscricao(texto = texto),
+                        if (text == null) ResultadoTranscricao(error = "Nenhuma fala foi reconhecida.")
+                        else ResultadoTranscricao(text = text),
                     )
                 }
             })
@@ -125,10 +125,10 @@ class TranscritorDeAudio(private val context: Context) {
 
             thread(name = "Vocabu-stt", isDaemon = true) {
                 runCatching {
-                    FileInputStream(caminho).use { entrada ->
-                        entrada.skip(GravadorDeAudio.CABECALHO_WAV.toLong())
+                    FileInputStream(path).use { entry ->
+                        entry.skip(GravadorDeAudio.CABECALHO_WAV.toLong())
                         ParcelFileDescriptor.AutoCloseOutputStream(escrita).use { saida ->
-                            entrada.copyTo(saida)
+                            entry.copyTo(saida)
                         }
                     }
                 }.onFailure {

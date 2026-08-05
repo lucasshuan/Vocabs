@@ -166,9 +166,9 @@ fun CartaoDaTela(
  * antigo, que competia em peso com o próprio conteúdo que anunciava.
  */
 @Composable
-fun RotuloDeSecao(texto: String, modifier: Modifier = Modifier) {
+fun RotuloDeSecao(text: String, modifier: Modifier = Modifier) {
     Text(
-        text = texto,
+        text = text,
         style = MaterialTheme.typography.labelMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier,
@@ -178,7 +178,7 @@ fun RotuloDeSecao(texto: String, modifier: Modifier = Modifier) {
 /** O ladrilho de número grande: Início, Perfil e o resumo da revisão usam o mesmo. */
 @Composable
 fun CartaoMetrica(
-    valor: String,
+    value: String,
     rotulo: String,
     modifier: Modifier = Modifier,
     destaque: Boolean = false,
@@ -196,7 +196,7 @@ fun CartaoMetrica(
         // uma transição por quadro justamente nesse caso, que é o único em que o
         // número de fato se move.
         Text(
-            text = valor,
+            text = value,
             style = MaterialTheme.typography.headlineMedium,
             color = if (destaque) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurface,
         )
@@ -214,8 +214,8 @@ fun CartaoMetrica(
 fun LinhaDeLista(
     modifier: Modifier = Modifier,
     aoClicar: (() -> Unit)? = null,
-    inicio: (@Composable () -> Unit)? = null,
-    fim: (@Composable () -> Unit)? = null,
+    start: (@Composable () -> Unit)? = null,
+    end: (@Composable () -> Unit)? = null,
     conteudo: @Composable ColumnScope.() -> Unit,
 ) {
     CartaoDaTela(
@@ -225,12 +225,12 @@ fun LinhaDeLista(
         aoClicar = aoClicar,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            inicio?.let {
+            start?.let {
                 it()
                 Spacer(Modifier.width(13.dp))
             }
             Column(Modifier.weight(1f), content = conteudo)
-            fim?.let {
+            end?.let {
                 Spacer(Modifier.width(10.dp))
                 it()
             }
@@ -241,16 +241,16 @@ fun LinhaDeLista(
 /** O caso comum de [LinhaDeLista]: título e uma linha de apoio. */
 @Composable
 fun LinhaDeLista(
-    titulo: String,
+    title: String,
     modifier: Modifier = Modifier,
-    detalhe: String? = null,
+    detail: String? = null,
     aoClicar: (() -> Unit)? = null,
-    inicio: (@Composable () -> Unit)? = null,
-    fim: (@Composable () -> Unit)? = null,
+    start: (@Composable () -> Unit)? = null,
+    end: (@Composable () -> Unit)? = null,
 ) {
-    LinhaDeLista(modifier = modifier, aoClicar = aoClicar, inicio = inicio, fim = fim) {
-        Text(titulo, style = MaterialTheme.typography.titleSmall)
-        detalhe?.let {
+    LinhaDeLista(modifier = modifier, aoClicar = aoClicar, start = start, end = end) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        detail?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodySmall,
@@ -292,7 +292,7 @@ fun ChevronDeLinha() {
 /** A ação principal da tela: ameixa, largura inteira, cantos de 18. */
 @Composable
 fun BotaoPrincipal(
-    texto: String,
+    text: String,
     aoClicar: () -> Unit,
     modifier: Modifier = Modifier,
     habilitado: Boolean = true,
@@ -310,11 +310,11 @@ fun BotaoPrincipal(
         modifier = modifier.encolheAoTocar(toque, minimo = 0.985f).fillMaxWidth().height(56.dp),
     ) {
         conteudoInicial?.invoke(this)
-        Text(texto, style = MaterialTheme.typography.titleMedium)
+        Text(text, style = MaterialTheme.typography.titleMedium)
     }
 }
 
-/** A pílula de filtro de Palavras e a aba de formato da Captura são a mesma coisa. */
+/** A pílula de filtro de Palavras e a aba de formato da Capture são a mesma coisa. */
 @Composable
 fun PilulaSelecionavel(
     rotulo: String,
@@ -361,7 +361,7 @@ fun PilulaSelecionavel(
  */
 @Composable
 fun Pilula(
-    texto: String,
+    text: String,
     modifier: Modifier = Modifier,
     destaque: Boolean = false,
     aoClicar: (() -> Unit)? = null,
@@ -372,7 +372,7 @@ fun Pilula(
     val contorno = if (destaque) null else contornoDeCartao()
     val conteudo: @Composable () -> Unit = {
         Text(
-            text = texto,
+            text = text,
             style = MaterialTheme.typography.bodyMedium,
             color = cor,
             modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
@@ -405,8 +405,8 @@ fun Pilula(
 @Composable
 fun EstadoVazio(
     icone: ImageVector,
-    titulo: String,
-    detalhe: String,
+    title: String,
+    detail: String,
     modifier: Modifier = Modifier,
     acao: (@Composable () -> Unit)? = null,
 ) {
@@ -433,12 +433,12 @@ fun EstadoVazio(
             )
         }
         Text(
-            text = titulo,
+            text = title,
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.entradaSuave(indice = 1).padding(top = 16.dp),
         )
         Text(
-            text = detalhe,
+            text = detail,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.entradaSuave(indice = 2).padding(top = 4.dp),
@@ -474,7 +474,7 @@ fun BotaoCircular(
 
 /** Botão de texto discreto ("Não lembro"), centralizado sob a ação principal. */
 @Composable
-fun AcaoSecundaria(texto: String, aoClicar: () -> Unit, modifier: Modifier = Modifier) {
+fun AcaoSecundaria(text: String, aoClicar: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         onClick = aoClicar,
         color = Color.Transparent,
@@ -483,7 +483,7 @@ fun AcaoSecundaria(texto: String, aoClicar: () -> Unit, modifier: Modifier = Mod
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.height(48.dp)) {
             Text(
-                text = texto,
+                text = text,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

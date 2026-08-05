@@ -8,40 +8,40 @@ import kotlin.test.assertSame
 
 class RetencaoEDuplicataTest {
     @Test
-    fun `erro e acerto atualizam retencao e placar`() {
-        val inicial = Retencao.inicial(1_000)
-        val erro = inicial.apos(false, 2_000)
-        assertEquals(0.0, erro.pontos)
-        assertEquals(1, erro.erros)
-        val acerto = erro.apos(true, 3_000)
-        assertEquals(100.0, acerto.pontos)
-        assertEquals(1, acerto.acertos)
-        assertEquals(2, acerto.revisoes)
+    fun `error e hit atualizam retention e placar`() {
+        val inicial = Retention.inicial(1_000)
+        val error = inicial.apos(false, 2_000)
+        assertEquals(0.0, error.points)
+        assertEquals(1, error.errors)
+        val hit = error.apos(true, 3_000)
+        assertEquals(100.0, hit.points)
+        assertEquals(1, hit.hits)
+        assertEquals(2, hit.reviews)
     }
 
     @Test
     fun `duplicata normaliza caixa e espacos sem bloquear`() {
-        val pronta = entrada(1, "on the fence", EntryStatus.READY)
-        val pendente = entrada(2, "ON  THE FENCE", EntryStatus.PENDING)
-        assertSame(pronta, duplicataDeAlvo("  On the fence ", listOf(pendente, pronta)))
-        assertNull(duplicataDeAlvo("fence", listOf(pronta)))
+        val pronta = entry(1, "on the fence", EntryStatus.READY)
+        val pendente = entry(2, "ON  THE FENCE", EntryStatus.PENDING)
+        assertSame(pronta, duplicateOfTarget("  On the fence ", listOf(pendente, pronta)))
+        assertNull(duplicateOfTarget("fence", listOf(pronta)))
     }
 
-    private fun entrada(id: Long, alvo: String, status: EntryStatus) = Entrada(
+    private fun entry(id: Long, target: String, status: EntryStatus) = Entry(
         id = id,
-        capturaId = id,
-        trecho = alvo,
-        alvo = alvo,
-        inicio = 0,
-        fim = alvo.length,
-        tipo = TargetType.PHRASE,
-        origem = null,
-        criadoEm = id,
+        captureId = id,
+        snippet = target,
+        target = target,
+        start = 0,
+        end = target.length,
+        type = TargetType.PHRASE,
+        source = null,
+        createdAt = id,
         status = status,
-        formato = CaptureFormat.TEXT,
-        midiaCaminho = null,
-        ficha = null,
-        retencao = null,
+        format = CaptureFormat.TEXT,
+        mediaPath = null,
+        card = null,
+        retention = null,
         errorCode = null,
         errorDetail = null,
     )

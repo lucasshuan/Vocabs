@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.captura
+package com.jean.vocabs.ui.capture
 
 import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.AnimatedVisibility
@@ -44,7 +44,7 @@ import com.jean.vocabs.ui.components.Movimento
 import com.jean.vocabs.ui.components.contornoDeCartao
 import com.jean.vocabs.ui.components.formatarDuracaoMs
 import com.jean.vocabs.ui.components.lembrarToque
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.languages.idiomaDe
 
 /**
  * O que o aviso de baixo tem a dizer.
@@ -56,7 +56,7 @@ import com.jean.vocabs.ui.idiomas.idiomaDe
  */
 sealed interface Aviso {
 
-    val chave: Long
+    val key: Long
 
     /**
      * A captura entrou na fila. [capturaId] chega alguns milissegundos depois do
@@ -64,15 +64,15 @@ sealed interface Aviso {
      * para onde ir e por isso não é desenhado.
      */
     data class Guardado(
-        override val chave: Long,
-        val formato: CaptureFormat,
-        val duracaoMs: Long?,
-        val alvo: String,
-        val capturaId: Long? = null,
+        override val key: Long,
+        val format: CaptureFormat,
+        val durationMs: Long?,
+        val target: String,
+        val captureId: Long? = null,
     ) : Aviso
 
     /** Uma frase e mais nada: microfone negado, gravação curta demais. */
-    data class Recado(override val chave: Long, val texto: String) : Aviso
+    data class Recado(override val key: Long, val text: String) : Aviso
 }
 
 /** Quanto tempo cada aviso vive. O recado é mais curto porque não oferece nada. */
@@ -96,7 +96,7 @@ private const val VIDA_DO_RECADO_MS = 3_500
 fun FaixaDeAviso(
     aviso: Aviso?,
     aoSelecionar: (Long) -> Unit,
-    aoExpirar: (chave: Long) -> Unit,
+    aoExpirar: (key: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // O último aviso não nulo continua desenhado enquanto o cartão sai: sem isso
@@ -105,12 +105,12 @@ fun FaixaDeAviso(
     LaunchedEffect(aviso) { if (aviso != null) ultimo = aviso }
 
     val restante = remember { Animatable(1f) }
-    LaunchedEffect(aviso?.chave) {
-        val atual = aviso ?: return@LaunchedEffect
-        val vida = if (atual is Aviso.Recado) VIDA_DO_RECADO_MS else VIDA_DO_GUARDADO_MS
+    LaunchedEffect(aviso?.key) {
+        val current = aviso ?: return@LaunchedEffect
+        val vida = if (current is Aviso.Recado) VIDA_DO_RECADO_MS else VIDA_DO_GUARDADO_MS
         restante.snapTo(1f)
         restante.animateTo(0f, tween(vida, easing = LinearEasing))
-        aoExpirar(atual.chave)
+        aoExpirar(current.key)
     }
 
     AnimatedVisibility(
@@ -165,16 +165,16 @@ private fun CartaoDoAviso(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
-                                val idioma = idiomaDe(aviso.alvo)
-                                BandeiraCircular(idioma, tamanho = 15.dp)
+                                val language = idiomaDe(aviso.target)
+                                BandeiraCircular(language, tamanho = 15.dp)
                                 Text(
-                                    text = idioma.displayName.lowercase(),
+                                    text = language.displayName.lowercase(),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = cores.onSurfaceVariant,
                                 )
                             }
                         }
-                        aviso.capturaId?.let { id ->
+                        aviso.captureId?.let { id ->
                             val toque = lembrarToque()
                             Surface(
                                 onClick = { aoSelecionar(id) },
@@ -195,7 +195,7 @@ private fun CartaoDoAviso(
                     is Aviso.Recado -> {
                         Disco(cores.secondary, Icones.Relogio)
                         Text(
-                            text = aviso.texto,
+                            text = aviso.text,
                             style = MaterialTheme.typography.bodyMedium,
                             color = cores.onSurface,
                             modifier = Modifier.weight(1f),
@@ -233,8 +233,8 @@ private fun Disco(cor: androidx.compose.ui.graphics.Color, icone: androidx.compo
     }
 }
 
-private fun tituloDoGuardado(aviso: Aviso.Guardado): String = when (aviso.formato) {
-    CaptureFormat.AUDIO -> aviso.duracaoMs?.let { "Áudio ${formatarDuracaoMs(it)} guardado" } ?: "Áudio guardado"
+private fun tituloDoGuardado(aviso: Aviso.Guardado): String = when (aviso.format) {
+    CaptureFormat.AUDIO -> aviso.durationMs?.let { "Áudio ${formatarDuracaoMs(it)} guardado" } ?: "Áudio guardado"
     CaptureFormat.PHOTO -> "Foto guardada"
     CaptureFormat.TEXT -> "Trecho guardado"
 }

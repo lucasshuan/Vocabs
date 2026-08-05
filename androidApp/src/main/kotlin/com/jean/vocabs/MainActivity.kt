@@ -22,22 +22,22 @@ class MainActivity : ComponentActivity() {
         // decidida. O endereço em si o AppContainer escolhe sozinho, conforme o
         // app esteja num emulador ou num aparelho de verdade.
         AppContainer.configurar(
-            servidorLan = BuildConfig.SERVIDOR_LAN,
+            lanServer = BuildConfig.LAN_SERVER,
             token = BuildConfig.APP_TOKEN,
         )
 
         // O conteúdo desenha atrás das barras do sistema; cada tela aplica os
         // insets que precisa (statusBarsPadding, navigationBarsPadding, imePadding).
         enableEdgeToEdge()
-        val preferencias = AppContainer.preferencias(this)
+        val preferences = AppContainer.preferences(this)
         setContent {
             // O valor inicial vem da leitura síncrona, e não de um `null` que o
             // fluxo preenche depois: um default enquanto o disco responde faria
             // o app abrir no claro e piscar para o escuro no primeiro frame.
-            val tema by preferencias.observarTema()
-                .collectAsStateWithLifecycle(initialValue = preferencias.tema)
+            val theme by preferences.observeTheme()
+                .collectAsStateWithLifecycle(initialValue = preferences.theme)
 
-            VocabsTheme(temaEscuro = escuroConforme(tema)) {
+            VocabsTheme(temaEscuro = escuroConforme(theme)) {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     VocabsApp()
                 }

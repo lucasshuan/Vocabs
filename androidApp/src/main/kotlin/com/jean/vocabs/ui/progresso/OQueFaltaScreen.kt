@@ -32,8 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.Degraus
-import com.jean.vocabs.shared.domain.Entrada
+import com.jean.vocabs.shared.domain.Steps
+import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.ui.components.CabecalhoDeDentro
 import com.jean.vocabs.ui.components.CartaoDaTela
@@ -54,21 +54,21 @@ import com.jean.vocabs.ui.components.textoDaProximaRevisao
  */
 @Composable
 fun OQueFaltaScreen(
-    alvo: String?,
+    target: String?,
     aoVoltar: () -> Unit,
     aoAbrirFicha: (Long) -> Unit,
     vm: ProgressoViewModel = viewModel(),
 ) {
-    LaunchedEffect(alvo) { vm.abrir(alvo) }
+    LaunchedEffect(target) { vm.abrir(target) }
     val estado by vm.estado.collectAsStateWithLifecycle()
     var soPerto by remember { mutableStateOf(true) }
 
     val perto = estado.pertoDeVirar
-    val lista = remember(estado.palavras, soPerto) {
-        val base = if (soPerto) perto else estado.palavras.filter { Degraus.nivel(it.degrau) != MemoryLevel.MASTERED }
+    val lista = remember(estado.words, soPerto) {
+        val base = if (soPerto) perto else estado.words.filter { Steps.level(it.degrau) != MemoryLevel.MASTERED }
         base.sortedBy { it.degrau }
     }
-    val dominadas = estado.dominadas
+    val mastered = estado.mastered
 
     Column(
         verticalArrangement = Arrangement.spacedBy(13.dp),
@@ -92,8 +92,8 @@ fun OQueFaltaScreen(
         if (lista.isEmpty()) {
             EstadoVazio(
                 icone = Icones.Check,
-                titulo = if (soPerto) "Nenhuma está perto" else "Nada em aberto",
-                detalhe = if (soPerto) {
+                title = if (soPerto) "Nenhuma está perto" else "Nada em aberto",
+                detail = if (soPerto) {
                     "Acerte mais uma vez e a palavra aparece aqui."
                 } else {
                     "Todas as palavras já estão dominadas."
@@ -105,14 +105,14 @@ fun OQueFaltaScreen(
                 verticalArrangement = Arrangement.spacedBy(7.dp),
                 modifier = Modifier.weight(1f),
             ) {
-                items(lista, key = { it.id }) { entrada ->
-                    LinhaDaPalavra(entrada, aoClicar = { aoAbrirFicha(entrada.id) })
+                items(lista, key = { it.id }) { entry ->
+                    LinhaDaPalavra(entry, aoClicar = { aoAbrirFicha(entry.id) })
                 }
-                if (dominadas > 0) {
+                if (mastered > 0) {
                     item {
                         LinhaDeLista(
-                            titulo = "$dominadas já ${if (dominadas == 1) "dominada" else "dominadas"}",
-                            detalhe = "só voltam de mês em mês",
+                            title = "$mastered já ${if (mastered == 1) "dominada" else "mastered"}",
+                            detail = "só voltam de mês em mês",
                             modifier = Modifier.padding(top = 9.dp),
                         )
                     }
@@ -124,12 +124,12 @@ fun OQueFaltaScreen(
 }
 
 @Composable
-private fun LinhaDaPalavra(entrada: Entrada, aoClicar: () -> Unit) {
+private fun LinhaDaPalavra(entry: Entry, aoClicar: () -> Unit) {
     val cores = MaterialTheme.colorScheme
-    val degrau = entrada.degrau
-    val nivel = Degraus.nivel(degrau)
-    val faltam = Degraus.acertosParaSubirDeNivel(degrau)
-    val proxima = textoDaProximaRevisao(entrada.retencao, System.currentTimeMillis())
+    val degrau = entry.degrau
+    val level = Steps.level(degrau)
+    val faltam = Steps.hitsToLevelUp(degrau)
+    val proxima = textoDaProximaRevisao(entry.retention, System.currentTimeMillis())
 
     CartaoDaTela(
         aoClicar = aoClicar,
@@ -138,7 +138,7 @@ private fun LinhaDaPalavra(entrada: Entrada, aoClicar: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(entrada.titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(entry.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             proxima?.let {
                 Text(
                     text = it,
@@ -148,7 +148,7 @@ private fun LinhaDaPalavra(entrada: Entrada, aoClicar: () -> Unit) {
             }
         }
 
-        entrada.ficha?.translation?.takeIf(String::isNotBlank)?.let {
+        entry.card?.translation?.takeIf(String::isNotBlank)?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodySmall,
@@ -163,7 +163,7 @@ private fun LinhaDaPalavra(entrada: Entrada, aoClicar: () -> Unit) {
         ) {
             EscadaDeDegraus(degrau, Modifier.weight(1f))
             Text(
-                text = "${rotuloDoNivel(nivel)} · degrau $degrau de ${Degraus.TOTAL}",
+                text = "${rotuloDoNivel(level)} · degrau $degrau de ${Steps.TOTAL}",
                 style = MaterialTheme.typography.bodySmall,
                 color = cores.onSurfaceVariant,
                 modifier = Modifier.padding(start = 10.dp),
@@ -172,7 +172,7 @@ private fun LinhaDaPalavra(entrada: Entrada, aoClicar: () -> Unit) {
 
         if (faltam > 0) {
             Text(
-                text = textoDoQueFalta(faltam, Degraus.nivel(degrau + faltam)),
+                text = textoDoQueFalta(faltam, Steps.level(degrau + faltam)),
                 style = MaterialTheme.typography.bodySmall,
                 color = cores.primary,
                 modifier = Modifier.padding(top = 4.dp),
@@ -192,7 +192,7 @@ private fun LinhaDaPalavra(entrada: Entrada, aoClicar: () -> Unit) {
 private fun EscadaDeDegraus(degrau: Int, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(3.dp), modifier = modifier) {
-        repeat(Degraus.TOTAL) { indice ->
+        repeat(Steps.TOTAL) { indice ->
             val alcancado = indice < degrau
             Box(
                 Modifier
@@ -207,7 +207,7 @@ private fun EscadaDeDegraus(degrau: Int, modifier: Modifier = Modifier) {
     }
 }
 
-internal fun textoDoQueFalta(acertos: Int, proximoNivel: MemoryLevel): String {
-    val nome = rotuloDoNivel(proximoNivel)
-    return if (acertos == 1) "1 acerto para $nome" else "$acertos acertos para $nome"
+internal fun textoDoQueFalta(hits: Int, proximoNivel: MemoryLevel): String {
+    val name = rotuloDoNivel(proximoNivel)
+    return if (hits == 1) "1 acerto para $name" else "$hits acertos para $name"
 }

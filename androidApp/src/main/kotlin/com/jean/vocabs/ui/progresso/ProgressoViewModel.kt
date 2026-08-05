@@ -4,16 +4,16 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.cursosMatriculados
-import com.jean.vocabs.shared.domain.AtividadeDiaria
-import com.jean.vocabs.shared.domain.Degraus
-import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.Escopo
-import com.jean.vocabs.shared.domain.Evento
+import com.jean.vocabs.shared.enrolledCourses
+import com.jean.vocabs.shared.domain.DailyActivity
+import com.jean.vocabs.shared.domain.Steps
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.Scope
+import com.jean.vocabs.shared.domain.Event
 import com.jean.vocabs.shared.domain.MemoryLevel
-import com.jean.vocabs.shared.domain.ParIdiomas
-import com.jean.vocabs.shared.domain.QuotaDoDia
-import com.jean.vocabs.shared.domain.ResumoCurso
+import com.jean.vocabs.shared.domain.LanguagePair
+import com.jean.vocabs.shared.domain.DailyQuota
+import com.jean.vocabs.shared.domain.CourseSummary
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.stateIn
  * de uma para a outra enquanto cada uma refizesse suas contas.
  */
 data class ProgressoEstado(
-    val par: ParIdiomas = ParIdiomas.PADRAO,
+    val languagePair: LanguagePair = LanguagePair.PADRAO,
     /**
      * A semana de hoje, vazia, enquanto o banco não responde.
      *
@@ -46,35 +46,35 @@ data class ProgressoEstado(
      * certo e ele se preenche, em vez de ver "0 de 10" por dois quadros.
      */
     val semana: List<DiaDoProgresso> = semanaDe(LocalDate.now(), emptyList()),
-    val mes: String = nomeDoMes(LocalDate.now()),
-    val diasSeguidos: Int = 0,
-    val quota: QuotaDoDia = QuotaDoDia(feita = 0, naFila = 0),
-    val palavras: List<Entrada> = emptyList(),
-    val eventos: List<Evento> = emptyList(),
+    val month: String = nomeDoMes(LocalDate.now()),
+    val dayStreak: Int = 0,
+    val quota: DailyQuota = DailyQuota(done = 0, inQueue = 0),
+    val words: List<Entry> = emptyList(),
+    val eventos: List<Event> = emptyList(),
 ) {
-    val total: Int get() = palavras.size
+    val total: Int get() = words.size
 
     /** Contadas por degrau: é o número que não muda sozinho enquanto a pessoa dorme. */
-    val porNivel: Map<MemoryLevel, List<Entrada>>
-        get() = palavras.groupBy { Degraus.nivel(it.degrau) }
+    val porNivel: Map<MemoryLevel, List<Entry>>
+        get() = words.groupBy { Steps.level(it.degrau) }
 
-    val dominadas: Int get() = porNivel[MemoryLevel.MASTERED]?.size ?: 0
+    val mastered: Int get() = porNivel[MemoryLevel.MASTERED]?.size ?: 0
     val familiares: Int get() = porNivel[MemoryLevel.FAMILIAR]?.size ?: 0
-    val aprendendo: Int get() = total - dominadas - familiares
+    val aprendendo: Int get() = total - mastered - familiares
 
     /** As que estão a um acerto de mudar de nome — o "3 estão perto de virar". */
-    val pertoDeVirar: List<Entrada>
-        get() = palavras.filter { entrada ->
-            val degrau = entrada.degrau
-            Degraus.acertosParaSubirDeNivel(degrau) == 1
+    val pertoDeVirar: List<Entry>
+        get() = words.filter { entry ->
+            val degrau = entry.degrau
+            Steps.hitsToLevelUp(degrau) == 1
         }
 }
 
 /** Um dia da faixa da semana, já com o número e as revisões resolvidos. */
 data class DiaDoProgresso(
     val data: LocalDate,
-    val revisoes: Int,
-    val hoje: Boolean,
+    val reviews: Int,
+    val today: Boolean,
     val futuro: Boolean,
 )
 
@@ -88,43 +88,43 @@ data class DiaDoProgresso(
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProgressoViewModel(app: Application) : AndroidViewModel(app) {
-    private val repositorio = AppContainer.repositorio(app)
-    private val preferencias = AppContainer.preferencias(app)
+    private val repository = AppContainer.repository(app)
+    private val preferences = AppContainer.preferences(app)
 
     /** Nulo até a rota dizer qual curso; nesse intervalo vale o curso aberto. */
-    private val curso = MutableStateFlow<String?>(null)
+    private val course = MutableStateFlow<String?>(null)
 
-    private val escopo: Flow<Escopo> = curso.map { alvo ->
-        alvo?.let(Escopo::Curso) ?: Escopo.CursoAberto
+    private val scope: Flow<Scope> = course.map { target ->
+        target?.let(Scope::Curso) ?: Scope.CursoAberto
     }
 
-    val estado: StateFlow<ProgressoEstado> = escopo.flatMapLatest { recorte ->
+    val estado: StateFlow<ProgressoEstado> = scope.flatMapLatest { recorte ->
         /** Em duas etapas: `combine` só tem sobrecarga tipada até cinco fluxos. */
         val semanaEQuota = combine(
-            repositorio.observarResumoDeRevisao(recorte),
-            repositorio.observarAtividade(84),
-        ) { revisao, atividade ->
-            val hoje = LocalDate.now()
+            repository.observeReviewSummary(recorte),
+            repository.observeActivity(84),
+        ) { revisao, activity ->
+            val today = LocalDate.now()
             ProgressoEstado(
-                semana = semanaDe(hoje, atividade),
-                mes = nomeDoMes(hoje),
+                semana = semanaDe(today, activity),
+                month = nomeDoMes(today),
                 // A sequência conta atividade em qualquer idioma; a quota é do
                 // curso. São perguntas diferentes: hábito é da pessoa, carga é
                 // da matéria.
-                diasSeguidos = revisao.diasSeguidos,
+                dayStreak = revisao.dayStreak,
                 quota = revisao.quota,
             )
         }
 
         combine(
             semanaEQuota,
-            repositorio.observarProntas(recorte),
-            repositorio.observarEventos(84, recorte),
-            preferencias.observarPar(),
-        ) { base, prontas, eventos, par ->
+            repository.observeReady(recorte),
+            repository.observeEvents(84, recorte),
+            preferences.observeLanguagePair(),
+        ) { base, prontas, eventos, languagePair ->
             base.copy(
-                par = parDe(recorte, par),
-                palavras = prontas,
+                languagePair = parDe(recorte, languagePair),
+                words = prontas,
                 eventos = eventos,
             )
         }
@@ -135,13 +135,13 @@ class ProgressoViewModel(app: Application) : AndroidViewModel(app) {
             // e o rótulo "Quota de hoje no espanhol" sobre o "6 de 10" do inglês
             // é uma frase errada, não uma frase atrasada. O esqueleto é o único
             // estado honesto enquanto a resposta não chega.
-            .onStart { emit(ProgressoEstado(par = parDe(recorte, preferencias.par))) }
+            .onStart { emit(ProgressoEstado(languagePair = parDe(recorte, preferences.languagePair))) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressoEstado())
 
-    /** O curso do recorte, com o nativo de quem lê — [Escopo.CursoAberto] cai no aberto. */
-    private fun parDe(recorte: Escopo, aberto: ParIdiomas) = ParIdiomas(
-        nativo = aberto.nativo,
-        alvo = (recorte as? Escopo.Curso)?.alvo ?: aberto.alvo,
+    /** O curso do recorte, com o nativo de quem lê — [Scope.CursoAberto] cai no aberto. */
+    private fun parDe(recorte: Scope, aberto: LanguagePair) = LanguagePair(
+        native = aberto.native,
+        target = (recorte as? Scope.Curso)?.target ?: aberto.target,
     )
 
     /**
@@ -151,20 +151,20 @@ class ProgressoViewModel(app: Application) : AndroidViewModel(app) {
      * daí ela recarregar os dois cartões sem mexer na página da Início nem no
      * destino do `+`.
      */
-    fun abrir(alvo: String?) {
-        curso.value = alvo?.takeIf { it.isNotBlank() }
+    fun abrir(target: String?) {
+        course.value = target?.takeIf { it.isNotBlank() }
     }
 
     /** Os cursos da gaveta: todos os matriculados, inclusive os que ainda não têm ficha. */
-    val cursos: StateFlow<List<ResumoCurso>> = cursosMatriculados(repositorio, preferencias)
+    val courses: StateFlow<List<CourseSummary>> = enrolledCourses(repository, preferences)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** Quantos cursos existem — remover o último deixaria o app sem página nenhuma. */
-    val podeRemover: StateFlow<Boolean> = preferencias.observarCursos()
+    val podeRemover: StateFlow<Boolean> = preferences.observeCourses()
         .map { it.size > 1 }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
-    fun removerCurso(alvo: String) = preferencias.desmatricular(alvo)
+    fun removerCurso(target: String) = preferences.unenroll(target)
 }
 
 /**
@@ -173,16 +173,16 @@ class ProgressoViewModel(app: Application) : AndroidViewModel(app) {
  * Segunda como primeiro dia porque é assim que o handoff a desenha, e porque a
  * sequência de estudo é uma semana de trabalho, não de calendário americano.
  */
-internal fun semanaDe(hoje: LocalDate, atividade: List<AtividadeDiaria>): List<DiaDoProgresso> {
-    val segunda = hoje.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-    val porDia = atividade.associate { it.dia to it.revisoes }
+internal fun semanaDe(today: LocalDate, activity: List<DailyActivity>): List<DiaDoProgresso> {
+    val segunda = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    val porDia = activity.associate { it.day to it.reviews }
     return (0L until 7L).map { deslocamento ->
         val data = segunda.plusDays(deslocamento)
         DiaDoProgresso(
             data = data,
-            revisoes = porDia[data.toEpochDay() + DIA_JULIANO_DA_EPOCA] ?: 0,
-            hoje = data == hoje,
-            futuro = data.isAfter(hoje),
+            reviews = porDia[data.toEpochDay() + DIA_JULIANO_DA_EPOCA] ?: 0,
+            today = data == today,
+            futuro = data.isAfter(today),
         )
     }
 }

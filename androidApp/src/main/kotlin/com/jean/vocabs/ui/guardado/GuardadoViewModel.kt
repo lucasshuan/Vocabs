@@ -4,8 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.Escopo
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.Scope
 import com.jean.vocabs.shared.domain.EntryStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,30 +23,30 @@ import kotlinx.coroutines.flow.stateIn
  * a alguma coisa, e o tamanho dessa coisa é o que dá sentido ao gesto.
  */
 data class GuardadoEstado(
-    val entradas: List<Entrada> = emptyList(),
+    val entries: List<Entry> = emptyList(),
     val totalDoCurso: Int = 0,
 ) {
-    val alvo: String get() = entradas.firstOrNull()?.par?.alvo.orEmpty()
+    val target: String get() = entries.firstOrNull()?.languagePair?.target.orEmpty()
 
     /** Enquanto houver ficha em construção há o que olhar, e a tela não se fecha sozinha. */
     val trabalhando: Boolean
-        get() = entradas.any { it.status == EntryStatus.PENDING || it.status == EntryStatus.GENERATING }
+        get() = entries.any { it.status == EntryStatus.PENDING || it.status == EntryStatus.GENERATING }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class GuardadoViewModel(app: Application) : AndroidViewModel(app) {
-    private val repositorio = AppContainer.repositorio(app)
+    private val repository = AppContainer.repository(app)
     private val ids = MutableStateFlow<List<Long>>(emptyList())
 
     val estado: StateFlow<GuardadoEstado> = ids.flatMapLatest { lista ->
         combine(
-            repositorio.observarEntradas(lista),
-            repositorio.observarProntas(Escopo.Todos),
-        ) { entradas, prontas ->
-            val curso = entradas.firstOrNull()?.par
+            repository.observeEntries(lista),
+            repository.observeReady(Scope.Todos),
+        ) { entries, prontas ->
+            val course = entries.firstOrNull()?.languagePair
             GuardadoEstado(
-                entradas = entradas,
-                totalDoCurso = prontas.count { it.par == curso },
+                entries = entries,
+                totalDoCurso = prontas.count { it.languagePair == course },
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GuardadoEstado())

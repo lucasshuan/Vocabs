@@ -8,7 +8,7 @@ import android.os.Build
  * Existe por um motivo só: o servidor local tem endereços diferentes nos dois
  * casos, e errar isso dá um timeout que parece problema do servidor.
  */
-object Ambiente {
+object Device {
 
     /**
      * `ro.hardware` é o sinal confiável.
@@ -21,7 +21,7 @@ object Ambiente {
      * `goldfish` é o emulador antigo do Android, `ranchu` é o atual; `vbox86` é o
      * Genymotion e `gce_x86`/`cutf` são os emuladores de nuvem usados em CI.
      */
-    val ehEmulador: Boolean by lazy {
+    val isEmulator: Boolean by lazy {
         Build.HARDWARE.lowercase() in HARDWARES_EMULADOS ||
             // Rede de segurança para emuladores de fabricantes que não estão na
             // lista: o nome do produto praticamente sempre entrega.

@@ -12,15 +12,15 @@ import kotlin.test.assertTrue
 
 class GeradorDeFichaTest {
     @Test
-    fun `servidor injeta tipo local e normaliza de tres a seis relacionados`() {
-        val pedido = GenerateCardRequest(
+    fun `servidor injeta type local e normaliza de tres a seis relacionados`() {
+        val request = GenerateCardRequest(
             snippet = "He is on the fence",
             target = "on the fence",
             type = TargetType.PHRASE,
             nativeLanguage = "pt-BR",
             targetLanguage = "en",
         )
-        val modelo = CardResponse(
+        val model = CardResponse(
             type = TargetType.WORD,
             translation = "indeciso",
             definitions = listOf("Sem tomar uma decisão"),
@@ -29,31 +29,31 @@ class GeradorDeFichaTest {
             related = listOf(" undecided ", "hesitant", "uncertain", "hesitant", "wary", "doubtful", "unsure", "extra"),
         )
 
-        val final = aplicarDecisoesLocais(pedido, modelo)
+        val final = applyLocalDecisions(request, model)
         assertEquals(TargetType.PHRASE, final.type)
         assertEquals(listOf("undecided", "hesitant", "uncertain", "wary", "doubtful", "unsure"), final.related)
     }
 
     @Test
-    fun `a notacao de pronuncia segue o idioma alvo, com IPA como padrao`() {
-        assertEquals("IPA, without slashes", ParDeIdiomas.de("pt-BR", "en")!!.alvo.notacaoDePronuncia)
-        assertEquals("Hanyu Pinyin with tone marks", ParDeIdiomas.de("pt-BR", "zh")!!.alvo.notacaoDePronuncia)
-        assertEquals("Revised Romanization of Korean", ParDeIdiomas.de("pt-BR", "ko")!!.alvo.notacaoDePronuncia)
+    fun `a notacao de pronuncia segue o language target, com IPA como padrao`() {
+        assertEquals("IPA, without slashes", LanguagePairSpec.de("pt-BR", "en")!!.target.pronunciationNotation)
+        assertEquals("Hanyu Pinyin with tone marks", LanguagePairSpec.de("pt-BR", "zh")!!.target.pronunciationNotation)
+        assertEquals("Revised Romanization of Korean", LanguagePairSpec.de("pt-BR", "ko")!!.target.pronunciationNotation)
         // Language sem entrada própria cai no IPA, que serve à maioria.
-        assertEquals("IPA, without slashes", ParDeIdiomas.de("pt-BR", "sv")!!.alvo.notacaoDePronuncia)
+        assertEquals("IPA, without slashes", LanguagePairSpec.de("pt-BR", "sv")!!.target.pronunciationNotation)
     }
 
     @Test
-    fun `par desconhecido nao vira o par padrao`() {
+    fun `languagePair desconhecido nao vira o languagePair padrao`() {
         // Recusar é o ponto: cair no padrão devolveria uma ficha em inglês para
         // uma palavra alemã, e a pessoa só descobriria lendo.
-        assertNull(ParDeIdiomas.de("pt-BR", "klingon"))
-        assertNull(ParDeIdiomas.de("elfico", "en"))
+        assertNull(LanguagePairSpec.de("pt-BR", "klingon"))
+        assertNull(LanguagePairSpec.de("elfico", "en"))
     }
 
     @Test
-    fun `o prompt cita os dois idiomas pelo nome em ingles`() {
-        val prompt = GeradorDeFicha.promptDe(ParDeIdiomas.de("pt-BR", "de")!!)
+    fun `o prompt cita os dois languages pelo name em ingles`() {
+        val prompt = CardGenerator.promptFor(LanguagePairSpec.de("pt-BR", "de")!!)
         assertTrue(prompt.contains("Brazilian Portuguese"), prompt)
         assertTrue(prompt.contains("German"), prompt)
         assertTrue(prompt.contains("`pronunciation`"), prompt)
@@ -70,19 +70,19 @@ class GeradorDeFichaTest {
         val fields = CardResponse.serializer().descriptor.elementNames.toSet()
 
         @Suppress("UNCHECKED_CAST")
-        val properties = GeradorDeFicha.SCHEMA_MAP["properties"] as Map<String, Any>
+        val properties = CardGenerator.SCHEMA_MAP["properties"] as Map<String, Any>
         @Suppress("UNCHECKED_CAST")
-        val required = (GeradorDeFicha.SCHEMA_MAP["required"] as List<String>).toSet()
+        val required = (CardGenerator.SCHEMA_MAP["required"] as List<String>).toSet()
 
         assertEquals(fields, properties.keys, "schema properties drifted from CardResponse")
         assertEquals(fields, required, "schema `required` drifted from CardResponse")
     }
 
-    /** The app copies `tipo` through verbatim, so the two enums have to agree. */
+    /** The app copies `type` through verbatim, so the two enums have to agree. */
     @Test
     fun `the schema enum matches TargetType`() {
         @Suppress("UNCHECKED_CAST")
-        val properties = GeradorDeFicha.SCHEMA_MAP["properties"] as Map<String, Map<String, Any>>
+        val properties = CardGenerator.SCHEMA_MAP["properties"] as Map<String, Map<String, Any>>
         assertEquals(
             TargetType.entries.map { it.name },
             properties.getValue("type").getValue("enum"),

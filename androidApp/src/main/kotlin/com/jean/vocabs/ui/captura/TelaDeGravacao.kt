@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.captura
+package com.jean.vocabs.ui.capture
 
 import com.jean.vocabs.ui.displayName
 import android.app.Activity
@@ -87,13 +87,13 @@ import kotlin.math.pow
  */
 @Composable
 internal fun TelaDeGravacao(
-    captura: CapturaRapida,
-    idioma: Language,
+    capture: CapturaRapida,
+    language: Language,
     gravando: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val guardar: () -> Unit = { captura.guardarAudio() }
-    val cancelar: () -> Unit = { captura.cancelarAudio() }
+    val guardar: () -> Unit = { capture.guardarAudio() }
+    val cancelar: () -> Unit = { capture.cancelarAudio() }
 
     // Voltar **guarda**. A regra do app é que nada é descartado sem a pessoa
     // pedir, e o pedido tem um lugar só: o botão de descartar. Quem apertou
@@ -150,23 +150,23 @@ internal fun TelaDeGravacao(
                 .graphicsLayer { translationY = 18.dp.toPx() * (1f - presenca.value) },
         ) {
             Text(
-                text = formatarDuracao(captura.segundos),
+                text = formatarDuracao(capture.segundos),
                 style = MaterialTheme.typography.displaySmall.copy(fontSize = 46.sp, lineHeight = 50.sp),
                 color = Color.White,
             )
-            OndaDoMicrofone(gravando) { captura.nivelAgora() }
+            OndaDoMicrofone(gravando) { capture.nivelAgora() }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
-                BandeiraCircular(idioma, tamanho = 16.dp)
+                BandeiraCircular(language, tamanho = 16.dp)
                 // O handoff escreve "o idioma sai da fala". Não sai: não há
                 // detector de idioma no app, e o que existe é a regra de fallback
                 // do próprio handoff — cai no curso aberto no hub. A frase diz o
                 // que de fato acontece, e é ela que precisa mudar no dia em que
                 // houver detecção.
                 Text(
-                    text = "vai para o curso de ${idioma.displayName}",
+                    text = "vai para o curso de ${language.displayName}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.72f),
                 )
@@ -368,7 +368,7 @@ private const val INTERVALO_DA_ONDA = 70L
  * segundo invalidam o desenho de um retângulo e nada mais.
  */
 @Composable
-private fun OndaDoMicrofone(gravando: Boolean, nivel: () -> Float) {
+private fun OndaDoMicrofone(gravando: Boolean, level: () -> Float) {
     val historico = remember { FloatArray(BARRAS_DA_ONDA) }
     var cursor by remember { mutableIntStateOf(0) }
 
@@ -377,7 +377,7 @@ private fun OndaDoMicrofone(gravando: Boolean, nivel: () -> Float) {
         historico.fill(0f)
         cursor = 0
         while (true) {
-            historico[cursor % BARRAS_DA_ONDA] = nivel()
+            historico[cursor % BARRAS_DA_ONDA] = level()
             cursor++
             delay(INTERVALO_DA_ONDA)
         }

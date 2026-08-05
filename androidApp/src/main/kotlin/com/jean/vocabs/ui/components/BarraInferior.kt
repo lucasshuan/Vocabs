@@ -34,7 +34,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
-data class Aba(val rota: String, val icone: ImageVector, val rotulo: String, val selo: Int = 0)
+data class Aba(val rota: String, val icone: ImageVector, val rotulo: String, val badge: Int = 0)
 
 /**
  * Cinco lugares, só ícones.
@@ -125,12 +125,12 @@ private fun ItemAba(aba: Aba, selecionada: Boolean, aoClicar: () -> Unit, modifi
                 // um número que aparece do nada no canto do ícone não se lê como
                 // "chegou algo" — se lê como um defeito de desenho.
                 AnimatedVisibility(
-                    visible = aba.selo > 0,
+                    visible = aba.badge > 0,
                     enter = scaleIn(Movimento.molaElastica()) + fadeIn(tween(Movimento.RAPIDO)),
                     exit = scaleOut(tween(Movimento.RAPIDO)) + fadeOut(tween(Movimento.RAPIDO)),
                     modifier = Modifier.align(Alignment.TopEnd),
                 ) {
-                    Badge { Text(aba.selo.coerceAtMost(99).toString()) }
+                    Badge { Text(aba.badge.coerceAtMost(99).toString()) }
                 }
             }
         }

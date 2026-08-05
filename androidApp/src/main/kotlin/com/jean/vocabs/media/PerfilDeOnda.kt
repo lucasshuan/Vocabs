@@ -35,9 +35,9 @@ private const val BLOCOS_MAXIMOS = 12
  * é honesta — não inventa relevo que não foi medido.
  */
 @Composable
-fun lembrarPerfilDeOnda(caminho: String): State<FloatArray> =
-    produceState(initialValue = FloatArray(0), caminho) {
-        value = withContext(Dispatchers.IO) { perfilDoWav(caminho) }
+fun lembrarPerfilDeOnda(path: String): State<FloatArray> =
+    produceState(initialValue = FloatArray(0), path) {
+        value = withContext(Dispatchers.IO) { perfilDoWav(path) }
     }
 
 /**
@@ -49,20 +49,20 @@ fun lembrarPerfilDeOnda(caminho: String): State<FloatArray> =
  */
 fun FloatArray.picoDaBarra(indice: Int, barras: Int): Float {
     if (isEmpty() || barras <= 0) return 0f
-    val inicio = (indice.toLong() * size / barras).toInt().coerceIn(0, size - 1)
-    val fim = ((indice + 1).toLong() * size / barras).toInt().coerceIn(inicio + 1, size)
+    val start = (indice.toLong() * size / barras).toInt().coerceIn(0, size - 1)
+    val end = ((indice + 1).toLong() * size / barras).toInt().coerceIn(start + 1, size)
     var pico = 0f
-    for (i in inicio until fim) pico = max(pico, this[i])
+    for (i in start until end) pico = max(pico, this[i])
     return pico
 }
 
-private fun perfilDoWav(caminho: String): FloatArray {
-    val arquivo = File(caminho)
-    if (!arquivo.isFile || arquivo.length() <= GravadorDeAudio.CABECALHO_WAV) return FloatArray(0)
+private fun perfilDoWav(path: String): FloatArray {
+    val file = File(path)
+    if (!file.isFile || file.length() <= GravadorDeAudio.CABECALHO_WAV) return FloatArray(0)
 
     return runCatching {
-        arquivo.inputStream().buffered().use { entrada ->
-            val fluxo = DataInputStream(entrada)
+        file.inputStream().buffered().use { entry ->
+            val fluxo = DataInputStream(entry)
             val riff = ByteArray(12)
             fluxo.readFully(riff)
             if (marca(riff, 0) != "RIFF" || marca(riff, 8) != "WAVE") return@use FloatArray(0)
@@ -78,11 +78,11 @@ private fun perfilDoWav(caminho: String): FloatArray {
                 val tamanho = inteiroLe(topo, 4)
                 if (id == "data") return@use picosDe(fluxo, tamanho, bits, canais)
                 if (tamanho !in 0..BLOCO_MAXIMO) return@use FloatArray(0)
-                val corpo = ByteArray(tamanho + (tamanho and 1))
-                fluxo.readFully(corpo)
-                if (id == "fmt " && corpo.size >= 16) {
-                    canais = curtoLe(corpo, 2)
-                    bits = curtoLe(corpo, 14)
+                val body = ByteArray(tamanho + (tamanho and 1))
+                fluxo.readFully(body)
+                if (id == "fmt " && body.size >= 16) {
+                    canais = curtoLe(body, 2)
+                    bits = curtoLe(body, 14)
                 }
             }
             FloatArray(0)

@@ -4,11 +4,11 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.domain.AlvoSelecionado
-import com.jean.vocabs.shared.domain.Captura
-import com.jean.vocabs.shared.domain.Entrada
-import com.jean.vocabs.shared.domain.Escopo
-import com.jean.vocabs.shared.domain.duplicataDeAlvo
+import com.jean.vocabs.shared.domain.SelectedTarget
+import com.jean.vocabs.shared.domain.Capture
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.Scope
+import com.jean.vocabs.shared.domain.duplicateOfTarget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,35 +24,35 @@ import kotlinx.coroutines.launch
  * "carne" em italiano. Por isso o alvo procurado carrega o curso junto.
  */
 class SelecionarViewModel(app: Application) : AndroidViewModel(app) {
-    private val repositorio = AppContainer.repositorio(app)
-    private val preferencias = AppContainer.preferencias(app)
+    private val repository = AppContainer.repository(app)
+    private val preferences = AppContainer.preferences(app)
     private val procurado = MutableStateFlow(Procura())
 
-    private data class Procura(val texto: String = "", val alvo: String = "")
+    private data class Procura(val text: String = "", val target: String = "")
 
-    val duplicata: StateFlow<Entrada?> = combine(
-        repositorio.observarProntas(Escopo.Todos),
-        repositorio.observarInbox(Escopo.Todos),
+    val duplicata: StateFlow<Entry?> = combine(
+        repository.observeReady(Scope.Todos),
+        repository.observeInbox(Scope.Todos),
         procurado,
     ) { prontas, inbox, busca ->
-        if (busca.texto.isBlank()) return@combine null
-        duplicataDeAlvo(busca.texto, (prontas + inbox).filter { it.par.alvo == busca.alvo })
+        if (busca.text.isBlank()) return@combine null
+        duplicateOfTarget(busca.text, (prontas + inbox).filter { it.languagePair.target == busca.target })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** Os idiomas em que dá para guardar — a lista do seletor do cabeçalho. */
-    val cursos: StateFlow<List<String>> = preferencias.observarCursos()
+    val courses: StateFlow<List<String>> = preferences.observeCourses()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    fun observar(id: Long): StateFlow<Captura?> = repositorio.observarCapturaPorId(id)
+    fun observar(id: Long): StateFlow<Capture?> = repository.observeCaptureById(id)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun procurarDuplicata(texto: String, alvo: String) {
-        procurado.value = Procura(texto, alvo)
+    fun procurarDuplicata(text: String, target: String) {
+        procurado.value = Procura(text, target)
     }
 
     /** Ainda dá para trocar aqui: nada nasceu neste par até o "Guardar". */
-    fun trocarIdioma(id: Long, alvo: String) {
-        AppContainer.escopo.launch { repositorio.alterarIdiomaDaCaptura(id, alvo) }
+    fun trocarIdioma(id: Long, target: String) {
+        AppContainer.scope.launch { repository.changeCaptureLanguage(id, target) }
     }
 
     /**
@@ -60,15 +60,15 @@ class SelecionarViewModel(app: Application) : AndroidViewModel(app) {
      * acompanha enquanto a IA trabalha. A geração segue no escopo do app: a
      * navegação acontece antes de a primeira ficha ficar pronta.
      */
-    fun guardar(id: Long, trecho: String, alvos: List<AlvoSelecionado>, aoPronto: (List<Long>) -> Unit) {
+    fun guardar(id: Long, snippet: String, alvos: List<SelectedTarget>, aoPronto: (List<Long>) -> Unit) {
         viewModelScope.launch {
-            val ids = repositorio.confirmarCaptura(id, trecho, alvos)
+            val ids = repository.confirmCapture(id, snippet, alvos)
             aoPronto(ids)
-            AppContainer.escopo.launch { repositorio.gerarFichas(ids) }
+            AppContainer.scope.launch { repository.generateCards(ids) }
         }
     }
 
     fun excluir(id: Long) {
-        AppContainer.escopo.launch { repositorio.excluirCaptura(id) }
+        AppContainer.scope.launch { repository.deleteCapture(id) }
     }
 }

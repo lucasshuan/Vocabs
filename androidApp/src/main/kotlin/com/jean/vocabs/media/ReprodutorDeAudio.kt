@@ -15,7 +15,7 @@ import kotlinx.coroutines.delay
 private const val INTERVALO_DA_AGULHA = 60L
 
 /** Estado de reprodução de um memo de voz, já amarrado ao ciclo de vida da tela. */
-class EstadoDoAudio internal constructor(private val caminho: String) {
+class EstadoDoAudio internal constructor(private val path: String) {
 
     private var player: MediaPlayer? = null
     private var tocandoInterno by mutableStateOf(false)
@@ -43,7 +43,7 @@ class EstadoDoAudio internal constructor(private val caminho: String) {
     private fun tocar() {
         val novo = MediaPlayer()
         val abriu = runCatching {
-            novo.setDataSource(caminho)
+            novo.setDataSource(path)
             novo.prepare()
             novo.setOnCompletionListener { parar() }
             novo.start()
@@ -60,9 +60,9 @@ class EstadoDoAudio internal constructor(private val caminho: String) {
     }
 
     fun parar() {
-        player?.let { atual ->
-            runCatching { atual.stop() }
-            atual.release()
+        player?.let { current ->
+            runCatching { current.stop() }
+            current.release()
         }
         player = null
         posicaoInterna = 0L
@@ -90,8 +90,8 @@ class EstadoDoAudio internal constructor(private val caminho: String) {
  * o áudio continuaria tocando por cima da próxima tela.
  */
 @Composable
-fun rememberReprodutor(caminho: String): EstadoDoAudio {
-    val estado = remember(caminho) { EstadoDoAudio(caminho) }
+fun rememberReprodutor(path: String): EstadoDoAudio {
+    val estado = remember(path) { EstadoDoAudio(path) }
     LaunchedEffect(estado, estado.tocando) {
         if (estado.tocando) estado.acompanhar()
     }

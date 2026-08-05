@@ -42,24 +42,24 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.jean.vocabs.ui.captura.Aviso
-import com.jean.vocabs.ui.captura.CapturaViewModel
-import com.jean.vocabs.ui.captura.FaixaDeAviso
-import com.jean.vocabs.ui.captura.GavetaDeTexto
-import com.jean.vocabs.ui.captura.HubDeCaptura
-import com.jean.vocabs.ui.captura.rememberCapturaRapida
+import com.jean.vocabs.ui.capture.Aviso
+import com.jean.vocabs.ui.capture.CapturaViewModel
+import com.jean.vocabs.ui.capture.FaixaDeAviso
+import com.jean.vocabs.ui.capture.GavetaDeTexto
+import com.jean.vocabs.ui.capture.HubDeCaptura
+import com.jean.vocabs.ui.capture.rememberCapturaRapida
 import com.jean.vocabs.ui.components.ALTURA_DA_BARRA
 import com.jean.vocabs.ui.components.Aba
 import com.jean.vocabs.ui.components.BarraInferior
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.Movimento
 import com.jean.vocabs.ui.configuracoes.ConfiguracoesScreen
-import com.jean.vocabs.ui.ficha.FichaScreen
+import com.jean.vocabs.ui.card.FichaScreen
 import com.jean.vocabs.ui.guardado.GuardadoScreen
 import com.jean.vocabs.ui.home.HomeScreen
-import com.jean.vocabs.ui.idiomas.NovoIdiomaScreen
-import com.jean.vocabs.ui.idiomas.idiomaDe
-import com.jean.vocabs.ui.inicio.InicioScreen
+import com.jean.vocabs.ui.languages.NovoIdiomaScreen
+import com.jean.vocabs.ui.languages.idiomaDe
+import com.jean.vocabs.ui.start.InicioScreen
 import com.jean.vocabs.ui.pendentes.FaixaDeDesfazer
 import com.jean.vocabs.ui.pendentes.PendentesScreen
 import com.jean.vocabs.ui.pendentes.PendentesViewModel
@@ -92,12 +92,12 @@ private object Rotas {
     const val NOVO_IDIOMA = "novo-idioma"
     const val IDIOMA_NATIVO = "idioma-nativo"
 
-    fun ficha(id: Long) = "ficha/$id"
+    fun card(id: Long) = "ficha/$id"
     fun selecionar(id: Long) = "selecionar/$id"
     fun guardado(ids: List<Long>) = "guardado/${ids.joinToString(SEPARADOR_DE_IDS)}"
-    fun progresso(alvo: String) = "progresso/$alvo"
-    fun diaADia(alvo: String) = "dia-a-dia/$alvo"
-    fun oQueFalta(alvo: String) = "o-que-falta/$alvo"
+    fun progresso(target: String) = "progresso/$target"
+    fun diaADia(target: String) = "dia-a-dia/$target"
+    fun oQueFalta(target: String) = "o-que-falta/$target"
 
     val telaCheia = setOf(REVISAO, FICHA, SELECIONAR, GUARDADO, NOVO_IDIOMA, IDIOMA_NATIVO)
 
@@ -121,7 +121,7 @@ fun VocabsApp() {
     val nav = rememberNavController()
     val pilha by nav.currentBackStackEntryAsState()
     val rota = pilha?.destination?.route
-    val escopo = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
 
     // A mesma instância que a tela de Pendentes usa, e não a dela por baixo: o
     // selo da aba e a lista precisam concordar sobre o que já foi arrastado para
@@ -130,7 +130,7 @@ fun VocabsApp() {
     val capturaVm: CapturaViewModel = viewModel()
     val totalPendentes by pendentesVm.total.collectAsStateWithLifecycle()
     val exclusaoPendente by pendentesVm.exclusao.collectAsStateWithLifecycle()
-    val captura by capturaVm.estado.collectAsStateWithLifecycle()
+    val capture by capturaVm.estado.collectAsStateWithLifecycle()
 
     val barraVisivel = rota !in Rotas.telaCheia
     val abaAtual = Rotas.abaDe(rota)
@@ -151,23 +151,23 @@ fun VocabsApp() {
     var aviso by remember { mutableStateOf<Aviso?>(null) }
 
     val gravacao = rememberCapturaRapida(
-        alvo = captura.par.alvo,
-        aoGuardar = { formato, caminho, duracaoMs, alvoDaCaptura ->
-            val chave = System.nanoTime()
-            aviso = Aviso.Guardado(chave, formato, duracaoMs, alvoDaCaptura)
-            capturaVm.salvarMidia(formato, caminho, duracaoMs, alvoDaCaptura) { id ->
+        target = capture.languagePair.target,
+        aoGuardar = { format, path, durationMs, alvoDaCaptura ->
+            val key = System.nanoTime()
+            aviso = Aviso.Guardado(key, format, durationMs, alvoDaCaptura)
+            capturaVm.salvarMidia(format, path, durationMs, alvoDaCaptura) { id ->
                 // O id chega do banco alguns milissegundos depois. Só entra no
                 // cartão se ele ainda for o mesmo — uma captura seguinte já pode
                 // ter tomado o lugar dele.
-                val atual = aviso
-                if (atual is Aviso.Guardado && atual.chave == chave) aviso = atual.copy(capturaId = id)
+                val current = aviso
+                if (current is Aviso.Guardado && current.key == key) aviso = current.copy(captureId = id)
             }
         },
-        aoRecado = { texto -> aviso = Aviso.Recado(System.nanoTime(), texto) },
+        aoRecado = { text -> aviso = Aviso.Recado(System.nanoTime(), text) },
     )
 
     fun fecharGaveta() {
-        escopo.launch { estadoDaGaveta.hide() }.invokeOnCompletion { gavetaAberta = false }
+        scope.launch { estadoDaGaveta.hide() }.invokeOnCompletion { gavetaAberta = false }
     }
 
     // O fundo desfoca enquanto o leque está aberto ou a gravação corre. O
@@ -227,12 +227,12 @@ fun VocabsApp() {
                 )
             }
             composable(Rotas.PALAVRAS) {
-                HomeScreen(aoAbrirFicha = { nav.navigate(Rotas.ficha(it)) })
+                HomeScreen(aoAbrirFicha = { nav.navigate(Rotas.card(it)) })
             }
             composable(Rotas.PENDENTES) {
                 PendentesScreen(
                     aoAbrirCaptura = { nav.navigate(Rotas.selecionar(it.id)) },
-                    aoAbrirFicha = { nav.navigate(Rotas.ficha(it.id)) },
+                    aoAbrirFicha = { nav.navigate(Rotas.card(it.id)) },
                     vm = pendentesVm,
                 )
             }
@@ -243,30 +243,30 @@ fun VocabsApp() {
                     aoAbrirNovoIdioma = { nav.navigate(Rotas.NOVO_IDIOMA) },
                 )
             }
-            composable(Rotas.PROGRESSO, arguments = listOf(navArgument("alvo") { type = NavType.StringType })) { entrada ->
+            composable(Rotas.PROGRESSO, arguments = listOf(navArgument("alvo") { type = NavType.StringType })) { entry ->
                 ProgressoScreen(
                     // O alvo da rota é só por onde a tela entra: a gaveta da
                     // bandeira troca o curso olhado sem sair do destino, e é o
                     // curso de agora que as telas de dentro precisam receber.
-                    alvo = entrada.arguments?.getString("alvo"),
+                    target = entry.arguments?.getString("alvo"),
                     aoVoltar = { nav.popBackStack() },
                     aoAbrirDiaADia = { nav.navigate(Rotas.diaADia(it)) },
                     aoAbrirOQueFalta = { nav.navigate(Rotas.oQueFalta(it)) },
                     aoAdicionarIdioma = { nav.navigate(Rotas.NOVO_IDIOMA) },
                 )
             }
-            composable(Rotas.DIA_A_DIA, arguments = listOf(navArgument("alvo") { type = NavType.StringType })) { entrada ->
+            composable(Rotas.DIA_A_DIA, arguments = listOf(navArgument("alvo") { type = NavType.StringType })) { entry ->
                 DiaADiaScreen(
-                    alvo = entrada.arguments?.getString("alvo"),
+                    target = entry.arguments?.getString("alvo"),
                     aoVoltar = { nav.popBackStack() },
-                    aoAbrirFicha = { nav.navigate(Rotas.ficha(it)) },
+                    aoAbrirFicha = { nav.navigate(Rotas.card(it)) },
                 )
             }
-            composable(Rotas.O_QUE_FALTA, arguments = listOf(navArgument("alvo") { type = NavType.StringType })) { entrada ->
+            composable(Rotas.O_QUE_FALTA, arguments = listOf(navArgument("alvo") { type = NavType.StringType })) { entry ->
                 OQueFaltaScreen(
-                    alvo = entrada.arguments?.getString("alvo"),
+                    target = entry.arguments?.getString("alvo"),
                     aoVoltar = { nav.popBackStack() },
-                    aoAbrirFicha = { nav.navigate(Rotas.ficha(it)) },
+                    aoAbrirFicha = { nav.navigate(Rotas.card(it)) },
                 )
             }
             composable(Rotas.CONFIGURACOES) {
@@ -289,17 +289,17 @@ fun VocabsApp() {
                 arguments = listOf(navArgument("id") { type = NavType.LongType }),
                 enterTransition = { subir() },
                 popExitTransition = { descer() },
-            ) { entrada ->
-                FichaScreen(entrada.arguments?.getLong("id") ?: 0, { nav.popBackStack() })
+            ) { entry ->
+                FichaScreen(entry.arguments?.getLong("id") ?: 0, { nav.popBackStack() })
             }
             composable(
                 Rotas.SELECIONAR,
                 arguments = listOf(navArgument("id") { type = NavType.LongType }),
                 enterTransition = { subir() },
                 popExitTransition = { descer() },
-            ) { entrada ->
+            ) { entry ->
                 SelecionarScreen(
-                    id = entrada.arguments?.getLong("id") ?: 0,
+                    id = entry.arguments?.getLong("id") ?: 0,
                     aoVoltar = { nav.popBackStack() },
                     aoGuardar = { ids ->
                         // A seleção sai da pilha junto: voltar da confirmação
@@ -316,9 +316,9 @@ fun VocabsApp() {
                 arguments = listOf(navArgument("ids") { type = NavType.StringType }),
                 enterTransition = { subir() },
                 popExitTransition = { descer() },
-            ) { entrada ->
+            ) { entry ->
                 GuardadoScreen(
-                    ids = entrada.arguments?.getString("ids").orEmpty()
+                    ids = entry.arguments?.getString("ids").orEmpty()
                         .split(SEPARADOR_DE_IDS)
                         .mapNotNull(String::toLongOrNull),
                     aoFechar = { nav.popBackStack() },
@@ -347,7 +347,7 @@ fun VocabsApp() {
                     aviso = null
                     nav.navigate(Rotas.selecionar(id))
                 },
-                aoExpirar = { chave -> if (aviso?.chave == chave) aviso = null },
+                aoExpirar = { key -> if (aviso?.key == key) aviso = null },
                 modifier = Modifier.padding(horizontal = 14.dp).padding(bottom = 8.dp),
             )
 
@@ -391,8 +391,8 @@ fun VocabsApp() {
             modifier = Modifier.fillMaxSize(),
         ) {
             HubDeCaptura(
-                captura = gravacao,
-                idioma = idiomaDe(captura.par.alvo),
+                capture = gravacao,
+                language = idiomaDe(capture.languagePair.target),
                 aoAbrirTexto = { gavetaAberta = true },
                 aoMudarDeFase = { emGesto = it },
             )
@@ -405,8 +405,8 @@ fun VocabsApp() {
             sheetState = estadoDaGaveta,
         ) {
             GavetaDeTexto(
-                aoGuardar = { trecho ->
-                    capturaVm.salvarTrecho(trecho, captura.par.alvo) { id ->
+                aoGuardar = { snippet ->
+                    capturaVm.salvarTrecho(snippet, capture.languagePair.target) { id ->
                         fecharGaveta()
                         nav.navigate(Rotas.selecionar(id))
                     }

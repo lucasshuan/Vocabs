@@ -14,11 +14,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class ConfiguracoesViewModel(app: Application) : AndroidViewModel(app) {
-    private val preferencias = AppContainer.preferencias(app)
-    private val repositorio = AppContainer.repositorio(app)
+    private val preferences = AppContainer.preferences(app)
+    private val repository = AppContainer.repository(app)
 
-    val tema: StateFlow<ThemePreference> = preferencias.observarTema()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferencias.tema)
+    val theme: StateFlow<ThemePreference> = preferences.observeTheme()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferences.theme)
 
     /**
      * O idioma-base, observado e não lido uma vez.
@@ -28,14 +28,14 @@ class ConfiguracoesViewModel(app: Application) : AndroidViewModel(app) {
      * ser recriada — e a única prova de que a troca pegou é justamente essa
      * linha.
      */
-    val nativo: StateFlow<String> = preferencias.observarNativo()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferencias.nativo)
+    val native: StateFlow<String> = preferences.observeNativeLanguage()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferences.native)
 
     private val _exportando = MutableStateFlow(false)
     val exportando: StateFlow<Boolean> = _exportando.asStateFlow()
 
-    fun escolherTema(valor: ThemePreference) {
-        preferencias.tema = valor
+    fun escolherTema(value: ThemePreference) {
+        preferences.theme = value
     }
 
     fun exportar(aoPronto: (File) -> Unit, aoErro: (String) -> Unit) {
@@ -43,7 +43,7 @@ class ConfiguracoesViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _exportando.value = true
             runCatching {
-                ExportadorVocabu.criar(getApplication(), repositorio.dadosParaExportacao())
+                ExportadorVocabu.criar(getApplication(), repository.exportData())
             }.onSuccess(aoPronto).onFailure { aoErro(it.message ?: "Não foi possível exportar os dados.") }
             _exportando.value = false
         }

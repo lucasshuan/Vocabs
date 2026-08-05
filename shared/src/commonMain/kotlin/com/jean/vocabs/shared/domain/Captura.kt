@@ -3,20 +3,20 @@ package com.jean.vocabs.shared.domain
 import com.jean.vocabs.contracts.TargetType
 
 /** O contexto bruto do qual podem nascer uma ou várias fichas. */
-data class Captura(
+data class Capture(
     val id: Long,
-    val trecho: String?,
-    val origem: String?,
-    val criadoEm: Long,
+    val snippet: String?,
+    val source: String?,
+    val createdAt: Long,
     val status: CaptureStatus,
-    val formato: CaptureFormat,
-    val midiaCaminho: String?,
-    val duracaoMs: Long?,
-    val erroTranscricao: String?,
-    /** O curso em que ela nasceu. Um trecho está numa língua só. */
-    val par: ParIdiomas = ParIdiomas.PADRAO,
+    val format: CaptureFormat,
+    val mediaPath: String?,
+    val durationMs: Long?,
+    val transcriptionError: String?,
+    /** O course em que ela nasceu. Um snippet está numa língua só. */
+    val languagePair: LanguagePair = LanguagePair.PADRAO,
 ) {
-    val aguardandoSelecao: Boolean get() = status == CaptureStatus.AWAITING_SELECTION
+    val awaitingSelection: Boolean get() = status == CaptureStatus.AWAITING_SELECTION
     val transcrevendo: Boolean get() = status == CaptureStatus.TRANSCRIBING
 }
 
@@ -26,39 +26,39 @@ enum class CaptureStatus {
     PROCESSED;
 
     companion object {
-        fun de(valor: String): CaptureStatus =
-            entries.firstOrNull { it.name == valor } ?: AWAITING_SELECTION
+        fun de(value: String): CaptureStatus =
+            entries.firstOrNull { it.name == value } ?: AWAITING_SELECTION
     }
 }
 
-/** Um intervalo confirmado dentro do trecho. Intervalos podem se sobrepor. */
-data class AlvoSelecionado(
-    val texto: String,
-    val inicio: Int,
-    val fim: Int,
-    val tipo: TargetType,
+/** Um intervalo confirmado dentro do snippet. Intervalos podem se sobrepor. */
+data class SelectedTarget(
+    val text: String,
+    val start: Int,
+    val end: Int,
+    val type: TargetType,
 )
 
-data class AtividadeDiaria(
-    val dia: Long,
-    val revisoes: Int,
+data class DailyActivity(
+    val day: Long,
+    val reviews: Int,
 )
 
-data class UsoIa(
-    val mes: String,
-    val usadas: Int,
-    val limite: Int = LIMITE_MENSAL_IA,
+data class AiUsage(
+    val month: String,
+    val used: Int,
+    val limit: Int = LIMITE_MENSAL_IA,
 ) {
-    val fracao: Float get() = (usadas.toFloat() / limite.coerceAtLeast(1)).coerceIn(0f, 1f)
+    val fracao: Float get() = (used.toFloat() / limit.coerceAtLeast(1)).coerceIn(0f, 1f)
 
     companion object {
         const val LIMITE_MENSAL_IA = 100
     }
 }
 
-data class DadosExportacao(
-    val capturas: List<Captura>,
-    val entradas: List<Entrada>,
-    val atividade: List<AtividadeDiaria>,
-    val usoIa: UsoIa,
+data class ExportData(
+    val captures: List<Capture>,
+    val entries: List<Entry>,
+    val activity: List<DailyActivity>,
+    val aiUsage: AiUsage,
 )

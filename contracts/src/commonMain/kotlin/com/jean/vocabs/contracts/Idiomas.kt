@@ -19,7 +19,7 @@ package com.jean.vocabs.contracts
 data class Language(
     /** Chave estável, gravada no banco. Curta quando basta ("en"), com região quando não ("pt-BR"). */
     val code: String,
-    /** Que bandeira representa o idioma — código do país, como o arquivo do desenho. */
+    /** Que bandeira representa o language — código do país, como o file do desenho. */
     val country: String,
     /** Como o prompt o cita — o prompt é escrito em inglês. */
     val englishName: String,
@@ -84,7 +84,7 @@ object Languages {
 
     private val porCodigo: Map<String, Language> = CATALOGO.associateBy { it.code }
 
-    /** O par com que o app nasceu, e o que entradas antigas recebem na migração. */
+    /** O par com que o app nasceu, e o que entries antigas recebem na migração. */
     const val NATIVO_PADRAO: String = "pt-BR"
     const val ALVO_PADRAO: String = "en"
 

@@ -26,11 +26,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jean.vocabs.contracts.TargetType
-import com.jean.vocabs.shared.domain.Captura
-import com.jean.vocabs.shared.domain.Entrada
+import com.jean.vocabs.shared.domain.Capture
+import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.shared.domain.MemoryLevel
-import com.jean.vocabs.shared.domain.Retencao
+import com.jean.vocabs.shared.domain.Retention
 import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.ui.theme.LocalTemaEscuro
 
@@ -42,25 +42,25 @@ import com.jean.vocabs.ui.theme.LocalTemaEscuro
  * — é classificação, não título.
  */
 @Composable
-fun TipoBadge(tipo: TargetType, modifier: Modifier = Modifier) {
+fun TipoBadge(type: TargetType, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
     val escuro = LocalTemaEscuro.current
-    val (fundo, texto) = when (tipo) {
+    val (fundo, text) = when (type) {
         TargetType.PHRASE -> cores.secondaryContainer to if (escuro) cores.onSurface else cores.primary
         TargetType.WORD -> cores.surfaceVariant to cores.onSurfaceVariant
     }
     Surface(shape = CircleShape, color = fundo, modifier = modifier) {
         Text(
-            text = if (tipo == TargetType.WORD) "palavra" else "expressão",
+            text = if (type == TargetType.WORD) "palavra" else "expressão",
             style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
-            color = texto,
+            color = text,
             modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
         )
     }
 }
 
 @Composable
-fun AvisoDuplicata(entrada: Entrada, modifier: Modifier = Modifier) {
+fun AvisoDuplicata(entry: Entry, modifier: Modifier = Modifier) {
     val cores = MaterialTheme.colorScheme
     Surface(
         shape = MaterialTheme.shapes.medium,
@@ -95,7 +95,7 @@ fun AvisoDuplicata(entrada: Entrada, modifier: Modifier = Modifier) {
                     color = cores.onSecondaryContainer,
                 )
                 Text(
-                    text = detalheDuplicata(entrada),
+                    text = detalheDuplicata(entry),
                     style = MaterialTheme.typography.bodySmall,
                     color = cores.onSecondaryContainer.copy(alpha = 0.76f),
                     modifier = Modifier.padding(top = 2.dp),
@@ -105,15 +105,15 @@ fun AvisoDuplicata(entrada: Entrada, modifier: Modifier = Modifier) {
     }
 }
 
-private fun detalheDuplicata(entrada: Entrada): String = buildString {
-    append(entrada.titulo)
+private fun detalheDuplicata(entry: Entry): String = buildString {
+    append(entry.title)
     append(" · ")
-    append(rotuloStatusDuplicata(entrada.status))
+    append(rotuloStatusDuplicata(entry.status))
     append(" · ")
-    append(tempoRelativo(entrada.criadoEm))
-    entrada.origem?.takeIf { it.isNotBlank() }?.let { origem ->
+    append(tempoRelativo(entry.createdAt))
+    entry.source?.takeIf { it.isNotBlank() }?.let { source ->
         append(" · ")
-        append(origem)
+        append(source)
     }
 }
 
@@ -125,8 +125,8 @@ private fun rotuloStatusDuplicata(status: EntryStatus): String = when (status) {
 }
 
 /** "agora", "há 5min", "há 2h", "ontem", "há 3d". */
-fun tempoRelativo(entao: Long, agora: Long = System.currentTimeMillis()): String {
-    val minutos = ((agora - entao) / 60_000L).coerceAtLeast(0)
+fun tempoRelativo(entao: Long, now: Long = System.currentTimeMillis()): String {
+    val minutos = ((now - entao) / 60_000L).coerceAtLeast(0)
     return when {
         minutos < 1 -> "agora"
         minutos < 60 -> "há ${minutos}min"
@@ -157,8 +157,8 @@ fun tempoAte(millis: Long): String {
 }
 
 /** "0:12", "1:03:20" — a duração de um áudio, a partir de millis. */
-fun formatarDuracaoMs(duracaoMs: Long): String {
-    val totalSegundos = (duracaoMs / 1_000).coerceAtLeast(0)
+fun formatarDuracaoMs(durationMs: Long): String {
+    val totalSegundos = (durationMs / 1_000).coerceAtLeast(0)
     val horas = totalSegundos / 3_600
     val minutos = (totalSegundos % 3_600) / 60
     val segundos = totalSegundos % 60
@@ -180,22 +180,22 @@ fun formatarDuracao(segundos: Long): String = formatarDuracaoMs(segundos * 1_000
  * numa fila de cinco capturas, "Texto" três vezes não distingue nada, e o
  * trecho é o que a pessoa reconhece de imediato.
  */
-fun tituloDaCaptura(captura: Captura): String {
-    val origem = captura.origem?.takeIf { it.isNotBlank() }
-    return when (captura.formato) {
-        CaptureFormat.AUDIO -> captura.duracaoMs?.let { "Áudio · ${formatarDuracaoMs(it)}" } ?: "Áudio"
-        CaptureFormat.PHOTO -> origem?.let { "Foto do $it" } ?: "Foto"
-        CaptureFormat.TEXT -> captura.trecho?.takeIf { it.isNotBlank() }?.let { "“${resumir(it)}”" }
-            ?: origem?.let { "Texto do $it" }
+fun tituloDaCaptura(capture: Capture): String {
+    val source = capture.source?.takeIf { it.isNotBlank() }
+    return when (capture.format) {
+        CaptureFormat.AUDIO -> capture.durationMs?.let { "Áudio · ${formatarDuracaoMs(it)}" } ?: "Áudio"
+        CaptureFormat.PHOTO -> source?.let { "Foto do $it" } ?: "Foto"
+        CaptureFormat.TEXT -> capture.snippet?.takeIf { it.isNotBlank() }?.let { "“${resumir(it)}”" }
+            ?: source?.let { "Texto do $it" }
             ?: "Texto"
     }
 }
 
 /** Uma linha de trecho para caber num título, cortada na palavra e não na letra. */
-fun resumir(texto: String, limite: Int = 38): String {
-    val limpo = texto.trim().replace(Regex("\\s+"), " ")
-    if (limpo.length <= limite) return limpo
-    val corte = limpo.take(limite).substringBeforeLast(' ', limpo.take(limite))
+fun resumir(text: String, limit: Int = 38): String {
+    val limpo = text.trim().replace(Regex("\\s+"), " ")
+    if (limpo.length <= limit) return limpo
+    val corte = limpo.take(limit).substringBeforeLast(' ', limpo.take(limit))
     return "$corte…"
 }
 
@@ -203,7 +203,7 @@ fun resumir(texto: String, limite: Int = 38): String {
  * A ameixa identifica a marca/ações; a menta fica reservada para progresso.
  */
 @Composable
-fun corDoNivel(nivel: MemoryLevel): Color = when (nivel) {
+fun corDoNivel(level: MemoryLevel): Color = when (level) {
     MemoryLevel.NEW -> MaterialTheme.colorScheme.onSurfaceVariant
     MemoryLevel.LEARNING -> MaterialTheme.colorScheme.primary
     MemoryLevel.FAMILIAR -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.72f)
@@ -218,11 +218,11 @@ fun corDoNivel(nivel: MemoryLevel): Color = when (nivel) {
  * coisa fariam "familiar" parecer uma conquista.
  */
 @Composable
-fun corDoRotuloDoNivel(nivel: MemoryLevel): Color =
-    if (nivel == MemoryLevel.MASTERED) MaterialTheme.colorScheme.tertiary
+fun corDoRotuloDoNivel(level: MemoryLevel): Color =
+    if (level == MemoryLevel.MASTERED) MaterialTheme.colorScheme.tertiary
     else MaterialTheme.colorScheme.onSurfaceVariant
 
-fun rotuloDoNivel(nivel: MemoryLevel): String = when (nivel) {
+fun rotuloDoNivel(level: MemoryLevel): String = when (level) {
     MemoryLevel.NEW -> "nova"
     MemoryLevel.LEARNING -> "aprendendo"
     MemoryLevel.FAMILIAR -> "familiar"
@@ -235,8 +235,8 @@ fun rotuloDoNivel(nivel: MemoryLevel): String = when (nivel) {
  * Nulo quando não há retenção: sem ficha pronta não existe revisão marcada, e
  * dizer "revisar agora" nesse caso mandaria a pessoa a uma fila vazia.
  */
-fun textoDaProximaRevisao(retencao: Retencao?, agora: Long): String? {
-    val falta = retencao?.proximaRevisaoEm(agora) ?: return null
+fun textoDaProximaRevisao(retention: Retention?, now: Long): String? {
+    val falta = retention?.nextReviewIn(now) ?: return null
     return if (falta <= 0L) "revisar agora" else tempoAte(falta)
 }
 
@@ -249,13 +249,13 @@ fun textoDaProximaRevisao(retencao: Retencao?, agora: Long): String? {
  */
 @Composable
 fun BarraDeMemoria(
-    pontos: Double,
-    nivel: MemoryLevel,
+    points: Double,
+    level: MemoryLevel,
     modifier: Modifier = Modifier,
     altura: Dp = 8.dp,
 ) {
     val fracao by animateFloatAsState(
-        targetValue = (pontos / 100.0).toFloat().coerceIn(0f, 1f),
+        targetValue = (points / 100.0).toFloat().coerceIn(0f, 1f),
         animationSpec = tween(500),
         label = "fracaoMemoria",
     )
@@ -269,7 +269,7 @@ fun BarraDeMemoria(
             modifier = Modifier
                 .fillMaxWidth(fracao)
                 .fillMaxHeight()
-                .background(corDoNivel(nivel), RoundedCornerShape(altura / 2)),
+                .background(corDoNivel(level), RoundedCornerShape(altura / 2)),
         )
     }
 }

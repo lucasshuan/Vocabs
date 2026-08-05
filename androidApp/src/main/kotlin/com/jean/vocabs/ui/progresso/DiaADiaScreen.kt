@@ -33,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.Evento
+import com.jean.vocabs.shared.domain.Event
 import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.EventType
 import com.jean.vocabs.ui.components.CabecalhoDeDentro
@@ -54,19 +54,19 @@ import java.time.LocalDate
  */
 @Composable
 fun DiaADiaScreen(
-    alvo: String?,
+    target: String?,
     aoVoltar: () -> Unit,
     aoAbrirFicha: (Long) -> Unit,
     vm: ProgressoViewModel = viewModel(),
 ) {
-    LaunchedEffect(alvo) { vm.abrir(alvo) }
+    LaunchedEffect(target) { vm.abrir(target) }
     val estado by vm.estado.collectAsStateWithLifecycle()
-    val hoje = remember { LocalDate.now() }
-    val dias = remember(estado.eventos, estado.quota) {
+    val today = remember { LocalDate.now() }
+    val days = remember(estado.eventos, estado.quota) {
         agruparPorDia(
             eventos = estado.eventos,
-            hoje = hoje,
-            quotaDeHoje = "quota ${estado.quota.feita}/${estado.quota.total}",
+            today = today,
+            quotaDeHoje = "quota ${estado.quota.done}/${estado.quota.total}",
         )
     }
 
@@ -79,44 +79,44 @@ fun DiaADiaScreen(
         CartaoDaTela(recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "${estado.mes} · esta semana",
+                    text = "${estado.month} · esta semana",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = rotuloDeSequencia(estado.diasSeguidos),
+                    text = rotuloDeSequencia(estado.dayStreak),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary,
                 )
             }
             FaixaDaSemana(
-                dias = estado.semana.mapIndexed { indice, dia ->
+                days = estado.semana.mapIndexed { indice, day ->
                     DiaDaSemana(
                         sigla = SIGLAS_DA_SEMANA[indice],
-                        numero = dia.data.dayOfMonth,
-                        revisoes = dia.revisoes,
-                        hoje = dia.hoje,
-                        futuro = dia.futuro,
+                        numero = day.data.dayOfMonth,
+                        reviews = day.reviews,
+                        today = day.today,
+                        futuro = day.futuro,
                     )
                 },
                 modifier = Modifier.padding(top = 13.dp),
             )
         }
 
-        if (dias.isEmpty()) {
+        if (days.isEmpty()) {
             EstadoVazio(
                 icone = Icones.Relogio,
-                titulo = "Nada aconteceu ainda",
-                detalhe = "Capture uma palavra e ela aparece aqui.",
+                title = "Nada aconteceu ainda",
+                detail = "Capture uma palavra e ela aparece aqui.",
                 modifier = Modifier.weight(1f),
             )
         } else {
             LazyColumn(modifier = Modifier.weight(1f)) {
-                items(dias, key = { it.dia }) { grupo ->
+                items(days, key = { it.day }) { grupo ->
                     GrupoDoDia(
                         grupo = grupo,
-                        ultimo = grupo.dia == dias.last().dia,
+                        ultimo = grupo.day == days.last().day,
                         aoAbrirFicha = aoAbrirFicha,
                     )
                 }
@@ -145,7 +145,7 @@ private fun GrupoDoDia(grupo: DiaDeEventos, ultimo: Boolean, aoAbrirFicha: (Long
     // Hoje é ameixa mesmo estando vazio: é o dia em que ainda dá para fazer
     // alguma coisa, e não mais um buraco no histórico.
     val ponto = when {
-        grupo.hoje -> cores.primary
+        grupo.today -> cores.primary
         grupo.eventos.isEmpty() -> cores.outline
         else -> cores.tertiary
     }
@@ -182,7 +182,7 @@ private fun GrupoDoDia(grupo: DiaDeEventos, ultimo: Boolean, aoAbrirFicha: (Long
             modifier = Modifier.weight(1f).padding(start = 11.dp, bottom = 18.dp),
         ) {
             Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-                Text(grupo.titulo, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                Text(grupo.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                 grupo.quota?.let {
                     Text(text = it, style = MaterialTheme.typography.bodySmall, color = cores.primary)
                 }
@@ -192,7 +192,7 @@ private fun GrupoDoDia(grupo: DiaDeEventos, ultimo: Boolean, aoAbrirFicha: (Long
                 DiaParado()
             } else {
                 grupo.eventos.forEach { evento ->
-                    CartaoDoEvento(evento, aoClicar = { aoAbrirFicha(evento.entradaId) })
+                    CartaoDoEvento(evento, aoClicar = { aoAbrirFicha(evento.entryId) })
                 }
             }
         }
@@ -223,7 +223,7 @@ private fun DiaParado() {
 }
 
 @Composable
-private fun CartaoDoEvento(evento: Evento, aoClicar: () -> Unit) {
+private fun CartaoDoEvento(evento: Event, aoClicar: () -> Unit) {
     CartaoDaTela(
         aoClicar = aoClicar,
         forma = MaterialTheme.shapes.medium,
@@ -231,11 +231,11 @@ private fun CartaoDoEvento(evento: Evento, aoClicar: () -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(evento.alvo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Text(evento.target, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(
                 text = descricaoDoEvento(evento),
                 style = MaterialTheme.typography.bodySmall,
-                color = corDoEvento(evento.tipo),
+                color = corDoEvento(evento.type),
             )
         }
     }
@@ -250,7 +250,7 @@ private fun CartaoDoEvento(evento: Evento, aoClicar: () -> Unit) {
  * menta no que avançou, vermelho no que caiu, cinza no que só aconteceu.
  */
 @Composable
-private fun corDoEvento(tipo: EventType): Color = when (tipo) {
+private fun corDoEvento(type: EventType): Color = when (type) {
     EventType.LEVELED_UP, EventType.CORRECT -> MaterialTheme.colorScheme.tertiary
     EventType.INCORRECT -> MaterialTheme.colorScheme.error
     EventType.CAPTURED, EventType.CARD_READY -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -266,11 +266,11 @@ private val FOLGA_DO_TRILHO = 4.dp
 
 /** Um dia da linha do tempo, com o que aconteceu nele. */
 internal data class DiaDeEventos(
-    val dia: Long,
-    val titulo: String,
-    val hoje: Boolean,
+    val day: Long,
+    val title: String,
+    val today: Boolean,
     val quota: String?,
-    val eventos: List<Evento>,
+    val eventos: List<Event>,
 )
 
 /**
@@ -282,38 +282,38 @@ internal data class DiaDeEventos(
  * rolagem de nada.
  */
 internal fun agruparPorDia(
-    eventos: List<Evento>,
-    hoje: LocalDate,
+    eventos: List<Event>,
+    today: LocalDate,
     quotaDeHoje: String? = null,
 ): List<DiaDeEventos> {
     if (eventos.isEmpty()) return emptyList()
-    val porDia = eventos.groupBy { it.dia }
-    val diaDeHoje = hoje.toEpochDay() + DIA_JULIANO_DA_EPOCA_UI
+    val porDia = eventos.groupBy { it.day }
+    val diaDeHoje = today.toEpochDay() + DIA_JULIANO_DA_EPOCA_UI
     val maisAntigo = porDia.keys.min()
     val maisRecente = maxOf(porDia.keys.max(), diaDeHoje)
 
-    return (maisRecente downTo maisAntigo).map { dia ->
+    return (maisRecente downTo maisAntigo).map { day ->
         DiaDeEventos(
-            dia = dia,
-            titulo = tituloDoDia(dia, diaDeHoje),
-            hoje = dia == diaDeHoje,
+            day = day,
+            title = tituloDoDia(day, diaDeHoje),
+            today = day == diaDeHoje,
             // A quota é uma conta sobre a fila de agora, e a fila de terça já
             // passou — só o dia de hoje pode dizer quanto falta.
-            quota = quotaDeHoje.takeIf { dia == diaDeHoje },
-            eventos = porDia[dia].orEmpty(),
+            quota = quotaDeHoje.takeIf { day == diaDeHoje },
+            eventos = porDia[day].orEmpty(),
         )
     }
 }
 
 private const val DIA_JULIANO_DA_EPOCA_UI = 2_440_588L
 
-private fun tituloDoDia(dia: Long, hoje: Long): String {
-    val data = LocalDate.ofEpochDay(dia - DIA_JULIANO_DA_EPOCA_UI)
-    val nome = "${data.dayOfMonth} de ${nomeDoMes(data).lowercase()}"
-    return when (dia) {
-        hoje -> "$nome · hoje"
-        hoje - 1 -> "$nome · ontem"
-        else -> nome
+private fun tituloDoDia(day: Long, today: Long): String {
+    val data = LocalDate.ofEpochDay(day - DIA_JULIANO_DA_EPOCA_UI)
+    val name = "${data.dayOfMonth} de ${nomeDoMes(data).lowercase()}"
+    return when (day) {
+        today -> "$name · hoje"
+        today - 1 -> "$name · ontem"
+        else -> name
     }
 }
 
@@ -324,19 +324,19 @@ private fun tituloDoDia(dia: Long, hoje: Long): String {
  * só "revisão certa" e a linha do tempo perderia justamente a noção de avanço
  * que ela existe para mostrar.
  */
-internal fun descricaoDoEvento(evento: Evento): String = when (evento.tipo) {
+internal fun descricaoDoEvento(evento: Event): String = when (evento.type) {
     EventType.CAPTURED -> "capturada"
     EventType.CARD_READY -> "ficha pronta"
-    EventType.CORRECT -> ordinalDaRevisao(evento.detalhe, certa = true)
-    EventType.INCORRECT -> ordinalDaRevisao(evento.detalhe, certa = false)
-    EventType.LEVELED_UP -> "virou ${rotuloDoNivel(nivelDe(evento.detalhe))}"
+    EventType.CORRECT -> ordinalDaRevisao(evento.detail, certa = true)
+    EventType.INCORRECT -> ordinalDaRevisao(evento.detail, certa = false)
+    EventType.LEVELED_UP -> "virou ${rotuloDoNivel(nivelDe(evento.detail))}"
 }
 
-private fun ordinalDaRevisao(detalhe: String?, certa: Boolean): String {
+private fun ordinalDaRevisao(detail: String?, certa: Boolean): String {
     val desfecho = if (certa) "certa" else "errada"
-    val numero = detalhe?.toIntOrNull() ?: return "revisão $desfecho"
+    val numero = detail?.toIntOrNull() ?: return "revisão $desfecho"
     return "${numero}ª revisão $desfecho"
 }
 
-private fun nivelDe(detalhe: String?): MemoryLevel =
-    MemoryLevel.entries.firstOrNull { it.name == detalhe } ?: MemoryLevel.LEARNING
+private fun nivelDe(detail: String?): MemoryLevel =
+    MemoryLevel.entries.firstOrNull { it.name == detail } ?: MemoryLevel.LEARNING

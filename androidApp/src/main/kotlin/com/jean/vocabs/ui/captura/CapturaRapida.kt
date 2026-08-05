@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.captura
+package com.jean.vocabs.ui.capture
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -20,7 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.jean.vocabs.media.GravadorDeAudio
 import com.jean.vocabs.shared.domain.CaptureFormat
-import com.jean.vocabs.shared.media.ArquivosDeMidia
+import com.jean.vocabs.shared.media.MediaFiles
 import kotlinx.coroutines.delay
 import java.io.File
 
@@ -54,7 +54,7 @@ class CapturaRapida internal constructor() {
      * cada milissegundo como estado obrigaria a tela a recompor 20 vezes por
      * segundo para escrever o mesmo "0:07" — [segundos] existe para isso.
      */
-    val duracaoMs: Long
+    val durationMs: Long
         get() = if (gravando) SystemClock.elapsedRealtime() - comecouEm else ultimaDuracaoMs
 
     var segundos by mutableLongStateOf(0L)
@@ -119,8 +119,8 @@ const val MINIMO_DE_GRAVACAO_MS = 800L
  */
 @Composable
 fun rememberCapturaRapida(
-    alvo: String,
-    aoGuardar: (formato: CaptureFormat, caminho: String, duracaoMs: Long?, alvo: String) -> Unit,
+    target: String,
+    aoGuardar: (format: CaptureFormat, path: String, durationMs: Long?, target: String) -> Unit,
     aoRecado: (String) -> Unit,
 ): CapturaRapida {
     val contexto = LocalContext.current
@@ -135,16 +135,16 @@ fun rememberCapturaRapida(
     // O arquivo de destino precisa existir antes de chamar a câmera: o app de
     // câmera escreve nele, não devolve um caminho.
     var fotoPendente by remember { mutableStateOf<File?>(null) }
-    var alvoDaFoto by remember { mutableStateOf(alvo) }
+    var alvoDaFoto by remember { mutableStateOf(target) }
     val camera = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture(),
     ) { deuCerto ->
-        val arquivo = fotoPendente
+        val file = fotoPendente
         fotoPendente = null
-        if (deuCerto && arquivo != null) {
-            aoGuardar(CaptureFormat.PHOTO, arquivo.absolutePath, null, alvoDaFoto)
+        if (deuCerto && file != null) {
+            aoGuardar(CaptureFormat.PHOTO, file.absolutePath, null, alvoDaFoto)
         } else {
-            arquivo?.delete()
+            file?.delete()
         }
     }
 
@@ -155,7 +155,7 @@ fun rememberCapturaRapida(
      * enquanto a câmera está aberta — e o destino tem que ser o que estava
      * marcado quando o dedo desceu, não o que estiver na tela quando voltar.
      */
-    var alvoDaGravacao by remember { mutableStateOf(alvo) }
+    var alvoDaGravacao by remember { mutableStateOf(target) }
 
     val permissaoAudio = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -167,16 +167,16 @@ fun rememberCapturaRapida(
         )
     }
 
-    estado.lerNivel = { gravador.nivel }
+    estado.lerNivel = { gravador.level }
 
     estado.aoAbrirCamera = {
-        alvoDaFoto = alvo
-        val arquivo = ArquivosDeMidia.novaFoto(contexto)
-        fotoPendente = arquivo
+        alvoDaFoto = target
+        val file = MediaFiles.newPhoto(contexto)
+        fotoPendente = file
         val uri: Uri = FileProvider.getUriForFile(
             contexto,
             "${contexto.packageName}.fileprovider",
-            arquivo,
+            file,
         )
         camera.launch(uri)
     }
@@ -185,7 +185,7 @@ fun rememberCapturaRapida(
 
     estado.aoPedirAudio = {
         if (estado.temPermissaoDeAudio && gravador.iniciar()) {
-            alvoDaGravacao = alvo
+            alvoDaGravacao = target
             estado.comecouEm = SystemClock.elapsedRealtime()
             estado.segundos = 0
             estado.gravando = true
@@ -193,7 +193,7 @@ fun rememberCapturaRapida(
     }
 
     estado.aoEncerrar = { guardar ->
-        val duracao = estado.duracaoMs
+        val duracao = estado.durationMs
         estado.ultimaDuracaoMs = duracao
         estado.gravando = false
         val curta = duracao < MINIMO_DE_GRAVACAO_MS
@@ -201,8 +201,8 @@ fun rememberCapturaRapida(
             gravador.cancelar()
             if (guardar && curta) aoRecado("Curto demais para guardar.")
         } else {
-            gravador.parar()?.let { arquivo ->
-                aoGuardar(CaptureFormat.AUDIO, arquivo.absolutePath, duracao, alvoDaGravacao)
+            gravador.parar()?.let { file ->
+                aoGuardar(CaptureFormat.AUDIO, file.absolutePath, duracao, alvoDaGravacao)
             }
         }
     }
@@ -217,7 +217,7 @@ fun rememberCapturaRapida(
     // `duracaoMs`, que é lido direto do relógio quando alguém pergunta.
     LaunchedEffect(estado.gravando) {
         while (estado.gravando) {
-            estado.segundos = estado.duracaoMs / 1_000L
+            estado.segundos = estado.durationMs / 1_000L
             delay(120)
         }
     }

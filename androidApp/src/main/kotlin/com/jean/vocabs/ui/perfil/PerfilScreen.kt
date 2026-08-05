@@ -33,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.ResumoCurso
+import com.jean.vocabs.shared.domain.CourseSummary
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.CaixaTracejada
 import com.jean.vocabs.ui.components.CartaoDaTela
@@ -45,7 +45,7 @@ import com.jean.vocabs.ui.components.LinhaDeUsoDeIa
 import com.jean.vocabs.ui.components.RotuloDeSecao
 import com.jean.vocabs.ui.components.contagemAnimada
 import com.jean.vocabs.ui.components.fracaoAnimada
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.languages.idiomaDe
 
 /**
  * Tela 07 do handoff — "Você".
@@ -91,21 +91,21 @@ fun PerfilScreen(
             // o assunto e não um detalhe de apoio — aqui a contagem é o conteúdo.
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
                 NumeroDoResumo(
-                    valor = "${contagemAnimada(estado.totalDeDominadas, "dominadasNoTotal")}",
+                    value = "${contagemAnimada(estado.totalDeDominadas, "dominadasNoTotal")}",
                     rotulo = if (estado.totalDeDominadas == 1) "dominada" else "dominadas",
                     cor = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.weight(1f),
                 )
                 DivisorVertical()
                 NumeroDoResumo(
-                    valor = "${contagemAnimada(estado.diasSeguidos, "diasSeguidosNoTotal")}",
-                    rotulo = if (estado.diasSeguidos == 1) "dia seguido" else "dias seguidos",
+                    value = "${contagemAnimada(estado.dayStreak, "diasSeguidosNoTotal")}",
+                    rotulo = if (estado.dayStreak == 1) "dia seguido" else "dias seguidos",
                     cor = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
                 DivisorVertical()
                 NumeroDoResumo(
-                    valor = "${contagemAnimada(estado.totalDeFichas, "fichasNoTotal")}",
+                    value = "${contagemAnimada(estado.totalDeFichas, "fichasNoTotal")}",
                     rotulo = if (estado.totalDeFichas == 1) "ficha" else "fichas",
                     cor = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f),
@@ -114,24 +114,24 @@ fun PerfilScreen(
         }
 
         ProgressoPorIdioma(
-            cursos = estado.cursos,
+            courses = estado.courses,
             aoAbrir = aoAbrirProgresso,
             aoAdicionar = aoAbrirNovoIdioma,
         )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-        LinhaDeUsoDeIa(usadas = estado.usoIa.usadas, limite = estado.usoIa.limite)
+        LinhaDeUsoDeIa(used = estado.aiUsage.used, limit = estado.aiUsage.limit)
 
         // O subtexto não é enfeite: o idioma-base era uma linha desta tela e agora
         // está um toque mais fundo. Sem citá-lo aqui, quem o procura onde ele
         // estava não tem nenhuma pista de para onde olhar.
         LinhaDeLista(
-            titulo = "Configurações",
-            detalhe = "meu idioma, tema e meus dados",
+            title = "Configurações",
+            detail = "meu idioma, tema e meus dados",
             aoClicar = aoAbrirConfiguracoes,
-            inicio = { DiscoDeIcone(Icones.Engrenagem, null, cor = MaterialTheme.colorScheme.onSurfaceVariant, fundo = MaterialTheme.colorScheme.surfaceVariant) },
-            fim = { ChevronDeLinha() },
+            start = { DiscoDeIcone(Icones.Engrenagem, null, cor = MaterialTheme.colorScheme.onSurfaceVariant, fundo = MaterialTheme.colorScheme.surfaceVariant) },
+            end = { ChevronDeLinha() },
         )
         Spacer(Modifier.navigationBarsPadding().height(110.dp))
     }
@@ -146,12 +146,12 @@ fun PerfilScreen(
  */
 @Composable
 private fun ProgressoPorIdioma(
-    cursos: List<ResumoCurso>,
+    courses: List<CourseSummary>,
     aoAbrir: (String) -> Unit,
     aoAdicionar: () -> Unit,
 ) {
     val cores = MaterialTheme.colorScheme
-    val rolavel = cursos.size > 3
+    val rolavel = courses.size > 3
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
@@ -169,8 +169,8 @@ private fun ProgressoPorIdioma(
                 .verticalScroll(rememberScrollState())
                 .padding(8.dp),
         ) {
-            cursos.forEach { curso ->
-                LinhaDeCurso(curso) { aoAbrir(curso.par.alvo) }
+            courses.forEach { course ->
+                LinhaDeCurso(course) { aoAbrir(course.languagePair.target) }
             }
             CaixaTracejada(
                 modifier = Modifier.fillMaxWidth(),
@@ -197,26 +197,26 @@ private fun ProgressoPorIdioma(
 }
 
 @Composable
-private fun LinhaDeCurso(curso: ResumoCurso, aoClicar: () -> Unit) {
+private fun LinhaDeCurso(course: CourseSummary, aoClicar: () -> Unit) {
     val cores = MaterialTheme.colorScheme
     val fracao by fracaoAnimada(
-        alvo = if (curso.total == 0) 0f else curso.dominadas.toFloat() / curso.total,
+        target = if (course.total == 0) 0f else course.mastered.toFloat() / course.total,
         rotulo = "fracaoDoCurso",
     )
 
     LinhaDeLista(
         aoClicar = aoClicar,
-        inicio = { BandeiraCircular(idiomaDe(curso.par.alvo), tamanho = 30.dp) },
-        fim = { ChevronDeLinha() },
+        start = { BandeiraCircular(idiomaDe(course.languagePair.target), tamanho = 30.dp) },
+        end = { ChevronDeLinha() },
     ) {
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = idiomaDe(curso.par.alvo).displayName,
+                text = idiomaDe(course.languagePair.target).displayName,
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
             )
             Text(
-                text = "${curso.dominadas} de ${curso.total}",
+                text = "${course.mastered} de ${course.total}",
                 style = MaterialTheme.typography.bodySmall,
                 color = cores.onSurfaceVariant,
             )
@@ -239,9 +239,9 @@ private fun LinhaDeCurso(curso: ResumoCurso, aoClicar: () -> Unit) {
 }
 
 @Composable
-private fun NumeroDoResumo(valor: String, rotulo: String, cor: Color, modifier: Modifier = Modifier) {
+private fun NumeroDoResumo(value: String, rotulo: String, cor: Color, modifier: Modifier = Modifier) {
     Column(modifier) {
-        Text(valor, style = MaterialTheme.typography.headlineMedium, color = cor)
+        Text(value, style = MaterialTheme.typography.headlineMedium, color = cor)
         Text(
             text = rotulo,
             style = MaterialTheme.typography.bodySmall,

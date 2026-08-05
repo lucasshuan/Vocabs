@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.captura
+package com.jean.vocabs.ui.capture
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -7,7 +7,7 @@ import com.jean.vocabs.media.TranscritorDeAudio
 import com.jean.vocabs.media.TranscritorDeFoto
 import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.shared.domain.CaptureFormat
-import com.jean.vocabs.shared.domain.ParIdiomas
+import com.jean.vocabs.shared.domain.LanguagePair
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -23,20 +23,20 @@ import kotlinx.coroutines.launch
  * captura": ele seria mais um estado para divergir do que a tela mostra.
  */
 data class EstadoDaCaptura(
-    val par: ParIdiomas = ParIdiomas.PADRAO,
-    val cursos: List<String> = emptyList(),
+    val languagePair: LanguagePair = LanguagePair.PADRAO,
+    val courses: List<String> = emptyList(),
 )
 
 class CapturaViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val repositorio = AppContainer.repositorio(app)
-    private val preferencias = AppContainer.preferencias(app)
+    private val repository = AppContainer.repository(app)
+    private val preferences = AppContainer.preferences(app)
     private val transcritorFoto = TranscritorDeFoto(app)
     private val transcritorAudio = TranscritorDeAudio(app)
 
     val estado: StateFlow<EstadoDaCaptura> = combine(
-        preferencias.observarPar(),
-        preferencias.observarCursos(),
+        preferences.observeLanguagePair(),
+        preferences.observeCourses(),
         ::EstadoDaCaptura,
     ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EstadoDaCaptura())
 
@@ -48,10 +48,10 @@ class CapturaViewModel(app: Application) : AndroidViewModel(app) {
      * captura em Pendentes com o idioma já escolhido, em vez de jogar fora o que
      * a pessoa colou.
      */
-    fun salvarTrecho(trecho: String, alvo: String, aoPronto: (Long) -> Unit) {
-        val par = ParIdiomas(nativo = estado.value.par.nativo, alvo = alvo)
+    fun salvarTrecho(snippet: String, target: String, aoPronto: (Long) -> Unit) {
+        val languagePair = LanguagePair(native = estado.value.languagePair.native, target = target)
         viewModelScope.launch {
-            aoPronto(repositorio.capturarTrecho(trecho, par))
+            aoPronto(repository.captureSnippet(snippet, languagePair))
         }
     }
 
@@ -63,22 +63,22 @@ class CapturaViewModel(app: Application) : AndroidViewModel(app) {
      * TRANSCRIBING.
      */
     fun salvarMidia(
-        formato: CaptureFormat,
-        caminho: String,
-        duracaoMs: Long?,
-        alvo: String,
+        format: CaptureFormat,
+        path: String,
+        durationMs: Long?,
+        target: String,
         aoIdentificar: (Long) -> Unit = {},
     ) {
-        val par = ParIdiomas(nativo = estado.value.par.nativo, alvo = alvo)
-        AppContainer.escopo.launch {
-            val id = repositorio.capturarMidia(formato, caminho, duracaoMs, par)
+        val languagePair = LanguagePair(native = estado.value.languagePair.native, target = target)
+        AppContainer.scope.launch {
+            val id = repository.captureMedia(format, path, durationMs, languagePair)
             aoIdentificar(id)
-            val resultado = when (formato) {
-                CaptureFormat.PHOTO -> transcritorFoto.transcrever(caminho)
-                CaptureFormat.AUDIO -> transcritorAudio.transcrever(caminho)
+            val result = when (format) {
+                CaptureFormat.PHOTO -> transcritorFoto.transcrever(path)
+                CaptureFormat.AUDIO -> transcritorAudio.transcrever(path)
                 CaptureFormat.TEXT -> return@launch
             }
-            repositorio.registrarTranscricao(id, resultado.texto, resultado.erro)
+            repository.recordTranscription(id, result.text, result.error)
         }
     }
 }

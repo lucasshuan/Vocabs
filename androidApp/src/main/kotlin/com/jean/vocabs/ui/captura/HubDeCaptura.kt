@@ -1,4 +1,4 @@
-package com.jean.vocabs.ui.captura
+package com.jean.vocabs.ui.capture
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -109,8 +109,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  */
 @Composable
 fun HubDeCaptura(
-    captura: CapturaRapida,
-    idioma: Language,
+    capture: CapturaRapida,
+    language: Language,
     aoAbrirTexto: () -> Unit,
     aoMudarDeFase: (emGesto: Boolean) -> Unit,
     modifier: Modifier = Modifier,
@@ -120,8 +120,8 @@ fun HubDeCaptura(
     val abrirTexto by rememberUpdatedState(aoAbrirTexto)
 
     var aberto by remember { mutableStateOf(false) }
-    var alvo by remember { mutableStateOf<AlvoDoGesto>(AlvoDoGesto.Origem) }
-    val gravando = captura.gravando
+    var target by remember { mutableStateOf<AlvoDoGesto>(AlvoDoGesto.Origem) }
+    val gravando = capture.gravando
 
     // "O hub tomou a tela": o que está atrás desfoca e sai do alcance do leitor de
     // tela. Vale para o leque e para a gravação — a tela de gravação é opaca, mas
@@ -136,7 +136,7 @@ fun HubDeCaptura(
     // aberto e sem nada na tela dizendo isso.
     DisposableEffect(Unit) {
         onDispose {
-            if (captura.gravando) captura.cancelarAudio()
+            if (capture.gravando) capture.cancelarAudio()
             aoMudarDeFase(false)
         }
     }
@@ -180,17 +180,17 @@ fun HubDeCaptura(
                 .offset(y = ALTURA_DA_ANCORA / 2 - ALTURA_DA_BARRA / 2 - ELEVACAO_DO_BOTAO),
         ) {
             if (desenhandoLeque) {
-                GuiaAteOAlvo(alvo, aberto)
-                CaptureFormat.entries.forEach { formato ->
+                GuiaAteOAlvo(target, aberto)
+                CaptureFormat.entries.forEach { format ->
                     AlvoDoLeque(
-                        formato = formato,
-                        marcado = alvo == AlvoDoGesto.Modo(formato),
+                        format = format,
+                        marcado = target == AlvoDoGesto.Modo(format),
                         visivel = aberto,
-                        atraso = ATRASO_DE_ENTRADA.getValue(formato),
+                        atraso = ATRASO_DE_ENTRADA.getValue(format),
                         reduzido = reduzido,
                     )
                 }
-                DicaDoGesto(alvo, aberto)
+                DicaDoGesto(target, aberto)
             }
 
             BotaoDoHub(
@@ -207,10 +207,10 @@ fun HubDeCaptura(
                         // pelas ações da tela de gravação.
                         customActions = listOf(
                             CustomAccessibilityAction("Escrever") { abrirTexto(); true },
-                            CustomAccessibilityAction("Fotografar") { captura.tirarFoto(); true },
+                            CustomAccessibilityAction("Fotografar") { capture.tirarFoto(); true },
                             CustomAccessibilityAction("Gravar áudio") {
-                                if (captura.temPermissaoDeAudio) captura.gravarAudio()
-                                else captura.pedirPermissaoDeAudio()
+                                if (capture.temPermissaoDeAudio) capture.gravarAudio()
+                                else capture.pedirPermissaoDeAudio()
                                 true
                             },
                         )
@@ -252,7 +252,7 @@ fun HubDeCaptura(
                             aberto = true
                             haptico.performHapticFeedback(HapticFeedbackType.LongPress)
 
-                            var atual: AlvoDoGesto = AlvoDoGesto.Origem
+                            var current: AlvoDoGesto = AlvoDoGesto.Origem
                             var soltou = false
 
                             while (true) {
@@ -264,9 +264,9 @@ fun HubDeCaptura(
                                     raioDeOrigemPx = raioDeOrigemPx,
                                 )
 
-                                if (novo != atual) {
-                                    atual = novo
-                                    alvo = novo
+                                if (novo != current) {
+                                    current = novo
+                                    target = novo
                                     // Chegar num alvo tem toque tátil; sair dele
                                     // não. O que a mão precisa sentir é o encaixe,
                                     // e um segundo pulso na saída transformaria
@@ -283,8 +283,8 @@ fun HubDeCaptura(
                             }
 
                             aberto = false
-                            alvo = AlvoDoGesto.Origem
-                            concluir(captura, atual, soltou, haptico, abrirTexto)
+                            target = AlvoDoGesto.Origem
+                            concluir(capture, current, soltou, haptico, abrirTexto)
                         }
                     },
             )
@@ -294,8 +294,8 @@ fun HubDeCaptura(
         // some atrás dela em vez de continuar clicável debaixo de uma tela opaca.
         if (desenhandoGravacao) {
             TelaDeGravacao(
-                captura = captura,
-                idioma = idioma,
+                capture = capture,
+                language = language,
                 gravando = gravando,
             )
         }
@@ -329,10 +329,10 @@ private fun aindaNaTela(ativo: Boolean, sobra: Long = Movimento.PADRAO.toLong() 
  * para cima que vazasse para o conteúdo rolaria a tela debaixo do leque.
  */
 private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.proximaMudanca(
-    origem: PointerInputChange,
+    source: PointerInputChange,
 ): PointerInputChange? {
     val evento = awaitPointerEvent()
-    val mudanca = evento.changes.firstOrNull { it.id == origem.id } ?: return null
+    val mudanca = evento.changes.firstOrNull { it.id == source.id } ?: return null
     mudanca.consume()
     return mudanca
 }
@@ -346,22 +346,22 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.pro
  * soltura abriria a câmera sozinho no meio de uma ligação.
  */
 private fun concluir(
-    captura: CapturaRapida,
-    alvo: AlvoDoGesto,
+    capture: CapturaRapida,
+    target: AlvoDoGesto,
     soltou: Boolean,
     haptico: HapticFeedback,
     abrirTexto: () -> Unit,
 ) {
     if (!soltou) return
-    when (alvo) {
+    when (target) {
         is AlvoDoGesto.Modo -> {
             haptico.performHapticFeedback(HapticFeedbackType.LongPress)
-            when (alvo.formato) {
+            when (target.format) {
                 CaptureFormat.TEXT -> abrirTexto()
-                CaptureFormat.PHOTO -> captura.tirarFoto()
+                CaptureFormat.PHOTO -> capture.tirarFoto()
                 CaptureFormat.AUDIO ->
-                    if (captura.temPermissaoDeAudio) captura.gravarAudio()
-                    else captura.pedirPermissaoDeAudio()
+                    if (capture.temPermissaoDeAudio) capture.gravarAudio()
+                    else capture.pedirPermissaoDeAudio()
             }
         }
         // O leque abriu por tempo e o dedo nunca saiu do `+`. Isso é um toque
@@ -577,14 +577,14 @@ private val CRESCIMENTO_DO_REALCE =
  */
 @Composable
 private fun AlvoDoLeque(
-    formato: CaptureFormat,
+    format: CaptureFormat,
     marcado: Boolean,
     visivel: Boolean,
     atraso: Long,
     reduzido: Boolean,
 ) {
-    val paleta = coresDoFormato(formato)
-    val destino: DpOffset = deslocamentoDe(formato)
+    val paleta = coresDoFormato(format)
+    val destino: DpOffset = deslocamentoDe(format)
 
     val avanco = remember { Animatable(0f) }
     LaunchedEffect(visivel) {
@@ -637,13 +637,13 @@ private fun AlvoDoLeque(
             },
     ) {
         Icon(
-            imageVector = iconeDoFormato(formato),
+            imageVector = iconeDoFormato(format),
             contentDescription = null,
             tint = tinta,
             modifier = Modifier.size(26.dp),
         )
         Text(
-            text = rotuloDoFormato(formato),
+            text = rotuloDoFormato(format),
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
             fontWeight = if (marcado) FontWeight.Bold else FontWeight.Medium,
@@ -673,9 +673,9 @@ private val TOCO_DA_GUIA = 46.dp
  * troca de alvo com a mesma mola dos discos, sem recompor ninguém.
  */
 @Composable
-private fun GuiaAteOAlvo(alvo: AlvoDoGesto, aberto: Boolean) {
+private fun GuiaAteOAlvo(target: AlvoDoGesto, aberto: Boolean) {
     val densidade = LocalDensity.current
-    val marcado = (alvo as? AlvoDoGesto.Modo)?.formato
+    val marcado = (target as? AlvoDoGesto.Modo)?.format
     val destino = with(densidade) {
         val ponto = marcado?.let(::deslocamentoDe) ?: DpOffset(0.dp, -(RAIO_DE_ORIGEM + TOCO_DA_GUIA))
         Offset(ponto.x.toPx(), ponto.y.toPx())
@@ -699,14 +699,14 @@ private fun GuiaAteOAlvo(alvo: AlvoDoGesto, aberto: Boolean) {
         Modifier.requiredSize(1.dp).drawBehind {
             val forca = presenca.value
             if (forca < 0.01f) return@drawBehind
-            val fim = ponta.value
-            val distancia = fim.getDistance()
+            val end = ponta.value
+            val distancia = end.getDistance()
             if (distancia < 1f) return@drawBehind
-            val inicio = fim * (RAIO_DE_ORIGEM.toPx() / distancia)
+            val start = end * (RAIO_DE_ORIGEM.toPx() / distancia)
             drawLine(
                 color = Color.White,
-                start = center + inicio,
-                end = center + fim * forca,
+                start = center + start,
+                end = center + end * forca,
                 strokeWidth = 2.5.dp.toPx(),
                 cap = StrokeCap.Round,
                 alpha = (0.26f + 0.18f * realce.value) * forca,
@@ -725,9 +725,9 @@ private fun GuiaAteOAlvo(alvo: AlvoDoGesto, aberto: Boolean) {
  * É o que ensina o leque na primeira vez sem ninguém explicar.
  */
 @Composable
-private fun DicaDoGesto(alvo: AlvoDoGesto, aberto: Boolean) {
-    val marcado = (alvo as? AlvoDoGesto.Modo)?.formato
-    val texto = when (marcado) {
+private fun DicaDoGesto(target: AlvoDoGesto, aberto: Boolean) {
+    val marcado = (target as? AlvoDoGesto.Modo)?.format
+    val text = when (marcado) {
         CaptureFormat.TEXT -> "solte para escrever"
         CaptureFormat.AUDIO -> "solte para gravar"
         CaptureFormat.PHOTO -> "solte para fotografar"
@@ -756,7 +756,7 @@ private fun DicaDoGesto(alvo: AlvoDoGesto, aberto: Boolean) {
             .padding(horizontal = 14.dp, vertical = 7.dp),
     ) {
         Text(
-            text = texto,
+            text = text,
             style = MaterialTheme.typography.labelMedium,
             color = Color.White,
             fontWeight = if (marcado != null) FontWeight.Bold else FontWeight.Medium,

@@ -2,21 +2,21 @@ package com.jean.vocabs.shared.domain
 
 import com.jean.vocabs.contracts.TargetType
 
-data class TokenDoTrecho(
-    val texto: String,
-    val inicio: Int,
-    val fim: Int,
+data class SnippetToken(
+    val text: String,
+    val start: Int,
+    val end: Int,
 )
 
-private val tokenValido = Regex("[\\p{L}\\p{N}]+(?:['’\\-][\\p{L}\\p{N}]+)*")
-private val espacosRepetidos = Regex("\\s+")
+private val validToken = Regex("[\\p{L}\\p{N}]+(?:['’\\-][\\p{L}\\p{N}]+)*")
+private val repeatedSpaces = Regex("\\s+")
 
 /** Pontuação externa fica fora; apóstrofos e hífens internos permanecem. */
-fun tokenizarTrecho(trecho: String): List<TokenDoTrecho> = tokenValido.findAll(trecho).map { achado ->
-    TokenDoTrecho(
-        texto = achado.value,
-        inicio = achado.range.first,
-        fim = achado.range.last + 1,
+fun tokenizeSnippet(snippet: String): List<SnippetToken> = validToken.findAll(snippet).map { achado ->
+    SnippetToken(
+        text = achado.value,
+        start = achado.range.first,
+        end = achado.range.last + 1,
     )
 }.toList()
 
@@ -24,34 +24,34 @@ fun tokenizarTrecho(trecho: String): List<TokenDoTrecho> = tokenValido.findAll(t
  * Cria uma seleção contínua entre dois tokens. Os limites são [início, fim), o
  * mesmo formato usado pelo banco e por String.substring.
  */
-fun selecionarTokens(trecho: String, primeiro: Int, ultimo: Int = primeiro): AlvoSelecionado? {
-    val tokens = tokenizarTrecho(trecho)
+fun selectTokens(snippet: String, primeiro: Int, ultimo: Int = primeiro): SelectedTarget? {
+    val tokens = tokenizeSnippet(snippet)
     if (primeiro !in tokens.indices || ultimo !in tokens.indices) return null
-    val inicioIndice = minOf(primeiro, ultimo)
-    val fimIndice = maxOf(primeiro, ultimo)
-    val inicio = tokens[inicioIndice].inicio
-    val fim = tokens[fimIndice].fim
-    return AlvoSelecionado(
-        texto = trecho.substring(inicio, fim),
-        inicio = inicio,
-        fim = fim,
-        tipo = if (inicioIndice == fimIndice) TargetType.WORD else TargetType.PHRASE,
+    val startIndex = minOf(primeiro, ultimo)
+    val endIndex = maxOf(primeiro, ultimo)
+    val start = tokens[startIndex].start
+    val end = tokens[endIndex].end
+    return SelectedTarget(
+        text = snippet.substring(start, end),
+        start = start,
+        end = end,
+        type = if (startIndex == endIndex) TargetType.WORD else TargetType.PHRASE,
     )
 }
 
-fun AlvoSelecionado.eValidoEm(trecho: String): Boolean =
-    inicio >= 0 && fim in (inicio + 1)..trecho.length && trecho.substring(inicio, fim) == texto
+fun SelectedTarget.isValidIn(snippet: String): Boolean =
+    start >= 0 && end in (start + 1)..snippet.length && snippet.substring(start, end) == text
 
 /** Só caixa e espaços repetidos são ignorados; acentos e pontuação continuam valendo. */
-fun normalizarResposta(valor: String): String = valor.trim().lowercase().replace(espacosRepetidos, " ")
+fun normalizeAnswer(value: String): String = value.trim().lowercase().replace(repeatedSpaces, " ")
 
-fun respostaCorreta(resposta: String, esperado: String): Boolean =
-    normalizarResposta(resposta) == normalizarResposta(esperado)
+fun isAnswerCorrect(answer: String, esperado: String): Boolean =
+    normalizeAnswer(answer) == normalizeAnswer(esperado)
 
-fun trechoCloze(entrada: Entrada, marcador: String = "________"): String {
-    val trecho = entrada.trecho.orEmpty()
-    val inicio = entrada.inicio ?: return trecho.replace(entrada.alvo.orEmpty(), marcador)
-    val fim = entrada.fim ?: return trecho.replace(entrada.alvo.orEmpty(), marcador)
-    if (inicio !in 0..trecho.length || fim !in inicio..trecho.length) return trecho
-    return trecho.replaceRange(inicio, fim, marcador)
+fun clozeSnippet(entry: Entry, marcador: String = "________"): String {
+    val snippet = entry.snippet.orEmpty()
+    val start = entry.start ?: return snippet.replace(entry.target.orEmpty(), marcador)
+    val end = entry.end ?: return snippet.replace(entry.target.orEmpty(), marcador)
+    if (start !in 0..snippet.length || end !in start..snippet.length) return snippet
+    return snippet.replaceRange(start, end, marcador)
 }

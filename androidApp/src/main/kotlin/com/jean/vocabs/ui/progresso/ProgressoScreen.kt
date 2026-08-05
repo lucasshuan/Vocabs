@@ -47,9 +47,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.Degraus
-import com.jean.vocabs.shared.domain.QuotaDoDia
-import com.jean.vocabs.shared.domain.ResumoCurso
+import com.jean.vocabs.shared.domain.Steps
+import com.jean.vocabs.shared.domain.DailyQuota
+import com.jean.vocabs.shared.domain.CourseSummary
 import com.jean.vocabs.ui.components.AcaoSecundaria
 import com.jean.vocabs.ui.components.AnelDeProgresso
 import com.jean.vocabs.ui.components.BandeiraCircular
@@ -67,7 +67,7 @@ import com.jean.vocabs.ui.components.contornoTracejado
 import com.jean.vocabs.ui.components.encolheAoTocar
 import com.jean.vocabs.ui.components.fracaoAnimada
 import com.jean.vocabs.ui.components.lembrarToque
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.languages.idiomaDe
 import kotlinx.coroutines.launch
 
 /**
@@ -92,29 +92,29 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProgressoScreen(
-    alvo: String?,
+    target: String?,
     aoVoltar: () -> Unit,
     aoAbrirDiaADia: (String) -> Unit,
     aoAbrirOQueFalta: (String) -> Unit,
     aoAdicionarIdioma: () -> Unit,
     vm: ProgressoViewModel = viewModel(),
 ) {
-    LaunchedEffect(alvo) { vm.abrir(alvo) }
+    LaunchedEffect(target) { vm.abrir(target) }
     val estado by vm.estado.collectAsStateWithLifecycle()
-    val cursos by vm.cursos.collectAsStateWithLifecycle()
+    val courses by vm.courses.collectAsStateWithLifecycle()
     val podeRemover by vm.podeRemover.collectAsStateWithLifecycle()
     val cores = MaterialTheme.colorScheme
-    val escopo = rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     var confirmarRemocao by remember { mutableStateOf(false) }
     var gavetaAberta by remember { mutableStateOf(false) }
     val estadoDaGaveta = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     /** O curso olhado agora — o da rota, o escolhido na gaveta, ou o aberto. */
-    val olhado = estado.par.alvo
+    val olhado = estado.languagePair.target
     val vazio = estado.total == 0
 
     fun fecharGaveta() {
-        escopo.launch { estadoDaGaveta.hide() }.invokeOnCompletion { gavetaAberta = false }
+        scope.launch { estadoDaGaveta.hide() }.invokeOnCompletion { gavetaAberta = false }
     }
 
     if (confirmarRemocao) {
@@ -142,7 +142,7 @@ fun ProgressoScreen(
             .padding(horizontal = 20.dp),
     ) {
         CabecalhoDeDentro("Seu progresso", aoVoltar, Modifier.padding(top = 8.dp)) {
-            PilulaDoCurso(alvo = olhado, aberta = gavetaAberta, aoClicar = { gavetaAberta = true })
+            PilulaDoCurso(target = olhado, aberta = gavetaAberta, aoClicar = { gavetaAberta = true })
         }
 
         CartaoDaSemana(estado = estado, vazio = vazio, aoAbrir = { aoAbrirDiaADia(olhado) })
@@ -151,7 +151,7 @@ fun ProgressoScreen(
 
         if (podeRemover) {
             AcaoSecundaria(
-                texto = "Remover o ${idiomaDe(olhado).displayName.lowercase()} da faixa",
+                text = "Remover o ${idiomaDe(olhado).displayName.lowercase()} da faixa",
                 aoClicar = { confirmarRemocao = true },
             )
         }
@@ -162,7 +162,7 @@ fun ProgressoScreen(
     if (gavetaAberta) {
         ModalBottomSheet(onDismissRequest = { gavetaAberta = false }, sheetState = estadoDaGaveta) {
             GavetaDeCursos(
-                cursos = cursos,
+                courses = courses,
                 olhado = olhado,
                 aoEscolher = {
                     vm.abrir(it)
@@ -190,7 +190,7 @@ private fun CartaoDaSemana(estado: ProgressoEstado, vazio: Boolean, aoAbrir: () 
     val conteudo: @Composable ColumnScope.() -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "${estado.mes} · esta semana",
+                text = "${estado.month} · esta semana",
                 style = MaterialTheme.typography.labelMedium,
                 color = if (vazio) cores.outline else cores.onSurfaceVariant,
             )
@@ -205,13 +205,13 @@ private fun CartaoDaSemana(estado: ProgressoEstado, vazio: Boolean, aoAbrir: () 
         }
 
         FaixaDaSemana(
-            dias = estado.semana.mapIndexed { indice, dia ->
+            days = estado.semana.mapIndexed { indice, day ->
                 DiaDaSemana(
                     sigla = SIGLAS_DA_SEMANA[indice],
-                    numero = dia.data.dayOfMonth,
-                    revisoes = dia.revisoes,
-                    hoje = dia.hoje,
-                    futuro = dia.futuro,
+                    numero = day.data.dayOfMonth,
+                    reviews = day.reviews,
+                    today = day.today,
+                    futuro = day.futuro,
                 )
             },
             tracejada = vazio,
@@ -222,7 +222,7 @@ private fun CartaoDaSemana(estado: ProgressoEstado, vazio: Boolean, aoAbrir: () 
 
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Quota de hoje no ${idiomaDe(estado.par.alvo).displayName.lowercase()}",
+                text = "Quota de hoje no ${idiomaDe(estado.languagePair.target).displayName.lowercase()}",
                 style = MaterialTheme.typography.titleSmall,
                 color = if (vazio) cores.onSurfaceVariant else cores.onSurface,
                 modifier = Modifier.weight(1f),
@@ -313,14 +313,14 @@ private fun CartaoDoEstoque(estado: ProgressoEstado, vazio: Boolean, aoAbrir: ()
     CartaoDaTela(aoClicar = aoAbrir, recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             AnelDeProgresso(
-                fracao = estado.dominadas.toFloat() / estado.total,
+                fracao = estado.mastered.toFloat() / estado.total,
                 tamanho = 78.dp,
                 espessura = 9.dp,
             ) {
                 // Conta do zero junto com o arco: é a contagem de conquista
                 // acumulada que `contagemAnimada` existe para servir.
                 Text(
-                    text = "${contagemAnimada(estado.dominadas, "dominadas")}",
+                    text = "${contagemAnimada(estado.mastered, "mastered")}",
                     style = MaterialTheme.typography.headlineMedium,
                 )
                 Text(
@@ -330,7 +330,7 @@ private fun CartaoDoEstoque(estado: ProgressoEstado, vazio: Boolean, aoAbrir: ()
                 )
             }
             Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
-                Text(tituloDoEstoque(estado.dominadas), style = MaterialTheme.typography.titleLarge)
+                Text(tituloDoEstoque(estado.mastered), style = MaterialTheme.typography.titleLarge)
                 Text(
                     text = textoDoQuePertoDeVirar(estado.pertoDeVirar.size),
                     style = MaterialTheme.typography.bodySmall,
@@ -343,7 +343,7 @@ private fun CartaoDoEstoque(estado: ProgressoEstado, vazio: Boolean, aoAbrir: ()
 
         BarraDeFaixas(
             faixas = listOf(
-                estado.dominadas to cores.tertiary,
+                estado.mastered to cores.tertiary,
                 estado.familiares to cores.tertiary.copy(alpha = 0.55f),
                 estado.aprendendo to cores.outlineVariant,
             ),
@@ -352,7 +352,7 @@ private fun CartaoDoEstoque(estado: ProgressoEstado, vazio: Boolean, aoAbrir: ()
 
         LegendaDoEstoque(
             rotulos = listOf(
-                "${estado.dominadas} dominadas",
+                "${estado.mastered} dominadas",
                 "${estado.familiares} familiares",
                 "${estado.aprendendo} aprendendo",
             ),
@@ -387,9 +387,9 @@ private fun LegendaDoEstoque(rotulos: List<String>, cor: Color, modifier: Modifi
  * que outro toque a fecha.
  */
 @Composable
-private fun PilulaDoCurso(alvo: String, aberta: Boolean, aoClicar: () -> Unit) {
+private fun PilulaDoCurso(target: String, aberta: Boolean, aoClicar: () -> Unit) {
     val cores = MaterialTheme.colorScheme
-    val idioma = idiomaDe(alvo)
+    val language = idiomaDe(target)
     val toque = lembrarToque()
     val giro by animateFloatAsState(
         targetValue = if (aberta) 180f else 0f,
@@ -410,9 +410,9 @@ private fun PilulaDoCurso(alvo: String, aberta: Boolean, aoClicar: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(7.dp),
             modifier = Modifier.padding(start = 5.dp, end = 9.dp, top = 5.dp, bottom = 5.dp),
         ) {
-            BandeiraCircular(idioma, tamanho = 20.dp)
+            BandeiraCircular(language, tamanho = 20.dp)
             Text(
-                text = idioma.displayName,
+                text = language.displayName,
                 style = MaterialTheme.typography.labelMedium,
                 color = if (aberta) cores.primary else cores.onSurfaceVariant,
             )
@@ -435,7 +435,7 @@ private fun PilulaDoCurso(alvo: String, aberta: Boolean, aoClicar: () -> Unit) {
  */
 @Composable
 private fun GavetaDeCursos(
-    cursos: List<ResumoCurso>,
+    courses: List<CourseSummary>,
     olhado: String,
     aoEscolher: (String) -> Unit,
     aoAdicionar: () -> Unit,
@@ -454,11 +454,11 @@ private fun GavetaDeCursos(
             modifier = Modifier.padding(bottom = 5.dp),
         )
 
-        cursos.forEach { curso ->
+        courses.forEach { course ->
             LinhaDaGaveta(
-                curso = curso,
-                escolhido = curso.par.alvo == olhado,
-                aoClicar = { aoEscolher(curso.par.alvo) },
+                course = course,
+                escolhido = course.languagePair.target == olhado,
+                aoClicar = { aoEscolher(course.languagePair.target) },
             )
         }
 
@@ -486,9 +486,9 @@ private fun GavetaDeCursos(
 }
 
 @Composable
-private fun LinhaDaGaveta(curso: ResumoCurso, escolhido: Boolean, aoClicar: () -> Unit) {
+private fun LinhaDaGaveta(course: CourseSummary, escolhido: Boolean, aoClicar: () -> Unit) {
     val cores = MaterialTheme.colorScheme
-    val idioma = idiomaDe(curso.par.alvo)
+    val language = idiomaDe(course.languagePair.target)
     val toque = lembrarToque()
 
     Surface(
@@ -504,11 +504,11 @@ private fun LinhaDaGaveta(curso: ResumoCurso, escolhido: Boolean, aoClicar: () -
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
         ) {
-            BandeiraCircular(idioma, tamanho = 32.dp)
+            BandeiraCircular(language, tamanho = 32.dp)
             Column(Modifier.weight(1f)) {
-                Text(idioma.displayName, style = MaterialTheme.typography.titleMedium)
+                Text(language.displayName, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = resumoDoCurso(curso),
+                    text = resumoDoCurso(course),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (escolhido) cores.primary else cores.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
@@ -531,8 +531,8 @@ private fun LinhaDaGaveta(curso: ResumoCurso, escolhido: Boolean, aoClicar: () -
     }
 }
 
-internal fun rotuloDeSequencia(dias: Int): String =
-    if (dias == 1) "1 dia seguido" else "$dias dias seguidos"
+internal fun rotuloDeSequencia(days: Int): String =
+    if (days == 1) "1 dia seguido" else "$days dias seguidos"
 
 /**
  * O número da quota, à direita do rótulo: "6 de 10".
@@ -541,16 +541,16 @@ internal fun rotuloDeSequencia(dias: Int): String =
  * seja porque nenhuma venceu hoje. "0 de 0" seria um placar de uma partida que
  * não houve.
  */
-internal fun textoDaQuota(quota: QuotaDoDia): String =
-    if (quota.total == 0) "—" else "${quota.feita} de ${quota.total}"
+internal fun textoDaQuota(quota: DailyQuota): String =
+    if (quota.total == 0) "—" else "${quota.done} de ${quota.total}"
 
 /** A linha do anel vazio: quando é que ele passa a existir. */
 internal fun textoDeQuandoAparece(): String =
-    "aparece depois de ${NUMEROS_POR_EXTENSO[Degraus.TOTAL - 1].lowercase()} revisões"
+    "aparece depois de ${NUMEROS_POR_EXTENSO[Steps.TOTAL - 1].lowercase()} revisões"
 
 /** "9 de 24 já são suas" — ou a falta delas, sem número inventado. */
-internal fun resumoDoCurso(curso: ResumoCurso): String =
-    if (curso.total == 0) "nenhuma palavra ainda" else "${curso.dominadas} de ${curso.total} já são suas"
+internal fun resumoDoCurso(course: CourseSummary): String =
+    if (course.total == 0) "nenhuma palavra ainda" else "${course.mastered} de ${course.total} já são suas"
 
 private val NUMEROS_POR_EXTENSO = listOf(
     "Nenhuma", "Uma", "Duas", "Três", "Quatro", "Cinco", "Seis", "Sete", "Oito", "Nove", "Dez",
@@ -562,11 +562,11 @@ private val NUMEROS_POR_EXTENSO = listOf(
  * Por extenso até dez porque é assim que se lê em voz alta uma conquista; a
  * partir daí o algarismo volta, que é como se lê um número grande.
  */
-internal fun tituloDoEstoque(dominadas: Int): String = when {
-    dominadas == 0 -> "Nenhuma palavra é sua ainda"
-    dominadas == 1 -> "Uma palavra já é sua"
-    dominadas <= 10 -> "${NUMEROS_POR_EXTENSO[dominadas]} palavras já são suas"
-    else -> "$dominadas palavras já são suas"
+internal fun tituloDoEstoque(mastered: Int): String = when {
+    mastered == 0 -> "Nenhuma palavra é sua ainda"
+    mastered == 1 -> "Uma palavra já é sua"
+    mastered <= 10 -> "${NUMEROS_POR_EXTENSO[mastered]} palavras já são suas"
+    else -> "$mastered palavras já são suas"
 }
 
 internal fun textoDoQuePertoDeVirar(quantas: Int): String = when (quantas) {

@@ -73,7 +73,7 @@ import com.jean.vocabs.ui.components.RotuloDeSecao
 import com.jean.vocabs.ui.components.contornoDeCartao
 import com.jean.vocabs.ui.components.entradaSuave
 import com.jean.vocabs.ui.components.lembrarToque
-import com.jean.vocabs.ui.idiomas.idiomaDe
+import com.jean.vocabs.ui.languages.idiomaDe
 import java.io.File
 import kotlin.math.roundToInt
 
@@ -101,11 +101,11 @@ fun ConfiguracoesScreen(
     aoTrocarIdiomaNativo: () -> Unit,
     vm: ConfiguracoesViewModel = viewModel(),
 ) {
-    val tema by vm.tema.collectAsStateWithLifecycle()
-    val nativo by vm.nativo.collectAsStateWithLifecycle()
+    val theme by vm.theme.collectAsStateWithLifecycle()
+    val native by vm.native.collectAsStateWithLifecycle()
     val exportando by vm.exportando.collectAsStateWithLifecycle()
     val contexto = LocalContext.current
-    val idioma = idiomaDe(nativo)
+    val language = idiomaDe(native)
 
     val importarArquivo = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
@@ -128,11 +128,11 @@ fun ConfiguracoesScreen(
         // As seções chegam escalonadas, de cima para baixo. É a mesma entrada das
         // outras telas de dentro, e aqui ela faz um trabalho a mais: dá ordem de
         // leitura a quatro blocos que, parados, têm todos o mesmo peso.
-        Secao(icone = Icones.Globo, titulo = "Language", indice = 0) {
+        Secao(icone = Icones.Globo, title = "Language", indice = 0) {
             LinhaDeLista(
                 aoClicar = aoTrocarIdiomaNativo,
-                inicio = { BandeiraDoNativo(nativo) },
-                fim = { PilulaTrocar() },
+                start = { BandeiraDoNativo(native) },
+                end = { PilulaTrocar() },
             ) {
                 Text(
                     text = "Meu idioma",
@@ -143,14 +143,14 @@ fun ConfiguracoesScreen(
                 // desta, e sem a transição a única coisa que confirma a troca é um
                 // texto que já estava no lugar quando a tela reapareceu.
                 AnimatedContent(
-                    targetState = idioma.displayName,
+                    targetState = language.displayName,
                     transitionSpec = {
                         (fadeIn(tween(Movimento.PADRAO)) + scaleIn(tween(Movimento.PADRAO), initialScale = 0.92f))
                             .togetherWith(fadeOut(tween(Movimento.RAPIDO)))
                     },
                     label = "nomeDoNativo",
-                ) { nome ->
-                    Text(nome, style = MaterialTheme.typography.titleSmall)
+                ) { name ->
+                    Text(name, style = MaterialTheme.typography.titleSmall)
                 }
             }
             NotaDaSecao("As traduções e explicações das fichas saem neste idioma.")
@@ -158,7 +158,7 @@ fun ConfiguracoesScreen(
 
         Divisor()
 
-        Secao(icone = iconeDoTema(tema), titulo = "Aparência", indice = 1) {
+        Secao(icone = iconeDoTema(theme), title = "Aparência", indice = 1) {
             CartaoDaTela(recheio = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
                 Text("Tema", style = MaterialTheme.typography.titleSmall)
                 Text(
@@ -168,7 +168,7 @@ fun ConfiguracoesScreen(
                     modifier = Modifier.padding(top = 2.dp),
                 )
                 SegmentadoDeTema(
-                    selecionada = tema,
+                    selecionada = theme,
                     aoEscolher = vm::escolherTema,
                     modifier = Modifier.padding(top = 12.dp),
                 )
@@ -177,17 +177,17 @@ fun ConfiguracoesScreen(
 
         Divisor()
 
-        Secao(icone = Icones.Exportar, titulo = "Dados", indice = 2) {
+        Secao(icone = Icones.Exportar, title = "Dados", indice = 2) {
             val cores = MaterialTheme.colorScheme
             LinhaDeLista(
                 aoClicar = {
                     vm.exportar(
-                        aoPronto = { arquivo -> compartilhar(contexto, arquivo) },
+                        aoPronto = { file -> compartilhar(contexto, file) },
                         aoErro = { Toast.makeText(contexto, it, Toast.LENGTH_LONG).show() },
                     )
                 },
-                inicio = { DiscoDeIcone(Icones.Exportar, null, cor = cores.primary, fundo = cores.primaryContainer) },
-                fim = {
+                start = { DiscoDeIcone(Icones.Exportar, null, cor = cores.primary, fundo = cores.primaryContainer) },
+                end = {
                     // O indicador entra no lugar da chevron em vez de ao lado
                     // dela: enquanto o ZIP é montado a linha não abre nada, e uma
                     // seta de "isto leva a algum lugar" ali seria uma promessa
@@ -210,8 +210,8 @@ fun ConfiguracoesScreen(
 
             LinhaDeLista(
                 aoClicar = { importarArquivo.launch(arrayOf("application/zip")) },
-                inicio = { DiscoDeIcone(Icones.Importar, null, cor = cores.tertiary, fundo = cores.tertiaryContainer) },
-                fim = { ChevronDeLinha() },
+                start = { DiscoDeIcone(Icones.Importar, null, cor = cores.tertiary, fundo = cores.tertiaryContainer) },
+                end = { ChevronDeLinha() },
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("Importar meus dados", style = MaterialTheme.typography.titleSmall)
@@ -223,7 +223,7 @@ fun ConfiguracoesScreen(
 
         Divisor()
 
-        Secao(icone = Icones.Informacao, titulo = "Sobre", indice = 3) {
+        Secao(icone = Icones.Informacao, title = "Sobre", indice = 3) {
             Assinatura()
         }
 
@@ -241,7 +241,7 @@ fun ConfiguracoesScreen(
 @Composable
 private fun Secao(
     icone: ImageVector,
-    titulo: String,
+    title: String,
     indice: Int,
     conteudo: @Composable () -> Unit,
 ) {
@@ -270,7 +270,7 @@ private fun Secao(
                     modifier = Modifier.size(15.dp),
                 )
             }
-            RotuloDeSecao(titulo, Modifier.padding(start = 7.dp))
+            RotuloDeSecao(title, Modifier.padding(start = 7.dp))
         }
         conteudo()
     }
@@ -287,9 +287,9 @@ private fun Divisor() {
 
 /** A frase de rodapé de uma seção — o porquê da linha acima, em cinza-lilás. */
 @Composable
-private fun NotaDaSecao(texto: String) {
+private fun NotaDaSecao(text: String) {
     Text(
-        text = texto,
+        text = text,
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 4.dp, top = 2.dp),
@@ -304,14 +304,14 @@ private fun NotaDaSecao(texto: String) {
  * texto, na mesma posição, com outro conteúdo.
  */
 @Composable
-private fun DetalheQueTroca(texto: String) {
+private fun DetalheQueTroca(text: String) {
     AnimatedContent(
-        targetState = texto,
+        targetState = text,
         transitionSpec = { fadeIn(tween(Movimento.PADRAO)).togetherWith(fadeOut(tween(Movimento.RAPIDO))) },
         label = "detalheDaLinha",
-    ) { atual ->
+    ) { current ->
         Text(
-            text = atual,
+            text = current,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp),
@@ -336,9 +336,9 @@ private fun BandeiraDoNativo(codigo: String) {
                 .togetherWith(scaleOut(tween(Movimento.RAPIDO), targetScale = 0.5f) + fadeOut(tween(Movimento.RAPIDO)))
         },
         label = "bandeiraDoNativo",
-    ) { atual ->
+    ) { current ->
         BandeiraCircular(
-            idioma = idiomaDe(atual),
+            language = idiomaDe(current),
             tamanho = 34.dp,
             modifier = Modifier.border(1.dp, cores.outline, CircleShape),
         )
@@ -392,7 +392,7 @@ private fun PilulaTrocar() {
 @Composable
 private fun Assinatura() {
     LinhaDeLista(
-        inicio = { Image(painterResource(R.drawable.logo_vocabu), null, Modifier.size(34.dp)) },
+        start = { Image(painterResource(R.drawable.logo_vocabu), null, Modifier.size(34.dp)) },
     ) {
         Text("Vocabu", style = MaterialTheme.typography.titleSmall)
         Text(
@@ -404,8 +404,8 @@ private fun Assinatura() {
     }
 }
 
-private fun compartilhar(contexto: android.content.Context, arquivo: File) {
-    val uri = FileProvider.getUriForFile(contexto, "${contexto.packageName}.fileprovider", arquivo)
+private fun compartilhar(contexto: android.content.Context, file: File) {
+    val uri = FileProvider.getUriForFile(contexto, "${contexto.packageName}.fileprovider", file)
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "application/zip"
         putExtra(Intent.EXTRA_STREAM, uri)
@@ -414,13 +414,13 @@ private fun compartilhar(contexto: android.content.Context, arquivo: File) {
     contexto.startActivity(Intent.createChooser(intent, "Exportar dados da Vocabu"))
 }
 
-private fun rotuloDoTema(tema: ThemePreference): String = when (tema) {
+private fun rotuloDoTema(theme: ThemePreference): String = when (theme) {
     ThemePreference.LIGHT -> "Claro"
     ThemePreference.DARK -> "Escuro"
     ThemePreference.SYSTEM -> "Auto"
 }
 
-private fun iconeDoTema(tema: ThemePreference): ImageVector = when (tema) {
+private fun iconeDoTema(theme: ThemePreference): ImageVector = when (theme) {
     ThemePreference.LIGHT -> Icones.Sol
     ThemePreference.DARK -> Icones.Lua
     ThemePreference.SYSTEM -> Icones.MeioDisco

@@ -3,7 +3,7 @@ package com.jean.vocabs.shared
 import android.content.Context
 import android.content.SharedPreferences
 import com.jean.vocabs.contracts.Languages
-import com.jean.vocabs.shared.domain.ParIdiomas
+import com.jean.vocabs.shared.domain.LanguagePair
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.map
  * Nada aqui é fonte da verdade sobre **fichas**. Em que par cada ficha nasceu
  * está no banco, na captura. Estas preferências dizem só o que fazer agora.
  */
-class Preferencias(context: Context) {
+class Preferences(context: Context) {
 
     /**
      * The file name on disk. Renaming it does not migrate anything — it creates
@@ -38,13 +38,13 @@ class Preferencias(context: Context) {
 
     // ---- idiomas ------------------------------------------------------------
 
-    var nativo: String
+    var native: String
         get() = prefs.getString(NATIVO, null) ?: Languages.NATIVO_PADRAO
-        set(valor) = prefs.edit().putString(NATIVO, valor).apply()
+        set(value) = prefs.edit().putString(NATIVO, value).apply()
 
-    var alvo: String
+    var target: String
         get() = prefs.getString(ALVO, null) ?: Languages.ALVO_PADRAO
-        set(valor) = prefs.edit().putString(ALVO, valor).apply()
+        set(value) = prefs.edit().putString(ALVO, value).apply()
 
     /**
      * Os cursos matriculados, na ordem em que a faixa os mostra.
@@ -53,43 +53,43 @@ class Preferencias(context: Context) {
      * criado não tem palavra nenhuma, e sumir da faixa no instante seguinte ao
      * de ser criado é o oposto do que a tela promete.
      */
-    var cursos: List<String>
+    var courses: List<String>
         get() = prefs.getString(CURSOS, null)
             ?.split(SEPARADOR)
             ?.filter { it.isNotBlank() }
             ?.takeIf { it.isNotEmpty() }
             ?: listOf(Languages.ALVO_PADRAO)
-        set(valor) = prefs.edit()
-            .putString(CURSOS, valor.distinct().joinToString(SEPARADOR))
+        set(value) = prefs.edit()
+            .putString(CURSOS, value.distinct().joinToString(SEPARADOR))
             .apply()
 
-    val par: ParIdiomas get() = ParIdiomas(nativo = nativo, alvo = alvo)
+    val languagePair: LanguagePair get() = LanguagePair(native = native, target = target)
 
-    /** Matricula num idioma novo e já o deixa aberto — é o que o botão da tela 5c faz. */
-    fun matricular(codigo: String) {
-        cursos = cursos + codigo
-        alvo = codigo
+    /** Matricula num language novo e já o deixa aberto — é o que o botão da tela 5c faz. */
+    fun enroll(codigo: String) {
+        courses = courses + codigo
+        target = codigo
     }
 
-    /** Troca o curso aberto. Matricula por segurança: escolher o que não existe seria um beco. */
-    fun abrirCurso(codigo: String) {
-        if (codigo !in cursos) cursos = cursos + codigo
-        alvo = codigo
+    /** Troca o course aberto. Matricula por segurança: escolher o que não existe seria um beco. */
+    fun openCourse(codigo: String) {
+        if (codigo !in courses) courses = courses + codigo
+        target = codigo
     }
 
     /**
      * Tira um idioma da faixa. As fichas dele continuam no banco.
      *
      * Nunca esvazia a lista: sem curso nenhum a Início não teria página, o `+`
-     * não teria destino e a única saída seria matricular de novo às cegas. Sair
+     * não teria destino e a única saída seria enroll de novo às cegas. Sair
      * do curso aberto abre o primeiro que sobrou, para que a tela não fique
      * apontando para um idioma que não está mais ali.
      */
-    fun desmatricular(codigo: String) {
-        val restantes = cursos - codigo
+    fun unenroll(codigo: String) {
+        val restantes = courses - codigo
         if (restantes.isEmpty()) return
-        cursos = restantes
-        if (alvo == codigo) alvo = restantes.first()
+        courses = restantes
+        if (target == codigo) target = restantes.first()
     }
 
     /**
@@ -100,19 +100,19 @@ class Preferencias(context: Context) {
      * anularia o gesto. Guarda os fechados (e não os abertos) porque o padrão é
      * tudo aberto — um idioma novo aparece expandido sem precisar ser inscrito.
      */
-    var gruposRecolhidos: Set<String>
+    var collapsedGroups: Set<String>
         get() = prefs.getStringSet(RECOLHIDOS, emptySet()).orEmpty()
-        set(valor) = prefs.edit().putStringSet(RECOLHIDOS, valor).apply()
+        set(value) = prefs.edit().putStringSet(RECOLHIDOS, value).apply()
 
-    fun alternarGrupo(codigo: String) {
-        gruposRecolhidos = gruposRecolhidos.let { if (codigo in it) it - codigo else it + codigo }
+    fun toggleGroup(codigo: String) {
+        collapsedGroups = collapsedGroups.let { if (codigo in it) it - codigo else it + codigo }
     }
 
     // ---- tema ---------------------------------------------------------------
 
-    var tema: ThemePreference
+    var theme: ThemePreference
         get() = ThemePreference.de(prefs.getString(TEMA, null))
-        set(valor) = prefs.edit().putString(TEMA, valor.name).apply()
+        set(value) = prefs.edit().putString(TEMA, value.name).apply()
 
     // ---- observação ---------------------------------------------------------
 
@@ -125,8 +125,8 @@ class Preferencias(context: Context) {
      */
     private fun <T> observar(vararg chaves: String, ler: () -> T): Flow<T> = callbackFlow {
         trySend(ler())
-        val ouvinte = SharedPreferences.OnSharedPreferenceChangeListener { _, chave ->
-            if (chave in chaves) trySend(ler())
+        val ouvinte = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key in chaves) trySend(ler())
         }
         prefs.registerOnSharedPreferenceChangeListener(ouvinte)
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(ouvinte) }
@@ -137,16 +137,16 @@ class Preferencias(context: Context) {
         .conflate()
         .distinctUntilChanged()
 
-    fun observarPar(): Flow<ParIdiomas> = observar(NATIVO, ALVO) { par }
+    fun observeLanguagePair(): Flow<LanguagePair> = observar(NATIVO, ALVO) { languagePair }
 
-    fun observarCursos(): Flow<List<String>> = observar(CURSOS) { cursos }
+    fun observeCourses(): Flow<List<String>> = observar(CURSOS) { courses }
 
-    fun observarTema(): Flow<ThemePreference> = observar(TEMA) { tema }
+    fun observeTheme(): Flow<ThemePreference> = observar(TEMA) { theme }
 
-    fun observarGruposRecolhidos(): Flow<Set<String>> = observar(RECOLHIDOS) { gruposRecolhidos }
+    fun observeCollapsedGroups(): Flow<Set<String>> = observar(RECOLHIDOS) { collapsedGroups }
 
-    /** O nativo sozinho, para a linha "Meu idioma" da tela Configurações. */
-    fun observarNativo(): Flow<String> = observarPar().map { it.nativo }
+    /** O native sozinho, para a row "Meu language" da tela Configurações. */
+    fun observeNativeLanguage(): Flow<String> = observeLanguagePair().map { it.native }
 
     private companion object {
         const val NATIVO = "native_language"
@@ -155,7 +155,7 @@ class Preferencias(context: Context) {
         const val TEMA = "theme"
         const val RECOLHIDOS = "collapsed_groups"
 
-        /** Vírgula não aparece em código de idioma nenhum do catálogo. */
+        /** Vírgula não aparece em código de language nenhum do catálogo. */
         const val SEPARADOR = ","
     }
 }
@@ -167,6 +167,6 @@ enum class ThemePreference {
     SYSTEM;
 
     companion object {
-        fun de(valor: String?): ThemePreference = entries.firstOrNull { it.name == valor } ?: SYSTEM
+        fun de(value: String?): ThemePreference = entries.firstOrNull { it.name == value } ?: SYSTEM
     }
 }

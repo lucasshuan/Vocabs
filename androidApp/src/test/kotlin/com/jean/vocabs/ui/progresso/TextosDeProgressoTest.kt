@@ -1,11 +1,11 @@
 package com.jean.vocabs.ui.progresso
 
-import com.jean.vocabs.shared.domain.Degraus
-import com.jean.vocabs.shared.domain.Evento
+import com.jean.vocabs.shared.domain.Steps
+import com.jean.vocabs.shared.domain.Event
 import com.jean.vocabs.shared.domain.MemoryLevel
-import com.jean.vocabs.shared.domain.ParIdiomas
-import com.jean.vocabs.shared.domain.QuotaDoDia
-import com.jean.vocabs.shared.domain.ResumoCurso
+import com.jean.vocabs.shared.domain.LanguagePair
+import com.jean.vocabs.shared.domain.DailyQuota
+import com.jean.vocabs.shared.domain.CourseSummary
 import com.jean.vocabs.shared.domain.EventType
 import java.time.LocalDate
 import kotlin.test.Test
@@ -25,7 +25,7 @@ import kotlin.test.assertEquals
  */
 class TextosDeProgressoTest {
 
-    private val par = ParIdiomas(nativo = "pt-BR", alvo = "en")
+    private val languagePair = LanguagePair(native = "pt-BR", target = "en")
 
     @Test
     fun `one day streak takes no plural`() {
@@ -36,9 +36,9 @@ class TextosDeProgressoTest {
 
     @Test
     fun `a day with nothing due shows a dash, not zero of zero`() {
-        assertEquals("—", textoDaQuota(QuotaDoDia(feita = 0, naFila = 0)))
-        assertEquals("6 de 10", textoDaQuota(QuotaDoDia(feita = 6, naFila = 4)))
-        assertEquals("3 de 3", textoDaQuota(QuotaDoDia(feita = 3, naFila = 0)))
+        assertEquals("—", textoDaQuota(DailyQuota(done = 0, inQueue = 0)))
+        assertEquals("6 de 10", textoDaQuota(DailyQuota(done = 6, inQueue = 4)))
+        assertEquals("3 de 3", textoDaQuota(DailyQuota(done = 3, inQueue = 0)))
     }
 
     @Test
@@ -52,14 +52,14 @@ class TextosDeProgressoTest {
 
     @Test
     fun `course summary invents no number when there are no words`() {
-        assertEquals("nenhuma palavra ainda", resumoDoCurso(ResumoCurso(par, total = 0, dominadas = 0)))
-        assertEquals("9 de 24 já são suas", resumoDoCurso(ResumoCurso(par, total = 24, dominadas = 9)))
+        assertEquals("nenhuma palavra ainda", resumoDoCurso(CourseSummary(languagePair, total = 0, mastered = 0)))
+        assertEquals("9 de 24 já são suas", resumoDoCurso(CourseSummary(languagePair, total = 24, mastered = 9)))
     }
 
-    /** Guards the copy against [Degraus.TOTAL] drifting; the ladder size is baked into the sentence. */
+    /** Guards the copy against [Steps.TOTAL] drifting; the ladder size is baked into the sentence. */
     @Test
     fun `the empty-ring sentence follows the ladder size`() {
-        assertEquals(5, Degraus.TOTAL)
+        assertEquals(5, Steps.TOTAL)
         assertEquals("aparece depois de quatro revisões", textoDeQuandoAparece())
     }
 
@@ -94,36 +94,36 @@ class TextosDeProgressoTest {
 
     @Test
     fun `an event with no review number loses the ordinal but keeps the outcome`() {
-        assertEquals("revisão certa", descricaoDoEvento(evento(EventType.CORRECT, detalhe = null)))
-        assertEquals("revisão errada", descricaoDoEvento(evento(EventType.INCORRECT, detalhe = "not-a-number")))
+        assertEquals("revisão certa", descricaoDoEvento(evento(EventType.CORRECT, detail = null)))
+        assertEquals("revisão errada", descricaoDoEvento(evento(EventType.INCORRECT, detail = "not-a-number")))
     }
 
     @Test
     fun `an event with a number gets the feminine ordinal`() {
-        assertEquals("2ª revisão certa", descricaoDoEvento(evento(EventType.CORRECT, detalhe = "2")))
-        assertEquals("3ª revisão errada", descricaoDoEvento(evento(EventType.INCORRECT, detalhe = "3")))
+        assertEquals("2ª revisão certa", descricaoDoEvento(evento(EventType.CORRECT, detail = "2")))
+        assertEquals("3ª revisão errada", descricaoDoEvento(evento(EventType.INCORRECT, detail = "3")))
     }
 
     @Test
     fun `levelling up repeats the level label, and an unknown one falls back`() {
-        assertEquals("virou dominada", descricaoDoEvento(evento(EventType.LEVELED_UP, detalhe = "MASTERED")))
-        assertEquals("virou aprendendo", descricaoDoEvento(evento(EventType.LEVELED_UP, detalhe = "SEPIA")))
+        assertEquals("virou dominada", descricaoDoEvento(evento(EventType.LEVELED_UP, detail = "MASTERED")))
+        assertEquals("virou aprendendo", descricaoDoEvento(evento(EventType.LEVELED_UP, detail = "SEPIA")))
     }
 
     @Test
     fun `capture and card-ready have no variants`() {
-        assertEquals("capturada", descricaoDoEvento(evento(EventType.CAPTURED, detalhe = null)))
-        assertEquals("ficha pronta", descricaoDoEvento(evento(EventType.CARD_READY, detalhe = null)))
+        assertEquals("capturada", descricaoDoEvento(evento(EventType.CAPTURED, detail = null)))
+        assertEquals("ficha pronta", descricaoDoEvento(evento(EventType.CARD_READY, detail = null)))
     }
 
-    private fun evento(tipo: EventType, detalhe: String?) = Evento(
+    private fun evento(type: EventType, detail: String?) = Event(
         id = 1L,
-        entradaId = 1L,
-        dia = 2_460_000L,
-        instante = 0L,
-        tipo = tipo,
-        alvo = "haywire",
-        par = par,
-        detalhe = detalhe,
+        entryId = 1L,
+        day = 2_460_000L,
+        instant = 0L,
+        type = type,
+        target = "haywire",
+        languagePair = languagePair,
+        detail = detail,
     )
 }

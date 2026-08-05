@@ -34,9 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jean.vocabs.contracts.TargetType
-import com.jean.vocabs.shared.domain.AlvoSelecionado
-import com.jean.vocabs.shared.domain.selecionarTokens
-import com.jean.vocabs.shared.domain.tokenizarTrecho
+import com.jean.vocabs.shared.domain.SelectedTarget
+import com.jean.vocabs.shared.domain.selectTokens
+import com.jean.vocabs.shared.domain.tokenizeSnippet
 import com.jean.vocabs.ui.theme.Bricolage
 
 /**
@@ -52,30 +52,30 @@ import com.jean.vocabs.ui.theme.Bricolage
  */
 @Composable
 fun SeletorDeTermos(
-    trecho: String,
-    aoSelecionar: (AlvoSelecionado) -> Unit,
+    snippet: String,
+    aoSelecionar: (SelectedTarget) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val tokens = remember(trecho) { tokenizarTrecho(trecho) }
-    var layout by remember(trecho) { mutableStateOf<TextLayoutResult?>(null) }
-    var previa by remember(trecho) { mutableStateOf<AlvoSelecionado?>(null) }
+    val tokens = remember(snippet) { tokenizeSnippet(snippet) }
+    var layout by remember(snippet) { mutableStateOf<TextLayoutResult?>(null) }
+    var previa by remember(snippet) { mutableStateOf<SelectedTarget?>(null) }
     val cores = MaterialTheme.colorScheme
 
     val anotado = buildAnnotatedString {
-        append(trecho)
-        previa?.takeIf { it.inicio >= 0 && it.fim <= trecho.length }?.let { alvo ->
+        append(snippet)
+        previa?.takeIf { it.start >= 0 && it.end <= snippet.length }?.let { target ->
             addStyle(
                 SpanStyle(background = cores.primary, color = cores.onPrimary, fontWeight = FontWeight.Bold),
-                alvo.inicio,
-                alvo.fim,
+                target.start,
+                target.end,
             )
         }
     }
 
     fun indiceEm(posicao: Offset): Int? {
-        val resultado = layout ?: return null
-        val deslocamento = resultado.getOffsetForPosition(posicao)
-        return tokens.indexOfFirst { deslocamento in it.inicio until it.fim }.takeIf { it >= 0 }
+        val result = layout ?: return null
+        val deslocamento = result.getOffsetForPosition(posicao)
+        return tokens.indexOfFirst { deslocamento in it.start until it.end }.takeIf { it >= 0 }
     }
 
     Surface(
@@ -91,13 +91,13 @@ fun SeletorDeTermos(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 14.dp)
-                .pointerInput(trecho) {
+                .pointerInput(snippet) {
                     awaitEachGesture {
                         val toque = awaitFirstDown()
-                        val inicio = indiceEm(toque.position) ?: return@awaitEachGesture
-                        var ultimo = inicio
+                        val start = indiceEm(toque.position) ?: return@awaitEachGesture
+                        var ultimo = start
                         var arrastou = false
-                        previa = selecionarTokens(trecho, inicio)
+                        previa = selectTokens(snippet, start)
                         do {
                             val evento = awaitPointerEvent()
                             val mudanca = evento.changes.firstOrNull() ?: break
@@ -105,7 +105,7 @@ fun SeletorDeTermos(
                                 arrastou = true
                             }
                             indiceEm(mudanca.position)?.let { ultimo = it }
-                            previa = selecionarTokens(trecho, inicio, if (arrastou) ultimo else inicio)
+                            previa = selectTokens(snippet, start, if (arrastou) ultimo else start)
                         } while (evento.changes.any { it.pressed })
 
                         previa?.let(aoSelecionar)
@@ -128,8 +128,8 @@ fun SeletorDeTermos(
  */
 @Composable
 fun ChipsDeSelecao(
-    selecoes: List<AlvoSelecionado>,
-    aoRemover: (AlvoSelecionado) -> Unit,
+    selecoes: List<SelectedTarget>,
+    aoRemover: (SelectedTarget) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     FlowRow(
@@ -137,16 +137,16 @@ fun ChipsDeSelecao(
         verticalArrangement = Arrangement.spacedBy(7.dp),
         modifier = modifier.fillMaxWidth(),
     ) {
-        selecoes.forEach { alvo ->
-            key(alvo.inicio, alvo.fim) {
-                ChipDeSelecao(alvo) { aoRemover(alvo) }
+        selecoes.forEach { target ->
+            key(target.start, target.end) {
+                ChipDeSelecao(target) { aoRemover(target) }
             }
         }
     }
 }
 
 @Composable
-private fun ChipDeSelecao(alvo: AlvoSelecionado, aoRemover: () -> Unit) {
+private fun ChipDeSelecao(target: SelectedTarget, aoRemover: () -> Unit) {
     var chegou by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { chegou = true }
     val escala by animateFloatAsState(
@@ -172,17 +172,17 @@ private fun ChipDeSelecao(alvo: AlvoSelecionado, aoRemover: () -> Unit) {
             modifier = Modifier.padding(start = 13.dp, end = 10.dp, top = 7.dp, bottom = 7.dp),
         ) {
             Text(
-                text = alvo.texto,
+                text = target.text,
                 style = MaterialTheme.typography.titleSmall.copy(fontFamily = Bricolage, fontWeight = FontWeight.Bold, fontSize = 15.sp),
             )
             Text(
-                text = if (alvo.tipo == TargetType.WORD) "PALAVRA" else "EXPRESSÃO",
+                text = if (target.type == TargetType.WORD) "PALAVRA" else "EXPRESSÃO",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.62f),
             )
             Icon(
                 imageVector = Icones.Fechar,
-                contentDescription = "Remover ${alvo.texto}",
+                contentDescription = "Remover ${target.text}",
                 tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.55f),
                 modifier = Modifier.size(14.dp),
             )

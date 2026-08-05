@@ -70,7 +70,7 @@ fun FaixaDeDesfazer(
     LaunchedEffect(exclusao) { if (exclusao != null) ultima = exclusao }
 
     val restante = remember { Animatable(1f) }
-    LaunchedEffect(exclusao?.chave) {
+    LaunchedEffect(exclusao?.key) {
         if (exclusao == null) return@LaunchedEffect
         restante.snapTo(1f)
         restante.animateTo(0f, tween(JANELA_VISIVEL_MS, easing = LinearEasing))
@@ -132,7 +132,7 @@ private fun Cartao(
                         maxLines = 1,
                     )
                     Text(
-                        text = exclusao.titulo,
+                        text = exclusao.title,
                         style = MaterialTheme.typography.bodySmall,
                         color = cores.onSurfaceVariant,
                         maxLines = 1,
