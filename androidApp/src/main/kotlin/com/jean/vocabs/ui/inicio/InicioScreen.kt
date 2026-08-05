@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.inicio
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -179,7 +180,7 @@ private fun PaginaDeCurso(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AnelDoCurso(pagina)
                 Column(Modifier.weight(1f).padding(start = 15.dp)) {
-                    Text("Seu ${idioma.nome.lowercase()}", style = MaterialTheme.typography.titleLarge)
+                    Text("Seu ${idioma.displayName.lowercase()}", style = MaterialTheme.typography.titleLarge)
                     Text(
                         text = detalheDoCurso(resumo.total, resumo.dominadas, resumo.naFila),
                         style = MaterialTheme.typography.bodyMedium,
@@ -205,9 +206,9 @@ private fun PaginaDeCurso(
         // onde ela vê o próprio dia se acumulando — chegar montada faz três
         // capturas parecerem um histórico velho em vez do que aconteceu hoje.
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-            RotuloDeSecao("Capturadas hoje em ${idioma.nome.lowercase()}")
+            RotuloDeSecao("Capturadas hoje em ${idioma.displayName.lowercase()}")
             if (pagina.capturadasHoje.isEmpty()) {
-                ConviteDeCaptura(idioma.nome.lowercase(), aoCapturar)
+                ConviteDeCaptura(idioma.displayName.lowercase(), aoCapturar)
             } else {
                 pagina.capturadasHoje.forEachIndexed { indice, entrada ->
                     LinhaDeCapturada(entrada, Modifier.entradaSuave(indice))
@@ -294,7 +295,7 @@ private fun LinhaDeCapturada(entrada: Entrada, modifier: Modifier = Modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(entrada.titulo, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
             Text(
-                text = entrada.ficha?.traducao.orEmpty(),
+                text = entrada.ficha?.translation.orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

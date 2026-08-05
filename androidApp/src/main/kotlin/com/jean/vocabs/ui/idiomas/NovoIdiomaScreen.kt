@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.idiomas
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,7 +37,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.contracts.Idioma
+import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.BotaoPrincipal
 import com.jean.vocabs.ui.components.CabecalhoDeDentro
@@ -62,7 +63,7 @@ fun NovoIdiomaScreen(
 ) {
     val estado by vm.estado.collectAsStateWithLifecycle()
     var busca by remember { mutableStateOf("") }
-    var escolhido by remember { mutableStateOf<Idioma?>(null) }
+    var escolhido by remember { mutableStateOf<Language?>(null) }
 
     val disponiveis = remember(estado, busca) { vm.disponiveis().buscar(busca) }
 
@@ -109,10 +110,10 @@ fun NovoIdiomaScreen(
         } else {
             CartaoDaTela(recheio = PaddingValues(0.dp), modifier = Modifier.weight(1f).fillMaxWidth()) {
                 LazyColumn {
-                    items(disponiveis, key = { it.codigo }) { idioma ->
+                    items(disponiveis, key = { it.code }) { idioma ->
                         LinhaDeIdioma(
                             idioma = idioma,
-                            selecionado = idioma.codigo == escolhido?.codigo,
+                            selecionado = idioma.code == escolhido?.code,
                             aoClicar = { escolhido = idioma },
                         )
                     }
@@ -122,12 +123,12 @@ fun NovoIdiomaScreen(
 
         BotaoPrincipal(
             texto = escolhido
-                ?.let { if (paraNativo) "Usar ${it.nome.lowercase()}" else "Começar ${it.nome.lowercase()}" }
+                ?.let { if (paraNativo) "Usar ${it.displayName.lowercase()}" else "Começar ${it.displayName.lowercase()}" }
                 ?: "Escolha um idioma",
             habilitado = escolhido != null,
             aoClicar = {
                 escolhido?.let { idioma ->
-                    if (paraNativo) vm.trocarNativo(idioma.codigo) else vm.matricular(idioma.codigo)
+                    if (paraNativo) vm.trocarNativo(idioma.code) else vm.matricular(idioma.code)
                     aoVoltar()
                 }
             },
@@ -137,7 +138,7 @@ fun NovoIdiomaScreen(
 }
 
 @Composable
-private fun PilulaDeIdioma(idioma: Idioma) {
+private fun PilulaDeIdioma(idioma: Language) {
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, border = contornoDeCartao()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -146,7 +147,7 @@ private fun PilulaDeIdioma(idioma: Idioma) {
         ) {
             BandeiraCircular(idioma, tamanho = 20.dp)
             Text(
-                text = idioma.nome,
+                text = idioma.displayName,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -155,7 +156,7 @@ private fun PilulaDeIdioma(idioma: Idioma) {
 }
 
 @Composable
-private fun LinhaDeIdioma(idioma: Idioma, selecionado: Boolean, aoClicar: () -> Unit) {
+private fun LinhaDeIdioma(idioma: Language, selecionado: Boolean, aoClicar: () -> Unit) {
     val cores = MaterialTheme.colorScheme
     Surface(
         onClick = aoClicar,
@@ -169,7 +170,7 @@ private fun LinhaDeIdioma(idioma: Idioma, selecionado: Boolean, aoClicar: () -> 
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 13.dp),
             ) {
                 BandeiraCircular(idioma, tamanho = 30.dp)
-                Text(idioma.nome, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Text(idioma.displayName, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 if (selecionado) {
                     Box(
                         contentAlignment = Alignment.Center,

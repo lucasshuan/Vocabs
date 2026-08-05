@@ -223,7 +223,7 @@ class VocabRepositoryImplTest {
         curso.value = ParIdiomas("pt-BR", "en")
         assertTrue(repo.gerarFicha(id))
 
-        assertTrue(pedidos.single().contains("\"idiomaAlvo\":\"de\""), pedidos.single())
+        assertTrue(pedidos.single().contains("\"targetLanguage\":\"de\""), pedidos.single())
     }
 
     @Test
@@ -300,12 +300,12 @@ class VocabRepositoryImplTest {
 
     private companion object {
         const val FICHA = """{
-            "tipo":"WORD",
-            "traducao":"verdejante",
-            "definicoes":["Muito verde"],
-            "exemplo":"A verdant field appeared.",
-            "pronuncia":"vɜːdənt",
-            "relacionadas":["lush","green","leafy"]
+            "type":"WORD",
+            "translation":"verdejante",
+            "definitions":["Muito verde"],
+            "example":"A verdant field appeared.",
+            "pronunciation":"vɜːdənt",
+            "related":["lush","green","leafy"]
         }"""
     }
 }

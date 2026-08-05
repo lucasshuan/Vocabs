@@ -1,11 +1,11 @@
 package com.jean.vocabs.shared.domain
 
-import com.jean.vocabs.contracts.Idiomas
+import com.jean.vocabs.contracts.Languages
 
 /**
  * Em que língua se lê e que língua se aprende — o par em que uma captura nasceu.
  *
- * São códigos do catálogo de [Idiomas], e não os objetos: o par é gravado no
+ * São códigos do catálogo de [Languages], e não os objetos: o par é gravado no
  * banco e comparado o tempo todo, e um código estável sobrevive ao dia em que o
  * catálogo mudar um nome.
  */
@@ -14,7 +14,7 @@ data class ParIdiomas(
     val alvo: String,
 ) {
     companion object {
-        val PADRAO = ParIdiomas(nativo = Idiomas.NATIVO_PADRAO, alvo = Idiomas.ALVO_PADRAO)
+        val PADRAO = ParIdiomas(nativo = Languages.NATIVO_PADRAO, alvo = Languages.ALVO_PADRAO)
     }
 }
 

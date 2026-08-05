@@ -3,9 +3,11 @@ package com.jean.vocabs.shared.data
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
-import com.jean.vocabs.contracts.FichaResponse
+import com.jean.vocabs.contracts.CardResponse
+import com.jean.vocabs.contracts.ErrorCode
 import com.jean.vocabs.contracts.TargetType
 import com.jean.vocabs.shared.data.remote.FichaApi
+import com.jean.vocabs.shared.data.remote.FichaException
 import com.jean.vocabs.shared.db.VocabsDatabase
 import com.jean.vocabs.shared.domain.AlvoSelecionado
 import com.jean.vocabs.shared.domain.AtividadeDiaria
@@ -408,11 +410,11 @@ class VocabRepositoryImpl(
                 queries.saveCard(
                     status = EntryStatus.READY.name,
                     type = tipo.name,
-                    translation = ficha.traducao,
-                    definitions_json = json.encodeToString(ficha.definicoes),
-                    example = ficha.exemplo,
-                    pronunciation = ficha.pronuncia,
-                    related_json = json.encodeToString(ficha.relacionadas),
+                    translation = ficha.translation,
+                    definitions_json = json.encodeToString(ficha.definitions),
+                    example = ficha.example,
+                    pronunciation = ficha.pronunciation,
+                    related_json = json.encodeToString(ficha.related),
                     id = id,
                 )
                 if (!jaEraPronta) {
@@ -439,12 +441,13 @@ class VocabRepositoryImpl(
             queries.markStatus(status = EntryStatus.PENDING.name, id = id)
             throw cancelamento
         } catch (falha: Exception) {
+            // Anything that is not a FichaException came from this side, not from
+            // the server, so it has no code of its own to record.
+            val erro = falha as? FichaException
             queries.markError(
                 status = EntryStatus.ERROR.name,
-                // error_code stays null until the server sends one; the message
-                // is still free text at this point.
-                error_code = null,
-                error_detail = falha.message ?: "Falha ao gerar a ficha.",
+                error_code = (erro?.code ?: ErrorCode.GENERATION_FAILED).name,
+                error_detail = erro?.detail ?: falha.message,
                 id = id,
             )
             false
@@ -553,7 +556,8 @@ class VocabRepositoryImpl(
             midiaCaminho = linha.media_path,
             ficha = if (status == EntryStatus.READY) montarFicha(linha, tipo) else null,
             retencao = if (status == EntryStatus.READY) montarRetencao(linha) else null,
-            erro = linha.error_detail,
+            errorCode = linha.error_code?.let(ErrorCode::of),
+            errorDetail = linha.error_detail,
             par = ParIdiomas(nativo = linha.native_language, alvo = linha.target_language),
         )
     }
@@ -567,13 +571,13 @@ class VocabRepositoryImpl(
         erros = linha.incorrect_count.toInt(),
     )
 
-    private fun montarFicha(linha: EntryRow, tipo: TargetType) = FichaResponse(
-        tipo = tipo,
-        traducao = linha.translation.orEmpty(),
-        definicoes = linha.definitions_json.listaJson(),
-        exemplo = linha.example.orEmpty(),
-        pronuncia = linha.pronunciation.orEmpty(),
-        relacionadas = linha.related_json.listaJson(),
+    private fun montarFicha(linha: EntryRow, tipo: TargetType) = CardResponse(
+        type = tipo,
+        translation = linha.translation.orEmpty(),
+        definitions = linha.definitions_json.listaJson(),
+        example = linha.example.orEmpty(),
+        pronunciation = linha.pronunciation.orEmpty(),
+        related = linha.related_json.listaJson(),
     )
 
     private fun String?.listaJson(): List<String> = this

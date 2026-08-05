@@ -18,35 +18,35 @@ import kotlinx.serialization.Serializable
  * inglês no dia em que a pessoa trocasse de curso.
  */
 @Serializable
-data class GerarFichaRequest(
-    val trecho: String,
-    val alvo: String,
+data class GenerateCardRequest(
+    val snippet: String,
+    val target: String,
     /** Classificado localmente: um token é palavra; vários, expressão. */
-    val tipo: TargetType,
-    /** Código de [Idiomas]: em que língua a ficha é escrita. */
-    val idiomaNativo: String,
-    /** Código de [Idiomas]: que língua a ficha ensina. */
-    val idiomaAlvo: String,
+    val type: TargetType,
+    /** Código de [Languages]: em que língua a ficha é escrita. */
+    val nativeLanguage: String,
+    /** Código de [Languages]: que língua a ficha ensina. */
+    val targetLanguage: String,
 )
 
 /** O que o servidor devolve: a ficha da Fase 1. */
 @Serializable
-data class FichaResponse(
-    val tipo: TargetType,
-    val traducao: String,
-    val definicoes: List<String>,
-    val exemplo: String,
+data class CardResponse(
+    val type: TargetType,
+    val translation: String,
+    val definitions: List<String>,
+    val example: String,
     /**
      * Como o termo se pronuncia, na notação que o idioma alvo pede.
      *
      * Chamava-se `ipa` enquanto só havia inglês. IPA não é o que quem aprende
      * mandarim quer ler — ali a resposta é pinyin, e em japonês é o kana com o
      * romaji ao lado. O campo carrega a notação de cada idioma, e qual é ela
-     * está em `IdiomaAlvo`, no servidor.
+     * está em `TargetLanguage`, no servidor.
      */
-    val pronuncia: String,
+    val pronunciation: String,
     /** Termos próximos para a seção "Puxa outras palavras". */
-    val relacionadas: List<String> = emptyList(),
+    val related: List<String> = emptyList(),
 )
 
 /**
@@ -62,8 +62,43 @@ enum class TargetType {
     PHRASE,
 }
 
-/** Erro devolvido pelo servidor, para o app ter o que mostrar. */
+/**
+ * O erro do servidor, como código em vez de frase.
+ *
+ * A mensagem antiga vinha pronta em português e era gravada no banco, então a
+ * língua da falha era a do servidor e não a de quem lê. O código escolhe um
+ * recurso de texto no app; [detail] carrega o que não dá para traduzir — a
+ * frase crua do provedor de IA, útil só para diagnóstico.
+ */
 @Serializable
-data class ErroResponse(
-    val mensagem: String,
+data class ErrorResponse(
+    val code: String,
+    val detail: String? = null,
 )
+
+/**
+ * Os códigos que o app sabe traduzir.
+ *
+ * Viaja como `String` no fio, e não como enum: kotlinx.serialization recusa um
+ * valor de enum que não conhece, então um servidor novo com um código a mais
+ * derrubaria a decodificação num app antigo. [of] é a mesma tolerância que
+ * `EntryStatus.de` e companhia já usam.
+ */
+enum class ErrorCode {
+    UNKNOWN_LANGUAGE_PAIR,
+    MISSING_FIELDS,
+    INVALID_TOKEN,
+    GENERATION_FAILED,
+
+    /** Só do lado do app: o servidor não respondeu. */
+    UNREACHABLE,
+
+    /** Só do lado do app: respondeu, mas não em um formato que dê para ler. */
+    HTTP_ERROR,
+    ;
+
+    companion object {
+        fun of(valor: String?): ErrorCode =
+            entries.firstOrNull { it.name == valor } ?: GENERATION_FAILED
+    }
+}

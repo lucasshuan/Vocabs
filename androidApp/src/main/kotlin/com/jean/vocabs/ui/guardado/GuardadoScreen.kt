@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.guardado
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -107,7 +108,7 @@ fun GuardadoScreen(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     BandeiraCircular(idiomaDe(estado.alvo), tamanho = 18.dp)
                     Text(
-                        text = "no seu ${idiomaDe(estado.alvo).nome.lowercase()} · ${estado.totalDoCurso} ${if (estado.totalDoCurso == 1) "ficha" else "fichas"} agora",
+                        text = "no seu ${idiomaDe(estado.alvo).displayName.lowercase()} · ${estado.totalDoCurso} ${if (estado.totalDoCurso == 1) "ficha" else "fichas"} agora",
                         style = MaterialTheme.typography.bodySmall,
                         color = cores.onSurfaceVariant,
                     )
@@ -208,7 +209,7 @@ private fun LinhaGuardada(entrada: Entrada, modifier: Modifier = Modifier) {
                 ) { status ->
                     when (status) {
                         EntryStatus.READY -> Text(
-                            text = entrada.ficha?.traducao.orEmpty(),
+                            text = entrada.ficha?.translation.orEmpty(),
                             style = MaterialTheme.typography.bodySmall,
                             color = cores.onSurfaceVariant,
                             modifier = Modifier.padding(top = 3.dp),

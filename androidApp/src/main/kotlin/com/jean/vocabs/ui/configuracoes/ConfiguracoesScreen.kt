@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.configuracoes
 
+import com.jean.vocabs.ui.displayName
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -127,7 +128,7 @@ fun ConfiguracoesScreen(
         // As seções chegam escalonadas, de cima para baixo. É a mesma entrada das
         // outras telas de dentro, e aqui ela faz um trabalho a mais: dá ordem de
         // leitura a quatro blocos que, parados, têm todos o mesmo peso.
-        Secao(icone = Icones.Globo, titulo = "Idioma", indice = 0) {
+        Secao(icone = Icones.Globo, titulo = "Language", indice = 0) {
             LinhaDeLista(
                 aoClicar = aoTrocarIdiomaNativo,
                 inicio = { BandeiraDoNativo(nativo) },
@@ -142,7 +143,7 @@ fun ConfiguracoesScreen(
                 // desta, e sem a transição a única coisa que confirma a troca é um
                 // texto que já estava no lugar quando a tela reapareceu.
                 AnimatedContent(
-                    targetState = idioma.nome,
+                    targetState = idioma.displayName,
                     transitionSpec = {
                         (fadeIn(tween(Movimento.PADRAO)) + scaleIn(tween(Movimento.PADRAO), initialScale = 0.92f))
                             .togetherWith(fadeOut(tween(Movimento.RAPIDO)))

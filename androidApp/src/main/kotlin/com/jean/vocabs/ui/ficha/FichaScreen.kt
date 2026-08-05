@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.ficha
 
+import com.jean.vocabs.ui.textoTemporarioDoErro
 import android.content.Intent
 import android.speech.tts.TextToSpeech
 import androidx.compose.animation.AnimatedContent
@@ -81,7 +82,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
     var menu by remember { mutableStateOf(false) }
     var confirmarExclusao by remember { mutableStateOf(false) }
     var expandiu by remember { mutableStateOf(false) }
-    val tts = rememberTts(idiomaDe(entrada?.par?.alvo).etiqueta)
+    val tts = rememberTts(idiomaDe(entrada?.par?.alvo).tag)
 
     if (confirmarExclusao) {
         AlertDialog(
@@ -113,7 +114,7 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                         onClick = {
                             menu = false
                             entrada?.let { item ->
-                                val texto = "${item.titulo} — ${item.ficha?.traducao.orEmpty()}\n${item.trecho.orEmpty()}\nVocabu"
+                                val texto = "${item.titulo} — ${item.ficha?.translation.orEmpty()}\n${item.trecho.orEmpty()}\nVocabu"
                                 contexto.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, texto)
@@ -158,12 +159,12 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                     }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    item.ficha?.pronuncia?.takeIf(String::isNotBlank)?.let {
+                    item.ficha?.pronunciation?.takeIf(String::isNotBlank)?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     TipoBadge(item.tipo)
                 }
-                item.ficha?.traducao?.takeIf(String::isNotBlank)?.let {
+                item.ficha?.translation?.takeIf(String::isNotBlank)?.let {
                     Text(it, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 2.dp))
                 }
             }
@@ -194,7 +195,21 @@ fun FichaScreen(id: Long, aoVoltar: () -> Unit, vm: FichaViewModel = viewModel()
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(Modifier.padding(18.dp)) {
-                        Text(item.erro ?: "Não foi possível gerar a ficha.", color = MaterialTheme.colorScheme.onErrorContainer)
+                        Text(
+                            textoTemporarioDoErro(item.errorCode),
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        // Untranslated on purpose: this is the AI provider's own
+                        // sentence, kept for diagnosis. Subordinate styling so it
+                        // never reads as Vocabu's own copy.
+                        item.errorDetail?.takeIf { it.isNotBlank() }?.let { detalhe ->
+                            Text(
+                                detalhe,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
                         Button(onClick = vm::tentarDeNovo, modifier = Modifier.padding(top = 12.dp)) { Text("Tentar de novo") }
                     }
                 }
@@ -262,10 +277,10 @@ private fun FichaPronta(
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             RotuloDeSecao("Definições")
-            ficha.definicoes.forEachIndexed { indice, definicao ->
+            ficha.definitions.forEachIndexed { indice, definicao ->
                 Text("${indice + 1}. $definicao", style = MaterialTheme.typography.bodyMedium)
             }
-            ficha.exemplo.takeIf(String::isNotBlank)?.let {
+            ficha.example.takeIf(String::isNotBlank)?.let {
                 Text(
                     "Exemplo: $it",
                     style = MaterialTheme.typography.bodyMedium,
@@ -274,7 +289,7 @@ private fun FichaPronta(
             }
         }
 
-        if (ficha.relacionadas.isNotEmpty()) {
+        if (ficha.related.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 RotuloDeSecao("Puxa outras palavras")
                 // `animateContentSize` porque "ver mais" muda a altura do bloco:
@@ -285,10 +300,10 @@ private fun FichaPronta(
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                     modifier = Modifier.animateContentSize(Movimento.mola()),
                 ) {
-                    (if (expandiu) ficha.relacionadas else ficha.relacionadas.take(3)).forEach { termo ->
+                    (if (expandiu) ficha.related else ficha.related.take(3)).forEach { termo ->
                         Pilula(termo)
                     }
-                    if (ficha.relacionadas.size > 3) {
+                    if (ficha.related.size > 3) {
                         Pilula(
                             texto = if (expandiu) "ver menos" else "ver mais",
                             destaque = true,

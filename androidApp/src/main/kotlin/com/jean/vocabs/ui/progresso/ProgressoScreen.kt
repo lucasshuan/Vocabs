@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.progresso
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -119,7 +120,7 @@ fun ProgressoScreen(
     if (confirmarRemocao) {
         AlertDialog(
             onDismissRequest = { confirmarRemocao = false },
-            title = { Text("Sair do ${idiomaDe(olhado).nome.lowercase()}?") },
+            title = { Text("Sair do ${idiomaDe(olhado).displayName.lowercase()}?") },
             text = { Text("As fichas continuam guardadas — o idioma volta com tudo se você matricular de novo.") },
             confirmButton = {
                 TextButton(onClick = {
@@ -150,7 +151,7 @@ fun ProgressoScreen(
 
         if (podeRemover) {
             AcaoSecundaria(
-                texto = "Remover o ${idiomaDe(olhado).nome.lowercase()} da faixa",
+                texto = "Remover o ${idiomaDe(olhado).displayName.lowercase()} da faixa",
                 aoClicar = { confirmarRemocao = true },
             )
         }
@@ -221,7 +222,7 @@ private fun CartaoDaSemana(estado: ProgressoEstado, vazio: Boolean, aoAbrir: () 
 
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Quota de hoje no ${idiomaDe(estado.par.alvo).nome.lowercase()}",
+                text = "Quota de hoje no ${idiomaDe(estado.par.alvo).displayName.lowercase()}",
                 style = MaterialTheme.typography.titleSmall,
                 color = if (vazio) cores.onSurfaceVariant else cores.onSurface,
                 modifier = Modifier.weight(1f),
@@ -411,7 +412,7 @@ private fun PilulaDoCurso(alvo: String, aberta: Boolean, aoClicar: () -> Unit) {
         ) {
             BandeiraCircular(idioma, tamanho = 20.dp)
             Text(
-                text = idioma.nome,
+                text = idioma.displayName,
                 style = MaterialTheme.typography.labelMedium,
                 color = if (aberta) cores.primary else cores.onSurfaceVariant,
             )
@@ -505,7 +506,7 @@ private fun LinhaDaGaveta(curso: ResumoCurso, escolhido: Boolean, aoClicar: () -
         ) {
             BandeiraCircular(idioma, tamanho = 32.dp)
             Column(Modifier.weight(1f)) {
-                Text(idioma.nome, style = MaterialTheme.typography.titleMedium)
+                Text(idioma.displayName, style = MaterialTheme.typography.titleMedium)
                 Text(
                     text = resumoDoCurso(curso),
                     style = MaterialTheme.typography.bodySmall,

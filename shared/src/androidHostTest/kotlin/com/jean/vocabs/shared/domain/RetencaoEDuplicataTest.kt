@@ -42,6 +42,7 @@ class RetencaoEDuplicataTest {
         midiaCaminho = null,
         ficha = null,
         retencao = null,
-        erro = null,
+        errorCode = null,
+        errorDetail = null,
     )
 }

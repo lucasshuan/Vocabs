@@ -1,6 +1,7 @@
 package com.jean.vocabs.shared.domain
 
-import com.jean.vocabs.contracts.FichaResponse
+import com.jean.vocabs.contracts.CardResponse
+import com.jean.vocabs.contracts.ErrorCode
 import com.jean.vocabs.contracts.TargetType
 
 /**
@@ -28,9 +29,12 @@ data class Entrada(
     val status: EntryStatus,
     val formato: CaptureFormat,
     val midiaCaminho: String?,
-    val ficha: FichaResponse?,
+    val ficha: CardResponse?,
     val retencao: Retencao?,
-    val erro: String?,
+    /** Qual falha, para a tela escolher o texto. Nulo quando não houve. */
+    val errorCode: ErrorCode?,
+    /** O que não se traduz: a frase crua do provedor, ou o status HTTP. */
+    val errorDetail: String?,
     /** Herdado da captura: o par em que esta ficha nasceu e no qual ela é regerada. */
     val par: ParIdiomas = ParIdiomas.PADRAO,
 ) {

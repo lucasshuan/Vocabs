@@ -1,7 +1,7 @@
 package com.jean.vocabs.server
 
-import com.jean.vocabs.contracts.Idioma
-import com.jean.vocabs.contracts.Idiomas
+import com.jean.vocabs.contracts.Language
+import com.jean.vocabs.contracts.Languages
 
 /**
  * O que muda no prompt quando o idioma alvo muda.
@@ -16,11 +16,11 @@ import com.jean.vocabs.contracts.Idiomas
  * escrever a tradução e as definições, e para isso o nome basta.
  */
 data class IdiomaAlvo(
-    val idioma: Idioma,
+    val idioma: Language,
     /** Como preencher o campo `pronuncia` da ficha. */
     val notacaoDePronuncia: String,
 ) {
-    val nome: String get() = idioma.nomeEmIngles
+    val nome: String get() = idioma.englishName
 }
 
 /**
@@ -31,13 +31,13 @@ data class IdiomaAlvo(
  * precisa voltar em alemão.
  */
 data class ParDeIdiomas(
-    val nativo: Idioma,
+    val nativo: Language,
     val alvo: IdiomaAlvo,
 ) {
     companion object {
         val PADRAO = ParDeIdiomas(
-            nativo = Idiomas.PORTUGUES,
-            alvo = alvoDe(Idiomas.INGLES),
+            nativo = Languages.PORTUGUES,
+            alvo = alvoDe(Languages.INGLES),
         )
 
         /**
@@ -48,15 +48,15 @@ data class ParDeIdiomas(
          * lendo. Um 400 diz o que aconteceu.
          */
         fun de(codigoNativo: String, codigoAlvo: String): ParDeIdiomas? {
-            val nativo = Idiomas.de(codigoNativo) ?: return null
-            val alvo = Idiomas.de(codigoAlvo) ?: return null
+            val nativo = Languages.de(codigoNativo) ?: return null
+            val alvo = Languages.de(codigoAlvo) ?: return null
             return ParDeIdiomas(nativo = nativo, alvo = alvoDe(alvo))
         }
     }
 }
 
 /** IPA por padrão; a exceção é o idioma cuja pronúncia ninguém escreve em IPA. */
-private fun alvoDe(idioma: Idioma) = IdiomaAlvo(idioma, notacaoDePronuncia = NOTACOES[idioma.codigo] ?: IPA)
+private fun alvoDe(idioma: Language) = IdiomaAlvo(idioma, notacaoDePronuncia = NOTACOES[idioma.code] ?: IPA)
 
 private const val IPA = "IPA, without slashes"
 

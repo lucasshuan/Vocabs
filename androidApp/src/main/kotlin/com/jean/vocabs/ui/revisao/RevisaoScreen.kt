@@ -162,7 +162,7 @@ private fun Cartao(estado: RevisaoEstado.Cartao, vm: RevisaoViewModel) {
                     modifier = Modifier.padding(vertical = 22.dp),
                 )
                 Text(
-                    entrada.ficha?.traducao.orEmpty(),
+                    entrada.ficha?.translation.orEmpty(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

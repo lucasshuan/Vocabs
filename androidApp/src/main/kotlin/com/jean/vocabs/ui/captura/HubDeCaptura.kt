@@ -64,7 +64,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import com.jean.vocabs.contracts.Idioma
+import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.ui.components.ALTURA_DA_BARRA
 import com.jean.vocabs.ui.components.Icones
@@ -110,7 +110,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 @Composable
 fun HubDeCaptura(
     captura: CapturaRapida,
-    idioma: Idioma,
+    idioma: Language,
     aoAbrirTexto: () -> Unit,
     aoMudarDeFase: (emGesto: Boolean) -> Unit,
     modifier: Modifier = Modifier,

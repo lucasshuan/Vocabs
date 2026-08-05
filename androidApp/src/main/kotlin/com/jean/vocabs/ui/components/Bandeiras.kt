@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.components
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -10,7 +11,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.jean.vocabs.contracts.Idioma
+import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.ui.idiomas.bandeiraDe
 
 /**
@@ -27,10 +28,10 @@ import com.jean.vocabs.ui.idiomas.bandeiraDe
  * que os dois se trocam no mesmo lugar, e não se trocam mais.
  */
 @Composable
-fun BandeiraCircular(idioma: Idioma, modifier: Modifier = Modifier, tamanho: Dp = 20.dp) {
+fun BandeiraCircular(idioma: Language, modifier: Modifier = Modifier, tamanho: Dp = 20.dp) {
     Image(
         painter = painterResource(bandeiraDe(idioma)),
-        contentDescription = idioma.nome,
+        contentDescription = idioma.displayName,
         contentScale = ContentScale.Crop,
         modifier = modifier.size(tamanho).clip(CircleShape),
     )

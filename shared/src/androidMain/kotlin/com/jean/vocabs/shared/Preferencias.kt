@@ -2,7 +2,7 @@ package com.jean.vocabs.shared
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.jean.vocabs.contracts.Idiomas
+import com.jean.vocabs.contracts.Languages
 import com.jean.vocabs.shared.domain.ParIdiomas
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -39,11 +39,11 @@ class Preferencias(context: Context) {
     // ---- idiomas ------------------------------------------------------------
 
     var nativo: String
-        get() = prefs.getString(NATIVO, null) ?: Idiomas.NATIVO_PADRAO
+        get() = prefs.getString(NATIVO, null) ?: Languages.NATIVO_PADRAO
         set(valor) = prefs.edit().putString(NATIVO, valor).apply()
 
     var alvo: String
-        get() = prefs.getString(ALVO, null) ?: Idiomas.ALVO_PADRAO
+        get() = prefs.getString(ALVO, null) ?: Languages.ALVO_PADRAO
         set(valor) = prefs.edit().putString(ALVO, valor).apply()
 
     /**
@@ -58,7 +58,7 @@ class Preferencias(context: Context) {
             ?.split(SEPARADOR)
             ?.filter { it.isNotBlank() }
             ?.takeIf { it.isNotEmpty() }
-            ?: listOf(Idiomas.ALVO_PADRAO)
+            ?: listOf(Languages.ALVO_PADRAO)
         set(valor) = prefs.edit()
             .putString(CURSOS, valor.distinct().joinToString(SEPARADOR))
             .apply()

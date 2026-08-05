@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.components
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -40,7 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.jean.vocabs.contracts.Idioma
+import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.shared.domain.ResumoCurso
 import com.jean.vocabs.shared.domain.SeloDeCurso
 import com.jean.vocabs.ui.idiomas.idiomaDe
@@ -106,7 +107,7 @@ fun FaixaDeIdiomas(
  */
 @Composable
 fun ChipDeIdioma(
-    idioma: Idioma,
+    idioma: Language,
     selo: SeloDeCurso,
     selecionado: Boolean,
     aoClicar: () -> Unit,
@@ -139,10 +140,10 @@ fun ChipDeIdioma(
             )
             .clickable(interactionSource = toque, indication = ripple(), onClick = aoClicar)
             .padding(start = 8.dp, end = 10.dp)
-            .semantics { contentDescription = descricaoDoSelo(idioma.nome, selo) },
+            .semantics { contentDescription = descricaoDoSelo(idioma.displayName, selo) },
     ) {
         BandeiraCircular(idioma, tamanho = 24.dp)
-        Text(text = idioma.nome, style = MaterialTheme.typography.titleSmall, color = texto)
+        Text(text = idioma.displayName, style = MaterialTheme.typography.titleSmall, color = texto)
         SeloDeCursoBadge(selo, invertido = selecionado)
     }
 }
@@ -228,7 +229,7 @@ private fun ChipDeAdicionarIdioma(aoClicar: () -> Unit) {
 @Composable
 fun PilulaDeFiltroDeIdioma(
     rotulo: String,
-    idioma: Idioma?,
+    idioma: Language?,
     selecionado: Boolean,
     aoClicar: () -> Unit,
     modifier: Modifier = Modifier,
@@ -265,7 +266,7 @@ fun PilulaDeFiltroDeIdioma(
  */
 @Composable
 fun MarcaDeIdioma(
-    idioma: Idioma,
+    idioma: Language,
     modifier: Modifier = Modifier,
     cor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     tamanhoDaBandeira: androidx.compose.ui.unit.Dp = 15.dp,
@@ -276,7 +277,7 @@ fun MarcaDeIdioma(
         modifier = modifier,
     ) {
         BandeiraCircular(idioma, tamanho = tamanhoDaBandeira)
-        Text(idioma.nome, style = MaterialTheme.typography.bodySmall, color = cor)
+        Text(idioma.displayName, style = MaterialTheme.typography.bodySmall, color = cor)
     }
 }
 

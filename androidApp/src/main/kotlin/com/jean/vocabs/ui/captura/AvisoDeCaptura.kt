@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.captura
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -167,7 +168,7 @@ private fun CartaoDoAviso(
                                 val idioma = idiomaDe(aviso.alvo)
                                 BandeiraCircular(idioma, tamanho = 15.dp)
                                 Text(
-                                    text = idioma.nome.lowercase(),
+                                    text = idioma.displayName.lowercase(),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = cores.onSurfaceVariant,
                                 )

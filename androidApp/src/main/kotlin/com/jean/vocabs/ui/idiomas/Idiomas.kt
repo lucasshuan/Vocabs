@@ -1,9 +1,10 @@
 package com.jean.vocabs.ui.idiomas
 
+import com.jean.vocabs.ui.displayName
 import androidx.annotation.DrawableRes
 import com.jean.vocabs.R
-import com.jean.vocabs.contracts.Idioma
-import com.jean.vocabs.contracts.Idiomas
+import com.jean.vocabs.contracts.Language
+import com.jean.vocabs.contracts.Languages
 
 /**
  * O desenho de cada bandeira.
@@ -23,7 +24,7 @@ import com.jean.vocabs.contracts.Idiomas
  * as 43 bandeiras seriam removidas do APK e só a tela mostraria o estrago.
  */
 @DrawableRes
-fun bandeiraDe(idioma: Idioma): Int = when (idioma.pais) {
+fun bandeiraDe(idioma: Language): Int = when (idioma.country) {
     "bd" -> R.drawable.bandeira_bd
     "bg" -> R.drawable.bandeira_bg
     "br" -> R.drawable.bandeira_br
@@ -75,16 +76,16 @@ fun bandeiraDe(idioma: Idioma): Int = when (idioma.pais) {
  *
  * A interface precisa de **alguma** coisa para desenhar; devolver nulo aqui
  * espalharia um `?:` por cada linha de cada tela. Quem precisa saber que o
- * código é desconhecido — o servidor, na hora de gerar — usa [Idiomas.de], que
+ * código é desconhecido — o servidor, na hora de gerar — usa [Languages.de], que
  * devolve nulo e recusa.
  */
-fun idiomaDe(codigo: String?): Idioma = Idiomas.de(codigo) ?: Idiomas.INGLES
+fun idiomaDe(codigo: String?): Language = Languages.de(codigo) ?: Languages.INGLES
 
 /** Filtro da busca da tela "Novo idioma": ignora acento e caixa. */
-fun List<Idioma>.buscar(termo: String): List<Idioma> {
+fun List<Language>.buscar(termo: String): List<Language> {
     val procurado = termo.trim().semAcento()
     if (procurado.isEmpty()) return this
-    return filter { it.nome.semAcento().contains(procurado) || it.codigo.semAcento().contains(procurado) }
+    return filter { it.displayName.semAcento().contains(procurado) || it.code.semAcento().contains(procurado) }
 }
 
 /**

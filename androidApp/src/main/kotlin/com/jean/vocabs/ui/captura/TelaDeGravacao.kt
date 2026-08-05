@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.captura
 
+import com.jean.vocabs.ui.displayName
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -50,7 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
-import com.jean.vocabs.contracts.Idioma
+import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.ui.components.BandeiraCircular
 import com.jean.vocabs.ui.components.Icones
 import com.jean.vocabs.ui.components.Movimento
@@ -87,7 +88,7 @@ import kotlin.math.pow
 @Composable
 internal fun TelaDeGravacao(
     captura: CapturaRapida,
-    idioma: Idioma,
+    idioma: Language,
     gravando: Boolean,
     modifier: Modifier = Modifier,
 ) {
@@ -165,7 +166,7 @@ internal fun TelaDeGravacao(
                 // que de fato acontece, e é ela que precisa mudar no dia em que
                 // houver detecção.
                 Text(
-                    text = "vai para o curso de ${idioma.nome}",
+                    text = "vai para o curso de ${idioma.displayName}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.72f),
                 )

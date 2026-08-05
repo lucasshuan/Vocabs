@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.selecionar
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -323,7 +324,7 @@ private fun SeletorDeIdioma(alvo: String, cursos: List<String>, aoEscolher: (Str
         DropdownMenu(expanded = aberto, onDismissRequest = { aberto = false }) {
             cursos.forEach { codigo ->
                 DropdownMenuItem(
-                    text = { Text(idiomaDe(codigo).nome) },
+                    text = { Text(idiomaDe(codigo).displayName) },
                     leadingIcon = { BandeiraCircular(idiomaDe(codigo), tamanho = 20.dp) },
                     trailingIcon = {
                         if (codigo == alvo) Icon(Icones.Check, null, tint = cores.tertiary, modifier = Modifier.size(16.dp))

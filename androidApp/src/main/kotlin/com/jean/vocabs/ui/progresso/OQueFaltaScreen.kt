@@ -148,7 +148,7 @@ private fun LinhaDaPalavra(entrada: Entrada, aoClicar: () -> Unit) {
             }
         }
 
-        entrada.ficha?.traducao?.takeIf(String::isNotBlank)?.let {
+        entrada.ficha?.translation?.takeIf(String::isNotBlank)?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodySmall,

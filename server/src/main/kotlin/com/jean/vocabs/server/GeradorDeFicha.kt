@@ -6,8 +6,8 @@ import com.anthropic.core.JsonValue
 import com.anthropic.models.messages.JsonOutputFormat
 import com.anthropic.models.messages.MessageCreateParams
 import com.anthropic.models.messages.OutputConfig
-import com.jean.vocabs.contracts.FichaResponse
-import com.jean.vocabs.contracts.GerarFichaRequest
+import com.jean.vocabs.contracts.CardResponse
+import com.jean.vocabs.contracts.GenerateCardRequest
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.json.Json
 
@@ -24,7 +24,7 @@ class IdiomaDesconhecido(nativo: String, alvo: String) :
  * Traduz uma captura crua (trecho + alvo) numa ficha completa, via Claude.
  *
  * O ponto crítico aqui é o structured output: o schema abaixo obriga a resposta
- * a vir no formato exato de [FichaResponse]. Sem isso, o modelo às vezes devolve
+ * a vir no formato exato de [CardResponse]. Sem isso, o modelo às vezes devolve
  * o JSON embrulhado em markdown ou com um comentário antes, e você acaba
  * escrevendo regex para extrair — que quebra no primeiro caso estranho.
  */
@@ -50,9 +50,9 @@ class GeradorDeFicha(
      */
     private val prompts = ConcurrentHashMap<ParDeIdiomas, String>()
 
-    fun gerar(pedido: GerarFichaRequest): FichaResponse {
-        val idiomas = ParDeIdiomas.de(pedido.idiomaNativo, pedido.idiomaAlvo)
-            ?: throw IdiomaDesconhecido(pedido.idiomaNativo, pedido.idiomaAlvo)
+    fun gerar(pedido: GenerateCardRequest): CardResponse {
+        val idiomas = ParDeIdiomas.de(pedido.nativeLanguage, pedido.targetLanguage)
+            ?: throw IdiomaDesconhecido(pedido.nativeLanguage, pedido.targetLanguage)
 
         val params = MessageCreateParams.builder()
             .model(modelo)
@@ -76,9 +76,9 @@ class GeradorDeFicha(
             )
             .addUserMessage(
                 """
-                Snippet: ${pedido.trecho}
-                Target: ${pedido.alvo}
-                Type selected by the app: ${pedido.tipo.name}
+                Snippet: ${pedido.snippet}
+                Target: ${pedido.target}
+                Type selected by the app: ${pedido.type.name}
                 """.trimIndent()
             )
             .build()
@@ -89,7 +89,7 @@ class GeradorDeFicha(
             .firstNotNullOfOrNull { bloco -> bloco.text().orElse(null)?.text() }
             ?: error("A Claude API não devolveu nenhum bloco de texto.")
 
-        val ficha = json.decodeFromString<FichaResponse>(texto)
+        val ficha = json.decodeFromString<CardResponse>(texto)
         return aplicarDecisoesLocais(pedido, ficha)
     }
 
@@ -116,10 +116,10 @@ class GeradorDeFicha(
          * parte mais sutil da ficha, e traduzir é recalibrar sem querer.
          *
          * Os nomes dos campos e os valores do enum ficam como estão: são o
-         * contrato com [FichaResponse], não texto para o modelo traduzir.
+         * contrato com [CardResponse], não texto para o modelo traduzir.
          */
         fun promptDe(idiomas: ParDeIdiomas): String {
-            val nativo = idiomas.nativo.nomeEmIngles
+            val nativo = idiomas.nativo.englishName
             val alvo = idiomas.alvo
 
             return """
@@ -128,31 +128,31 @@ class GeradorDeFicha(
                 ${alvo.nome} and mark the part of it that caught their attention.
                 Your job is to build the study card for that target.
 
-                `tipo` is supplied by the app. Copy it exactly; never classify or
+                `type` is supplied by the app. Copy it exactly; never classify or
                 change it. It is WORD for one selected token and PHRASE for
                 two or more selected tokens.
 
                 The other fields:
-                - `traducao`: in $nativo, the sense the target carries IN THIS
+                - `translation`: in $nativo, the sense the target carries IN THIS
                   snippet — not the term's most common translation out of context.
-                - `definicoes`: 1 or 2 definitions in $nativo, short and direct.
-                - `exemplo`: ONE new sentence in ${alvo.nome} using the target in
+                - `definitions`: 1 or 2 definitions in $nativo, short and direct.
+                - `example`: ONE new sentence in ${alvo.nome} using the target in
                   the same sense. Do not repeat the original snippet.
-                - `pronuncia`: the target's pronunciation written as
+                - `pronunciation`: the target's pronunciation written as
                   ${alvo.notacaoDePronuncia}. For expressions, transcribe the whole
                   expression.
-                - `relacionadas`: 3 to 6 useful terms in ${alvo.nome} that are
+                - `related`: 3 to 6 useful terms in ${alvo.nome} that are
                   semantically related to the target. Return only concise terms,
                   without definitions or numbering.
             """.trimIndent()
         }
 
         /**
-         * Espelha [FichaResponse]. `additionalProperties: false` e todos os campos
+         * Espelha [CardResponse]. `additionalProperties: false` e todos os campos
          * em `required` são exigidos pelo structured outputs da API.
          *
          * Kept as a plain map, not inlined into [SCHEMA], so a test can compare
-         * its keys against [FichaResponse]'s serial names. Nothing else connects
+         * its keys against [CardResponse]'s serial names. Nothing else connects
          * the two — a field renamed on one side and not the other does not fail
          * to compile, it fails to decode, on every card.
          */
@@ -160,25 +160,25 @@ class GeradorDeFicha(
                 "type" to "object",
                 "additionalProperties" to false,
                 "required" to listOf(
-                    "tipo", "traducao", "definicoes", "exemplo", "pronuncia", "relacionadas"
+                    "type", "translation", "definitions", "example", "pronunciation", "related"
                 ),
                 "properties" to mapOf(
-                    "tipo" to mapOf(
+                    "type" to mapOf(
                         "type" to "string",
                         "enum" to listOf("WORD", "PHRASE"),
                     ),
-                    "traducao" to mapOf("type" to "string"),
-                    "definicoes" to mapOf(
+                    "translation" to mapOf("type" to "string"),
+                    "definitions" to mapOf(
                         "type" to "array",
                         "items" to mapOf("type" to "string"),
                     ),
-                    "exemplo" to mapOf("type" to "string"),
-                    "pronuncia" to mapOf("type" to "string"),
+                    "example" to mapOf("type" to "string"),
+                    "pronunciation" to mapOf("type" to "string"),
                     // Sem `minItems`/`maxItems`: o structured outputs da API só
                     // aceita `minItems` 0 ou 1 e rejeita o resto com 400, o que
                     // derrubaria toda ficha. A faixa de 3 a 6 fica no prompt, e o
                     // teto é garantido de verdade em [aplicarDecisoesLocais].
-                    "relacionadas" to mapOf(
+                    "related" to mapOf(
                         "type" to "array",
                         "items" to mapOf("type" to "string"),
                     ),
@@ -191,11 +191,11 @@ class GeradorDeFicha(
 
 /** A seleção no aparelho é a autoridade; a saída do modelo nunca a sobrescreve. */
 internal fun aplicarDecisoesLocais(
-    pedido: GerarFichaRequest,
-    ficha: FichaResponse,
-): FichaResponse = ficha.copy(
-    tipo = pedido.tipo,
-    relacionadas = ficha.relacionadas
+    pedido: GenerateCardRequest,
+    ficha: CardResponse,
+): CardResponse = ficha.copy(
+    type = pedido.type,
+    related = ficha.related
         .map(String::trim)
         .filter(String::isNotEmpty)
         .distinct()

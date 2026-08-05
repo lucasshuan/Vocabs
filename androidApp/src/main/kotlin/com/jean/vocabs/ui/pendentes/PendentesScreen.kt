@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.pendentes
 
+import com.jean.vocabs.ui.textoTemporarioDoErro
+import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -109,7 +111,7 @@ fun PendentesScreen(
                     }
                     items(idiomas.entries.toList(), key = { it.key }) { (codigo, quantas) ->
                         PilulaDeFiltroDeIdioma(
-                            rotulo = "${idiomaDe(codigo).nome} · $quantas",
+                            rotulo = "${idiomaDe(codigo).displayName} · $quantas",
                             idioma = idiomaDe(codigo),
                             selecionado = filtro == codigo,
                             aoClicar = { filtro = if (filtro == codigo) null else codigo },
@@ -230,7 +232,7 @@ private fun CartaoEntrada(
                     MarcaDeIdioma(idiomaDe(entrada.par.alvo))
                     if (entrada.status == EntryStatus.ERROR) {
                         Text(
-                            text = " · ${entrada.erro ?: "falha na geração"}",
+                            text = " · ${textoTemporarioDoErro(entrada.errorCode)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                             maxLines = 1,

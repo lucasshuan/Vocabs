@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.home
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.horizontalScroll
@@ -166,7 +167,7 @@ private fun CabecalhoDeIdioma(
         ) {
             BandeiraCircular(idiomaDe(grupo.par.alvo), tamanho = 20.dp)
             Text(
-                text = idiomaDe(grupo.par.alvo).nome,
+                text = idiomaDe(grupo.par.alvo).displayName,
                 style = MaterialTheme.typography.titleSmall,
                 color = if (aberto) cores.onSecondaryContainer else cores.onSurface,
                 modifier = Modifier.weight(1f),
@@ -200,7 +201,7 @@ private fun CartaoPalavra(entrada: Entrada, modifier: Modifier = Modifier, aoCli
             TipoBadge(entrada.tipo)
         }
         Text(
-            text = entrada.ficha?.traducao.orEmpty(),
+            text = entrada.ficha?.translation.orEmpty(),
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 9.dp),
         )

@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.perfil
 
+import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -210,7 +211,7 @@ private fun LinhaDeCurso(curso: ResumoCurso, aoClicar: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = idiomaDe(curso.par.alvo).nome,
+                text = idiomaDe(curso.par.alvo).displayName,
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
             )

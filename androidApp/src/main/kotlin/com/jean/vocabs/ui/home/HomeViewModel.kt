@@ -106,7 +106,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         }
         val bateBusca = procurado.isBlank() ||
             entrada.alvo.orEmpty().normalizado().contains(procurado) ||
-            entrada.ficha?.traducao.orEmpty().normalizado().contains(procurado)
+            entrada.ficha?.translation.orEmpty().normalizado().contains(procurado)
         return bateNivel && bateBusca
     }
 

@@ -1,7 +1,8 @@
 package com.jean.vocabs.server
 
-import com.jean.vocabs.contracts.ErroResponse
-import com.jean.vocabs.contracts.GerarFichaRequest
+import com.jean.vocabs.contracts.ErrorResponse
+import com.jean.vocabs.contracts.ErrorCode
+import com.jean.vocabs.contracts.GenerateCardRequest
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
@@ -46,7 +47,7 @@ fun Application.module() {
         // Antes do handler geral: um par de idiomas que não existe não melhora
         // se o app tentar de novo, e 503 faria o app tentar.
         exception<IdiomaDesconhecido> { call, causa ->
-            call.respond(HttpStatusCode.BadRequest, ErroResponse(causa.message.orEmpty()))
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse(ErrorCode.UNKNOWN_LANGUAGE_PAIR.name, causa.message))
         }
         exception<Throwable> { call, causa ->
             log.error("Falha ao gerar ficha", causa)
@@ -60,7 +61,7 @@ fun Application.module() {
                 ?: causa::class.simpleName.orEmpty()
             call.respond(
                 HttpStatusCode.ServiceUnavailable,
-                ErroResponse("Falha ao gerar a ficha. $detalhe"),
+                ErrorResponse(ErrorCode.GENERATION_FAILED.name, detalhe),
             )
         }
     }
@@ -70,15 +71,15 @@ fun Application.module() {
 
         post("/v1/ficha") {
             if (call.request.headers[HttpHeaders.Authorization] != "Bearer $tokenEsperado") {
-                call.respond(HttpStatusCode.Unauthorized, ErroResponse("Token inválido."))
+                call.respond(HttpStatusCode.Unauthorized, ErrorResponse(ErrorCode.INVALID_TOKEN.name))
                 return@post
             }
 
-            val pedido = call.receive<GerarFichaRequest>()
-            if (pedido.trecho.isBlank() || pedido.alvo.isBlank()) {
+            val pedido = call.receive<GenerateCardRequest>()
+            if (pedido.snippet.isBlank() || pedido.target.isBlank()) {
                 call.respond(
                     HttpStatusCode.BadRequest,
-                    ErroResponse("trecho e alvo são obrigatórios."),
+                    ErrorResponse(ErrorCode.MISSING_FIELDS.name),
                 )
                 return@post
             }

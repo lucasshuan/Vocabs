@@ -55,6 +55,6 @@ class PerfilViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Quantos idiomas ainda dá para escolher — o "37 idiomas" da tela Novo idioma. */
     val disponiveis: StateFlow<Int> = preferencias.observarCursos()
-        .map { matriculados -> com.jean.vocabs.contracts.Idiomas.CATALOGO.count { it.codigo !in matriculados } }
+        .map { matriculados -> com.jean.vocabs.contracts.Languages.CATALOGO.count { it.code !in matriculados } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 }
