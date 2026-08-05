@@ -1,124 +1,126 @@
 # Vocabu
 
-Vocabu é um app de vocabulário que captura palavras e expressões em inglês no momento em que
-elas aparecem — jogando, lendo, assistindo — e transforma cada captura numa ficha gerada por IA.
+Vocabu is a vocabulary app that captures words and phrases at the moment they show up —
+while gaming, reading, watching — and turns each capture into an AI-generated card.
 
-Os dados ficam no aparelho. O servidor só intermedia a chamada de IA.
+The data stays on the device. The server only brokers the AI call.
 
-**Estado:** identidade Vocabu e fluxo local-first implementados. Uma captura pode gerar várias
-fichas; foto usa OCR local, áudio tenta transcrição local no Android 13+, e ambos mantêm edição
-manual. A revisão é um cloze digitado, o perfil mostra 84 dias de atividade e a exportação gera um
-ZIP versionado com JSON e mídias.
+**State:** the Vocabu identity and the local-first flow are in. One capture can produce several
+cards; photo uses local OCR, audio attempts local transcription on Android 13+, and both keep
+manual editing. Review is a typed cloze, the profile shows 84 days of activity, and export produces
+a versioned ZIP with JSON and media. The interface ships in English and Brazilian Portuguese, and
+follows the device unless you pick a language in Settings.
 
-## Pré-requisitos
+## Prerequisites
 
-Android Studio (traz o JDK e o Android SDK). `JAVA_HOME` e `ANDROID_HOME` já estão definidas nesta
-máquina — se o `gradlew` reclamar de `JAVA_HOME is not set`, é isto que faltou:
+Android Studio (it brings the JDK and the Android SDK). `JAVA_HOME` and `ANDROID_HOME` are already
+set on this machine — if `gradlew` complains about `JAVA_HOME is not set`, this is what is missing:
 
 ```powershell
 [Environment]::SetEnvironmentVariable('JAVA_HOME', "C:\Program Files\Android\Android Studio\jbr", 'User')
 [Environment]::SetEnvironmentVariable('ANDROID_HOME', "$env:LOCALAPPDATA\Android\Sdk", 'User')
-# abra um terminal novo depois disso
+# open a new terminal afterwards
 ```
 
-Os segredos ficam no `.env` na raiz (ignorado pelo git, modelo em `.env.example`). Cole a chave da
-Anthropic e pronto — não precisa redigitar a cada terminal novo:
+Secrets live in `.env` at the root (git-ignored, template in `.env.example`). Paste the Anthropic
+key and you are done — no retyping in every new terminal:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
-APP_TOKEN=token-de-teste-local
+APP_TOKEN=local-test-token
 ```
 
-Variáveis de ambiente, se definidas, têm precedência sobre o arquivo — é assim que CI e produção
-sobrescrevem sem depender dele.
+Environment variables, when set, take precedence over the file — that is how CI and production
+override without depending on it.
 
-## Rodar
+## Running
 
-Três abas do PowerShell, nesta ordem. As duas primeiras ficam ocupando o terminal; a terceira roda
-e devolve o prompt.
+Three PowerShell tabs, in this order. The first two hold the terminal; the third runs and gives
+the prompt back.
 
-**1. Emulador.** `emulator` e `adb` não entram no PATH junto com o `ANDROID_HOME`, então vão pelo
-caminho completo. `vocabs` é o AVD já criado nesta máquina:
+**1. Emulator.** `emulator` and `adb` do not join the PATH along with `ANDROID_HOME`, so they go by
+full path. `vocabs` is the AVD already created on this machine:
 
 ```powershell
-& "$env:ANDROID_HOME\emulator\emulator.exe" -list-avds    # ver o que existe
+& "$env:ANDROID_HOME\emulator\emulator.exe" -list-avds    # see what exists
 & "$env:ANDROID_HOME\emulator\emulator.exe" -avd vocabs
 ```
 
-Sem terminal dá no mesmo: Android Studio → **Device Manager** → ▶ no `vocabs`.
+Without a terminal it comes to the same thing: Android Studio → **Device Manager** → ▶ on `vocabs`.
 
-**2. Servidor.**
+**2. Server.**
 
 ```powershell
-.\gradlew.bat :server:run               # backend em localhost:8080
+.\gradlew.bat :server:run               # backend on localhost:8080
 ```
 
-**3. Compilar e instalar.**
+**3. Build and install.**
 
 ```powershell
 .\gradlew.bat :androidApp:installDebug
 ```
 
-`installDebug` compila o APK de debug e **instala em todo aparelho conectado** — emulador, celular
-físico por USB, ou os dois. Ele não sobe emulador e não abre o app: o ícone da Vocabu aparece na
-gaveta.
+`installDebug` builds the debug APK and **installs it on every connected device** — emulator,
+physical phone over USB, or both. It does not start an emulator and does not open the app: the
+Vocabu icon appears in the drawer.
 
-Para o **celular físico**: ativar "Depuração USB" em Opções do desenvolvedor, conectar por cabo e
-aceitar o popup de autorização na tela do aparelho. `adb devices -l` então lista o celular junto
-com qualquer emulador aberto.
+For a **physical phone**: enable "USB debugging" in Developer options, connect by cable and accept
+the authorisation popup on the device screen. `adb devices -l` then lists the phone alongside any
+running emulator.
 
-**Não precisa configurar endereço.** O app descobre onde o servidor está: no emulador usa
-`10.0.2.2` (o localhost da sua máquina visto de dentro dele) e no celular físico usa o IP desta
-máquina na rede local, detectado na hora de compilar. O token sai do mesmo `.env` que o servidor
-lê, então os dois lados sempre batem. Se a detecção errar — várias placas de rede, servidor noutra
-máquina — preencha `SERVIDOR_LAN` no `.env` e recompile. Para celular físico, os dois aparelhos
-precisam estar no mesmo Wi-Fi, e pode ser necessário liberar a porta 8080 no firewall do Windows.
+**No address to configure.** The app works out where the server is: on the emulator it uses
+`10.0.2.2` (your machine's localhost as seen from inside it) and on a physical phone it uses this
+machine's address on the local network, detected at build time. The token comes from the same
+`.env` the server reads, so the two sides always match. If the detection guesses wrong — several
+network adapters, server on another machine — set `SERVER_LAN` in `.env` and rebuild. For a
+physical phone the two devices have to be on the same Wi-Fi, and you may need to open port 8080 in
+the Windows firewall.
 
-### Problemas comuns
+### Common problems
 
-**`installDebug` falha com `No connected devices!`** — é o passo 1 faltando, causa de praticamente
-toda falha dele. Confira com `& "$env:ANDROID_HOME\platform-tools\adb.exe" devices`: precisa haver
-uma linha terminada em `device`. Lista vazia = nenhum aparelho; `offline` = o emulador ainda está
-subindo, espere e repita.
+**`installDebug` fails with `No connected devices!`** — that is step 1 missing, the cause of very
+nearly every failure of it. Check with `& "$env:ANDROID_HOME\platform-tools\adb.exe" devices`:
+there has to be a line ending in `device`. An empty list means no device; `offline` means the
+emulator is still starting, so wait and repeat.
 
-**`INSTALL_FAILED_USER_RESTRICTED: Install canceled by user`** no celular físico é trava do
-fabricante, não do Gradle. Em Xiaomi/MIUI: Configurações → Configurações adicionais → Opções do
-desenvolvedor → ativar **"Instalação via USB"**. Se o toggle estiver bloqueado, o MIUI exige conta
-Mi logada e internet ativa no momento de ligar.
+**`INSTALL_FAILED_USER_RESTRICTED: Install canceled by user`** on a physical phone is a
+manufacturer lock, not Gradle. On Xiaomi/MIUI: Settings → Additional settings → Developer options →
+enable **"Install via USB"**. If the toggle is greyed out, MIUI requires a signed-in Mi account and
+an active internet connection at the moment you turn it on.
 
-**Acentos tortos no console** (`Vari├ível`) — o terminal está em code page legada: `chcp 65001`
-resolve na sessão.
+**Mangled accents in the console** (`Vari├ível`) — the terminal is on a legacy code page;
+`chcp 65001` fixes it for the session.
 
-## Gerar o APK
+## Building the APK
 
-`installDebug` serve para desenvolver, mas não produz nada que se possa mandar para alguém. Para
-isso existem dois APKs, e a diferença entre eles é a assinatura — não o conteúdo.
+`installDebug` is for developing, but it produces nothing you can send to anyone. For that there
+are two APKs, and the difference between them is the signature — not the contents.
 
-**Debug: o arquivo que dá para compartilhar hoje.**
+**Debug: the file you can share today.**
 
 ```powershell
 .\gradlew.bat :androidApp:assembleDebug
 # androidApp\build\outputs\apk\debug\androidApp-debug.apk
 ```
 
-Sai assinado com a chave de debug que o Android Studio gera sozinha (`~\.android\debug.keystore`),
-então **instala em qualquer aparelho** — basta mandar o arquivo e abrir, com "instalar de fontes
-desconhecidas" liberado. O que ele não serve é para publicar: a chave de debug é a mesma em toda
-máquina do mundo e a Play Store a recusa.
+It comes signed with the debug key Android Studio generates on its own
+(`~\.android\debug.keystore`), so it **installs on any device** — send the file and open it, with
+"install from unknown sources" allowed. What it is no good for is publishing: the debug key is the
+same on every machine in the world and the Play Store refuses it.
 
-**Release: precisa de uma chave sua.**
+**Release: needs a key of your own.**
 
 ```powershell
 .\gradlew.bat :androidApp:assembleRelease
 # androidApp\build\outputs\apk\release\androidApp-release-unsigned.apk
 ```
 
-O `-unsigned` no nome não é detalhe: **este arquivo não instala em lugar nenhum** enquanto não for
-assinado. O projeto não tem `signingConfig` em [androidApp/build.gradle.kts](androidApp/build.gradle.kts),
-de propósito — uma chave de release é um segredo que não deve entrar no repositório.
+The `-unsigned` in the name is not a detail: **this file installs nowhere** until it is signed. The
+project has no `signingConfig` in [androidApp/build.gradle.kts](androidApp/build.gradle.kts), on
+purpose — a release key is a secret that should not enter the repository.
 
-Crie a chave uma vez (guarde a senha; **perder essa chave significa não poder mais atualizar o app
-publicado**):
+Create the key once (keep the password; **losing this key means never being able to update the
+published app**):
 
 ```powershell
 & "$env:JAVA_HOME\bin\keytool.exe" -genkeypair -v `
@@ -126,8 +128,8 @@ publicado**):
   -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-E assine — `apksigner` mora no build-tools, que também não entra no PATH (troque `37.0.0` pela
-versão instalada, visível em `$env:ANDROID_HOME\build-tools`):
+And sign it — `apksigner` lives in build-tools, which also does not join the PATH (swap `37.0.0`
+for the installed version, visible in `$env:ANDROID_HOME\build-tools`):
 
 ```powershell
 & "$env:ANDROID_HOME\build-tools\37.0.0\apksigner.bat" sign `
@@ -136,22 +138,22 @@ versão instalada, visível em `$env:ANDROID_HOME\build-tools`):
   androidApp\build\outputs\apk\release\androidApp-release-unsigned.apk
 ```
 
-Automatizar isso é apontar um `signingConfig` para a mesma `.jks` lendo as senhas do `.env`, do
-mesmo jeito que `ANTHROPIC_API_KEY` já é lida — aí `assembleRelease` passa a sair assinado sozinho.
-Para a Play Store o formato é `bundleRelease` (`.aab`), não APK.
+Automating this means pointing a `signingConfig` at the same `.jks`, reading the passwords from
+`.env` the way `ANTHROPIC_API_KEY` already is — then `assembleRelease` comes out signed by itself.
+For the Play Store the format is `bundleRelease` (`.aab`), not APK.
 
-> `assembleRelease` hoje sai **sem minificação** (`isMinifyEnabled = false`): o APK é maior e o
-> código vai legível. É a escolha certa enquanto não há regras de ProGuard escritas — ligar
-> minificação sem elas quebra a serialização do `kotlinx.serialization` em silêncio, e o app só
-> falha em produção.
+> `assembleRelease` currently comes out **without minification** (`isMinifyEnabled = false`): the
+> APK is larger and the code ships readable. That is the right call while no ProGuard rules are
+> written — turning minification on without them breaks `kotlinx.serialization` silently, and the
+> app only fails in production.
 
-## Documentação
+## Documentation
 
-| Arquivo | O que tem |
+| File | What it holds |
 |---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Módulos, fluxo de uma captura, decisões técnicas |
-| [docs/PRODUTO.md](docs/PRODUTO.md) | Visão, princípios, core loop, retenção, monetização |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Fases, escopo e critérios de saída |
-| [docs/EXERCICIOS-E-METRICAS.md](docs/EXERCICIOS-E-METRICAS.md) | Catálogo de minigames e painel de métricas |
-| [docs/INTERFACE.md](docs/INTERFACE.md) | Critérios de layout: zona do polegar, custo da captura |
-| [docs/NOTAS.md](docs/NOTAS.md) | O que falta provar, o que está torto, ideias soltas |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Modules, the path of one capture, technical decisions |
+| [ROADMAP.md](ROADMAP.md) | Phases, scope and exit criteria |
+| [NOTES.md](NOTES.md) | What is unproven, what is crooked, loose ideas |
+| [docs/PRODUCT.md](docs/PRODUCT.md) | Vision, principles, core loop, retention, monetisation |
+| [docs/EXERCISES-AND-METRICS.md](docs/EXERCISES-AND-METRICS.md) | Minigame catalogue and the metrics dashboard |
+| [docs/THIRD-PARTY.md](docs/THIRD-PARTY.md) | Dependencies and what each one is for |

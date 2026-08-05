@@ -1,15 +1,15 @@
-# Recursos de terceiros
+# Third-party resources
 
-O que o app embarca e não foi feito aqui. Só arte e fontes — as dependências de
-código estão no `gradle/libs.versions.toml`.
+What the app bundles that was not made here. Art and fonts only — the code
+dependencies live in `gradle/libs.versions.toml`.
 
 ## circle-flags
 
-As 43 bandeiras de `androidApp/src/main/res/drawable/bandeira_*.xml`, convertidas
-de SVG para VectorDrawable sem alteração do desenho.
+The 43 flags in `androidApp/src/main/res/drawable/flag_*.xml`, converted from SVG
+to VectorDrawable with no change to the artwork.
 
-- Fonte: <https://github.com/HatScripts/circle-flags>
-- Licença: MIT
+- Source: <https://github.com/HatScripts/circle-flags>
+- Licence: MIT
 
 ```text
 MIT License
@@ -35,14 +35,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## Fontes
+## Fonts
 
-Ambas em `androidApp/src/main/res/font/`, sob a SIL Open Font License 1.1.
+Both in `androidApp/src/main/res/font/`, under the SIL Open Font License 1.1.
 
-| Fonte | Onde | Origem |
+| Font | Where | Source |
 |---|---|---|
-| Figtree | corpo de texto | <https://github.com/erikdkennedy/figtree> |
-| Bricolage Grotesque | títulos, números e termos | <https://github.com/ateliertriay/bricolage> |
+| Figtree | body text | <https://github.com/erikdkennedy/figtree> |
+| Bricolage Grotesque | titles, numbers and terms | <https://github.com/ateliertriay/bricolage> |
 
-A OFL permite embarcar e redistribuir a fonte com o aplicativo; o texto completo
-de cada uma acompanha o repositório de origem.
+The OFL allows bundling and redistributing the font with the application; the
+full text of each accompanies its source repository.
