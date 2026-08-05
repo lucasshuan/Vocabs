@@ -48,7 +48,7 @@ import com.jean.vocabs.ui.components.entryTitle
 import com.jean.vocabs.ui.components.relativeTime
 import com.jean.vocabs.ui.languages.displayName
 import com.jean.vocabs.ui.languages.languageOf
-import com.jean.vocabs.ui.temporaryErrorText
+import com.jean.vocabs.ui.components.errorText
 
 /**
  * "Pending", across every language.
@@ -86,7 +86,7 @@ fun PendingScreen(
         modifier = Modifier.fillMaxSize().statusBarsPadding(),
     ) {
         item(key = "cabecalho") {
-            Text("Pendentes", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
+            Text(stringResource(R.string.pending_title), style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(top = 22.dp))
             Text(
                 text = queueSummary(captures.size, cards.size, oldest),
                 style = MaterialTheme.typography.bodyMedium,
@@ -126,8 +126,8 @@ fun PendingScreen(
             item(key = "vazio") {
                 EmptyState(
                     icon = AppIcons.Check,
-                    title = "Tudo em dia",
-                    detail = "Nenhuma captura ou ficha esperando.",
+                    title = stringResource(R.string.pending_all_clear_title),
+                    detail = stringResource(R.string.pending_all_clear_detail),
                 )
             }
         }
@@ -135,7 +135,7 @@ fun PendingScreen(
         items(captures, key = { "c${it.id}" }) { capture ->
             SwipeToDelete(
                 onDelete = { vm.deleteCapture(capture) },
-                actionLabel = "Excluir captura",
+                actionLabel = stringResource(R.string.pending_delete_capture),
                 modifier = Modifier.animateItem().fillMaxWidth(),
             ) {
                 ListRow(
@@ -156,11 +156,11 @@ fun PendingScreen(
         }
 
         if (cards.isNotEmpty()) {
-            item(key = "secao-fichas") { SectionLabel("Fichas sendo geradas", Modifier.padding(top = 10.dp)) }
+            item(key = "section-cards") { SectionLabel(stringResource(R.string.pending_section_cards), Modifier.padding(top = 10.dp)) }
             items(cards, key = { "e${it.id}" }) { entry ->
                 SwipeToDelete(
                     onDelete = { vm.deleteCard(entry) },
-                    actionLabel = "Excluir ficha",
+                    actionLabel = stringResource(R.string.pending_delete_card),
                     modifier = Modifier.animateItem().fillMaxWidth(),
                 ) {
                     EntryCard(
@@ -234,7 +234,7 @@ private fun EntryCard(
                     LanguageMark(languageOf(entry.languagePair.target))
                     if (entry.status == EntryStatus.ERROR) {
                         Text(
-                            text = " · ${temporaryErrorText(entry.errorCode)}",
+                            text = stringResource(R.string.pending_error_suffix, errorText(entry.errorCode)),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.error,
                             maxLines = 1,
@@ -243,7 +243,7 @@ private fun EntryCard(
                 }
             }
             if (entry.status == EntryStatus.GENERATING) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-            if (entry.status == EntryStatus.ERROR) Pill("tentar de novo", highlight = true, onClick = retry)
+            if (entry.status == EntryStatus.ERROR) Pill(stringResource(R.string.pending_retry), highlight = true, onClick = retry)
         }
     }
 }

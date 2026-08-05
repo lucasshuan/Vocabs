@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.capture
 
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import android.app.Activity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -150,7 +152,7 @@ internal fun RecordingScreen(
                 // the course open in the hub. This sentence is the one that has
                 // to change the day detection exists.
                 Text(
-                    text = "vai para o curso de ${language.displayName}",
+                    text = stringResource(R.string.recording_goes_to_course, language.displayName),
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.White.copy(alpha = 0.72f),
                 )
@@ -216,7 +218,7 @@ private fun RecordingBadge(isRecording: Boolean, modifier: Modifier = Modifier) 
                 .drawBehind { drawCircle(SALMON_AT_NIGHT) },
         )
         Text(
-            text = "gravando",
+            text = stringResource(R.string.recording_recording),
             style = MaterialTheme.typography.labelMedium,
             color = Color.White.copy(alpha = 0.86f),
         )
@@ -278,7 +280,7 @@ private fun DiscardButton(onClick: () -> Unit) {
         ) {
             Icon(AppIcons.Trash, contentDescription = null, modifier = Modifier.size(20.dp))
             Text(
-                text = "Descartar",
+                text = stringResource(R.string.recording_discard),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -308,7 +310,7 @@ private fun RowScope.BotaoDeGuardar(onClick: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
         ) {
             Icon(AppIcons.Check, contentDescription = null, modifier = Modifier.size(22.dp))
-            Text(text = "Guardar", style = MaterialTheme.typography.titleMedium)
+            Text(text = stringResource(R.string.save), style = MaterialTheme.typography.titleMedium)
         }
     }
 }

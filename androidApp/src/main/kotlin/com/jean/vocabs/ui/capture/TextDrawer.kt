@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.capture
 
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -114,7 +116,7 @@ fun TextDrawer(
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Pill(
-                text = "Colar",
+                text = stringResource(R.string.paste),
                 color = colors.primary,
                 background = colors.secondaryContainer,
                 icon = true,
@@ -125,7 +127,7 @@ fun TextDrawer(
             // prominent place without ever being tappable.
             if (hasText) {
                 Pill(
-                    text = "Guardar",
+                    text = stringResource(R.string.save),
                     color = colors.onPrimary,
                     background = colors.primary,
                     icon = false,

@@ -115,16 +115,16 @@ fun ProgressScreen(
     if (confirmRemoval) {
         AlertDialog(
             onDismissRequest = { confirmRemoval = false },
-            title = { Text("Sair do ${languageOf(viewed).displayName.lowercase()}?") },
-            text = { Text("As fichas continuam guardadas — o idioma volta com tudo se você matricular de novo.") },
+            title = { Text(stringResource(R.string.progress_leave_title, languageOf(viewed).displayName)) },
+            text = { Text(stringResource(R.string.progress_leave_body)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmRemoval = false
                     vm.removeCourse(viewed)
                     onBack()
-                }) { Text("Remover", color = colors.error) }
+                }) { Text(stringResource(R.string.progress_remove), color = colors.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmRemoval = false }) { Text("Manter") } },
+            dismissButton = { TextButton(onClick = { confirmRemoval = false }) { Text(stringResource(R.string.keep)) } },
         )
     }
 
@@ -136,7 +136,7 @@ fun ProgressScreen(
             .statusBarsPadding()
             .padding(horizontal = 20.dp),
     ) {
-        InnerHeader("Seu progresso", onBack, Modifier.padding(top = 8.dp)) {
+        InnerHeader(stringResource(R.string.progress_title), onBack, Modifier.padding(top = 8.dp)) {
             CoursePill(target = viewed, opened = drawerOpen, onClick = { drawerOpen = true })
         }
 
@@ -146,7 +146,7 @@ fun ProgressScreen(
 
         if (canRemove) {
             SecondaryAction(
-                text = "Remover o ${languageOf(viewed).displayName.lowercase()} da faixa",
+                text = stringResource(R.string.progress_remove_from_strip, languageOf(viewed).displayName),
                 onClick = { confirmRemoval = true },
             )
         }
@@ -216,7 +216,7 @@ private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
 
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Quota de hoje no ${languageOf(state.languagePair.target).displayName.lowercase()}",
+                text = stringResource(R.string.progress_today_quota_in, languageOf(state.languagePair.target).displayName),
                 style = MaterialTheme.typography.titleSmall,
                 color = if (empty) colors.onSurfaceVariant else colors.onSurface,
                 modifier = Modifier.weight(1f),
@@ -231,7 +231,7 @@ private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
         // No bar when empty: a grey track from end to end promises there is
         // something to fill in today, and there is not yet.
         if (!empty) {
-            val advance by animatedFraction(state.quota.fraction, "fracaoDaQuota")
+            val advance by animatedFraction(state.quota.fraction, "quotaFraction")
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -280,7 +280,7 @@ private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) 
                 Box(Modifier.size(78.dp).dashedOutline(colors.outline, radius = 39.dp, thickness = 2.dp))
                 Column(Modifier.weight(1f).padding(start = 14.dp)) {
                     Text(
-                        text = "Palavras que já são suas",
+                        text = stringResource(R.string.progress_words_that_are_yours),
                         style = MaterialTheme.typography.titleSmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -293,7 +293,11 @@ private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) 
                 }
             }
             StockLegend(
-                labels = listOf("dominadas", "familiares", "aprendendo"),
+                labels = listOf(
+                    stringResource(R.string.progress_band_mastered),
+                    stringResource(R.string.progress_band_familiar),
+                    stringResource(R.string.progress_band_learning),
+                ),
                 color = colors.outline,
                 modifier = Modifier.padding(top = 14.dp),
             )
@@ -313,7 +317,7 @@ private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) 
                     style = MaterialTheme.typography.headlineMedium,
                 )
                 Text(
-                    text = "de ${state.total}",
+                    text = stringResource(R.string.progress_of_total, state.total),
                     style = MaterialTheme.typography.labelSmall,
                     color = colors.onSurfaceVariant,
                 )
@@ -341,9 +345,9 @@ private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) 
 
         StockLegend(
             labels = listOf(
-                "${state.mastered} dominadas",
-                "${state.familiar} familiares",
-                "${state.learning} aprendendo",
+                stringResource(R.string.progress_count_mastered, state.mastered),
+                stringResource(R.string.progress_count_familiar, state.familiar),
+                stringResource(R.string.progress_count_learning, state.learning),
             ),
             color = colors.onSurfaceVariant,
             modifier = Modifier.padding(top = 10.dp),
@@ -399,7 +403,7 @@ private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
             )
             Icon(
                 imageVector = AppIcons.Expand,
-                contentDescription = "Trocar idioma",
+                contentDescription = stringResource(R.string.a11y_change_language),
                 tint = colors.primary,
                 modifier = Modifier.size(16.dp).graphicsLayer { rotationZ = spin },
             )
@@ -427,7 +431,7 @@ private fun CourseDrawer(
             .padding(horizontal = 20.dp),
     ) {
         Text(
-            text = "Ver progresso em",
+            text = stringResource(R.string.progress_see_progress_in),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(bottom = 5.dp),
         )
@@ -455,7 +459,7 @@ private fun CourseDrawer(
                 ) {
                     Icon(AppIcons.Plus, null, tint = colors.primary, modifier = Modifier.size(18.dp))
                 }
-                Text("Adicionar idioma", style = MaterialTheme.typography.titleSmall, color = colors.primary)
+                Text(stringResource(R.string.add_language), style = MaterialTheme.typography.titleSmall, color = colors.primary)
             }
         }
 

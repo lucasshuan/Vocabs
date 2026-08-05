@@ -72,7 +72,7 @@ import com.jean.vocabs.ui.components.levelLabelColor
 import com.jean.vocabs.ui.components.relativeTime
 import com.jean.vocabs.ui.components.timeUntil
 import com.jean.vocabs.ui.languages.languageOf
-import com.jean.vocabs.ui.temporaryErrorText
+import com.jean.vocabs.ui.components.errorText
 import java.util.Locale
 
 @Composable
@@ -205,7 +205,7 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
                 ) {
                     Column(Modifier.padding(18.dp)) {
                         Text(
-                            temporaryErrorText(item.errorCode),
+                            errorText(item.errorCode),
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
                         // Untranslated on purpose: this is the AI provider's own

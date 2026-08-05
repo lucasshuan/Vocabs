@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.pending
 
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -122,7 +124,7 @@ private fun CardSurface(
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(
-                        text = if (deletion.isCapture) "Captura excluída" else "Ficha excluída",
+                        text = stringResource(if (deletion.isCapture) R.string.undo_deleted_capture else R.string.undo_deleted_card),
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
                     )
@@ -142,7 +144,7 @@ private fun CardSurface(
                     interactionSource = touch,
                 ) {
                     Text(
-                        text = "Desfazer",
+                        text = stringResource(R.string.undo),
                         style = MaterialTheme.typography.labelMedium,
                         color = colors.onPrimary,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),

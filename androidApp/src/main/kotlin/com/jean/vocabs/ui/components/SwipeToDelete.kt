@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.components
 
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
@@ -93,8 +95,8 @@ fun SwipeToDelete(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = MaterialTheme.shapes.medium,
-    armedLabel: String = "Solte para excluir",
-    actionLabel: String = "Excluir",
+    armedLabel: String = stringResource(R.string.swipe_release_to_delete),
+    actionLabel: String = stringResource(R.string.swipe_delete),
     content: @Composable () -> Unit,
 ) {
     val colors = MaterialTheme.colorScheme

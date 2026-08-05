@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.settings
 
+import androidx.compose.ui.platform.LocalResources
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
@@ -125,11 +126,13 @@ fun SettingsScreen(
         )
     }
 
+    val resources = LocalResources.current
+
     val importFile = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri != null) {
-            Toast.makeText(context, "Importação ainda não disponível — em breve.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, resources.getString(R.string.settings_import_soon), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -141,7 +144,7 @@ fun SettingsScreen(
             .statusBarsPadding()
             .padding(horizontal = 20.dp),
     ) {
-        InnerHeader("Configurações", onBack, Modifier.padding(top = 8.dp))
+        InnerHeader(stringResource(R.string.settings_title), onBack, Modifier.padding(top = 8.dp))
 
         // Two rows, not one. The interface language and the language cards are
         // written in are independent settings, and the single "Idioma" row that
@@ -198,11 +201,11 @@ fun SettingsScreen(
 
         Divider()
 
-        Section(icon = themeIcon(theme), title = "Aparência", index = 1) {
+        Section(icon = themeIcon(theme), title = stringResource(R.string.settings_section_appearance), index = 1) {
             ScreenCard(filling = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
-                Text("Tema", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.settings_theme), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    text = "Auto segue o aparelho.",
+                    text = stringResource(R.string.settings_theme_auto_note),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
@@ -217,7 +220,7 @@ fun SettingsScreen(
 
         Divider()
 
-        Section(icon = AppIcons.Export, title = "Dados", index = 2) {
+        Section(icon = AppIcons.Export, title = stringResource(R.string.settings_section_data), index = 2) {
             val colors = MaterialTheme.colorScheme
             ListRow(
                 onClick = {
@@ -240,9 +243,9 @@ fun SettingsScreen(
                     }
                 },
             ) {
-                Text("Exportar meus dados", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.settings_export), style = MaterialTheme.typography.titleSmall)
                 SwappingDetail(
-                    if (exporting) "preparando ZIP…" else "um arquivo com as fichas e as mídias",
+                    stringResource(if (exporting) R.string.settings_export_preparing else R.string.settings_export_detail),
                 )
             }
 
@@ -252,16 +255,16 @@ fun SettingsScreen(
                 end = { RowChevron() },
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Importar meus dados", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.settings_import), style = MaterialTheme.typography.titleSmall)
                     ComingSoonBadge(Modifier.padding(start = 8.dp))
                 }
-                SwappingDetail("de um ZIP exportado pela Vocabu")
+                SwappingDetail(stringResource(R.string.settings_import_detail))
             }
         }
 
         Divider()
 
-        Section(icon = AppIcons.Info, title = "Sobre", index = 3) {
+        Section(icon = AppIcons.Info, title = stringResource(R.string.settings_section_about), index = 3) {
             Signature()
         }
 
@@ -419,7 +422,7 @@ private fun NativeFlag(code: String) {
 private fun ComingSoonBadge(modifier: Modifier = Modifier) {
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, modifier = modifier) {
         Text(
-            text = "em breve",
+            text = stringResource(R.string.settings_soon),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
@@ -459,9 +462,9 @@ private fun Signature() {
     ListRow(
         start = { Image(painterResource(R.drawable.logo_vocabu), null, Modifier.size(34.dp)) },
     ) {
-        Text("Vocabu", style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleSmall)
         Text(
-            text = "versão ${BuildConfig.VERSION_NAME}",
+            text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 2.dp),
@@ -476,13 +479,14 @@ private fun share(context: android.content.Context, file: File) {
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(intent, "Exportar dados da Vocabu"))
+    context.startActivity(Intent.createChooser(intent, context.getString(R.string.settings_export_chooser)))
 }
 
+@Composable
 private fun themeLabel(theme: ThemePreference): String = when (theme) {
-    ThemePreference.LIGHT -> "Claro"
-    ThemePreference.DARK -> "Escuro"
-    ThemePreference.SYSTEM -> "Auto"
+    ThemePreference.LIGHT -> stringResource(R.string.settings_theme_light)
+    ThemePreference.DARK -> stringResource(R.string.settings_theme_dark)
+    ThemePreference.SYSTEM -> stringResource(R.string.settings_theme_auto)
 }
 
 private fun themeIcon(theme: ThemePreference): ImageVector = when (theme) {

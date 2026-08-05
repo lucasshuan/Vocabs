@@ -1,5 +1,8 @@
 package com.jean.vocabs.ui.languages
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -74,14 +77,14 @@ fun NewLanguageScreen(
         modifier = Modifier.fillMaxSize().statusBarsPadding().imePadding().padding(horizontal = 20.dp),
     ) {
         InnerHeader(
-            title = if (forNative) "Qual é o seu idioma?" else "Qual idioma aprender?",
+            title = stringResource(if (forNative) R.string.newlanguage_which_is_yours else R.string.newlanguage_which_to_learn),
             onBack = onBack,
             modifier = Modifier.padding(top = 8.dp),
         )
 
         if (!forNative && state.alreadyHas.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                SectionLabel("Você já tem")
+                SectionLabel(stringResource(R.string.newlanguage_you_already_have))
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
@@ -94,9 +97,9 @@ fun NewLanguageScreen(
         SearchField(value = query, onChange = { query = it })
 
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
-            SectionLabel("Escolha agora", Modifier.weight(1f))
+            SectionLabel(stringResource(R.string.newlanguage_choose_now), Modifier.weight(1f))
             Text(
-                text = if (available.size == 1) "1 idioma" else "${available.size} idiomas",
+                text = pluralStringResource(R.plurals.newlanguage_available, available.size, available.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
             )
@@ -105,8 +108,8 @@ fun NewLanguageScreen(
         if (available.isEmpty()) {
             EmptyState(
                 icon = AppIcons.MagnifyingGlass,
-                title = "Nada com esse nome",
-                detail = "Tente outro trecho do nome do idioma.",
+                title = stringResource(R.string.newlanguage_nothing_named),
+                detail = stringResource(R.string.newlanguage_try_another),
                 modifier = Modifier.weight(1f),
             )
         } else {
@@ -125,8 +128,8 @@ fun NewLanguageScreen(
 
         PrimaryButton(
             text = chosen
-                ?.let { if (forNative) "Usar ${it.displayName.lowercase()}" else "Começar ${it.displayName.lowercase()}" }
-                ?: "Escolha um idioma",
+                ?.let { stringResource(if (forNative) R.string.newlanguage_use else R.string.newlanguage_start, it.displayName) }
+                ?: stringResource(R.string.newlanguage_pick_one),
             enabled = chosen != null,
             onClick = {
                 chosen?.let { language ->
@@ -211,7 +214,7 @@ private fun SearchField(value: String, onChange: (String) -> Unit) {
             Icon(AppIcons.MagnifyingGlass, null, tint = colors.outline, modifier = Modifier.size(18.dp))
             Box(Modifier.weight(1f)) {
                 if (value.isEmpty()) {
-                    Text("Buscar idioma", style = MaterialTheme.typography.bodyMedium, color = colors.outline)
+                    Text(stringResource(R.string.newlanguage_search), style = MaterialTheme.typography.bodyMedium, color = colors.outline)
                 }
                 BasicTextField(
                     value = value,

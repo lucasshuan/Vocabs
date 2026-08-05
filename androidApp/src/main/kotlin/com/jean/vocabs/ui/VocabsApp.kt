@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui
 
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -359,8 +361,8 @@ fun VocabsApp() {
                 exit = slideOutVertically(tween(Motion.FAST)) { it } + fadeOut(tween(Motion.FAST)),
             ) {
                 BottomBar(
-                    leftTabs = listOf(Tab(Routes.HOME, AppIcons.House, "Início"), Tab(Routes.WORDS, AppIcons.Cards, "Palavras")),
-                    rightTabs = listOf(Tab(Routes.PENDING, AppIcons.Clock, "Pendentes", pendingTotal), Tab(Routes.PROFILE, AppIcons.Person, "Perfil")),
+                    leftTabs = listOf(Tab(Routes.HOME, AppIcons.House, stringResource(R.string.tab_home)), Tab(Routes.WORDS, AppIcons.Cards, stringResource(R.string.tab_words))),
+                    rightTabs = listOf(Tab(Routes.PENDING, AppIcons.Clock, stringResource(R.string.tab_pending), pendingTotal), Tab(Routes.PROFILE, AppIcons.Person, stringResource(R.string.tab_profile))),
                     currentRoute = currentTab,
                     onNavigate = nav::goToTab,
                 )

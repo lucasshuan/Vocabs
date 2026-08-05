@@ -255,6 +255,9 @@
     <string name="pending_all_clear_detail">Nenhuma captura ou ficha esperando.</string>
     <string name="pending_error_suffix"> · %1$s</string>
     <string name="pending_retry">tentar de novo</string>
+    <string name="pending_section_cards">Fichas sendo geradas</string>
+    <string name="pending_delete_capture">Excluir captura</string>
+    <string name="pending_delete_card">Excluir ficha</string>
 
     <plurals name="saved_count">
         <item quantity="one">%1$d guardada</item>
@@ -273,6 +276,107 @@
     <string name="saved_building">montando o sentido</string>
     <string name="saved_card_ready">ficha pronta</string>
     <string name="saved_ai">IA</string>
+
+    <string name="a11y_close_review">Fechar revisão</string>
+    <string name="review_position">%1$d/%2$d</string>
+    <string name="review_complete_snippet">COMPLETE O SEU TRECHO</string>
+    <string name="review_answer_placeholder">Escreva o termo original</string>
+    <string name="review_right">Boa — você lembrou</string>
+    <string name="review_dont_remember_answer">Tudo bem. A resposta é:</string>
+    <string name="review_almost">Quase. A resposta é:</string>
+    <string name="review_check">Verificar</string>
+    <string name="review_dont_remember">Não lembro</string>
+    <string name="review_continue">Continuar</string>
+    <string name="review_up_to_date_title">Memória em dia</string>
+    <string name="review_up_to_date_detail">Volte quando alguma ficha pedir reforço.</string>
+    <string name="review_session_done">Sessão concluída</string>
+    <string name="review_hits">acertos</string>
+    <string name="review_to_reinforce">para reforçar</string>
+
+    <string name="swipe_release_to_delete">Solte para excluir</string>
+    <string name="swipe_delete">Excluir</string>
+    <string name="undo_deleted_capture">Captura excluída</string>
+    <string name="undo_deleted_card">Ficha excluída</string>
+    <string name="undo">Desfazer</string>
+
+    <string name="a11y_capture">Capturar</string>
+    <string name="a11y_write">Escrever</string>
+    <string name="a11y_take_photo">Fotografar</string>
+    <string name="a11y_record_audio">Gravar áudio</string>
+    <string name="capture_drop_to_write">solte para escrever</string>
+    <string name="capture_drop_to_record">solte para gravar</string>
+    <string name="capture_drop_to_photograph">solte para fotografar</string>
+    <string name="capture_drag_to_target">arraste e solte no alvo</string>
+    <string name="capture_select">Selecionar</string>
+    <!-- Três chaves porque o particípio concorda: áudio e trecho masculinos, foto feminina. -->
+    <string name="capture_saved_audio">Áudio guardado</string>
+    <string name="capture_saved_audio_with_duration">Áudio %1$s guardado</string>
+    <string name="capture_saved_photo">Foto guardada</string>
+    <string name="capture_saved_text">Trecho guardado</string>
+    <string name="capture_mic_granted">Microfone liberado. Segure o + e arraste até o microfone.</string>
+    <string name="capture_mic_denied">Sem microfone não dá para gravar. Dá para capturar por texto ou foto.</string>
+    <string name="capture_too_short">Curto demais para guardar.</string>
+    <string name="recording_goes_to_course">vai para o curso de %1$s</string>
+    <string name="recording_recording">gravando</string>
+    <string name="recording_discard">Descartar</string>
+    <string name="save">Guardar</string>
+    <string name="paste">Colar</string>
+
+    <string name="newlanguage_which_is_yours">Qual é o seu idioma?</string>
+    <string name="newlanguage_which_to_learn">Qual idioma aprender?</string>
+    <string name="newlanguage_you_already_have">Você já tem</string>
+    <string name="newlanguage_choose_now">Escolha agora</string>
+    <string name="newlanguage_nothing_named">Nada com esse nome</string>
+    <string name="newlanguage_try_another">Tente outro trecho do nome do idioma.</string>
+    <string name="newlanguage_use">Usar %1$s</string>
+    <string name="newlanguage_start">Começar %1$s</string>
+    <string name="newlanguage_pick_one">Escolha um idioma</string>
+    <string name="newlanguage_search">Buscar idioma</string>
+    <plurals name="newlanguage_available">
+        <item quantity="one">%1$d idioma</item>
+        <item quantity="many">%1$d de idiomas</item>
+        <item quantity="other">%1$d idiomas</item>
+    </plurals>
+
+    <string name="tab_home">Início</string>
+    <string name="tab_words">Palavras</string>
+    <string name="tab_pending">Pendentes</string>
+    <string name="tab_profile">Você</string>
+
+    <string name="transcribe_no_text_in_photo">Nenhum texto foi encontrado na foto.</string>
+    <string name="transcribe_cannot_read_photo">Não foi possível ler a foto.</string>
+    <string name="transcribe_needs_android_13">A transcrição automática de arquivos exige Android 13. Digite o trecho manualmente.</string>
+    <string name="transcribe_no_voice_model">O modelo de voz local não está disponível. Digite o trecho manualmente.</string>
+    <string name="transcribe_no_speech">Nenhuma fala foi reconhecida.</string>
+    <string name="transcribe_no_speech_manual">Nenhuma fala foi reconhecida. Digite o trecho manualmente.</string>
+    <string name="transcribe_failed">A transcrição local falhou (código %1$d). Digite o trecho manualmente.</string>
+    <string name="export_failed">Não foi possível exportar os dados.</string>
+
+    <string name="settings_title">Configurações</string>
+    <string name="settings_import_soon">Importação ainda não disponível — em breve.</string>
+    <string name="settings_section_appearance">Aparência</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_auto_note">Auto segue o aparelho.</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Escuro</string>
+    <string name="settings_theme_auto">Auto</string>
+    <string name="settings_section_data">Dados</string>
+    <string name="settings_export">Exportar meus dados</string>
+    <string name="settings_export_preparing">preparando ZIP…</string>
+    <string name="settings_export_detail">um arquivo com as fichas e as mídias</string>
+    <string name="settings_import">Importar meus dados</string>
+    <string name="settings_import_detail">de um ZIP exportado pela Vocabu</string>
+    <string name="settings_section_about">Sobre</string>
+    <string name="settings_soon">em breve</string>
+    <string name="settings_version">versão %1$s</string>
+    <string name="settings_export_chooser">Exportar dados da Vocabu</string>
+
+    <string name="error_unknown_language_pair">Este par de idiomas não é aceito.</string>
+    <string name="error_missing_fields">Faltou o trecho ou o alvo.</string>
+    <string name="error_invalid_token">O app não conseguiu se identificar no servidor.</string>
+    <string name="error_unreachable">Não foi possível falar com o servidor.</string>
+    <string name="error_http">O servidor respondeu algo inesperado.</string>
+    <string name="error_generation_failed">Não foi possível gerar a ficha.</string>
 
     <!-- Configurações -->
     <string name="settings_section_language">Idioma</string>

@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.capture
 
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
@@ -163,6 +165,11 @@ fun CaptureHub(
                 GestureHint(target, fanOpen)
             }
 
+            // Hoisted: `semantics` is not a composable scope.
+            val captureLabel = stringResource(R.string.a11y_capture)
+            val writeLabel = stringResource(R.string.a11y_write)
+            val photoLabel = stringResource(R.string.a11y_take_photo)
+            val audioLabel = stringResource(R.string.a11y_record_audio)
             HubButton(
                 fanOpen = fanOpen,
                 isRecording = isRecording,
@@ -170,13 +177,13 @@ fun CaptureHub(
                 modifier = Modifier
                     .offset(y = -BUTTON_ELEVATION)
                     .semantics {
-                        contentDescription = "Capturar"
+                        contentDescription = captureLabel
                         // The drag has no screen-reader equivalent, so the fan's
                         // three exits become actions on the button itself.
                         customActions = listOf(
-                            CustomAccessibilityAction("Escrever") { openText(); true },
-                            CustomAccessibilityAction("Fotografar") { capture.takePhoto(); true },
-                            CustomAccessibilityAction("Gravar áudio") {
+                            CustomAccessibilityAction(writeLabel) { openText(); true },
+                            CustomAccessibilityAction(photoLabel) { capture.takePhoto(); true },
+                            CustomAccessibilityAction(audioLabel) {
                                 if (capture.hasAudioPermission) capture.recordAudio()
                                 else capture.requestAudioPermission()
                                 true
@@ -628,10 +635,10 @@ private fun GuideToTarget(target: GestureTarget, fanOpen: Boolean) {
 private fun GestureHint(target: GestureTarget, fanOpen: Boolean) {
     val marked = (target as? GestureTarget.Mode)?.format
     val text = when (marked) {
-        CaptureFormat.TEXT -> "solte para escrever"
-        CaptureFormat.AUDIO -> "solte para gravar"
-        CaptureFormat.PHOTO -> "solte para fotografar"
-        null -> "arraste e solte no alvo"
+        CaptureFormat.TEXT -> stringResource(R.string.capture_drop_to_write)
+        CaptureFormat.AUDIO -> stringResource(R.string.capture_drop_to_record)
+        CaptureFormat.PHOTO -> stringResource(R.string.capture_drop_to_photograph)
+        null -> stringResource(R.string.capture_drag_to_target)
     }
     val background by animateColorAsState(
         targetValue = marked?.let { formatColors(it).color } ?: NIGHT.copy(alpha = 0.82f),

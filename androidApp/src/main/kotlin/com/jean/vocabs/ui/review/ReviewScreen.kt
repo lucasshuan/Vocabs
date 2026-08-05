@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.review
 
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -74,14 +76,14 @@ fun ReviewScreen(onBack: () -> Unit, vm: ReviewViewModel = viewModel()) {
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 20.dp, top = 8.dp),
         ) {
-            CircularButton(AppIcons.Close, "Fechar revisão", onBack)
+            CircularButton(AppIcons.Close, stringResource(R.string.a11y_close_review), onBack)
             val card = state as? ReviewState.CardSurface
             ProgressBar(
                 fraction = card?.let { it.position.toFloat() / it.total.coerceAtLeast(1) } ?: 0f,
                 modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
             )
             Text(
-                text = card?.let { "${it.position}/${it.total}" }.orEmpty(),
+                text = card?.let { stringResource(R.string.review_position, it.position, it.total) }.orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -152,7 +154,7 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
                 filling = PaddingValues(24.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                SectionLabel("COMPLETE O SEU TRECHO")
+                SectionLabel(stringResource(R.string.review_complete_snippet))
                 Text(
                     text = annotatedCloze(clozeSnippet(entry, GAP)),
                     style = MaterialTheme.typography.headlineSmall.copy(lineHeight = MaterialTheme.typography.headlineLarge.lineHeight),
@@ -170,7 +172,7 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
             value = state.answer,
             onValueChange = vm::editAnswer,
             enabled = state.feedback == null,
-            placeholder = { Text("Escreva o termo original") },
+            placeholder = { Text(stringResource(R.string.review_answer_placeholder)) },
             singleLine = false,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { keyboard?.hide(); vm.confirm() }),
@@ -203,9 +205,9 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
                     Column(Modifier.padding(16.dp)) {
                         Text(
                             when {
-                                correct -> "Boa — você lembrou"
-                                feedback == ReviewFeedback.NAO_LEMBRO -> "Tudo bem. A resposta é:"
-                                else -> "Quase. A resposta é:"
+                                correct -> stringResource(R.string.review_right)
+                                feedback == ReviewFeedback.NAO_LEMBRO -> stringResource(R.string.review_dont_remember_answer)
+                                else -> stringResource(R.string.review_almost)
                             },
                             style = MaterialTheme.typography.titleSmall,
                         )
@@ -216,10 +218,10 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
         }
 
         if (state.feedback == null) {
-            PrimaryButton("Verificar", { keyboard?.hide(); vm.confirm() }, enabled = state.answer.isNotBlank())
-            SecondaryAction("Não lembro", { keyboard?.hide(); vm.dontRemember() })
+            PrimaryButton(stringResource(R.string.review_check), { keyboard?.hide(); vm.confirm() }, enabled = state.answer.isNotBlank())
+            SecondaryAction(stringResource(R.string.review_dont_remember), { keyboard?.hide(); vm.dontRemember() })
         } else {
-            PrimaryButton("Continuar", vm::advance)
+            PrimaryButton(stringResource(R.string.review_continue), vm::advance)
         }
         Spacer(Modifier.navigationBarsPadding().height(20.dp))
     }
@@ -245,9 +247,9 @@ private fun Empty(onBack: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         EmptyState(
             icon = AppIcons.Check,
-            title = "Memória em dia",
-            detail = "Volte quando alguma ficha pedir reforço.",
-            action = { PrimaryButton("Voltar", onBack, Modifier.padding(horizontal = 40.dp)) },
+            title = stringResource(R.string.review_up_to_date_title),
+            detail = stringResource(R.string.review_up_to_date_detail),
+            action = { PrimaryButton(stringResource(R.string.back), onBack, Modifier.padding(horizontal = 40.dp)) },
         )
     }
 }
@@ -259,7 +261,7 @@ private fun Summary(state: ReviewState.Summary, vm: ReviewViewModel, onBack: () 
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
     ) {
         Text(
-            text = "Sessão concluída",
+            text = stringResource(R.string.review_session_done),
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.smoothEntrance().padding(top = 48.dp),
         )
@@ -267,8 +269,8 @@ private fun Summary(state: ReviewState.Summary, vm: ReviewViewModel, onBack: () 
         // two are what the session earned; the third is what is still missing,
         // and a rising count there would turn a mistake into a score.
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
-            MetricCard("${animatedCount(state.hits, "hits")}", "acertos", Modifier.weight(1f), highlight = true)
-            MetricCard("${state.misses}", "para reforçar", Modifier.weight(1f))
+            MetricCard("${animatedCount(state.hits, "hits")}", stringResource(R.string.review_hits), Modifier.weight(1f), highlight = true)
+            MetricCard("${state.misses}", stringResource(R.string.review_to_reinforce), Modifier.weight(1f))
             MetricCard(
                 value = "${animatedCount(state.dayStreak, "dayStreak")}",
                 label = "dias seguidos",

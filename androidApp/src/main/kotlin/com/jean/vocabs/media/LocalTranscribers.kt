@@ -1,5 +1,6 @@
 package com.jean.vocabs.media
 
+import com.jean.vocabs.R
 import android.content.Context
 import android.content.Intent
 import android.media.AudioFormat
@@ -35,7 +36,7 @@ class PhotoTranscriber(private val context: Context) {
                         if (continuation.isActive) {
                             val text = result.text.trim().ifBlank { null }
                             continuation.resume(
-                                if (text == null) TranscriptionResult(error = "Nenhum texto foi encontrado na foto.")
+                                if (text == null) TranscriptionResult(error = context.getString(R.string.transcribe_no_text_in_photo))
                                 else TranscriptionResult(text = text),
                             )
                         }
@@ -43,13 +44,13 @@ class PhotoTranscriber(private val context: Context) {
                     .addOnFailureListener { failure ->
                         if (continuation.isActive) {
                             continuation.resume(
-                                TranscriptionResult(error = failure.message ?: "Não foi possível ler a foto."),
+                                TranscriptionResult(error = failure.message ?: context.getString(R.string.transcribe_cannot_read_photo)),
                             )
                         }
                     }
             }
         } catch (failure: Exception) {
-            TranscriptionResult(error = failure.message ?: "Não foi possível ler a foto.")
+            TranscriptionResult(error = failure.message ?: context.getString(R.string.transcribe_cannot_read_photo))
         } finally {
             recognizer.close()
         }
@@ -61,12 +62,12 @@ class AudioTranscriber(private val context: Context) {
         withContext(Dispatchers.Main.immediate) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                 return@withContext TranscriptionResult(
-                    error = "A transcrição automática de arquivos exige Android 13. Digite o trecho manualmente.",
+                    error = context.getString(R.string.transcribe_needs_android_13),
                 )
             }
             if (!SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
                 return@withContext TranscriptionResult(
-                    error = "O modelo de voz local em inglês não está disponível. Digite o trecho manualmente.",
+                    error = context.getString(R.string.transcribe_no_voice_model),
                 )
             }
             recognize(path)
@@ -110,7 +111,7 @@ class AudioTranscriber(private val context: Context) {
                         ?.trim()
                         ?.ifBlank { null }
                     finish(
-                        if (text == null) TranscriptionResult(error = "Nenhuma fala foi reconhecida.")
+                        if (text == null) TranscriptionResult(error = context.getString(R.string.transcribe_no_speech))
                         else TranscriptionResult(text = text),
                     )
                 }
@@ -151,9 +152,9 @@ class AudioTranscriber(private val context: Context) {
     private fun errorMessage(code: Int): String = when (code) {
         SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED,
         SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
-            "O modelo de voz em inglês não está disponível. Digite o trecho manualmente."
+            context.getString(R.string.transcribe_no_voice_model)
         SpeechRecognizer.ERROR_NO_MATCH,
-        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Nenhuma fala foi reconhecida. Digite o trecho manualmente."
-        else -> "A transcrição local falhou (código $code). Digite o trecho manualmente."
+        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> context.getString(R.string.transcribe_no_speech_manual)
+        else -> context.getString(R.string.transcribe_failed, code)
     }
 }

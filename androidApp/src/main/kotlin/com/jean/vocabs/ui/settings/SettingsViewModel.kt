@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.settings
 
+import com.jean.vocabs.R
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -43,7 +44,7 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
             _exporting.value = true
             runCatching {
                 VocabuExporter.create(getApplication(), repository.exportData())
-            }.onSuccess(onReady).onFailure { onError(it.message ?: "Não foi possível exportar os dados.") }
+            }.onSuccess(onReady).onFailure { onError(it.message ?: getApplication<Application>().getString(R.string.export_failed)) }
             _exporting.value = false
         }
     }

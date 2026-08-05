@@ -25,19 +25,19 @@ private fun icon(name: String, data: String): ImageVector =
 object AppIcons {
 
     val MagnifyingGlass: ImageVector by lazy {
-        icon("lupa", "M9.5,3a6.5,6.5 0,1 0,3.98,11.64L19.85,21 21,19.85l-6.36,-6.37A6.5,6.5 0,0 0,9.5,3zM5,9.5a4.5,4.5 0,1 1,9,0 4.5,4.5 0,0 1,-9,0z")
+        icon("search", "M9.5,3a6.5,6.5 0,1 0,3.98,11.64L19.85,21 21,19.85l-6.36,-6.37A6.5,6.5 0,0 0,9.5,3zM5,9.5a4.5,4.5 0,1 1,9,0 4.5,4.5 0,0 1,-9,0z")
     }
 
     val MoreVertical: ImageVector by lazy {
-        icon("mais_vertical", "M12,8c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2zM12,10c-1.1,0 -2,0.9 -2,2s0.9,2 2,2 2,-0.9 2,-2 -0.9,-2 -2,-2zM12,16c-1.1,0 -2,0.9 -2,2s0.9,2 2,2 2,-0.9 2,-2 -0.9,-2 -2,-2z")
+        icon("moreVertical", "M12,8c1.1,0 2,-0.9 2,-2s-0.9,-2 -2,-2 -2,0.9 -2,2 0.9,2 2,2zM12,10c-1.1,0 -2,0.9 -2,2s0.9,2 2,2 2,-0.9 2,-2 -0.9,-2 -2,-2zM12,16c-1.1,0 -2,0.9 -2,2s0.9,2 2,2 2,-0.9 2,-2 -0.9,-2 -2,-2z")
     }
 
     val Back: ImageVector by lazy {
-        icon("voltar", "M20,11H7.83l5.59,-5.59L12,4l-8,8 8,8 1.41,-1.41L7.83,13H20v-2z")
+        icon("back", "M20,11H7.83l5.59,-5.59L12,4l-8,8 8,8 1.41,-1.41L7.83,13H20v-2z")
     }
 
     val Plus: ImageVector by lazy {
-        icon("mais", "M19,13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z")
+        icon("plus", "M19,13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z")
     }
 
     val Sound: ImageVector by lazy {
@@ -90,11 +90,11 @@ object AppIcons {
     }
 
     val Stop: ImageVector by lazy {
-        icon("parar", "M6,6h12v12H6z")
+        icon("stop", "M6,6h12v12H6z")
     }
 
     val Play: ImageVector by lazy {
-        icon("tocar", "M8,5v14l11,-7z")
+        icon("play", "M8,5v14l11,-7z")
     }
 
     val Inbox: ImageVector by lazy {
@@ -131,21 +131,21 @@ object AppIcons {
     }
 
     val Chart: ImageVector by lazy {
-        icon("grafico", "M5,9.2h3V19H5zM10.6,5h2.8v14h-2.8zm5.6,8H19v6h-2.8z")
+        icon("chart", "M5,9.2h3V19H5zM10.6,5h2.8v14h-2.8zm5.6,8H19v6h-2.8z")
     }
 
     val House: ImageVector by lazy {
-        icon("casa", "M10,20v-6h4v6h5v-8h3L12,3 2,12h3v8z")
+        icon("house", "M10,20v-6h4v6h5v-8h3L12,3 2,12h3v8z")
     }
 
     /** Right arrow: "this opens another screen". */
     val Forward: ImageVector by lazy {
-        icon("avancar", "M10,6L8.59,7.41 13.17,12l-4.58,4.59L10,18l6,-6z")
+        icon("forward", "M10,6L8.59,7.41 13.17,12l-4.58,4.59L10,18l6,-6z")
     }
 
     /** Down arrow: "this opens a list of options". */
     val Expand: ImageVector by lazy {
-        icon("expandir", "M7.41,8.59L12,13.17l4.59,-4.58L18,10l-6,6 -6,-6z")
+        icon("expand", "M7.41,8.59L12,13.17l4.59,-4.58L18,10l-6,6 -6,-6z")
     }
 
     val Pencil: ImageVector by lazy {
@@ -243,12 +243,12 @@ object AppIcons {
 
     /** Arrow leaving a sheet: export. */
     val Export: ImageVector by lazy {
-        icon("exportar", "M9,16h6v-6h4l-7,-7 -7,7h4v6zM5,18h14v2H5v-2z")
+        icon("export", "M9,16h6v-6h4l-7,-7 -7,7h4v6zM5,18h14v2H5v-2z")
     }
 
     /** The same sheet with the arrow reversed: import. */
     val Import: ImageVector by lazy {
-        icon("importar", "M19,9h-4V3H9v6H5l7,7 7,-7zM5,18v2h14v-2H5z")
+        icon("import", "M19,9h-4V3H9v6H5l7,7 7,-7zM5,18v2h14v-2H5z")
     }
 
     /** The circled "i" — the About section. */

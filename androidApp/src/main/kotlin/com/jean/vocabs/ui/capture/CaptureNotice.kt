@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.capture
 
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -183,7 +185,7 @@ private fun NoticeCard(
                                 interactionSource = touch,
                             ) {
                                 Text(
-                                    text = "Selecionar",
+                                    text = stringResource(R.string.capture_select),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = colors.onPrimary,
                                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
@@ -233,8 +235,11 @@ private fun Disc(color: androidx.compose.ui.graphics.Color, icon: androidx.compo
     }
 }
 
+@Composable
 private fun savedTitle(notice: Notice.Saved): String = when (notice.format) {
-    CaptureFormat.AUDIO -> notice.durationMs?.let { "Áudio ${formatDurationMs(it)} guardado" } ?: "Áudio guardado"
-    CaptureFormat.PHOTO -> "Foto guardada"
-    CaptureFormat.TEXT -> "Trecho guardado"
+    CaptureFormat.AUDIO -> notice.durationMs
+        ?.let { stringResource(R.string.capture_saved_audio_with_duration, formatDurationMs(it)) }
+        ?: stringResource(R.string.capture_saved_audio)
+    CaptureFormat.PHOTO -> stringResource(R.string.capture_saved_photo)
+    CaptureFormat.TEXT -> stringResource(R.string.capture_saved_text)
 }

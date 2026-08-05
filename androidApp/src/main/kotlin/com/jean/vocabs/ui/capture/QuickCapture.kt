@@ -1,5 +1,7 @@
 package com.jean.vocabs.ui.capture
 
+import androidx.compose.ui.platform.LocalResources
+import com.jean.vocabs.R
 import android.Manifest
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -136,13 +138,17 @@ fun rememberQuickCapture(
      */
     var recordingTarget by remember { mutableStateOf(target) }
 
+    // LocalResources, not LocalContext: only the former invalidates when the
+    // configuration changes, and these are read from a callback.
+    val resources = LocalResources.current
+
     val audioPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { granted ->
         state.hasAudioPermission = granted
         onNotice(
-            if (granted) "Microfone liberado. Segure o + e arraste até o microfone."
-            else "Sem microfone não dá para gravar. Dá para capturar por texto ou foto.",
+            if (granted) resources.getString(R.string.capture_mic_granted)
+            else resources.getString(R.string.capture_mic_denied),
         )
     }
 
@@ -178,7 +184,7 @@ fun rememberQuickCapture(
         val short = duration < MIN_RECORDING_MS
         if (!save || short) {
             recorder.cancel()
-            if (save && short) onNotice("Curto demais para guardar.")
+            if (save && short) onNotice(resources.getString(R.string.capture_too_short))
         } else {
             recorder.stop()?.let { file ->
                 onSave(CaptureFormat.AUDIO, file.absolutePath, duration, recordingTarget)

@@ -1,5 +1,8 @@
 package com.jean.vocabs.ui.saved
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.jean.vocabs.R
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -99,7 +102,7 @@ fun SavedScreen(
             // known on the first frame, and a "0 saved" flashing before the query
             // would contradict the one screen that exists to confirm.
             Text(
-                text = "${ids.size} ${if (ids.size == 1) "guardada" else "guardadas"}",
+                text = pluralStringResource(R.plurals.saved_count, ids.size, ids.size),
                 style = MaterialTheme.typography.headlineMedium,
                 textAlign = TextAlign.Center,
             )
@@ -107,7 +110,11 @@ fun SavedScreen(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                     CircularFlag(languageOf(state.target), size = 18.dp)
                     Text(
-                        text = "no seu ${languageOf(state.target).displayName.lowercase()} · ${state.courseTotal} ${if (state.courseTotal == 1) "card" else "cards"} agora",
+                        text = stringResource(
+                            R.string.saved_in_your_language,
+                            languageOf(state.target).displayName,
+                            pluralStringResource(R.plurals.home_stock_cards, state.courseTotal, state.courseTotal),
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -123,8 +130,7 @@ fun SavedScreen(
 
         Surface(shape = MaterialTheme.shapes.medium, color = colors.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = if (ids.size > 1) "Todas entram na revisão de hoje. Se a IA errar o sentido, você corrige na ficha — nada trava aqui."
-                else "Ela entra na revisão de hoje. Se a IA errar o sentido, você corrige na ficha — nada trava aqui.",
+                text = stringResource(if (ids.size > 1) R.string.saved_note_many else R.string.saved_note_one),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.onSurfaceVariant,
                 modifier = Modifier.padding(14.dp),
@@ -135,15 +141,15 @@ fun SavedScreen(
 
         Column(verticalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.padding(bottom = 8.dp)) {
             PrimaryButton(
-                text = "Capturar outra",
+                text = stringResource(R.string.saved_capture_another),
                 onClick = { interacted = true; onCaptureAnother() },
             )
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-                ExitAction("Ver as fichas", Modifier.weight(1f)) { interacted = true; onViewCards() }
-                ExitAction("Revisar agora", Modifier.weight(1f)) { interacted = true; onReview() }
+                ExitAction(stringResource(R.string.saved_see_cards), Modifier.weight(1f)) { interacted = true; onViewCards() }
+                ExitAction(stringResource(R.string.saved_review_now), Modifier.weight(1f)) { interacted = true; onReview() }
             }
             Text(
-                text = if (state.working) "A IA continua montando ao fundo." else "Fecha sozinho e volta para onde você estava.",
+                text = stringResource(if (state.working) R.string.saved_still_working else R.string.saved_closes_itself),
                 style = MaterialTheme.typography.bodySmall,
                 color = colors.outline,
                 textAlign = TextAlign.Center,
@@ -213,7 +219,7 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
                             modifier = Modifier.padding(top = 3.dp),
                         )
                         EntryStatus.ERROR -> Text(
-                            text = "não deu certo — dá para tentar de novo em Pendentes",
+                            text = stringResource(R.string.saved_failed),
                             style = MaterialTheme.typography.bodySmall,
                             color = colors.error,
                             modifier = Modifier.padding(top = 3.dp),
@@ -225,7 +231,7 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
                         ) {
                             IndeterminateBar()
                             Text(
-                                text = "montando o sentido",
+                                text = stringResource(R.string.saved_building),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = colors.onSurfaceVariant,
                                 modifier = Modifier.breathing(active = true),
@@ -248,12 +254,12 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                     ) {
                         Icon(AppIcons.Check, null, tint = colors.tertiary, modifier = Modifier.size(11.dp))
-                        Text("ficha pronta", style = MaterialTheme.typography.labelSmall, color = colors.onTertiaryContainer)
+                        Text(stringResource(R.string.saved_card_ready), style = MaterialTheme.typography.labelSmall, color = colors.onTertiaryContainer)
                     }
                 }
             }
             if (!isReady && !withError) {
-                Text("IA", style = MaterialTheme.typography.labelSmall, color = colors.outline)
+                Text(stringResource(R.string.saved_ai), style = MaterialTheme.typography.labelSmall, color = colors.outline)
             }
         }
     }
