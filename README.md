@@ -1,3 +1,8 @@
+<!-- A copy of drawable-nodpi/logo_vocabu.png, kept here on purpose: pointing at the
+     app resource would leave this image dead the day that path changes, with nothing
+     failing the build. Re-copy it if the logo is ever redrawn. -->
+<img src="docs/logo.png" width="104" align="right" alt="">
+
 # Vocabu
 
 Captures words and phrases the moment they show up — gaming, reading, watching — and
@@ -10,15 +15,7 @@ the AI call. Interface in English and Brazilian Portuguese.
 
 ## Setup
 
-**1. Point Gradle at the JDK and the SDK.** For the current terminal only:
-
-```powershell
-$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"
-$env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-```
-
-To keep them across terminals, set them once in the user environment — through
-Windows' "Edit environment variables for your account", or:
+**1. Point Gradle at the JDK and the SDK.** To keep them across terminals, set them once in the user environment — through Windows' "Edit environment variables for your account", or:
 
 ```powershell
 [Environment]::SetEnvironmentVariable('JAVA_HOME', "C:\Program Files\Android\Android Studio\jbr", 'User')
@@ -70,11 +67,11 @@ detects it.
 
 ## Building
 
-| Command | Output | Installs? |
-|---|---|---|
-| `assembleDebug` | `androidApp\build\outputs\apk\debug\` | Yes, anywhere — shareable today |
-| `assembleRelease` | `...\apk\release\` (unsigned) | No, until signed |
-| `bundleRelease` | `...\bundle\release\` (`.aab`) | Play Store format, also needs signing |
+| Command | Output |
+|---|---|
+| `assembleDebug` | `androidApp\build\outputs\apk\debug\` |
+| `assembleRelease` | `...\apk\release\` (unsigned) |
+| `bundleRelease` | `...\bundle\release\` (`.aab`) |
 
 Debug uses the local debug key — installs anywhere, refused by the Play Store. Release
 has no `signingConfig` on purpose: a release key is a secret that should not enter the
