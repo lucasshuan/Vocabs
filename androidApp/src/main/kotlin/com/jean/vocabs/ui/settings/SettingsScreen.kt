@@ -537,7 +537,7 @@ private fun ThemeSegmented(
             Row(Modifier.fillMaxWidth()) {
                 options.forEach { option ->
                     val isActive = option == isSelected
-                    val tinta by animateColorAsState(
+                    val tint by animateColorAsState(
                         targetValue = if (isActive) colors.onPrimary else colors.onSurfaceVariant,
                         animationSpec = tween(Motion.DEFAULT),
                         label = "segmentTint",
@@ -559,13 +559,13 @@ private fun ThemeSegmented(
                         Icon(
                             imageVector = themeIcon(option),
                             contentDescription = null,
-                            tint = tinta,
+                            tint = tint,
                             modifier = Modifier.size(15.dp),
                         )
                         Text(
                             text = themeLabel(option),
                             style = MaterialTheme.typography.labelLarge,
-                            color = tinta,
+                            color = tint,
                             modifier = Modifier.padding(start = 6.dp),
                         )
                     }

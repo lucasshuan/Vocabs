@@ -8,22 +8,26 @@ import com.jean.vocabs.shared.domain.LanguagePair
 import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.Steps
 import java.time.LocalDate
+import java.util.Locale
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 /**
- * Snapshot of the Portuguese text these builders produce today.
+ * The progress screens' text logic, in two halves.
  *
- * These pin what the builders produce today; they are not a statement of what
- * they should produce. Plural, gender and ordinal are hand-rolled here and
- * nothing covered them, so the move to resources would otherwise happen with no
- * before/after signal.
+ * The builders still holding Portuguese are pinned as they stand — plural and
+ * gender are hand-rolled in them and nothing else covers it, so extracting them
+ * would otherwise happen with no before/after signal. Those assertions are a
+ * snapshot, not a statement of intent, and go when the strings do.
  *
- * Expect to replace them once the strings are resources: assertions on resolved
- * text get noisy, since every copy edit fails a test with nothing actually
- * wrong. What replaces them is open.
+ * The rest have already moved: they assert which branch or locale was chosen,
+ * never the resolved sentence. Asserting resolved text fails on every copy edit
+ * with nothing actually wrong.
  */
 class ProgressTextsTest {
+
+    private val PT_BR = Locale.forLanguageTag("pt-BR")
 
     private val languagePair = LanguagePair(native = "pt-BR", target = "en")
 
@@ -74,19 +78,35 @@ class ProgressTextsTest {
     // mapping belongs to CLDR and its two keys are covered by MissingTranslation
     // and ImpliedQuantity, so there is nothing left here worth asserting.
 
+    /**
+     * Asserts the locale is honoured, not the exact wording: the strings come
+     * from the JDK's own data, and pinning "março" here would make a JDK upgrade
+     * look like a bug in this app.
+     */
     @Test
-    fun `months come from the hand-written table`() {
-        assertEquals("Janeiro", monthName(LocalDate.of(2026, 1, 15)))
-        assertEquals("Março", monthName(LocalDate.of(2026, 3, 1)))
-        assertEquals("Dezembro", monthName(LocalDate.of(2026, 12, 31)))
+    fun `month names follow the locale they are given`() {
+        val march = LocalDate.of(2026, 3, 1)
+        assertEquals("March", monthName(march, Locale.ENGLISH))
+        assertNotEquals(monthName(march, Locale.ENGLISH), monthName(march, PT_BR))
     }
 
-    /** `semanaDe` depends on this ordering. */
     @Test
-    fun `the week has seven labels and starts on Monday`() {
-        assertEquals(7, WEEKDAY_LABELS.size)
-        assertEquals("seg", WEEKDAY_LABELS.first())
-        assertEquals("dom", WEEKDAY_LABELS.last())
+    fun `the capitalised form differs only in the first character`() {
+        val march = LocalDate.of(2026, 3, 1)
+        assertEquals(
+            monthName(march, PT_BR).replaceFirstChar { it.uppercase(PT_BR) },
+            monthNameCapitalised(march, PT_BR),
+        )
+    }
+
+    /** `weekOf` builds Monday-first, so the labels have to start there too. */
+    @Test
+    fun `the week has seven labels, starts on Monday, and follows the locale`() {
+        val english = weekdayLabels(Locale.ENGLISH)
+        assertEquals(7, english.size)
+        assertEquals("Mon", english.first())
+        assertEquals(7, weekdayLabels(PT_BR).size)
+        assertNotEquals(english, weekdayLabels(PT_BR))
     }
 
     // The timeline row now picks a branch here and a resource in composition.

@@ -91,7 +91,7 @@ fun targetFor(
     targetRadiusPx: Float,
     originRadiusPx: Float,
 ): GestureTarget {
-    val nearest = targets.minByOrNull { (_, centro) -> (shift - centro).getDistanceSquared() }
+    val nearest = targets.minByOrNull { (_, center) -> (shift - center).getDistanceSquared() }
     if (nearest != null && (shift - nearest.second).getDistance() <= targetRadiusPx) {
         return GestureTarget.Mode(nearest.first)
     }

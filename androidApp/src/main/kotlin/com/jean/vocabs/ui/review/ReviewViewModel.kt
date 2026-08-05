@@ -87,7 +87,7 @@ class ReviewViewModel(app: Application) : AndroidViewModel(app) {
         if (respondidos.add(current.entry.id)) {
             if (correct) hits++ else {
                 misses++
-                wrong += getApplication<Application>().entryTitle(current.entry)
+                wrong += getApplication<Application>().resources.entryTitle(current.entry)
             }
             AppContainer.scope.launch { repository.recordAnswer(current.entry.id, correct) }
         }

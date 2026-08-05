@@ -43,9 +43,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jean.vocabs.R
 import com.jean.vocabs.shared.domain.CourseSummary
 import com.jean.vocabs.shared.domain.DailyQuota
 import com.jean.vocabs.shared.domain.Steps
@@ -176,10 +179,12 @@ fun ProgressScreen(
 @Composable
 private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
     val colors = MaterialTheme.colorScheme
+    val locale = LocalConfiguration.current.locales[0]
+    val weekdays = remember(locale) { weekdayLabels(locale) }
     val content: @Composable ColumnScope.() -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "${state.month} · esta semana",
+                text = stringResource(R.string.progress_month_this_week, monthNameCapitalised(state.month, locale)),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (empty) colors.outline else colors.onSurfaceVariant,
             )
@@ -194,10 +199,10 @@ private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
         }
 
         WeekStrip(
-            days = state.semana.mapIndexed { index, day ->
+            days = state.week.mapIndexed { index, day ->
                 WeekDay(
-                    abbreviation = WEEKDAY_LABELS[index],
-                    number = day.data.dayOfMonth,
+                    abbreviation = weekdays[index],
+                    number = day.date.dayOfMonth,
                     reviews = day.reviews,
                     today = day.today,
                     future = day.future,

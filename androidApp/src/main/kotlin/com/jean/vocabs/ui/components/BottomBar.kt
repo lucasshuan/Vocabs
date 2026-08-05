@@ -91,7 +91,7 @@ val BAR_HEIGHT = 68.dp
  */
 @Composable
 private fun TabItem(tab: Tab, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
-    val tinta by animateColorAsState(
+    val tint by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         animationSpec = tween(Motion.DEFAULT),
         label = "tabTint",
@@ -115,7 +115,7 @@ private fun TabItem(tab: Tab, isSelected: Boolean, onClick: () -> Unit, modifier
                 Icon(
                     imageVector = tab.icon,
                     contentDescription = tab.label,
-                    tint = tinta,
+                    tint = tint,
                     modifier = Modifier.size(23.dp),
                 )
                 // The badge springs in and shrinks out: the Pending queue changes

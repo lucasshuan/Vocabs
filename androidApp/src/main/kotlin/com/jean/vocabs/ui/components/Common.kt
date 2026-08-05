@@ -1,6 +1,6 @@
 package com.jean.vocabs.ui.components
 
-import android.content.Context
+import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -24,7 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -133,8 +133,15 @@ private fun duplicateStatusRes(status: EntryStatus): Int = when (status) {
     EntryStatus.ERROR -> R.string.duplicate_status_error
 }
 
-/** "now", "5m ago", "2h ago", "yesterday", "3d ago". */
-fun Context.relativeTime(instant: Long, now: Long = System.currentTimeMillis()): String {
+/**
+ * "now", "5m ago", "2h ago", "yesterday", "3d ago".
+ *
+ * Written against `Resources` rather than `Context` throughout this file:
+ * `LocalContext.current` does not invalidate when the configuration changes, so
+ * a composable reading through it keeps the previous language's text after the
+ * in-app picker switches. `LocalResources.current` does invalidate.
+ */
+fun Resources.relativeTime(instant: Long, now: Long = System.currentTimeMillis()): String {
     val minutes = ((now - instant) / 60_000L).coerceAtLeast(0)
     return when {
         minutes < 1 -> getString(R.string.time_now)
@@ -147,7 +154,7 @@ fun Context.relativeTime(instant: Long, now: Long = System.currentTimeMillis()):
 
 @Composable
 fun relativeTime(instant: Long, now: Long = System.currentTimeMillis()): String =
-    LocalContext.current.relativeTime(instant, now)
+    LocalResources.current.relativeTime(instant, now)
 
 /**
  * The forward-looking mirror of [relativeTime]: "now", "in 4h", "tomorrow".
@@ -157,7 +164,7 @@ fun relativeTime(instant: Long, now: Long = System.currentTimeMillis()): String 
  * source injected into the repository. Repeating that here would let the card's
  * bar and the home card disagree about what time it is.
  */
-fun Context.timeUntil(millis: Long): String {
+fun Resources.timeUntil(millis: Long): String {
     val minutes = (millis / 60_000L).coerceAtLeast(0)
     val days = (minutes / (60 * 24)).toInt()
     return when {
@@ -165,12 +172,12 @@ fun Context.timeUntil(millis: Long): String {
         minutes < 60 -> getString(R.string.time_in_minutes, minutes)
         minutes < 60 * 24 -> getString(R.string.time_in_hours, minutes / 60)
         minutes < 60 * 48 -> getString(R.string.time_tomorrow)
-        else -> resources.getQuantityString(R.plurals.time_in_days, days, days)
+        else -> getQuantityString(R.plurals.time_in_days, days, days)
     }
 }
 
 @Composable
-fun timeUntil(millis: Long): String = LocalContext.current.timeUntil(millis)
+fun timeUntil(millis: Long): String = LocalResources.current.timeUntil(millis)
 
 /** "0:12", "1:03:20" — an audio duration, from millis. */
 fun formatDurationMs(durationMs: Long): String {
@@ -195,7 +202,7 @@ fun formatDuration(seconds: Long): String = formatDurationMs(seconds * 1_000L)
  * Pasted text shows its own snippet in quotes rather than the word "Text": in a
  * queue of five captures, "Text" three times distinguishes nothing.
  */
-fun Context.captureTitle(capture: Capture): String {
+fun Resources.captureTitle(capture: Capture): String {
     val source = capture.source?.takeIf { it.isNotBlank() }
     return when (capture.format) {
         CaptureFormat.AUDIO -> capture.durationMs
@@ -212,7 +219,7 @@ fun Context.captureTitle(capture: Capture): String {
 }
 
 @Composable
-fun captureTitle(capture: Capture): String = LocalContext.current.captureTitle(capture)
+fun captureTitle(capture: Capture): String = LocalResources.current.captureTitle(capture)
 
 /** One line of snippet for a title, cut at the word rather than the letter. */
 fun summarize(text: String, limit: Int = 38): String {
@@ -254,7 +261,7 @@ fun levelLabelRes(level: MemoryLevel): Int = when (level) {
 @Composable
 fun levelLabel(level: MemoryLevel): String = stringResource(levelLabelRes(level))
 
-fun Context.levelLabel(level: MemoryLevel): String = getString(levelLabelRes(level))
+fun Resources.levelLabel(level: MemoryLevel): String = getString(levelLabelRes(level))
 
 /**
  * "review now" once past the threshold, otherwise "in 2d 4h".
@@ -313,7 +320,7 @@ fun entryTitle(entry: Entry): String =
     entry.target?.takeIf { it.isNotBlank() } ?: stringResource(untitledResOf(entry.format))
 
 /** The same, for the view models that have to name an entry outside composition. */
-fun Context.entryTitle(entry: Entry): String =
+fun Resources.entryTitle(entry: Entry): String =
     entry.target?.takeIf { it.isNotBlank() } ?: getString(untitledResOf(entry.format))
 
 @StringRes

@@ -304,7 +304,7 @@ fun SelectablePill(
         animationSpec = tween(Motion.FAST),
         label = "pillBackground",
     )
-    val tinta by animateColorAsState(
+    val tint by animateColorAsState(
         targetValue = if (isSelected) colors.onPrimary else colors.onSurfaceVariant,
         animationSpec = tween(Motion.FAST),
         label = "pillTint",
@@ -313,13 +313,13 @@ fun SelectablePill(
         onClick = onClick,
         shape = shape,
         color = background,
-        contentColor = tinta,
+        contentColor = tint,
         border = if (isSelected) null else cardOutline(),
         interactionSource = touch,
         modifier = modifier.shrinkOnTouch(touch, minimum = 0.94f),
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp)) {
-            Text(text = label, style = MaterialTheme.typography.labelMedium, color = tinta)
+            Text(text = label, style = MaterialTheme.typography.labelMedium, color = tint)
         }
     }
 }

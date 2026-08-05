@@ -16,6 +16,8 @@ import com.jean.vocabs.shared.domain.Steps
 import com.jean.vocabs.shared.enrolledCourses
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
 import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -44,8 +46,8 @@ data class ProgressState(
      * the initial state: the dashed skeleton appears in the right place and
      * fills in, rather than showing "0 of 10" for two frames.
      */
-    val semana: List<ProgressDay> = weekOf(LocalDate.now(), emptyList()),
-    val month: String = monthName(LocalDate.now()),
+    val week: List<ProgressDay> = weekOf(LocalDate.now(), emptyList()),
+    val month: LocalDate = LocalDate.now(),
     val dayStreak: Int = 0,
     val quota: DailyQuota = DailyQuota(done = 0, inQueue = 0),
     val words: List<Entry> = emptyList(),
@@ -71,7 +73,7 @@ data class ProgressState(
 
 /** One day of the week strip, with its number and reviews already resolved. */
 data class ProgressDay(
-    val data: LocalDate,
+    val date: LocalDate,
     val reviews: Int,
     val today: Boolean,
     val future: Boolean,
@@ -105,8 +107,8 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
         ) { review, activity ->
             val today = LocalDate.now()
             ProgressState(
-                semana = weekOf(today, activity),
-                month = monthName(today),
+                week = weekOf(today, activity),
+                month = today,
                 // The streak counts activity in any language; the quota belongs
                 // to the course. Different questions: habit is the person's, load
                 // is the subject's.
@@ -175,12 +177,12 @@ internal fun weekOf(today: LocalDate, activity: List<DailyActivity>): List<Progr
     val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     val byDay = activity.associate { it.day to it.reviews }
     return (0L until 7L).map { offset ->
-        val data = monday.plusDays(offset)
+        val date = monday.plusDays(offset)
         ProgressDay(
-            data = data,
-            reviews = byDay[data.toEpochDay() + JULIAN_DAY_OF_EPOCH] ?: 0,
-            today = data == today,
-            future = data.isAfter(today),
+            date = date,
+            reviews = byDay[date.toEpochDay() + JULIAN_DAY_OF_EPOCH] ?: 0,
+            today = date == today,
+            future = date.isAfter(today),
         )
     }
 }
@@ -194,12 +196,23 @@ internal fun weekOf(today: LocalDate, activity: List<DailyActivity>): List<Progr
  */
 private const val JULIAN_DAY_OF_EPOCH = 2_440_588L
 
-private val MONTHS = listOf(
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-)
+/**
+ * Month and weekday names come from `java.time` with the interface locale passed
+ * in explicitly, resolved in the composable rather than here.
+ *
+ * They used to be hand-written lists, to avoid depending on the device's ICU
+ * data. A written list cannot follow a language setting, which is the whole
+ * point now that there is one — and `Locale.getDefault()` would not follow it
+ * either, since the in-app picker can differ from the device.
+ */
+internal fun monthName(date: LocalDate, locale: Locale): String =
+    date.month.getDisplayName(TextStyle.FULL, locale)
 
-/** Hand-written because `Locale("pt","BR")` depends on the device's ICU data. */
-internal fun monthName(data: LocalDate): String = MONTHS[data.monthValue - 1]
+/** The header wants it capitalised; pt-BR returns "março" where en returns "March". */
+internal fun monthNameCapitalised(date: LocalDate, locale: Locale): String =
+    monthName(date, locale).replaceFirstChar { it.titlecase(locale) }
 
-internal val WEEKDAY_LABELS = listOf("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
+internal fun weekdayLabels(locale: Locale): List<String> =
+    (0L until 7L).map {
+        DayOfWeek.MONDAY.plus(it).getDisplayName(TextStyle.SHORT, locale)
+    }

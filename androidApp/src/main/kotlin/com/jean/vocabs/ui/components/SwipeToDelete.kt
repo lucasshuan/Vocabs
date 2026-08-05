@@ -127,7 +127,7 @@ fun SwipeToDelete(
         animationSpec = tween(Motion.FAST),
         label = "discardBackground",
     )
-    val tinta by animateColorAsState(
+    val tint by animateColorAsState(
         targetValue = if (armed) colors.onError else colors.error,
         animationSpec = tween(Motion.FAST),
         label = "discardTint",
@@ -197,16 +197,16 @@ fun SwipeToDelete(
                 // The trash stays against the edge the card uncovered and the
                 // label grows inward. Inverted, the invisible label would push
                 // the trash under the card and the gesture would start blank.
-                if (toLeft) DiscardLabel(armedLabel, tinta, labelOpacity)
+                if (toLeft) DiscardLabel(armedLabel, tint, labelOpacity)
                 Icon(
                     imageVector = AppIcons.Trash,
                     contentDescription = null,
-                    tint = tinta,
+                    tint = tint,
                     modifier = Modifier
                         .graphicsLayer { scaleX = trashScale; scaleY = trashScale }
                         .size(24.dp),
                 )
-                if (!toLeft) DiscardLabel(armedLabel, tinta, labelOpacity)
+                if (!toLeft) DiscardLabel(armedLabel, tint, labelOpacity)
             }
         }
 

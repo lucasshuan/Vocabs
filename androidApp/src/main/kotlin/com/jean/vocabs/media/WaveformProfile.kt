@@ -69,11 +69,11 @@ private fun wavProfile(path: String): FloatArray {
             // recorder writes, but a foreign WAV may carry others.
             var bits = 0
             var channels = 0
-            val topo = ByteArray(8)
+            val header = ByteArray(8)
             repeat(MAX_BLOCKS) {
-                flow.readFully(topo)
-                val id = mark(topo, 0)
-                val size = readInt(topo, 4)
+                flow.readFully(header)
+                val id = mark(header, 0)
+                val size = readInt(header, 4)
                 if (id == "data") return@use peaksOf(flow, size, bits, channels)
                 if (size !in 0..MAX_BLOCK) return@use FloatArray(0)
                 val body = ByteArray(size + (size and 1))

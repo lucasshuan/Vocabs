@@ -1,5 +1,6 @@
 package com.jean.vocabs.ui.progress
 
+import android.content.res.Resources
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.R
@@ -46,6 +49,7 @@ import com.jean.vocabs.ui.components.WeekDay
 import com.jean.vocabs.ui.components.WeekStrip
 import com.jean.vocabs.ui.components.levelLabel
 import java.time.LocalDate
+import java.util.Locale
 
 /**
  * "Day by day".
@@ -64,11 +68,19 @@ fun DayByDayScreen(
     LaunchedEffect(target) { vm.open(target) }
     val state by vm.state.collectAsStateWithLifecycle()
     val today = remember { LocalDate.now() }
-    val days = remember(state.events, state.quota) {
+    val resources = LocalResources.current
+    // The picker can differ from the device, so the locale comes from the
+    // configuration Compose is actually rendering with.
+    val locale = LocalConfiguration.current.locales[0]
+    val weekdays = remember(locale) { weekdayLabels(locale) }
+    val days = remember(state.events, state.quota, locale) {
         groupByDay(
             events = state.events,
             today = today,
-            todayQuota = "quota ${state.quota.done}/${state.quota.total}",
+            todayQuota = resources.getString(
+                R.string.daybyday_quota, state.quota.done, state.quota.total
+            ),
+            title = { day -> resources.dayTitle(day, today, locale) },
         )
     }
 
@@ -76,12 +88,12 @@ fun DayByDayScreen(
         modifier = Modifier.fillMaxSize().statusBarsPadding().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(13.dp),
     ) {
-        InnerHeader("Dia a dia", onBack, Modifier.padding(top = 8.dp))
+        InnerHeader(stringResource(R.string.daybyday_title), onBack, Modifier.padding(top = 8.dp))
 
         ScreenCard(filling = PaddingValues(16.dp), modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "${state.month} · esta semana",
+                    text = stringResource(R.string.progress_month_this_week, monthNameCapitalised(state.month, locale)),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f),
@@ -93,10 +105,10 @@ fun DayByDayScreen(
                 )
             }
             WeekStrip(
-                days = state.semana.mapIndexed { index, day ->
+                days = state.week.mapIndexed { index, day ->
                     WeekDay(
-                        abbreviation = WEEKDAY_LABELS[index],
-                        number = day.data.dayOfMonth,
+                        abbreviation = weekdays[index],
+                        number = day.date.dayOfMonth,
                         reviews = day.reviews,
                         today = day.today,
                         future = day.future,
@@ -109,8 +121,8 @@ fun DayByDayScreen(
         if (days.isEmpty()) {
             EmptyState(
                 icon = AppIcons.Clock,
-                title = "Nada aconteceu ainda",
-                detail = "Capture uma palavra e ela aparece aqui.",
+                title = stringResource(R.string.daybyday_empty_title),
+                detail = stringResource(R.string.daybyday_empty_detail),
                 modifier = Modifier.weight(1f),
             )
         } else {
@@ -159,12 +171,12 @@ private fun DayGroup(group: EventDay, last: Boolean, onOpenCard: (Long) -> Unit)
                 // The last day has nowhere to continue: the line would stop in
                 // mid-air, suggesting a past the screen cannot show.
                 if (last) return@drawBehind
-                val meio = TRACK_WIDTH.toPx() / 2f
+                val middle = TRACK_WIDTH.toPx() / 2f
                 val beginning = (DOT_TOP + DOT_SIZE + TRACK_GAP).toPx()
                 drawLine(
                     color = rail,
-                    start = Offset(meio, beginning),
-                    end = Offset(meio, size.height),
+                    start = Offset(middle, beginning),
+                    end = Offset(middle, size.height),
                     strokeWidth = 2.dp.toPx(),
                 )
             },
@@ -284,6 +296,8 @@ internal fun groupByDay(
     events: List<Event>,
     today: LocalDate,
     todayQuota: String? = null,
+    /** Passed in, like [todayQuota], so grouping stays free of resources. */
+    title: (day: Long) -> String,
 ): List<EventDay> {
     if (events.isEmpty()) return emptyList()
     val byDay = events.groupBy { it.day }
@@ -294,7 +308,7 @@ internal fun groupByDay(
     return (latest downTo earliest).map { day ->
         EventDay(
             day = day,
-            title = dayTitle(day, todayDay),
+            title = title(day),
             today = day == todayDay,
             // The quota is a count over the queue as it is now, and Tuesday's
             // queue is gone — only today can say how much is left.
@@ -306,12 +320,13 @@ internal fun groupByDay(
 
 private const val JULIAN_DAY_OF_EPOCH_UI = 2_440_588L
 
-private fun dayTitle(day: Long, today: Long): String {
-    val data = LocalDate.ofEpochDay(day - JULIAN_DAY_OF_EPOCH_UI)
-    val name = "${data.dayOfMonth} de ${monthName(data).lowercase()}"
+private fun Resources.dayTitle(day: Long, today: LocalDate, locale: Locale): String {
+    val date = LocalDate.ofEpochDay(day - JULIAN_DAY_OF_EPOCH_UI)
+    val name = getString(R.string.daybyday_date, monthName(date, locale), date.dayOfMonth)
+    val todayDay = today.toEpochDay() + JULIAN_DAY_OF_EPOCH_UI
     return when (day) {
-        today -> "$name · hoje"
-        today - 1 -> "$name · ontem"
+        todayDay -> getString(R.string.daybyday_date_today, name)
+        todayDay - 1 -> getString(R.string.daybyday_date_yesterday, name)
         else -> name
     }
 }

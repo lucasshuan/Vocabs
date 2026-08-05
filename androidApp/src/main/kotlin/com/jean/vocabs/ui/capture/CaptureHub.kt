@@ -192,7 +192,7 @@ fun CaptureHub(
                         awaitEachGesture {
                             val first = awaitFirstDown(requireUnconsumed = false)
                             first.consume()
-                            val centro = Offset(size.width / 2f, size.height / 2f)
+                            val center = Offset(size.width / 2f, size.height / 2f)
 
                             // Up to 180 ms held still is a tap. The system's
                             // 500 ms is too long for a gesture that has to land
@@ -224,7 +224,7 @@ fun CaptureHub(
                             while (true) {
                                 val change = nextChange(first) ?: break
                                 val new = targetFor(
-                                    shift = change.position - centro,
+                                    shift = change.position - center,
                                     targets = targets,
                                     targetRadiusPx = targetRadiusPx,
                                     originRadiusPx = originRadiusPx,
@@ -368,7 +368,7 @@ private fun HubButton(
         animationSpec = tween(Motion.FAST),
         label = "buttonOutline",
     )
-    val tinta by animateColorAsState(
+    val tint by animateColorAsState(
         targetValue = if (fanOpen) Color.White.copy(alpha = 0.5f) else colors.onPrimary,
         animationSpec = tween(Motion.FAST),
         label = "buttonTint",
@@ -409,7 +409,7 @@ private fun HubButton(
         Icon(
             imageVector = AppIcons.Plus,
             contentDescription = null,
-            tint = tinta,
+            tint = tint,
             modifier = Modifier.size(30.dp),
         )
     }
@@ -466,11 +466,11 @@ private fun Modifier.hubBreath(active: Boolean): Modifier = composed {
 }
 
 private fun Modifier.dashedCircleOutline(color: () -> Color): Modifier = drawBehind {
-    val tinta = color()
-    if (tinta.alpha < 0.01f) return@drawBehind
+    val tint = color()
+    if (tint.alpha < 0.01f) return@drawBehind
     val line = 1.6.dp.toPx()
     drawCircle(
-        color = tinta,
+        color = tint,
         radius = size.minDimension / 2f - line / 2f,
         style = Stroke(
             width = line,
@@ -514,7 +514,7 @@ private fun FanTarget(
         animationSpec = tween(TARGET_HIGHLIGHT_MS, easing = LinearOutSlowInEasing),
         label = "targetHighlight",
     )
-    val tinta by animateColorAsState(
+    val tint by animateColorAsState(
         targetValue = if (marked) Color.White else palette.color,
         animationSpec = tween(TARGET_HIGHLIGHT_MS),
         label = "targetTint",
@@ -549,7 +549,7 @@ private fun FanTarget(
         Icon(
             imageVector = formatIcon(format),
             contentDescription = null,
-            tint = tinta,
+            tint = tint,
             modifier = Modifier.size(26.dp),
         )
         Text(

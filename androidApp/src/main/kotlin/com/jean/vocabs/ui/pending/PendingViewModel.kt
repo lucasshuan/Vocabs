@@ -106,13 +106,13 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
                 System.nanoTime(),
                 capture.id,
                 isCapture = true,
-                title = getApplication<Application>().captureTitle(capture),
+                title = getApplication<Application>().resources.captureTitle(capture),
             )
         )
     }
 
     fun deleteCard(entry: Entry) {
-        schedule(PendingDeletion(System.nanoTime(), entry.id, isCapture = false, title = getApplication<Application>().entryTitle(entry)))
+        schedule(PendingDeletion(System.nanoTime(), entry.id, isCapture = false, title = getApplication<Application>().resources.entryTitle(entry)))
     }
 
     /** The gesture was a mistake: the item returns and nothing reaches the database. */

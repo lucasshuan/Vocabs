@@ -96,6 +96,15 @@
         <item quantity="other">%1$d acertos para %2$s</item>
     </plurals>
 
+    <string name="progress_month_this_week">%1$s · esta semana</string>
+    <string name="daybyday_title">Dia a dia</string>
+    <string name="daybyday_date">%2$d de %1$s</string>
+    <string name="daybyday_date_today">%1$s · hoje</string>
+    <string name="daybyday_date_yesterday">%1$s · ontem</string>
+    <string name="daybyday_quota">quota %1$d/%2$d</string>
+    <string name="daybyday_empty_title">Nada aconteceu ainda</string>
+    <string name="daybyday_empty_detail">Capture uma palavra e ela aparece aqui.</string>
+
     <!-- Configurações -->
     <string name="settings_section_language">Idioma</string>
     <string name="settings_app_language">Idioma do app</string>
