@@ -27,11 +27,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jean.vocabs.contracts.TargetType
 import com.jean.vocabs.shared.domain.Capture
-import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.CaptureFormat
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.Retention
-import com.jean.vocabs.shared.domain.EntryStatus
 import com.jean.vocabs.ui.theme.LocalTemaEscuro
 
 /**

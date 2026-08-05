@@ -4,11 +4,11 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.enrolledCourses
-import com.jean.vocabs.shared.domain.Scope
-import com.jean.vocabs.shared.domain.LanguagePair
-import com.jean.vocabs.shared.domain.CourseSummary
 import com.jean.vocabs.shared.domain.AiUsage
+import com.jean.vocabs.shared.domain.CourseSummary
+import com.jean.vocabs.shared.domain.LanguagePair
+import com.jean.vocabs.shared.domain.Scope
+import com.jean.vocabs.shared.enrolledCourses
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine

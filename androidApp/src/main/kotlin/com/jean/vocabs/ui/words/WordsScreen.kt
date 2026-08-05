@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.words
 
-import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.horizontalScroll
@@ -32,16 +31,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.MemoryLevel
+import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.CircularFlag
+import com.jean.vocabs.ui.components.EmptyState
 import com.jean.vocabs.ui.components.MemoryBar
 import com.jean.vocabs.ui.components.ScreenCard
-import com.jean.vocabs.ui.components.EmptyState
-import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.SelectablePill
 import com.jean.vocabs.ui.components.TypeBadge
-import com.jean.vocabs.ui.components.levelLabelColor
 import com.jean.vocabs.ui.components.levelLabel
+import com.jean.vocabs.ui.components.levelLabelColor
 import com.jean.vocabs.ui.components.nextReviewText
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**

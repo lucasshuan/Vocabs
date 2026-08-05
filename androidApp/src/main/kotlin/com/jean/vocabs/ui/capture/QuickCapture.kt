@@ -21,8 +21,8 @@ import androidx.core.content.FileProvider
 import com.jean.vocabs.media.AudioRecorder
 import com.jean.vocabs.shared.domain.CaptureFormat
 import com.jean.vocabs.shared.media.MediaFiles
-import kotlinx.coroutines.delay
 import java.io.File
+import kotlinx.coroutines.delay
 
 /**
  * Captura de áudio e foto sem tela própria.

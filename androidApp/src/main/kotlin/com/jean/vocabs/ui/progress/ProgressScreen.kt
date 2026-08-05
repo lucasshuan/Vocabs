@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.progress
 
-import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -47,26 +46,27 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jean.vocabs.shared.domain.Steps
-import com.jean.vocabs.shared.domain.DailyQuota
 import com.jean.vocabs.shared.domain.CourseSummary
-import com.jean.vocabs.ui.components.SecondaryAction
-import com.jean.vocabs.ui.components.ProgressRing
-import com.jean.vocabs.ui.components.CircularFlag
+import com.jean.vocabs.shared.domain.DailyQuota
+import com.jean.vocabs.shared.domain.Steps
+import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.BandBars
-import com.jean.vocabs.ui.components.InnerHeader
+import com.jean.vocabs.ui.components.CircularFlag
 import com.jean.vocabs.ui.components.DashedBox
+import com.jean.vocabs.ui.components.InnerHeader
+import com.jean.vocabs.ui.components.Motion
+import com.jean.vocabs.ui.components.ProgressRing
 import com.jean.vocabs.ui.components.ScreenCard
+import com.jean.vocabs.ui.components.SecondaryAction
 import com.jean.vocabs.ui.components.WeekDay
 import com.jean.vocabs.ui.components.WeekStrip
-import com.jean.vocabs.ui.components.AppIcons
-import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.animatedCount
+import com.jean.vocabs.ui.components.animatedFraction
 import com.jean.vocabs.ui.components.cardOutline
 import com.jean.vocabs.ui.components.contornoTracejado
 import com.jean.vocabs.ui.components.encolheAoTocar
-import com.jean.vocabs.ui.components.animatedFraction
 import com.jean.vocabs.ui.components.rememberHaptics
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 import kotlinx.coroutines.launch
 

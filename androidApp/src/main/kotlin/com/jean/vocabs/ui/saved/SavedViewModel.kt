@@ -5,8 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
 import com.jean.vocabs.shared.domain.Entry
-import com.jean.vocabs.shared.domain.Scope
 import com.jean.vocabs.shared.domain.EntryStatus
+import com.jean.vocabs.shared.domain.Scope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

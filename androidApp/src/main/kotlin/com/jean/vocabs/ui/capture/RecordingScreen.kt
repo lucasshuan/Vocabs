@@ -1,8 +1,10 @@
 package com.jean.vocabs.ui.capture
 
-import com.jean.vocabs.ui.displayName
 import android.app.Activity
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -23,9 +25,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -52,17 +51,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.jean.vocabs.contracts.Language
-import com.jean.vocabs.ui.components.CircularFlag
 import com.jean.vocabs.ui.components.AppIcons
+import com.jean.vocabs.ui.components.CircularFlag
 import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.encolheAoTocar
 import com.jean.vocabs.ui.components.formatDuration
 import com.jean.vocabs.ui.components.rememberHaptics
 import com.jean.vocabs.ui.components.respirando
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.theme.LocalTemaEscuro
 import com.jean.vocabs.ui.theme.VocabuColors
-import kotlinx.coroutines.delay
 import kotlin.math.pow
+import kotlinx.coroutines.delay
 
 /**
  * A gravação, com tela e ações próprias.

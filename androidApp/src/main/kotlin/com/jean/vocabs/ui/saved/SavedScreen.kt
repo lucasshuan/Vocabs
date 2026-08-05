@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.saved
 
-import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -44,13 +43,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.EntryStatus
+import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.CircularFlag
+import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.PrimaryButton
 import com.jean.vocabs.ui.components.ScreenCard
-import com.jean.vocabs.ui.components.AppIcons
-import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.entradaSuave
 import com.jean.vocabs.ui.components.respirando
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 import kotlinx.coroutines.delay
 

@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.home
 
-import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,18 +39,19 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.R
 import com.jean.vocabs.shared.domain.Entry
-import com.jean.vocabs.ui.components.ProgressRing
-import com.jean.vocabs.ui.components.PrimaryButton
+import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.DashedBox
-import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.IconDisc
 import com.jean.vocabs.ui.components.LanguageStrip
-import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.PageDots
+import com.jean.vocabs.ui.components.PrimaryButton
+import com.jean.vocabs.ui.components.ProgressRing
+import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.animatedCount
 import com.jean.vocabs.ui.components.entradaSuave
 import com.jean.vocabs.ui.components.timeUntil
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**

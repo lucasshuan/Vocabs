@@ -6,7 +6,6 @@ import com.jean.vocabs.contracts.ErrorResponse
 import com.jean.vocabs.contracts.GenerateCardRequest
 import com.jean.vocabs.contracts.TargetType
 import com.jean.vocabs.shared.domain.LanguagePair
-import kotlinx.coroutines.CancellationException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.header
@@ -16,6 +15,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.coroutines.CancellationException
 
 /**
  * A falha como código, para a tela escolher o texto no idioma de quem lê.

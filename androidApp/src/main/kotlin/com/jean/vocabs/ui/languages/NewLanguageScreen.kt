@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.languages
 
-import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,14 +37,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.contracts.Language
-import com.jean.vocabs.ui.components.CircularFlag
-import com.jean.vocabs.ui.components.PrimaryButton
-import com.jean.vocabs.ui.components.InnerHeader
-import com.jean.vocabs.ui.components.ScreenCard
-import com.jean.vocabs.ui.components.EmptyState
 import com.jean.vocabs.ui.components.AppIcons
+import com.jean.vocabs.ui.components.CircularFlag
+import com.jean.vocabs.ui.components.EmptyState
+import com.jean.vocabs.ui.components.InnerHeader
+import com.jean.vocabs.ui.components.PrimaryButton
+import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.cardOutline
+import com.jean.vocabs.ui.displayName
 
 /**
  * Tela 5c do handoff — "Novo idioma".

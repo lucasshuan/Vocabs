@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.components
 
-import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
@@ -42,8 +41,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.contracts.Language
-import com.jean.vocabs.shared.domain.CourseSummary
 import com.jean.vocabs.shared.domain.CourseBadge
+import com.jean.vocabs.shared.domain.CourseSummary
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**

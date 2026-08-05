@@ -4,12 +4,12 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.domain.Steps
-import com.jean.vocabs.shared.domain.Entry
-import com.jean.vocabs.shared.domain.Scope
-import com.jean.vocabs.shared.domain.MemoryLevel
-import com.jean.vocabs.shared.domain.LanguagePair
 import com.jean.vocabs.shared.domain.CourseSummary
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.LanguagePair
+import com.jean.vocabs.shared.domain.MemoryLevel
+import com.jean.vocabs.shared.domain.Scope
+import com.jean.vocabs.shared.domain.Steps
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId

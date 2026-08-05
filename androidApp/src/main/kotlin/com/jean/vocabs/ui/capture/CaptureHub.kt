@@ -71,8 +71,8 @@ import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.formatColors
 import com.jean.vocabs.ui.components.formatIcon
-import com.jean.vocabs.ui.components.reducedMotion
 import com.jean.vocabs.ui.components.formatLabel
+import com.jean.vocabs.ui.components.reducedMotion
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 

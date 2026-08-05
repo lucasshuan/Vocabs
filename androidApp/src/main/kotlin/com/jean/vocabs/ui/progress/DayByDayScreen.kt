@@ -34,14 +34,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Event
-import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.EventType
+import com.jean.vocabs.shared.domain.MemoryLevel
+import com.jean.vocabs.ui.components.AppIcons
+import com.jean.vocabs.ui.components.EmptyState
 import com.jean.vocabs.ui.components.InnerHeader
 import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.WeekDay
-import com.jean.vocabs.ui.components.EmptyState
 import com.jean.vocabs.ui.components.WeekStrip
-import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.levelLabel
 import java.time.LocalDate
 

@@ -4,10 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jean.vocabs.shared.AppContainer
-import com.jean.vocabs.shared.domain.SelectedTarget
 import com.jean.vocabs.shared.domain.Capture
 import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.Scope
+import com.jean.vocabs.shared.domain.SelectedTarget
 import com.jean.vocabs.shared.domain.duplicateOfTarget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

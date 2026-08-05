@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.capture
 
-import com.jean.vocabs.ui.displayName
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -38,12 +37,13 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.shared.domain.CaptureFormat
-import com.jean.vocabs.ui.components.CircularFlag
 import com.jean.vocabs.ui.components.AppIcons
+import com.jean.vocabs.ui.components.CircularFlag
 import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.cardOutline
 import com.jean.vocabs.ui.components.formatDurationMs
 import com.jean.vocabs.ui.components.rememberHaptics
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**

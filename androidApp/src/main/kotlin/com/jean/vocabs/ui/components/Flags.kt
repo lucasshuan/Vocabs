@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.components
 
-import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +11,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jean.vocabs.contracts.Language
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.flagOf
 
 /**

@@ -3,12 +3,12 @@ package com.jean.vocabs.server
 import com.jean.vocabs.contracts.CardResponse
 import com.jean.vocabs.contracts.GenerateCardRequest
 import com.jean.vocabs.contracts.TargetType
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.descriptors.elementNames
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.descriptors.elementNames
 
 class GeradorDeFichaTest {
     @Test

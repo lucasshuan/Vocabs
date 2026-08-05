@@ -3,12 +3,12 @@ package com.jean.vocabs.media
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.DataInputStream
 import java.io.File
 import kotlin.math.max
 import kotlin.math.pow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /** Quantos pontos o perfil guarda — sempre mais barras do que a tela desenha. */
 private const val PONTOS_DO_PERFIL = 180

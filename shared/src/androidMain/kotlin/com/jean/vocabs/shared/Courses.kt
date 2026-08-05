@@ -1,7 +1,7 @@
 package com.jean.vocabs.shared
 
-import com.jean.vocabs.shared.domain.LanguagePair
 import com.jean.vocabs.shared.domain.CourseSummary
+import com.jean.vocabs.shared.domain.LanguagePair
 import com.jean.vocabs.shared.domain.VocabRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine

@@ -8,30 +8,32 @@ import com.jean.vocabs.contracts.ErrorCode
 import com.jean.vocabs.contracts.TargetType
 import com.jean.vocabs.shared.data.remote.CardApi
 import com.jean.vocabs.shared.data.remote.CardException
+import com.jean.vocabs.shared.db.Capture as CaptureRow
+import com.jean.vocabs.shared.db.Entry_with_capture as EntryRow
 import com.jean.vocabs.shared.db.VocabsDatabase
-import com.jean.vocabs.shared.domain.SelectedTarget
-import com.jean.vocabs.shared.domain.DailyActivity
+import com.jean.vocabs.shared.domain.AiUsage
 import com.jean.vocabs.shared.domain.Capture
-import com.jean.vocabs.shared.domain.ExportData
-import com.jean.vocabs.shared.domain.Steps
-import com.jean.vocabs.shared.domain.Entry
-import com.jean.vocabs.shared.domain.Scope
-import com.jean.vocabs.shared.domain.Event
 import com.jean.vocabs.shared.domain.CaptureFormat
-import com.jean.vocabs.shared.domain.MemoryLevel
-import com.jean.vocabs.shared.domain.LanguagePair
+import com.jean.vocabs.shared.domain.CaptureStatus
+import com.jean.vocabs.shared.domain.CourseSummary
+import com.jean.vocabs.shared.domain.DailyActivity
 import com.jean.vocabs.shared.domain.DailyQuota
+import com.jean.vocabs.shared.domain.Entry
+import com.jean.vocabs.shared.domain.EntryStatus
+import com.jean.vocabs.shared.domain.Event
+import com.jean.vocabs.shared.domain.EventType
+import com.jean.vocabs.shared.domain.ExportData
+import com.jean.vocabs.shared.domain.LanguagePair
+import com.jean.vocabs.shared.domain.MemoryLevel
 import com.jean.vocabs.shared.domain.Retention
 import com.jean.vocabs.shared.domain.RetentionNow
-import com.jean.vocabs.shared.domain.CourseSummary
 import com.jean.vocabs.shared.domain.ReviewSummary
-import com.jean.vocabs.shared.domain.CaptureStatus
-import com.jean.vocabs.shared.domain.EntryStatus
-import com.jean.vocabs.shared.domain.EventType
-import com.jean.vocabs.shared.domain.AiUsage
+import com.jean.vocabs.shared.domain.Scope
+import com.jean.vocabs.shared.domain.SelectedTarget
+import com.jean.vocabs.shared.domain.Steps
 import com.jean.vocabs.shared.domain.VocabRepository
-import com.jean.vocabs.shared.domain.isValidIn
 import com.jean.vocabs.shared.domain.bestStreakOf
+import com.jean.vocabs.shared.domain.isValidIn
 import com.jean.vocabs.shared.domain.streakOf
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -43,12 +45,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import com.jean.vocabs.shared.db.Capture as CaptureRow
-import com.jean.vocabs.shared.db.Entry_with_capture as EntryRow
 
 class VocabRepositoryImpl(
     private val db: VocabsDatabase,

@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.card
 
-import com.jean.vocabs.ui.temporaryErrorText
 import android.content.Intent
 import android.speech.tts.TextToSpeech
 import androidx.compose.animation.AnimatedContent
@@ -54,22 +53,23 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Entry
-import com.jean.vocabs.shared.domain.RetentionNow
 import com.jean.vocabs.shared.domain.EntryStatus
-import com.jean.vocabs.ui.components.MemoryBar
-import com.jean.vocabs.ui.components.CircularButton
-import com.jean.vocabs.ui.components.ScreenCard
+import com.jean.vocabs.shared.domain.RetentionNow
 import com.jean.vocabs.ui.components.AppIcons
+import com.jean.vocabs.ui.components.CircularButton
+import com.jean.vocabs.ui.components.MemoryBar
 import com.jean.vocabs.ui.components.Motion
 import com.jean.vocabs.ui.components.Pill
+import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.TypeBadge
 import com.jean.vocabs.ui.components.cardOutline
-import com.jean.vocabs.ui.components.levelLabelColor
 import com.jean.vocabs.ui.components.levelLabel
-import com.jean.vocabs.ui.components.timeUntil
+import com.jean.vocabs.ui.components.levelLabelColor
 import com.jean.vocabs.ui.components.relativeTime
+import com.jean.vocabs.ui.components.timeUntil
 import com.jean.vocabs.ui.languages.languageOf
+import com.jean.vocabs.ui.temporaryErrorText
 import java.util.Locale
 
 @Composable

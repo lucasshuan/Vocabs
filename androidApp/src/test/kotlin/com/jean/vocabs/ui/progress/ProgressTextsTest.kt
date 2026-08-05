@@ -1,12 +1,12 @@
 package com.jean.vocabs.ui.progress
 
-import com.jean.vocabs.shared.domain.Steps
-import com.jean.vocabs.shared.domain.Event
-import com.jean.vocabs.shared.domain.MemoryLevel
-import com.jean.vocabs.shared.domain.LanguagePair
-import com.jean.vocabs.shared.domain.DailyQuota
 import com.jean.vocabs.shared.domain.CourseSummary
+import com.jean.vocabs.shared.domain.DailyQuota
+import com.jean.vocabs.shared.domain.Event
 import com.jean.vocabs.shared.domain.EventType
+import com.jean.vocabs.shared.domain.LanguagePair
+import com.jean.vocabs.shared.domain.MemoryLevel
+import com.jean.vocabs.shared.domain.Steps
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals

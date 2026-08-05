@@ -1,6 +1,5 @@
 package com.jean.vocabs.ui.settings
 
-import com.jean.vocabs.ui.displayName
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -61,18 +60,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.BuildConfig
 import com.jean.vocabs.R
 import com.jean.vocabs.shared.ThemePreference
-import com.jean.vocabs.ui.components.CircularFlag
-import com.jean.vocabs.ui.components.InnerHeader
-import com.jean.vocabs.ui.components.ScreenCard
-import com.jean.vocabs.ui.components.RowChevron
-import com.jean.vocabs.ui.components.IconDisc
 import com.jean.vocabs.ui.components.AppIcons
+import com.jean.vocabs.ui.components.CircularFlag
+import com.jean.vocabs.ui.components.IconDisc
+import com.jean.vocabs.ui.components.InnerHeader
 import com.jean.vocabs.ui.components.ListRow
 import com.jean.vocabs.ui.components.Motion
+import com.jean.vocabs.ui.components.RowChevron
+import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.cardOutline
 import com.jean.vocabs.ui.components.entradaSuave
 import com.jean.vocabs.ui.components.rememberHaptics
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 import java.io.File
 import kotlin.math.roundToInt

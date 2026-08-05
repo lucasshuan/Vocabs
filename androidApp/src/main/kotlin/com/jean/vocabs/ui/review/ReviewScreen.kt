@@ -51,18 +51,18 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.clozeSnippet
-import com.jean.vocabs.ui.components.SecondaryAction
-import com.jean.vocabs.ui.components.PrimaryButton
-import com.jean.vocabs.ui.components.CircularButton
-import com.jean.vocabs.ui.components.ScreenCard
-import com.jean.vocabs.ui.components.MetricCard
-import com.jean.vocabs.ui.components.EmptyState
 import com.jean.vocabs.ui.components.AppIcons
+import com.jean.vocabs.ui.components.CircularButton
+import com.jean.vocabs.ui.components.EmptyState
+import com.jean.vocabs.ui.components.MetricCard
 import com.jean.vocabs.ui.components.Motion
+import com.jean.vocabs.ui.components.PrimaryButton
+import com.jean.vocabs.ui.components.ScreenCard
+import com.jean.vocabs.ui.components.SecondaryAction
 import com.jean.vocabs.ui.components.SectionLabel
 import com.jean.vocabs.ui.components.animatedCount
-import com.jean.vocabs.ui.components.entradaSuave
 import com.jean.vocabs.ui.components.animatedFraction
+import com.jean.vocabs.ui.components.entradaSuave
 
 private const val LACUNA = "________"
 

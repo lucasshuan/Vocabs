@@ -1,7 +1,5 @@
 package com.jean.vocabs.ui.pending
 
-import com.jean.vocabs.ui.temporaryErrorText
-import com.jean.vocabs.ui.displayName
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -32,19 +30,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jean.vocabs.shared.domain.Capture
 import com.jean.vocabs.shared.domain.Entry
 import com.jean.vocabs.shared.domain.EntryStatus
-import com.jean.vocabs.ui.components.SwipeToDelete
-import com.jean.vocabs.ui.components.ScreenCard
+import com.jean.vocabs.ui.components.AppIcons
 import com.jean.vocabs.ui.components.CategoryDisc
 import com.jean.vocabs.ui.components.EmptyState
-import com.jean.vocabs.ui.components.AppIcons
-import com.jean.vocabs.ui.components.ListRow
-import com.jean.vocabs.ui.components.LanguageMark
-import com.jean.vocabs.ui.components.Pill
 import com.jean.vocabs.ui.components.LanguageFilterPill
+import com.jean.vocabs.ui.components.LanguageMark
+import com.jean.vocabs.ui.components.ListRow
+import com.jean.vocabs.ui.components.Pill
+import com.jean.vocabs.ui.components.ScreenCard
 import com.jean.vocabs.ui.components.SectionLabel
-import com.jean.vocabs.ui.components.relativeTime
+import com.jean.vocabs.ui.components.SwipeToDelete
 import com.jean.vocabs.ui.components.captureTitle
+import com.jean.vocabs.ui.components.relativeTime
+import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
+import com.jean.vocabs.ui.temporaryErrorText
 
 /**
  * Tela 05 do handoff — "Pendentes", de todos os idiomas.

@@ -1,7 +1,7 @@
 package com.jean.vocabs.server
 
-import com.jean.vocabs.contracts.ErrorResponse
 import com.jean.vocabs.contracts.ErrorCode
+import com.jean.vocabs.contracts.ErrorResponse
 import com.jean.vocabs.contracts.GenerateCardRequest
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode

@@ -1,10 +1,10 @@
 package com.jean.vocabs.ui.languages
 
-import com.jean.vocabs.ui.displayName
 import androidx.annotation.DrawableRes
 import com.jean.vocabs.R
 import com.jean.vocabs.contracts.Language
 import com.jean.vocabs.contracts.Languages
+import com.jean.vocabs.ui.displayName
 
 /**
  * O desenho de cada bandeira.
