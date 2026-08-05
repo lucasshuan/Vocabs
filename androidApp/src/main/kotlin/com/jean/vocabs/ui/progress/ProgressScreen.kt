@@ -441,8 +441,8 @@ private fun CourseDrawer(
         courses.forEach { course ->
             DrawerRow(
                 course = course,
-                chosen = course.languagePair.target == viewed,
-                onClick = { onChoose(course.languagePair.target) },
+                chosen = course.target == viewed,
+                onClick = { onChoose(course.target) },
             )
         }
 
@@ -472,7 +472,7 @@ private fun CourseDrawer(
 @Composable
 private fun DrawerRow(course: CourseSummary, chosen: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    val language = languageOf(course.languagePair.target)
+    val language = languageOf(course.target)
     val touch = rememberHaptics()
 
     Surface(

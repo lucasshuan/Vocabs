@@ -98,7 +98,7 @@ fun HomeScreen(
     LaunchedEffect(positioned) {
         if (!positioned) return@LaunchedEffect
         snapshotFlow { pager.settledPage }.collect { index ->
-            pages.getOrNull(index)?.let { vm.openCourse(it.languagePair.target) }
+            pages.getOrNull(index)?.let { vm.openCourse(it.target) }
         }
     }
 
@@ -163,7 +163,7 @@ private fun CoursePage(
     onReview: () -> Unit,
     onCapture: () -> Unit,
 ) {
-    val language = languageOf(page.languagePair.target)
+    val language = languageOf(page.target)
     val summary = page.summary
 
     Column(

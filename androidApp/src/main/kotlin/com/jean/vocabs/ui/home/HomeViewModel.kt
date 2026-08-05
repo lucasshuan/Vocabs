@@ -32,7 +32,7 @@ data class HomePage(
     val nextIn24h: Int,
     val capturedToday: List<Entry>,
 ) {
-    val languagePair: LanguagePair get() = summary.languagePair
+    val target: String get() = summary.target
 }
 
 data class HomeState(
@@ -43,7 +43,7 @@ data class HomeState(
 ) {
     val courses: List<CourseSummary> get() = pages.map { it.summary }
 
-    val activeIndex: Int get() = pages.indexOfFirst { it.languagePair.target == activeTarget }.coerceAtLeast(0)
+    val activeIndex: Int get() = pages.indexOfFirst { it.target == activeTarget }.coerceAtLeast(0)
 
     /** With one course there is no strip and no carousel: nowhere to swipe. */
     val hasCarousel: Boolean get() = pages.size > 1
@@ -94,7 +94,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val misses = entries.mapNotNull { it.retention?.nextReviewIn(now) }
         return HomePage(
             summary = CourseSummary(
-                languagePair = languagePair,
+                target = languagePair.target,
                 total = entries.size,
                 // By step, as on every screen with a number: counting by memory
                 // strength would make the same total differ between screens,

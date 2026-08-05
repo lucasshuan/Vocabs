@@ -81,10 +81,11 @@ class VocabRepositoryImpl(
         allReady().map { readyEntries ->
             val instant = now()
             readyEntries
-                .groupBy { it.languagePair }
-                .map { (languagePair, entries) ->
+                // By target, not by pair: see CourseSummary.target.
+                .groupBy { it.languagePair.target }
+                .map { (target, entries) ->
                     CourseSummary(
-                        languagePair = languagePair,
+                        target = target,
                         total = entries.size,
                         mastered = entries.count { Steps.level(it.step) == MemoryLevel.MASTERED },
                         inQueue = entries.count { it.needsReview(instant) },
@@ -125,7 +126,11 @@ class VocabRepositoryImpl(
     private fun fitsScope(scope: Scope): Flow<(LanguagePair) -> Boolean> = when (scope) {
         Scope.All -> flowOf({ _: LanguagePair -> true })
         is Scope.Course -> flowOf({ languagePair: LanguagePair -> languagePair.target == scope.target })
-        Scope.ActiveCourse -> activeCourse.map { activePair -> { languagePair: LanguagePair -> languagePair == activePair } }
+        // Reads filter by target; writes still record the whole pair, so a card
+        // regenerated later comes back in the language it was born in.
+        Scope.ActiveCourse -> activeCourse.map { activePair ->
+            { languagePair: LanguagePair -> languagePair.target == activePair.target }
+        }
     }
 
     override fun observeCaptureById(id: Long): Flow<Capture?> =

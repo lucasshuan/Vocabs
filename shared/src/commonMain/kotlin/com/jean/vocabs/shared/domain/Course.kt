@@ -21,7 +21,16 @@ data class LanguagePair(
  * how far someone climbed, and that does not drop while they sleep.
  */
 data class CourseSummary(
-    val languagePair: LanguagePair,
+    /**
+     * A course is identified by the language it teaches, not by a pair.
+     *
+     * The native language belongs to each individual card — the one it was
+     * generated in — and changing it does not make the course a different
+     * course. Keying this by the whole pair meant that switching native
+     * language stopped matching every card already stored, and the totals read
+     * zero as if the collection had been erased.
+     */
+    val target: String,
     val total: Int,
     val mastered: Int,
     val inQueue: Int = 0,

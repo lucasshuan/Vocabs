@@ -1,7 +1,6 @@
 package com.jean.vocabs.shared
 
 import com.jean.vocabs.shared.domain.CourseSummary
-import com.jean.vocabs.shared.domain.LanguagePair
 import com.jean.vocabs.shared.domain.VocabRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -20,11 +19,9 @@ fun enrolledCourses(
     preferences: Preferences,
 ): Flow<List<CourseSummary>> = combine(
     preferences.observeCourses(),
-    preferences.observeLanguagePair(),
     repository.observeCourses(),
-) { enrolled, languagePair, withCards ->
+) { enrolled, withCards ->
     enrolled.map { target ->
-        val course = LanguagePair(native = languagePair.native, target = target)
-        withCards.firstOrNull { it.languagePair == course } ?: CourseSummary(course, total = 0, mastered = 0)
+        withCards.firstOrNull { it.target == target } ?: CourseSummary(target, total = 0, mastered = 0)
     }
 }

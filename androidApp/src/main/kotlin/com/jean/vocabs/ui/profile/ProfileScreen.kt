@@ -171,7 +171,7 @@ private fun ProgressByLanguage(
                 .padding(8.dp),
         ) {
             courses.forEach { course ->
-                CourseRow(course) { onOpen(course.languagePair.target) }
+                CourseRow(course) { onOpen(course.target) }
             }
             DashedBox(
                 modifier = Modifier.fillMaxWidth(),
@@ -207,12 +207,12 @@ private fun CourseRow(course: CourseSummary, onClick: () -> Unit) {
 
     ListRow(
         onClick = onClick,
-        start = { CircularFlag(languageOf(course.languagePair.target), size = 30.dp) },
+        start = { CircularFlag(languageOf(course.target), size = 30.dp) },
         end = { RowChevron() },
     ) {
         Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = languageOf(course.languagePair.target).displayName,
+                text = languageOf(course.target).displayName,
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.weight(1f),
             )

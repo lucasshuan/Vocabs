@@ -43,10 +43,12 @@ class SavedViewModel(app: Application) : AndroidViewModel(app) {
             repository.observeEntries(list),
             repository.observeReady(Scope.All),
         ) { entries, readyEntries ->
-            val course = entries.firstOrNull()?.languagePair
+            // Counted by target: the pair a card was generated in does not decide
+            // which course it belongs to.
+            val target = entries.firstOrNull()?.languagePair?.target
             SavedState(
                 entries = entries,
-                courseTotal = readyEntries.count { it.languagePair == course },
+                courseTotal = readyEntries.count { it.languagePair.target == target },
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SavedState())

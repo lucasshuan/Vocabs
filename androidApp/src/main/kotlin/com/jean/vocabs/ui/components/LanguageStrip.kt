@@ -74,7 +74,7 @@ fun LanguageStrip(
     filling: PaddingValues = PaddingValues(horizontal = 20.dp),
 ) {
     val state = rememberLazyListState()
-    val activeIndex = courses.indexOfFirst { it.languagePair.target == activeTarget }
+    val activeIndex = courses.indexOfFirst { it.target == activeTarget }
 
     LaunchedEffect(activeIndex) {
         if (activeIndex >= 0) state.animateScrollToItem(activeIndex)
@@ -86,13 +86,13 @@ fun LanguageStrip(
         contentPadding = filling,
         modifier = modifier.fillMaxWidth(),
     ) {
-        items(courses.size, key = { courses[it].languagePair.target }) { index ->
+        items(courses.size, key = { courses[it].target }) { index ->
             val course = courses[index]
             LanguageChip(
-                language = languageOf(course.languagePair.target),
+                language = languageOf(course.target),
                 badge = course.badge,
-                selected = course.languagePair.target == activeTarget,
-                onClick = { onChoose(course.languagePair.target) },
+                selected = course.target == activeTarget,
+                onClick = { onChoose(course.target) },
             )
         }
         item(key = "add") { AddLanguageChip(onAdd) }

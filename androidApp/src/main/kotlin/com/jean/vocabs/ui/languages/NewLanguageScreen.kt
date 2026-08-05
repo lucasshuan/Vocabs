@@ -1,5 +1,9 @@
 package com.jean.vocabs.ui.languages
 
+import androidx.compose.ui.text.fromHtml
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.jean.vocabs.R
@@ -68,6 +72,16 @@ fun NewLanguageScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     var query by remember { mutableStateOf("") }
     var chosen by remember { mutableStateOf<Language?>(null) }
+    var confirming by remember { mutableStateOf<Language?>(null) }
+
+    confirming?.let { language ->
+        SwitchNativeDialog(
+            to = language,
+            from = languageOf(state.native),
+            onConfirm = { vm.switchNative(language.code); confirming = null; onBack() },
+            onDismiss = { confirming = null },
+        )
+    }
 
     val context = LocalContext.current
     val available = remember(state, query, context) { vm.available().search(query, context::nameOf) }
@@ -133,8 +147,10 @@ fun NewLanguageScreen(
             enabled = chosen != null,
             onClick = {
                 chosen?.let { language ->
-                    if (forNative) vm.switchNative(language.code) else vm.enroll(language.code)
-                    onBack()
+                    // Enrolling adds a course and needs no warning. Switching the
+                    // language you speak changes what every future card is written
+                    // in, and used to look like losing the ones you already had.
+                    if (forNative) confirming = language else { vm.enroll(language.code); onBack() }
                 }
             },
             modifier = Modifier.padding(bottom = 6.dp).navigationBarsPadding(),
@@ -230,4 +246,39 @@ private fun SearchField(value: String, onChange: (String) -> Unit) {
             }
         }
     }
+}
+
+/**
+ * The confirmation before the language you speak changes.
+ *
+ * It exists because the change is invisible until the next card is generated,
+ * and because the screen behind it used to read zero afterwards — so the fear
+ * it answers is "did I just delete everything". Hence the reassurance first,
+ * both languages named, and an explicit line separating this from the app's own
+ * language, which is the setting immediately above it.
+ */
+@Composable
+private fun SwitchNativeDialog(
+    to: Language,
+    from: Language,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.switch_native_title, to.displayName)) },
+        text = {
+            Text(
+                AnnotatedString.fromHtml(
+                    stringResource(R.string.switch_native_body, to.displayName, from.displayName)
+                )
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text(stringResource(R.string.switch_native_confirm)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) }
+        },
+    )
 }

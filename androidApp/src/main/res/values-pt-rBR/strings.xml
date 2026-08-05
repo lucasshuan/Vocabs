@@ -412,6 +412,10 @@
         <item quantity="other">%1$d dias seguidos</item>
     </plurals>
 
+    <string name="switch_native_title">Trocar para %1$s?</string>
+    <string name="switch_native_body">Suas palavras, fichas e progresso continuam exatamente onde estão — nada é excluído.\n\nDaqui em diante, as fichas novas saem em %1$s: traduções, definições e explicações. As fichas que você já tem ficam no %2$s em que foram criadas.\n\nIsto não muda o idioma do app. Para trocar botões e menus, use &lt;b&gt;Idioma do app&lt;/b&gt;.</string>
+    <string name="switch_native_confirm">Trocar</string>
+
     <!-- Configurações -->
     <string name="settings_section_language">Idioma</string>
     <string name="settings_app_language">Idioma do app</string>

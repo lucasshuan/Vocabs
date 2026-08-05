@@ -439,6 +439,17 @@
         <item quantity="other">%1$d days in a row</item>
     </plurals>
 
+    <!--
+      Shown before the language you speak changes. It leads with the
+      reassurance because that is the actual fear: the counts used to read
+      zero afterwards, and it looked like the collection had been erased.
+      Naming both languages is what makes the change legible, and the last
+      line separates this from the sibling setting next to it.
+    -->
+    <string name="switch_native_title">Switch to %1$s?</string>
+    <string name="switch_native_body">Your words, cards and progress all stay exactly where they are — nothing is deleted.\n\nFrom now on, new cards will be written in %1$s: translations, definitions and explanations. Cards you already have keep the %2$s they were created with.\n\nThis does not change the app\'s language. To change buttons and menus, use &lt;b&gt;App language&lt;/b&gt;.</string>
+    <string name="switch_native_confirm">Switch</string>
+
     <!-- Settings -->
     <string name="settings_title">Settings</string>
     <string name="settings_import_soon">Import is not available yet — coming soon.</string>
