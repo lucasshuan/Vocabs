@@ -23,12 +23,12 @@ class CardViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
     }
 
-    /** A força de memória já resolvida para agora — o relógio mora no repositório. */
+    /** Memory strength already resolved for now — the clock lives in the repository. */
     fun observeMemory(id: Long): StateFlow<RetentionNow?> =
         repository.observeRetention(id)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** Usado quando a geração falhou (servidor fora do ar, rede caiu). */
+    /** Used when generation failed (server down, network dropped). */
     fun tryAgain() {
         AppContainer.scope.launch { repository.generateCard(id) }
     }

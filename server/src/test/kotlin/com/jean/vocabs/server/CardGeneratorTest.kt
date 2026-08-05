@@ -45,8 +45,8 @@ class GeradorDeFichaTest {
 
     @Test
     fun `languagePair desconhecido nao vira o languagePair padrao`() {
-        // Recusar é o ponto: cair no padrão devolveria uma ficha em inglês para
-        // uma palavra alemã, e a pessoa só descobriria lendo.
+        // Refusing is the point: falling back would return an English card for
+        // a German word, and the person would only find out by reading it.
         assertNull(LanguagePairSpec.de("pt-BR", "klingon"))
         assertNull(LanguagePairSpec.de("elfico", "en"))
     }

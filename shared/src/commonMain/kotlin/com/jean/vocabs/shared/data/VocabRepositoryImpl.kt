@@ -56,12 +56,12 @@ class VocabRepositoryImpl(
     private val io: CoroutineDispatcher,
     private val now: () -> Long,
     /**
-     * O curso aberto, como fluxo.
+     * The active course, as a flow.
      *
-     * Entra pelo construtor porque a escolha é uma preferência do aparelho e o
-     * repositório é comum aos dois lados do KMP. Ser fluxo (e não um getter) é o
-     * que faz todas as telas se refazerem sozinhas quando a pessoa troca de
-     * idioma na faixa — sem isso cada ViewModel teria que se reinscrever.
+     * Enters through the constructor because the choice is a device preference
+     * and the repository is common to both KMP sides. Being a flow rather than a
+     * getter is what makes every screen rebuild itself when the course changes in
+     * the strip; otherwise each ViewModel would have to resubscribe.
      */
     private val activeCourse: Flow<LanguagePair> = flowOf(LanguagePair.DEFAULT),
     private val removeFile: (String) -> Unit = {},
@@ -106,13 +106,13 @@ class VocabRepositoryImpl(
             .no(scope) { it.languagePair }
 
     /**
-     * O recorte de [Scope] aplicado a uma lista já montada.
+     * A [Scope] applied to an already-built list.
      *
-     * Filtrar em memória e não em SQL é de propósito: o curso aberto é um fluxo
-     * de preferência, e uma consulta parametrizada por ele teria que ser refeita
-     * — e o cursor reaberto — a cada troca de idioma na faixa. A lista inteira de
-     * fichas de um aparelho cabe folgada na memória; o cursor recriado a cada
-     * deslize do carrossel, não.
+     * Filtering in memory rather than in SQL is deliberate: the active course is a
+     * preference flow, and a query parameterised by it would have to be rebuilt —
+     * and the cursor reopened — on every swipe of the carousel. A device's whole
+     * card list fits in memory comfortably; the recreated cursor does not fit the
+     * frame budget.
      */
     private fun <T> Flow<List<T>>.no(scope: Scope, languagePair: (T) -> LanguagePair): Flow<List<T>> =
         combine(fitsScope(scope)) { itens, cabe -> itens.filter { cabe(languagePair(it)) } }
@@ -131,8 +131,8 @@ class VocabRepositoryImpl(
         queries.findEntryById(id).asFlow().mapToOneOrNull(io).map { it?.let(::toDomain) }
 
     override fun observeEntries(ids: List<Long>): Flow<List<Entry>> {
-        // `IN ()` não é SQL válido no SQLite, e uma lista vazia é o estado normal
-        // da tela de confirmação enquanto o argumento de navegação não chegou.
+        // `IN ()` is not valid SQLite, and an empty list is the normal state of
+        // the confirmation screen before the navigation argument arrives.
         if (ids.isEmpty()) return flowOf(emptyList())
         return queries.listEntriesByIds(ids).asFlow().mapToList(io)
             .map { lines -> lines.map(::toDomain) }
@@ -162,14 +162,14 @@ class VocabRepositoryImpl(
             dayStreak = streak.dayStreak,
             reviewedToday = streak.reviewedToday,
             bestStreak = bestStreakOf(days),
-            // O que já saiu hoje sai da própria retenção, e não de `dia_revisado`:
-            // aquela tabela conta o dia inteiro, de todos os cursos juntos, e a
-            // quota é do curso aberto.
+            // What is already done today comes from retention itself, not from
+            // `reviewed_day`: that table counts the whole day across every course,
+            // and the quota belongs to the active one.
             //
-            // O corte de 48h antes da conversão não é otimização prematura:
-            // `localDayOf` é uma consulta ao banco, e sem ele seria uma por
-            // palavra a cada emissão do fluxo. Nenhuma revisão de hoje pode estar
-            // fora dessa janela, então o corte não muda a resposta.
+            // The 48h cut before the conversion is not premature optimisation:
+            // `localDayOf` is a database query, and without it there would be one
+            // per word on every emission. No review from today can fall outside
+            // that window, so the cut does not change the answer.
             quota = DailyQuota(
                 done = readyEntries.count { entry ->
                     val retention = entry.retention ?: return@count false
@@ -325,11 +325,12 @@ class VocabRepositoryImpl(
     }
 
     /**
-     * Em que par esta captura nasce — o escolhido na folha, ou o curso aberto.
+     * Which pair this capture is born into — the one chosen on the sheet, or the
+     * active course.
      *
-     * Desde que o idioma passou a ser decidido no ato da gravação, o curso aberto
-     * virou só o palpite inicial: capturar em espanhol estando na página do
-     * inglês é um caso normal, e o que chega aqui é a decisão já tomada.
+     * Since the language became a decision made while recording, the active course
+     * is only the opening guess: capturing in Spanish while on the English page is
+     * a normal case, and what arrives here is the decision already made.
      */
     private suspend fun courseOfCapture(languagePair: LanguagePair?): LanguagePair = languagePair ?: activeCourse.first()
 
@@ -377,8 +378,8 @@ class VocabRepositoryImpl(
         }
 
     /**
-     * Uma linha na linha do tempo. Sempre dentro da transação de quem chamou —
-     * um evento sem o fato que ele descreve seria pior que evento nenhum.
+     * One row on the timeline. Always inside the caller's transaction — an event
+     * without the fact it describes would be worse than no event.
      */
     private fun note(entryId: Long, type: EventType, detail: String? = null) {
         val instant = now()
@@ -428,8 +429,8 @@ class VocabRepositoryImpl(
                         incorrect_count = initial.misses.toLong(),
                         id = id,
                     )
-                    // Só na primeira vez: regerar uma ficha que já existia não é
-                    // um acontecimento do dia, é conserto.
+                    // First time only: regenerating a card that already existed is
+                    // not something that happened today, it is a repair.
                     note(id, EventType.CARD_READY)
                 }
                 val month = localMonthOf(now())
@@ -485,9 +486,9 @@ class VocabRepositoryImpl(
                 type = if (correct) EventType.CORRECT else EventType.INCORRECT,
                 detail = fresh.reviews.toString(),
             )
-            // A mudança de nível é o que a linha do tempo chama de "virou
-            // dominada", e ela só existe comparando antes e depois — depois de
-            // gravado, o antes some.
+            // The level change is what the timeline calls "became mastered", and
+            // it only exists by comparing before and after — once written, the
+            // before is gone.
             val rose = Steps.level(Steps.of(fresh))
             if (rose != Steps.level(Steps.of(previous))) {
                 note(entryId = id, type = EventType.LEVELED_UP, detail = rose.name)

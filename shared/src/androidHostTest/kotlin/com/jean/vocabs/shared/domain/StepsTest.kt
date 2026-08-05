@@ -27,11 +27,11 @@ class StepsTest {
         assertEquals(MemoryLevel.FAMILIAR, Steps.level(4))
         assertEquals(MemoryLevel.MASTERED, Steps.level(5))
 
-        // "haywire · degrau 3 de 5 · 1 acerto para familiar"
+        // step 3 of 5, one hit from familiar
         assertEquals(1, Steps.hitsToLevelUp(3))
-        // "on the fence · degrau 2 de 5 · 2 acertos para familiar"
+        // step 2 of 5, two hits from familiar
         assertEquals(2, Steps.hitsToLevelUp(2))
-        // "verdant · degrau 4 de 5 · 1 acerto para dominada"
+        // step 4 of 5, one hit from mastered
         assertEquals(1, Steps.hitsToLevelUp(4))
         assertEquals(0, Steps.hitsToLevelUp(5))
     }
@@ -42,22 +42,22 @@ class StepsTest {
         repeat(3) { retention = retention.after(correct = true, now = now) }
         assertEquals(4, Steps.of(retention))
 
-        // Um mês parado zera a força de memória, mas o degrau é o que já foi
-        // feito — ele não anda para trás sozinho.
+        // A month idle zeroes memory strength, but the step is what was already
+        // done — it does not walk backwards on its own.
         val oneMonth = now + 30L * 86_400_000L
         assertEquals(0.0, retention.pointsAt(oneMonth))
         assertEquals(4, Steps.of(retention))
 
-        // Um erro desfaz 2,7 acertos (MULTIPLICADOR_ERRO = 3 contra DIVISOR_ACERTO
-        // = 1,5), então quem estava no quarto degrau volta para o primeiro. A
-        // escada herda o rigor do modelo de retenção em vez de ter o seu próprio.
+        // One miss undoes 2.7 hits (MISS_MULTIPLIER = 3 against HIT_DIVISOR =
+        // 1.5), so a word on the fourth step returns to the first. The ladder
+        // inherits the retention model's severity rather than having its own.
         retention = retention.after(correct = false, now = oneMonth)
         assertEquals(1, Steps.of(retention))
     }
 
     @Test
     fun `best streak acha a largest run de days consecutive`() {
-        // Em ordem decrescente e sem repetição, como sai do banco.
+        // Descending and without repeats, as it comes out of the database.
         assertEquals(0, bestStreakOf(emptyList()))
         assertEquals(1, bestStreakOf(listOf(10L)))
         assertEquals(3, bestStreakOf(listOf(20L, 19L, 18L, 15L, 13L, 12L)))

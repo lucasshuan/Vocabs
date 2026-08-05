@@ -18,26 +18,26 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
 
 /**
- * Composition root manual. Koin ou Hilt para quatro objetos seria cerimônia sem
- * retorno — quando a Fase 3 trouxer mais peças, dá para trocar sem tocar no resto.
+ * Manual composition root. Koin or Hilt for four objects would be ceremony
+ * without return; it can be swapped in later without touching the rest.
  */
 object AppContainer {
 
     /**
-     * O servidor visto de um aparelho físico: `IP-da-máquina:porta`.
+     * The server as a physical device sees it: `machine-ip:port`.
      *
-     * Vem do build (`BuildConfig.SERVIDOR_LAN`), que detecta o IP da máquina na
-     * rede local ou lê `SERVIDOR_LAN` do `.env`. Fica vazio quando não há rede
-     * nenhuma na hora de compilar.
+     * Comes from the build (`BuildConfig.LAN_SERVER`), which detects the
+     * machine's IP on the local network or reads `SERVER_LAN` from `.env`. Empty
+     * when there was no network at compile time.
      */
     var lanServer: String = ""
 
-    /** Precisa bater com o APP_TOKEN definido no ambiente do servidor. */
+    /** Must match the APP_TOKEN set in the server's environment. */
     var token: String = "token-de-teste-local"
 
     /**
-     * Sobrescreve URL e token quando a nuvem entrar — hoje só o `androidApp`
-     * chama isto, passando o que o build assou no APK.
+     * Overrides URL and token when the cloud arrives — today only `androidApp`
+     * calls this, passing what the build baked into the APK.
      */
     fun configurar(lanServer: String, token: String) {
         this.lanServer = lanServer
@@ -45,9 +45,9 @@ object AppContainer {
     }
 
     /**
-     * 10.0.2.2 é como o emulador enxerga o localhost da sua máquina — um endereço
-     * que não existe em aparelho nenhum. Escolher errado não dá erro claro: dá
-     * timeout, que é fácil confundir com servidor fora do ar.
+     * 10.0.2.2 is how the emulator sees your machine's localhost — an address that
+     * exists on no real device. Choosing wrong gives no clear error: it gives a
+     * timeout, which is easy to mistake for a server that is down.
      */
     private val baseUrl: String
         get() = if (Device.isEmulator) {
@@ -57,11 +57,11 @@ object AppContainer {
         }
 
     /**
-     * Scope de aplicação para a geração da ficha.
+     * Application scope for card generation.
      *
-     * Não pode ser o viewModelScope da tela de captura: assim que ela é fechada
-     * (o que acontece imediatamente após salvar, por design), o escopo seria
-     * cancelado e a entrada ficaria presa em PENDING para sempre.
+     * Cannot be the capture screen's viewModelScope: it closes immediately after
+     * saving by design, and the cancelled scope would leave the entry stuck in
+     * PENDING forever.
      */
     val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -88,8 +88,8 @@ object AppContainer {
                 json(Json { ignoreUnknownKeys = true })
             }
             install(HttpTimeout) {
-                // Geração com IA é lenta. O default do Ktor derrubaria a
-                // requisição no meio e a ficha nunca chegaria.
+                // AI generation is slow. Ktor's default would drop the request
+                // midway and the card would never arrive.
                 requestTimeoutMillis = 90_000
                 connectTimeoutMillis = 15_000
                 socketTimeoutMillis = 90_000

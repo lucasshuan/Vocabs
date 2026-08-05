@@ -47,23 +47,20 @@ import com.jean.vocabs.ui.languages.languageOf
 import com.jean.vocabs.ui.temporaryErrorText
 
 /**
- * Tela 05 do handoff — "Pendentes", de todos os idiomas.
+ * "Pending", across every language.
  *
- * O filtro por bandeira é escolha manual e mora **na composição**, não no
- * ViewModel: sair da aba o desfaz. Um recorte que sobrevivesse à saída faria a
- * fila parecer menor do que é na próxima visita, que é exatamente o erro que
- * este handoff veio corrigir.
+ * The flag filter is a manual choice and lives **in the composition**, not in the
+ * ViewModel: leaving the tab undoes it. A slice that survived would make the
+ * queue look smaller than it is on the next visit.
  *
- * Em toda linha o subtexto é o idioma. O estado de transcrição saiu dali porque
- * o disco colorido à esquerda já diz se aquilo é áudio, foto ou texto — e o
- * idioma, que é decidido na gravação, não aparecia em lugar nenhum.
+ * Every row's subtext is the language. Transcription state left it because the
+ * colored disc already says whether it is audio, photo or text — while the
+ * language, decided at recording time, appeared nowhere.
  *
- * Todo cartão daqui sai arrastando para o lado. É a única tela do app em que
- * isso vale, e por um motivo: fila é a coisa que se limpa. Descartar era, até
- * aqui, uma viagem de ida e volta — abrir a captura, achar o botão, confirmar —
- * para dizer "isto não era nada", e uma fila que custa isso para encolher é uma
- * fila que ninguém encolhe. O gesto se explica em [ArrastarParaExcluir]; a
- * segunda chance, em [FaixaDeDesfazer].
+ * Every card here leaves by being dragged sideways. It is the only screen where
+ * that applies, for one reason: a queue is the thing you clear. Discarding used
+ * to be a round trip — open the capture, find the button, confirm — to say "this
+ * was nothing", and a queue that costs that to shrink is a queue nobody shrinks.
  */
 @Composable
 fun PendingScreen(
@@ -174,13 +171,13 @@ fun PendingScreen(
 }
 
 /**
- * A linha que ensina o gesto.
+ * The row that teaches the gesture.
  *
- * Um gesto que só existe embaixo do dedo é um gesto que metade das pessoas nunca
- * encontra: não há seta, sombra ou borda que anuncie um arrasto. A frase fica —
- * não é um balão de primeira visita — porque ela custa uma linha de 12 sp em
- * cinza e resolve a única pergunta que a tela deixaria em aberto. Some junto com
- * a fila: numa tela vazia não há cartão nenhum para arrastar.
+ * A gesture that only exists under the finger is one half the people never find:
+ * no arrow, shadow or border announces a drag. The sentence stays — it is not a
+ * first-run bubble — because it costs one 12 sp grey line and answers the only
+ * question the screen would leave open. It goes with the queue: an empty screen
+ * has no card to drag.
  */
 @Composable
 private fun SwipeHint() {

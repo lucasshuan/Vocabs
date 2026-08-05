@@ -3,23 +3,21 @@ package com.jean.vocabs.server
 import java.io.File
 
 /**
- * Configuração em duas camadas: variável de ambiente primeiro, arquivo `.env`
- * local depois.
+ * Configuration in two layers: environment variable first, local `.env` after.
  *
- * O arquivo existe porque redigitar dois segredos a cada terminal novo é fricção
- * que se paga todo dia — e fricção diária é exatamente o que este projeto existe
- * para eliminar. A variável de ambiente mantém precedência para que CI e produção
- * não dependam de arquivo nenhum.
+ * The file exists because retyping two secrets in every new terminal is friction
+ * that gets paid daily. The environment variable keeps precedence so CI and
+ * production depend on no file.
  *
- * O `.env` está no .gitignore. Nunca commite um.
+ * `.env` is in .gitignore. Never commit one.
  */
 object Config {
 
     private val doArquivo: Map<String, String> by lazy { readLocalFile() }
 
-    // O takeIf nos dois lados importa: `APP_TOKEN=` no arquivo (ou exportada
-    // vazia) precisa contar como ausente, senão o servidor sobe com token vazio
-    // e aceita qualquer requisição sem header.
+    // The takeIf on both sides matters: `APP_TOKEN=` in the file (or exported
+    // empty) has to count as absent, otherwise the server comes up with an empty
+    // token and accepts any request without a header.
     operator fun get(key: String): String? =
         System.getenv(key)?.takeIf { it.isNotBlank() }
             ?: doArquivo[key]?.takeIf { it.isNotBlank() }
@@ -31,11 +29,11 @@ object Config {
     )
 
     /**
-     * Procura o `.env` subindo a partir do diretório de trabalho.
+     * Looks for `.env` walking up from the working directory.
      *
-     * A subida não é preciosismo: o Gradle roda `:server:run` com o working dir
-     * em `server/`, não na raiz do repositório, então procurar só em `.` acharia
-     * nada e o arquivo pareceria ignorado.
+     * The walk is not fussiness: Gradle runs `:server:run` with the working
+     * directory in `server/`, not the repository root, so looking only in `.`
+     * would find nothing and the file would seem ignored.
      */
     private fun readLocalFile(): Map<String, String> {
         val file = generateSequence(File("").absoluteFile) { it.parentFile }

@@ -7,21 +7,19 @@ import com.jean.vocabs.contracts.Languages
 import com.jean.vocabs.ui.displayName
 
 /**
- * O desenho de cada bandeira.
+ * Each flag's drawing.
  *
- * As bandeiras são a coleção **circle-flags** (MIT), convertida de SVG para
- * VectorDrawable sem redesenhar nada: são desenhos feitos à mão, com as
- * proporções e os brasões certos. A versão anterior tinha duas delas
- * aproximadas em `Canvas`, e essa conta não fecha para 43 idiomas — a bandeira
- * do Brasil não é um losango com um círculo, e a da Coreia do Sul não é
- * desenhável de cabeça.
+ * The flags are the **circle-flags** collection (MIT), converted from SVG to
+ * VectorDrawable without redrawing anything: hand-made drawings with the right
+ * proportions and coats of arms. Approximating them in `Canvas` does not scale to
+ * 43 languages — Brazil's flag is not a diamond with a circle.
  *
- * Emoji também não serve: o indicador regional depende da fonte do sistema e
- * vira retângulo ou duas letras em vários aparelhos.
+ * Emoji does not serve either: the regional indicator depends on the system font
+ * and becomes a rectangle or two letters on many devices.
  *
- * O mapa é explícito de propósito. `getIdentifier()` resolveria o nome em
- * runtime numa linha, e é exatamente o tipo de referência que o R8 não enxerga:
- * as 43 bandeiras seriam removidas do APK e só a tela mostraria o estrago.
+ * The map is explicit on purpose. `getIdentifier()` would resolve the name at
+ * runtime in one line, and is exactly the kind of reference R8 cannot see: all 43
+ * flags would be stripped from the APK and only the screen would show the damage.
  */
 @DrawableRes
 fun flagOf(language: Language): Int = when (language.country) {
@@ -72,16 +70,15 @@ fun flagOf(language: Language): Int = when (language.country) {
 }
 
 /**
- * O idioma de um código, com o inglês como último recurso.
+ * The language for a code, falling back to English.
  *
- * A interface precisa de **alguma** coisa para desenhar; devolver nulo aqui
- * espalharia um `?:` por cada linha de cada tela. Quem precisa saber que o
- * código é desconhecido — o servidor, na hora de gerar — usa [Languages.de], que
- * devolve nulo e recusa.
+ * The interface needs **something** to draw; returning null here would spread a
+ * `?:` across every row of every screen. Whoever must know the code is unknown —
+ * the server, at generation time — uses [Languages.of], which returns null.
  */
 fun languageOf(code: String?): Language = Languages.of(code) ?: Languages.ENGLISH
 
-/** Filtro da busca da tela "Novo idioma": ignora acento e caixa. */
+/** The search filter of the "New language" screen: ignores accents and case. */
 fun List<Language>.search(term: String): List<Language> {
     val wanted = term.trim().withoutAccents()
     if (wanted.isEmpty()) return this
@@ -89,8 +86,8 @@ fun List<Language>.search(term: String): List<Language> {
 }
 
 /**
- * Sem acento e em caixa baixa. Quem digita "japones" na pressa quer achar
- * "Japonês", e um filtro que exige o circunflexo devolve lista vazia.
+ * Accent-free and lower case. Someone typing "japones" in a hurry wants to find
+ * "Japonês", and a filter demanding the circumflex returns an empty list.
  */
 private fun String.withoutAccents(): String = lowercase()
     .replace(ACCENTED) { found -> WITHOUT_ACCENT[ACCENTED_TEXT.indexOf(found.value)].toString() }

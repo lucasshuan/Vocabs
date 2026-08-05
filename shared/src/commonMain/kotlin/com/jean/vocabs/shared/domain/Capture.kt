@@ -2,7 +2,7 @@ package com.jean.vocabs.shared.domain
 
 import com.jean.vocabs.contracts.TargetType
 
-/** O contexto bruto do qual podem nascer uma ou várias fichas. */
+/** The raw context one or several cards can be born from. */
 data class Capture(
     val id: Long,
     val snippet: String?,
@@ -13,7 +13,7 @@ data class Capture(
     val mediaPath: String?,
     val durationMs: Long?,
     val transcriptionError: String?,
-    /** O course em que ela nasceu. Um snippet está numa língua só. */
+/** The course it was born in. A snippet is in one language only. */
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
 ) {
     val awaitingSelection: Boolean get() = status == CaptureStatus.AWAITING_SELECTION
@@ -31,7 +31,7 @@ enum class CaptureStatus {
     }
 }
 
-/** Um intervalo confirmado dentro do snippet. Intervalos podem se sobrepor. */
+/** A confirmed range inside the snippet. Ranges may overlap. */
 data class SelectedTarget(
     val text: String,
     val start: Int,

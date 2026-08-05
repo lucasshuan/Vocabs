@@ -5,16 +5,13 @@ import com.jean.vocabs.contracts.ErrorCode
 import com.jean.vocabs.contracts.TargetType
 
 /**
- * Um alvo confirmado dentro de uma captura e, quando pronta, sua ficha.
+ * A confirmed target inside a capture and, once ready, its card.
  *
- * [ficha] reusa o tipo do contrato de propósito: um terceiro formato só para o
- * domínio seria uma cópia a mais para manter em sincronia, sem ganho nenhum.
+ * [card] deliberately reuses the contract type: a third shape just for the domain
+ * would be one more copy to keep in sync, for nothing.
  *
- * [trecho] pode ser nulo apenas em dados legados incompletos. Capturas cruas de
- * mídia vivem em [Capture] e só ganham entradas depois da seleção.
- *
- * [retencao] segue a mesma regra de [ficha]: existe se e somente se há ficha
- * para revisar.
+ * [retention] follows the same rule as [card]: it exists if and only if there is
+ * a card to review.
  */
 data class Entry(
     val id: Long,
@@ -31,19 +28,19 @@ data class Entry(
     val mediaPath: String?,
     val card: CardResponse?,
     val retention: Retention?,
-    /** Qual falha, para a tela escolher o text. Nulo quando não houve. */
+    /** Which failure, so the screen can pick the wording. Null when there was none. */
     val errorCode: ErrorCode?,
-    /** O que não se traduz: a frase crua do provedor, ou o status HTTP. */
+    /** What does not translate: the provider's raw sentence, or the HTTP status. */
     val errorDetail: String?,
-    /** Herdado da capture: o par em que esta card nasceu e no qual ela é regerada. */
+    /** Inherited from the capture: the pair this card is born in and regenerated in. */
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
 ) {
     fun needsReview(now: Long): Boolean = retention?.needsReview(now) == true
 
-    /** Em que degrau da escada de "O que falta" ela está. */
+    /** Which rung of the "What's left" ladder it is on. */
     val step: Int get() = Steps.of(retention)
 
-    /** O que mostrar como título quando ainda não há target digitado. */
+    /** What to show as a title while no target has been typed. */
     val title: String
         get() = target?.takeIf { it.isNotBlank() } ?: when (format) {
             CaptureFormat.PHOTO -> "Foto sem transcrição"
@@ -84,11 +81,11 @@ private fun duplicatePriority(status: EntryStatus): Int = when (status) {
 }
 
 /**
- * Como o sinal entrou no app.
+ * How the signal entered the app.
  *
- * O ponto da Fase 1.5 é que cada contexto tem uma restrição diferente — jogando
- * você não quer sair do jogo, lendo as mãos estão ocupadas. Foto e áudio existem
- * para capturar em segundos e resolver depois, não para serem processados na hora.
+ * Each context has a different constraint — gaming, you do not want to leave the
+ * game; reading, your hands are busy. Photo and audio exist to capture in seconds
+ * and resolve later, not to be processed on the spot.
  */
 enum class CaptureFormat {
     TEXT,
@@ -102,11 +99,11 @@ enum class CaptureFormat {
 }
 
 /**
- * O que sustenta o critério de saída da Fase 1: a captura grava e volta na hora
- * (PENDING), e a geração da ficha acontece depois, em background.
+ * A capture records and returns immediately (PENDING); generating the card
+ * happens afterwards, in the background.
  *
- * O rascunho agora pertence a [Capture]; uma entrada só existe depois que um
- * alvo foi confirmado.
+ * The draft belongs to [Capture]; an entry only exists once a target has been
+ * confirmed.
  */
 enum class EntryStatus {
     PENDING,

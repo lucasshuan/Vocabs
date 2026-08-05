@@ -37,20 +37,19 @@ import androidx.compose.ui.unit.dp
 data class Tab(val route: String, val icon: ImageVector, val label: String, val badge: Int = 0)
 
 /**
- * Cinco lugares, só ícones.
+ * Five places, icons only.
  *
- * O handoff tira os rótulos de baixo dos ícones de propósito: quatro palavras
- * competindo com o botão de captura tiram dele a única coisa que ele precisa ter
- * — ser o alvo óbvio. O nome continua existindo como `contentDescription`, que é
- * o que o leitor de tela lê.
+ * The labels are deliberately absent: four words competing with the capture
+ * button take away the one thing it has to be — the obvious target. The name
+ * still exists as `contentDescription`, which is what the screen reader reads.
  */
 /**
- * A barra cuida das quatro abas e deixa o meio vago.
+ * The bar handles the four tabs and leaves the middle empty.
  *
- * O botão de captura **não** mora aqui, e a razão é técnica antes de ser de
- * desenho: `Surface` recorta o próprio conteúdo, e o leque precisa desenhar
- * acima da borda de cima da barra. Quem o compõe é a camada de cima, com a mesma
- * geometria — daí [ALTURA_DA_BARRA] ser público.
+ * The capture button does **not** live here, and the reason is technical before
+ * it is visual: `Surface` clips its own content, and the fan has to draw above
+ * the bar's top edge. The layer above composes it with the same geometry, which
+ * is why [BAR_HEIGHT] is public.
  */
 @Composable
 fun BottomBar(
@@ -79,17 +78,16 @@ fun BottomBar(
     }
 }
 
-/** A altura da fileira de ícones, sem os insets. O botão de captura se alinha por ela. */
+/** The icon row's height, without insets. The capture button aligns to it. */
 val BAR_HEIGHT = 68.dp
 
 /**
- * Um dos quatro lugares.
+ * One of the four places.
  *
- * Sem rótulo escrito, o ícone é a única coisa que responde ao toque — e uma troca
- * seca de cor num desenho de 23 dp é quase invisível no canto do olho. O ícone da
- * aba que acaba de ser aberta cresce 12% e volta, com a mola de [Movimento]: é o
- * mesmo "cedeu e voltou" dos cartões, ao contrário, e é o que confirma o toque
- * antes mesmo de a tela nova ter desenhado.
+ * With no written label the icon is the only thing answering the touch, and a
+ * hard color change on a 23 dp drawing is nearly invisible at the edge of vision.
+ * The icon of the tab just opened grows 12% and returns, which confirms the touch
+ * before the new screen has even drawn.
  */
 @Composable
 private fun TabItem(tab: Tab, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
@@ -120,10 +118,10 @@ private fun TabItem(tab: Tab, isSelected: Boolean, onClick: () -> Unit, modifier
                     tint = tinta,
                     modifier = Modifier.size(23.dp),
                 )
-                // O selo entra com mola e sai encolhendo: a fila de Pendentes
-                // muda sozinha, ao fundo, enquanto a pessoa está noutra aba, e
-                // um número que aparece do nada no canto do ícone não se lê como
-                // "chegou algo" — se lê como um defeito de desenho.
+                // The badge springs in and shrinks out: the Pending queue changes
+                // on its own in the background, and a number appearing from
+                // nowhere in the icon's corner does not read as "something
+                // arrived" — it reads as a drawing defect.
                 AnimatedVisibility(
                     visible = tab.badge > 0,
                     enter = scaleIn(Motion.elasticSpring()) + fadeIn(tween(Motion.FAST)),

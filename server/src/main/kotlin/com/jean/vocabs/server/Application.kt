@@ -33,8 +33,8 @@ fun main() {
 fun Application.module() {
     val log = LoggerFactory.getLogger("vocabs")
 
-    // Falhar no boot é melhor que falhar na primeira captura: sem token, todo
-    // request seria 401 e você descobriria isso com o celular na mão.
+    // Failing at boot beats failing on the first capture: with no token every
+    // request would be a 401, discovered with the phone already in hand.
     val expectedToken = Config.obrigatorio("APP_TOKEN")
 
     val generator = CardGenerator()
@@ -44,16 +44,17 @@ fun Application.module() {
     }
     install(CallLogging)
     install(StatusPages) {
-        // Antes do handler geral: um par de idiomas que não existe não melhora
-        // se o app tentar de novo, e 503 faria o app tentar.
+        // Before the general handler: a language pair that does not exist will not
+        // improve on a retry, and a 503 would make the app retry.
         exception<UnknownLanguagePair> { call, causa ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse(ErrorCode.UNKNOWN_LANGUAGE_PAIR.name, causa.message))
         }
         exception<Throwable> { call, causa ->
             log.error("Falha ao gerar card", causa)
-            // 503 e não 500: para o app isso é "tente de novo", não "desista".
-            // A causa completa fica no log; para a tela vai só a primeira linha,
-            // limitada — senão um erro da API vira um dump de JSON no celular.
+            // 503 rather than 500: to the app that means "try again", not "give
+            // up". The full cause stays in the log; only the first line, capped,
+            // goes to the screen — otherwise an API error becomes a JSON dump on
+            // the phone.
             val detail = causa.message
                 ?.lineSequence()
                 ?.firstOrNull()
@@ -84,7 +85,7 @@ fun Application.module() {
                 return@post
             }
 
-            // O SDK da Anthropic é bloqueante; sem isto ele trava uma thread do Netty.
+            // The Anthropic SDK is blocking; without this it holds a Netty thread.
             val card = withContext(Dispatchers.IO) { generator.gerar(request) }
             call.respond(card)
         }

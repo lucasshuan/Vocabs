@@ -7,8 +7,8 @@ import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
 
 /**
- * Ícones desenhados por path data (viewport 24x24), no traço do Material.
- * Evita puxar a dependência material-icons inteira por meia dúzia de glifos.
+ * Icons drawn from path data (24x24 viewport), in Material's stroke. Avoids
+ * pulling in the whole material-icons dependency for a handful of glyphs.
  */
 private fun icon(name: String, data: String): ImageVector =
     ImageVector.Builder(
@@ -122,7 +122,7 @@ object AppIcons {
         )
     }
 
-    /** Palavras puxando palavras — a rede de associações da Fase 3. */
+    /** Words pulling words — the association network. */
     val Network: ImageVector by lazy {
         icon(
             "rede",
@@ -138,12 +138,12 @@ object AppIcons {
         icon("casa", "M10,20v-6h4v6h5v-8h3L12,3 2,12h3v8z")
     }
 
-    /** Seta para a direita: "isto abre outra tela". */
+    /** Right arrow: "this opens another screen". */
     val Forward: ImageVector by lazy {
         icon("avancar", "M10,6L8.59,7.41 13.17,12l-4.58,4.59L10,18l6,-6z")
     }
 
-    /** Seta para baixo: "isto abre uma lista de opções". */
+    /** Down arrow: "this opens a list of options". */
     val Expand: ImageVector by lazy {
         icon("expandir", "M7.41,8.59L12,13.17l4.59,-4.58L18,10l-6,6 -6,-6z")
     }
@@ -156,10 +156,8 @@ object AppIcons {
     }
 
     /**
-     * Relógio para a aba de Pendentes.
-     *
-     * A bandeja de "inbox" dizia de onde as capturas vêm; o relógio diz o que
-     * elas estão fazendo — esperando você. É o significado que importa na aba.
+     * A clock for the Pending tab. An inbox tray says where captures come from;
+     * the clock says what they are doing — waiting for you.
      */
     val Clock: ImageVector by lazy {
         icon(
@@ -169,10 +167,8 @@ object AppIcons {
     }
 
     /**
-     * Ampulheta: o selo de um curso que ainda não tem nada agendado.
-     *
-     * O terceiro estado da faixa, e o único cinza. Escrever "0" no lugar dele
-     * transformaria um curso recém-criado num placar de nada feito.
+     * Hourglass: a course with nothing scheduled yet. Writing "0" instead would
+     * turn a new course into a scoreboard of nothing done.
      */
     val Hourglass: ImageVector by lazy {
         icon(
@@ -181,7 +177,7 @@ object AppIcons {
         )
     }
 
-    /** Prancheta: o "Colar" da folha de captura. */
+    /** Clipboard: "Paste" on the capture sheet. */
     val Paste: ImageVector by lazy {
         icon(
             "colar",
@@ -196,7 +192,7 @@ object AppIcons {
         )
     }
 
-    /** Engrenagem: abre Configurações. */
+    /** Gear: opens Settings. */
     val Gear: ImageVector by lazy {
         icon(
             "engrenagem",
@@ -205,11 +201,10 @@ object AppIcons {
     }
 
     /**
-     * O globo dos meridianos — o idioma-base da pessoa, em Configurações.
+     * A meridian globe — the person's native language, in Settings.
      *
-     * Não é bandeira: bandeira é *um* idioma, e a linha que este ícone abre fala
-     * do papel ("em que língua o app te responde"). A bandeira do idioma corrente
-     * aparece do outro lado da mesma linha, como valor.
+     * Not a flag: a flag is *one* language, and this row is about the role. The
+     * current language's flag appears at the other end of the same row, as value.
      */
     val Globe: ImageVector by lazy {
         icon(
@@ -219,12 +214,11 @@ object AppIcons {
     }
 
     /**
-     * Sol, lua e o disco meio a meio: as três opções do segmentado de tema.
+     * Sun, moon and the half-and-half disc: the three theme options.
      *
-     * O par sol/lua é a única convenção de tema que não precisa ser lida, e o
-     * disco partido diz "os dois, conforme o aparelho" sem depender do rótulo.
-     * Com eles o segmentado continua legível de relance depois que o dedo cobre
-     * metade da linha.
+     * Sun/moon is the one theme convention that needs no reading, and the split
+     * disc says "either, per the device" without depending on the label — so the
+     * control stays legible once a finger covers half the row.
      */
     val Sun: ImageVector by lazy {
         icon(
@@ -247,17 +241,17 @@ object AppIcons {
         )
     }
 
-    /** Seta saindo da folha: exportar. */
+    /** Arrow leaving a sheet: export. */
     val Export: ImageVector by lazy {
         icon("exportar", "M9,16h6v-6h4l-7,-7 -7,7h4v6zM5,18h14v2H5v-2z")
     }
 
-    /** A mesma folha com a seta ao contrário: importar. */
+    /** The same sheet with the arrow reversed: import. */
     val Import: ImageVector by lazy {
         icon("importar", "M19,9h-4V3H9v6H5l7,7 7,-7zM5,18v2h14v-2H5z")
     }
 
-    /** O "i" em círculo — a seção Sobre. */
+    /** The circled "i" — the About section. */
     val Info: ImageVector by lazy {
         icon(
             "informacao",
@@ -265,7 +259,7 @@ object AppIcons {
         )
     }
 
-    /** As três centelhas do Material — o selo de "isto é gerado por IA". */
+    /** Material's three sparkles — the "AI-generated" badge. */
     val Brightness: ImageVector by lazy {
         icon(
             "brilho",

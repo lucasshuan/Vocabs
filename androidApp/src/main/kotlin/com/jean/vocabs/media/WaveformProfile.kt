@@ -10,29 +10,27 @@ import kotlin.math.pow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** Quantos pontos o perfil guarda — sempre mais barras do que a tela desenha. */
+/** How many points the profile keeps — always more bars than the screen draws. */
 private const val PROFILE_POINTS = 180
 
-/** Quantas amostras cada ponto olha antes de dar o pico por bom. */
+/** How many samples each point looks at before calling the peak good. */
 private const val SAMPLES_PER_POINT = 48
 
-/** O maior tamanho aceito para um bloco que não é o de dados. */
+/** The largest accepted size for a chunk that is not the data chunk. */
 private const val MAX_BLOCK = 1_000_000
 
-/** Um WAV são de verdade tem dois ou três blocos antes dos dados; isto é a guarda. */
+/** A real WAV has two or three chunks before the data; this is the guard. */
 private const val MAX_BLOCKS = 12
 
 /**
- * O desenho da fala guardada, lido do próprio arquivo.
+ * The shape of the stored speech, read from the file itself.
  *
- * A onda anterior era uma lista de dez alturas fixas repetida ao longo da
- * largura: o mesmo serrote em toda captura, e nenhuma relação com o que foi
- * dito. Aqui o pico sai do WAV — o gravador grava PCM 16 bits, então basta
- * varrer as amostras e guardar o maior módulo de cada fatia.
+ * The recorder writes 16-bit PCM, so the peak comes from scanning the samples and
+ * keeping the largest magnitude of each slice.
  *
- * Devolve vetor vazio enquanto lê e também quando o arquivo não é um PCM de 16
- * bits que a gente saiba ler; nos dois casos a tela desenha a linha calma, que
- * é honesta — não inventa relevo que não foi medido.
+ * Returns an empty array while reading and when the file is not a 16-bit PCM we
+ * can read. In both cases the screen draws the calm line, which is honest — it
+ * invents no relief that was never measured.
  */
 @Composable
 fun rememberWaveformProfile(path: String): State<FloatArray> =
@@ -41,11 +39,11 @@ fun rememberWaveformProfile(path: String): State<FloatArray> =
     }
 
 /**
- * O pico da fatia do perfil que cabe nesta barra.
+ * The peak of the profile slice that fits this bar.
  *
- * O perfil tem resolução fixa e a quantidade de barras vem da largura da tela,
- * então a barra pega o **maior** ponto do pedaço que lhe cabe, e não o primeiro:
- * reduzir por amostragem apagaria justamente os estalos que dão o relevo.
+ * The profile has fixed resolution and the bar count comes from screen width, so
+ * a bar takes the **largest** point of its slice rather than the first: reducing
+ * by sampling would erase exactly the transients that give the relief.
  */
 fun FloatArray.picoDaBarra(index: Int, bars: Int): Float {
     if (isEmpty() || bars <= 0) return 0f
@@ -67,8 +65,8 @@ private fun wavProfile(path: String): FloatArray {
             flow.readFully(riff)
             if (mark(riff, 0) != "RIFF" || mark(riff, 8) != "WAVE") return@use FloatArray(0)
 
-            // Percorre os blocos até o de dados: o cabeçalho de 44 bytes é o que
-            // o nosso gravador escreve, mas um WAV de fora pode trazer outros.
+            // Walks the chunks to the data one: the 44-byte header is what our
+            // recorder writes, but a foreign WAV may carry others.
             var bits = 0
             var channels = 0
             val topo = ByteArray(8)
@@ -91,13 +89,13 @@ private fun wavProfile(path: String): FloatArray {
 }
 
 /**
- * Os picos, um por fatia, já normalizados.
+ * The peaks, one per slice, already normalized.
  *
- * O passo existe para o custo não acompanhar a duração: um memo de três minutos
- * tem quase três milhões de amostras, e olhar quarenta e oito por fatia já
- * entrega o mesmo desenho. O piso na normalização é o que impede um sussurro de
- * virar grito — sem ele, dividir pelo próprio máximo faria toda gravação, alta
- * ou baixa, encostar no teto.
+ * The step keeps cost from following duration: a three-minute memo has nearly
+ * three million samples, and forty-eight per slice already gives the same
+ * drawing. The floor in the normalization is what keeps a whisper from becoming a
+ * shout — without it, dividing by its own maximum would push every recording,
+ * loud or quiet, to the ceiling.
  */
 private fun peaksOf(flow: DataInputStream, dataBytes: Int, bits: Int, channels: Int): FloatArray {
     if (bits != 16 || channels !in 1..2 || dataBytes <= 0) return FloatArray(0)
@@ -112,8 +110,8 @@ private fun peaksOf(flow: DataInputStream, dataBytes: Int, bits: Int, channels: 
     var remaining = dataBytes
     var frame = 0
 
-    // O `runCatching` cobre o arquivo que acaba antes do tamanho declarado no
-    // cabeçalho: uma gravação interrompida no meio ainda tem onda até onde foi.
+    // `runCatching` covers a file that ends before the size declared in the
+    // header: a recording interrupted midway still has a wave up to where it got.
     runCatching {
         while (remaining >= bytesPerFrame) {
             val chunk = minOf(buffer.size, remaining) / bytesPerFrame * bytesPerFrame
@@ -138,10 +136,10 @@ private fun peaksOf(flow: DataInputStream, dataBytes: Int, bits: Int, channels: 
     return profile
 }
 
-/** Abaixo disto a gravação é sussurro, e sussurro desenha baixo mesmo. */
+/** Below this the recording is a whisper, and a whisper should draw low. */
 private const val PEAK_FLOOR = 0.22f
 
-/** A fala normal vive na parte de baixo da escala linear; a raiz a traz para cima. */
+/** Normal speech lives at the bottom of the linear scale; the root lifts it. */
 private const val PERCEPTUAL_CURVE = 0.55f
 
 private fun mark(bytes: ByteArray, position: Int) = String(bytes, position, 4, Charsets.US_ASCII)

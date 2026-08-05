@@ -47,21 +47,21 @@ import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**
- * O que o aviso de baixo tem a dizer.
+ * What the bottom notice has to say.
  *
- * [chave] existe para o aviso ser **substituível**: capturas em sequência trocam
- * o conteúdo e reiniciam a contagem, sem empilhar cartões. Duas capturas iguais
- * seguidas precisam contar como avisos diferentes, e é a chave que garante isso
- * quando o resto dos campos é idêntico.
+ * [key] exists so the notice is **replaceable**: captures in a row swap the
+ * content and restart the countdown instead of stacking cards. Two identical
+ * captures in a row have to count as different notices, and the key is what
+ * guarantees that when every other field matches.
  */
 sealed interface Notice {
 
     val key: Long
 
     /**
-     * A captura entrou na fila. [capturaId] chega alguns milissegundos depois do
-     * resto, quando o banco devolve o id — até lá o atalho "Selecionar" não tem
-     * para onde ir e por isso não é desenhado.
+     * The capture entered the queue. [captureId] arrives a few milliseconds after
+     * the rest, when the database returns the id — until then the "Select"
+     * shortcut has nowhere to go and so is not drawn.
      */
     data class Saved(
         override val key: Long,
@@ -71,26 +71,25 @@ sealed interface Notice {
         val captureId: Long? = null,
     ) : Notice
 
-    /** Uma frase e mais nada: microfone negado, gravação curta demais. */
+    /** One sentence and nothing else: microphone denied, recording too short. */
     data class Message(override val key: Long, val text: String) : Notice
 }
 
-/** Quanto tempo cada aviso vive. O recado é mais curto porque não oferece nada. */
+/** How long each notice lives. The message is shorter because it offers nothing. */
 private const val SAVED_LIFETIME_MS = 5_000
 private const val NOTICE_LIFETIME_MS = 3_500
 
 /**
- * Tela 04 do handoff — o aviso que passa.
+ * The passing notice.
  *
- * Ele volta para onde a pessoa estava e não muda nada de lugar: flutua sobre o
- * conteúdo, some sozinho em 5 s e a barra na base conta o tempo restante. Ignorar
- * é a saída padrão, e ignorar não gera cobrança nem alerta — "Selecionar" é
- * atalho para quem tem tempo agora, nunca a etapa seguinte.
+ * It returns to where the person was and moves nothing: it floats over the
+ * content, disappears on its own in 5 s, and the bar at its base counts the time
+ * left. Ignoring is the default exit and carries no penalty — "Select" is a
+ * shortcut for whoever has time now, never the next step.
  *
- * Ele substituiu a `Snackbar`: o que o handoff pede — bandeira do idioma, duração
- * do áudio, uma ação nomeada e um relógio visível — não cabe numa linha de texto,
- * e o relógio é a peça que faz o aviso ser ignorável sem ansiedade. Quem vê a
- * barra correr sabe que não precisa fazer nada.
+ * It replaced the `Snackbar` because a flag, an audio duration, a named action
+ * and a visible clock do not fit in a line of text — and the clock is the piece
+ * that makes the notice ignorable without anxiety.
  */
 @Composable
 fun NoticeStrip(
@@ -99,8 +98,9 @@ fun NoticeStrip(
     onExpire: (key: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // O último aviso não nulo continua desenhado enquanto o cartão sai: sem isso
-    // o conteúdo sumiria no primeiro quadro da saída e o cartão desceria vazio.
+    // The last non-null notice stays drawn while the card leaves: without it the
+    // content would vanish on the first frame of the exit and the card would
+    // descend empty.
     var last by remember { mutableStateOf<Notice?>(null) }
     LaunchedEffect(notice) { if (notice != null) last = notice }
 
@@ -204,9 +204,9 @@ private fun NoticeCard(
                 }
             }
 
-            // O relógio do aviso. Desenhado a partir da fração animada lida
-            // dentro do `drawBehind`: cinco segundos de barra não deveriam
-            // recompor o cartão trezentas vezes.
+            // The notice's clock, drawn from the animated fraction read inside
+            // `drawBehind`: five seconds of bar should not recompose the card
+            // three hundred times.
             Box(
                 Modifier
                     .fillMaxWidth()

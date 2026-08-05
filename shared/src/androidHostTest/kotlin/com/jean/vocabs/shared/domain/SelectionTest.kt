@@ -23,7 +23,7 @@ class SelectionTest {
         assertEquals(TargetType.WORD, word.type)
         assertEquals("on the fence", phrase.text)
         assertEquals(TargetType.PHRASE, phrase.type)
-        // Os intervalos podem se sobrepor sem perder nenhuma seleção.
+        // Ranges may overlap without losing any selection.
         assertTrue(word.start >= phrase.start && word.end <= phrase.end)
     }
 

@@ -17,11 +17,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * A tela de seleção: marcar o que chamou atenção numa captura já guardada.
+ * The selection screen: marking what caught the eye in an already-saved capture.
  *
- * A duplicata é procurada **no idioma de destino**, e não na coleção inteira:
- * "carne" existir em espanhol não é motivo para avisar quem está guardando
- * "carne" em italiano. Por isso o alvo procurado carrega o curso junto.
+ * The duplicate is looked for **in the target language**, not across the whole
+ * collection: "carne" existing in Spanish is no reason to warn someone saving
+ * "carne" in Italian. That is why the searched target carries its course.
  */
 class SelectViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
@@ -39,7 +39,7 @@ class SelectViewModel(app: Application) : AndroidViewModel(app) {
         duplicateOfTarget(query.text, (readyEntries + inbox).filter { it.languagePair.target == query.target })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** Os idiomas em que dá para guardar — a lista do seletor do cabeçalho. */
+    /** The languages it can be saved to — the header picker's list. */
     val courses: StateFlow<List<String>> = preferences.observeCourses()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -50,15 +50,15 @@ class SelectViewModel(app: Application) : AndroidViewModel(app) {
         wanted.value = Search(text, target)
     }
 
-    /** Ainda dá para trocar aqui: nada nasceu neste par até o "Guardar". */
+    /** Still changeable here: nothing is born in this pair until "Save". */
     fun switchLanguage(id: Long, target: String) {
         AppContainer.scope.launch { repository.changeCaptureLanguage(id, target) }
     }
 
     /**
-     * Confirma e devolve os ids criados, que é o que a tela de confirmação
-     * acompanha enquanto a IA trabalha. A geração segue no escopo do app: a
-     * navegação acontece antes de a primeira ficha ficar pronta.
+     * Confirms and returns the created ids, which the confirmation screen follows
+     * while the AI works. Generation continues in the app's scope: the navigation
+     * happens before the first card is ready.
      */
     fun save(id: Long, snippet: String, targets: List<SelectedTarget>, onReady: (List<Long>) -> Unit) {
         viewModelScope.launch {

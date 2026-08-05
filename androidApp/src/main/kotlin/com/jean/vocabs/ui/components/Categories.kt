@@ -11,15 +11,15 @@ import com.jean.vocabs.ui.theme.LocalDarkTheme
 import com.jean.vocabs.ui.theme.VocabuColors
 
 /**
- * Uma cor por tipo de captura, e a mesma tripla em todos os lugares.
+ * One color per capture type, and the same three everywhere.
  *
- * Texto é ameixa, áudio é menta, foto é o vermelho do papagaio. A associação se
- * forma na folha do `+`, onde os três aparecem lado a lado, e se cobra em
- * Pendentes, onde o disco à esquerda de cada linha é a única coisa que diz de
- * onde aquela captura veio. Ela só funciona se as duas telas usarem a mesma
- * fonte — daí este arquivo existir em vez de um `when` por tela.
+ * Text is plum, audio is mint, photo is the parrot red. The association forms on
+ * the `+` sheet, where all three appear side by side, and is collected in
+ * Pending, where the disc at the left of each row is the only thing saying where
+ * that capture came from. It only works if both screens use the same source,
+ * which is why this file exists instead of a `when` per screen.
  *
- * O vermelho **não** é `error`: uma foto na fila não é uma foto com problema.
+ * The red is **not** `error`: a photo in the queue is not a broken photo.
  */
 data class CategoryColors(val color: Color, val background: Color)
 
@@ -45,9 +45,9 @@ fun formatIcon(format: CaptureFormat): ImageVector = when (format) {
 }
 
 /**
- * O nome de cada formato. Não há enum próprio para as abas: elas **são** os
- * formatos, e um segundo enum com os mesmos três nomes só criaria a chance de um
- * ganhar um caso a mais que o outro não tem.
+ * Each format's name. There is no separate enum for the tabs: they **are** the
+ * formats, and a second enum with the same three names would only create the
+ * chance of one gaining a case the other lacks.
  */
 fun formatLabel(format: CaptureFormat): String = when (format) {
     CaptureFormat.TEXT -> "Texto"
@@ -55,7 +55,7 @@ fun formatLabel(format: CaptureFormat): String = when (format) {
     CaptureFormat.PHOTO -> "Foto"
 }
 
-/** O disco da categoria, já com as cores certas — o começo de toda linha de Pendentes. */
+/** The category disc, with the right colors — the start of every Pending row. */
 @Composable
 fun CategoryDisc(format: CaptureFormat, size: Dp = 38.dp) {
     val palette = formatColors(format)

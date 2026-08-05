@@ -40,17 +40,15 @@ import com.jean.vocabs.ui.components.rememberHaptics
 import kotlinx.coroutines.launch
 
 /**
- * Tela 05 do handoff — o texto, e nada além do texto.
+ * The text drawer — the snippet, "Paste" and "Save", and nothing else.
  *
- * Tocar e soltar no `+` é texto: o leque nem chega a abrir e o cursor já está
- * aqui. A gaveta tem três coisas — o trecho, "Colar" e "Guardar" — e nenhuma
- * moldura de campo, nenhum título e nenhuma escolha de idioma.
+ * Tapping and releasing on the `+` is text: the fan never opens and the cursor is
+ * already here. No field frame, no title, no language choice.
  *
- * O que sumiu daqui vale mais que o que ficou. A folha anterior perguntava o
- * curso antes de deixar escrever, e essa pergunta custava um toque em toda
- * captura para acertar as poucas em que o curso não era o que estava aberto. Sem
- * ela, o teclado já está de pé quando a gaveta termina de subir — que é a única
- * medida que importa numa captura de dez segundos.
+ * What left matters more than what stayed. The previous sheet asked for the
+ * course before letting anyone write, charging one tap on every capture to get
+ * right the few where the course was not the open one. Without it the keyboard is
+ * already up as the drawer finishes rising.
  */
 @Composable
 fun TextDrawer(
@@ -98,9 +96,9 @@ fun TextDrawer(
                 .heightIn(min = 52.dp, max = 220.dp)
                 .focusRequester(focus),
             decorationBox = { content ->
-                // O `Box` não é decorativo: `decorationBox` entrega o conteúdo a
-                // um layout de filho único, e emitir o exemplo e o campo lado a
-                // lado sem contêiner deixa os dois disputando a mesma medida.
+                // The `Box` is not decorative: `decorationBox` hands the content
+                // to a single-child layout, and emitting the example and the
+                // field side by side leaves them fighting over the same measure.
                 Box {
                     if (field.text.isEmpty()) {
                         Text(
@@ -122,9 +120,9 @@ fun TextDrawer(
                 icon = true,
                 onClick = ::paste,
             )
-            // "Guardar" só existe quando há o que guardar. Um botão principal
-            // permanentemente apagado no canto da gaveta é ruído: ele ocupa o
-            // lugar de destaque sem nunca poder ser tocado.
+            // "Save" only exists when there is something to save. A permanently
+            // greyed primary button in the drawer's corner is noise: it holds the
+            // prominent place without ever being tappable.
             if (hasText) {
                 Pill(
                     text = "Guardar",
@@ -172,10 +170,13 @@ private fun Pill(
 }
 
 /**
- * Frases de exemplo para a gaveta: um trecho plausível, não uma instrução.
+ * Example sentences for the drawer: a plausible snippet, not an instruction.
  *
- * "Digite ou cole o trecho" não mostra o que a IA espera — uma frase inteira, com
- * uma expressão capturável dentro dela. O exemplo mostra.
+ * "Type or paste the snippet" does not show what the AI expects — a whole
+ * sentence with a capturable expression inside it. The example does.
+ *
+ * These are target-language content and must follow the course language, never
+ * the interface language.
  */
 private val SNIPPET_EXAMPLES = listOf(
     "She rolled her eyes and told him to knock it off.",

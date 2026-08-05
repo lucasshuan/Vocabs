@@ -10,7 +10,7 @@ import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import kotlin.concurrent.thread
 
-/** Grava PCM 16 kHz mono dentro de WAV, formato aceito pelo reconhecimento local. */
+/** Records 16 kHz mono PCM inside a WAV, the format local recognition accepts. */
 class AudioRecorder(private val context: Context) {
 
     private var audioRecord: AudioRecord? = null
@@ -21,14 +21,13 @@ class AudioRecorder(private val context: Context) {
     private var writing = false
 
     /**
-     * O pico do último bloco lido, de 0 a 1.
+     * The peak of the last block read, 0 to 1.
      *
-     * A onda da tela de gravação é desenhada a partir daqui, e não de alturas
-     * decorativas: uma onda que se mexe igual no silêncio e na fala não diz se o
-     * microfone está pegando alguma coisa — que é a única pergunta que alguém tem
-     * enquanto segura o botão. Volátil porque quem escreve é a thread do WAV e
-     * quem lê é a de desenho; a leitura suja de um float aqui custa um quadro
-     * torto e nada mais.
+     * The recording screen's wave is drawn from here rather than from decorative
+     * heights: a wave that moves the same through silence and speech does not
+     * answer the only question someone holding the button has. Volatile because
+     * the WAV thread writes and the drawing thread reads; a torn read of a float
+     * here costs one crooked frame and nothing more.
      */
     @Volatile
     var level: Float = 0f
@@ -131,12 +130,11 @@ class AudioRecorder(private val context: Context) {
     }
 
     /**
-     * O pico do bloco, amostrando de [PASSO_DA_AMOSTRAGEM] em [PASSO_DA_AMOSTRAGEM].
+     * The block's peak, sampling every [SAMPLING_STEP].
      *
-     * Varrer as 2 mil amostras de cada bloco para achar um número que vira a
-     * altura de uma barra é trabalho jogado fora: o pico de um bloco de 128 ms
-     * sobrevive à amostragem, e o que se perde no meio do caminho é menor que a
-     * espessura da barra desenhada.
+     * Scanning all 2,000 samples of each block to find a number that becomes one
+     * bar's height is wasted work: the peak of a 128 ms block survives sampling,
+     * and what is lost along the way is smaller than the drawn bar's thickness.
      */
     private fun peakOf(buffer: ByteArray, seen: Int): Float {
         var peak = 0

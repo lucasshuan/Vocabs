@@ -10,14 +10,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Carrega a foto da captura já reduzida.
+ * Loads the capture's photo already downsampled.
  *
- * A câmera do celular devolve imagens de vários megapixels; jogar isso inteiro
- * numa tela de 1080px de largura gastaria dezenas de MB de heap por foto. O
- * `inSampleSize` resolve na decodificação, sem passo extra de redimensionamento.
+ * Phone cameras return multi-megapixel images; putting one whole into a 1080px
+ * screen would spend tens of MB of heap per photo. `inSampleSize` resolves it at
+ * decode time, with no extra resize pass.
  *
- * Sem biblioteca de imagem: é uma foto local por vez, e Coil/Glide trariam mais
- * configuração do que o problema pede.
+ * No image library: it is one local photo at a time, and Coil or Glide would
+ * bring more configuration than the problem asks for.
  */
 @Composable
 fun rememberPhoto(path: String, targetWidth: Int = 1080): State<ImageBitmap?> =

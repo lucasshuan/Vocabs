@@ -19,17 +19,16 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * Uma página do carrossel — tudo o que a Início mostra de um curso.
+ * One carousel page — everything Home shows of a course.
  *
- * O [resumo] é o mesmo objeto que alimenta o selo da faixa, e não uma segunda
- * contagem: o número no chip do inglês e o "3 esfriaram hoje" do cartão do
- * inglês são a mesma frase dita duas vezes, e discordarem seria pior que
- * qualquer um dos dois faltar.
+ * [summary] is the same object that feeds the strip's badge, not a second count:
+ * the number on the English chip and the English card's "3 cooled off today" are
+ * one sentence said twice, and disagreeing would be worse than either missing.
  */
 data class HomePage(
     val summary: CourseSummary,
     val averageStrength: Int,
-    /** Quantas vencem ainda nas próximas 24h — o "Próximas 5 em 19h". */
+    /** How many fall due within 24h — the "Next 5 in 19h". */
     val nextIn24h: Int,
     val capturedToday: List<Entry>,
 ) {
@@ -46,7 +45,7 @@ data class HomeState(
 
     val activeIndex: Int get() = pages.indexOfFirst { it.languagePair.target == activeTarget }.coerceAtLeast(0)
 
-    /** Com um curso só não há faixa nem carrossel: não há para onde deslizar. */
+    /** With one course there is no strip and no carousel: nowhere to swipe. */
     val hasCarousel: Boolean get() = pages.size > 1
 }
 
@@ -55,12 +54,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val preferences = AppContainer.preferences(app)
 
     /**
-     * Uma leitura só, de todos os cursos, repartida aqui.
+     * One read of every course, split up here.
      *
-     * O carrossel mostra os três idiomas ao mesmo tempo — deslizar não pode
-     * disparar consulta nova. Ler tudo de uma vez e agrupar em memória é o que
-     * faz a troca de página ser instantânea, e é também o que garante que os
-     * três cartões estejam falando do mesmo instante.
+     * The carousel shows all three languages at once, so swiping must not fire a
+     * new query. Reading everything at once and grouping in memory is what makes
+     * the page change instant, and what guarantees the three cards are describing
+     * the same instant.
      */
     val state: StateFlow<HomeState> = combine(
         preferences.observeLanguagePair(),
@@ -97,9 +96,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             summary = CourseSummary(
                 languagePair = languagePair,
                 total = entries.size,
-                // Por degrau, como em toda tela de número: contar por força de
-                // memória faria o mesmo total aparecer diferente em cada uma,
-                // porque ela decai entre a leitura de uma e a da outra.
+                // By step, as on every screen with a number: counting by memory
+                // strength would make the same total differ between screens,
+                // because it decays between one read and the next.
                 mastered = entries.count { Steps.level(it.step) == MemoryLevel.MASTERED },
                 inQueue = entries.count { it.needsReview(now) },
                 nextInMillis = misses.filter { it > 0L }.minOrNull(),
@@ -112,7 +111,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    /** Deslizar o carrossel **é** trocar de curso: a revisão e o `+` seguem a página. */
+    /** Swiping the carousel **is** switching course: review and the `+` follow. */
     fun openCourse(code: String) = preferences.openCourse(code)
 
     private companion object {

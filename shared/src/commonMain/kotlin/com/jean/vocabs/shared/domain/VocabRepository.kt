@@ -2,10 +2,10 @@ package com.jean.vocabs.shared.domain
 
 import kotlinx.coroutines.flow.Flow
 
-/** O que o cartão de revisão da home precisa, já resolvido para o instant current. */
+/** What the home review card needs, already resolved for the current instant. */
 data class ReviewSummary(
     val inQueue: Int,
-    /** Millis até a próxima word pedir revisão. Nulo quando não há card nenhuma. */
+    /** Millis until the next word is due. Null when there is no card at all. */
     val nextInMillis: Long?,
     val dayStreak: Int,
     val reviewedToday: Boolean,
@@ -13,7 +13,7 @@ data class ReviewSummary(
     val quota: DailyQuota = DailyQuota(done = 0, inQueue = inQueue),
 )
 
-/** A barra da card, já resolvida — depende do relógio, e o relógio mora no repositório. */
+/** The card's bar, already resolved — it depends on the clock, which lives here. */
 data class RetentionNow(
     val points: Double,
     val level: MemoryLevel,
@@ -27,39 +27,38 @@ data class RetentionNow(
 }
 
 /**
- * O curso aberto é o padrão, e não a única resposta possível.
+ * The active course is the default, not the only possible answer.
  *
- * Toda leitura recortável aceita um [Scope], e ele começa em
- * [Scope.CursoAberto]: uma tela que esquecesse de escolher mostraria o curso em
- * que a pessoa está, que é o certo em quase todas. Vocabulários, Pendentes e Você
- * pedem [Scope.Todos] de propósito; "Seu progresso" pede um curso nomeado, que
- * pode não ser o aberto.
+ * Every sliceable read takes a [Scope] starting at [Scope.ActiveCourse]: a screen
+ * that forgot to choose would show the course the person is in, which is right
+ * almost everywhere. Words, Pending and Profile ask for [Scope.All] on purpose;
+ * "Your progress" asks for a named course, which may not be the active one.
  */
 interface VocabRepository {
 
-    /** Qual course está aberto now — o padrão de [Scope.CursoAberto]. */
+    /** Which course is active now — the default of [Scope.ActiveCourse]. */
     fun observeActiveCourse(): Flow<LanguagePair>
 
-    /** Um resumo por course, com o badge da faixa já resolvido. Sempre de todos. */
+    /** One summary per course, badge already resolved. Always across all of them. */
     fun observeCourses(): Flow<List<CourseSummary>>
 
-    /** Só o que já virou card. */
+    /** Only what has become a card. */
     fun observeReady(scope: Scope = Scope.ActiveCourse): Flow<List<Entry>>
 
-    /** Entradas que ainda estão na fila da IA, sendo geradas ou falharam. */
+    /** Entries still in the AI queue, being generated, or failed. */
     fun observeInbox(scope: Scope = Scope.ActiveCourse): Flow<List<Entry>>
 
-    /** Capturas ainda aguardando transcrição ou seleção confirmada. */
+    /** Captures still awaiting transcription or a confirmed selection. */
     fun observePendingCaptures(scope: Scope = Scope.ActiveCourse): Flow<List<Capture>>
 
     fun observeCaptureById(id: Long): Flow<Capture?>
 
     fun observeById(id: Long): Flow<Entry?>
 
-    /** As entries de um punhado de ids — o que a tela "Guardado" acompanha. */
+    /** The entries of a handful of ids — what the "Saved" screen follows. */
     fun observeEntries(ids: List<Long>): Flow<List<Entry>>
 
-    /** A fila de now: fichas cuja força de memória já caiu abaixo do limiar. */
+    /** The current queue: cards whose memory strength fell below the threshold. */
     fun observeReviewQueue(scope: Scope = Scope.ActiveCourse): Flow<List<Entry>>
 
     fun observeReviewSummary(scope: Scope = Scope.ActiveCourse): Flow<ReviewSummary>
@@ -68,15 +67,15 @@ interface VocabRepository {
 
     fun observeActivity(days: Int = 84): Flow<List<DailyActivity>>
 
-    /** A row do tempo da tela Dia a day, do mais recente para o mais antigo. */
+    /** The Day-by-day timeline, most recent first. */
     fun observeEvents(days: Int = 84, scope: Scope = Scope.ActiveCourse): Flow<List<Event>>
 
     fun observeAiUsage(): Flow<AiUsage>
 
-    /** Retrato consistente usado pelo ZIP de portabilidade local. */
+    /** A consistent snapshot, used by the local portability ZIP. */
     suspend fun exportData(): ExportData
 
-    /** Cria uma capture textual e todas as fichas selecionadas numa transação. */
+    /** Creates a text capture and every selected card in one transaction. */
     suspend fun captureText(
         snippet: String,
         targets: List<SelectedTarget>,
@@ -84,17 +83,17 @@ interface VocabRepository {
     ): List<Long>
 
     /**
-     * Guarda o trecho colado antes de haver seleção nenhuma.
+     * Saves the pasted snippet before there is any selection.
      *
-     * É o que faz o "Continuar" da folha ser barato: a partir daqui, fechar o
-     * app ou desistir da seleção deixa a captura em Pendentes, no idioma que já
-     * foi escolhido, em vez de perder o que a pessoa colou.
+     * This is what makes the sheet's "Continue" cheap: from here on, closing the
+     * app or abandoning the selection leaves the capture in Pending, in the
+     * language already chosen, instead of losing what was pasted.
      */
     suspend fun captureSnippet(snippet: String, languagePair: LanguagePair? = null): Long
 
     /**
-     * Guarda foto ou áudio como captura em transcrição. O arquivo fica seguro
-     * antes de OCR/voz começar e sempre pode seguir para edição manual.
+     * Saves a photo or audio as a capture in transcription. The file is safe
+     * before OCR or speech starts, and can always go on to manual editing.
      */
     suspend fun captureMedia(
         format: CaptureFormat,
@@ -104,33 +103,34 @@ interface VocabRepository {
     ): Long
 
     /**
-     * Troca o idioma de destino de uma captura ainda não processada.
+     * Changes a not-yet-processed capture's target language.
      *
-     * Só faz sentido antes da seleção: depois dela existem fichas nascidas nesse
-     * par, e mudá-lo por baixo delas as deixaria órfãs do próprio idioma.
+     * Only meaningful before the selection: after it there are cards born in that
+     * pair, and changing it underneath them would orphan them from their own
+     * language.
      */
     suspend fun changeCaptureLanguage(id: Long, target: String)
 
-    /** Conclui a tentativa automática; error não impede a edição manual. */
+    /** Finishes the automatic attempt; an error does not block manual editing. */
     suspend fun recordTranscription(id: Long, snippet: String?, error: String? = null)
 
-    /** Confirma o text editado e cria uma entry por seleção. */
+    /** Confirms the edited text and creates one entry per selection. */
     suspend fun confirmCapture(
         id: Long,
         snippet: String,
         targets: List<SelectedTarget>,
     ): List<Long>
 
-    /** Chama o servidor e grava o result (ou o error) na entry. */
+    /** Calls the server and records the result (or the error) on the entry. */
     suspend fun generateCard(id: Long): Boolean
 
-    /** Processa entries independentes com no máximo duas requisições simultâneas. */
+    /** Processes independent entries with at most two requests in flight. */
     suspend fun generateCards(ids: List<Long>, concurrency: Int = 2): List<Boolean>
 
-    /** Grava o result de um cartão e marca o day no calendário de revisões. */
+    /** Records a card's result and marks the day on the review calendar. */
     suspend fun recordAnswer(id: Long, correct: Boolean)
 
-    /** Descarta a entry e o file de míday, se houver. */
+    /** Discards the entry and its media file, if any. */
     suspend fun delete(id: Long)
 
     suspend fun deleteCapture(id: Long)

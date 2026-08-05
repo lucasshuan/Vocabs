@@ -20,18 +20,18 @@ import androidx.compose.ui.unit.sp
 import com.jean.vocabs.R
 import com.jean.vocabs.shared.ThemePreference
 
-/** Cores semânticas que não têm um papel próprio no ColorScheme do Material. */
+/** Semantic colors with no role of their own in Material's ColorScheme. */
 object VocabuColors {
     val Mint = Color(0xFF8FDC5E)
     val MintDark = Color(0xFF3F8A22)
 
     /**
-     * O vermelho do papagaio — a terceira categoria de captura, a foto.
+     * The parrot red — the third capture category, photo.
      *
-     * Não é `error` e nunca deve virar: o handoff dá uma cor por tipo de captura
-     * (texto é ameixa, áudio é menta, foto é este vermelho) para que a associação
-     * se forme no ato da captura e se repita em Pendentes. Usar o vermelho de
-     * erro aqui faria toda foto na fila parecer uma foto com problema.
+     * Not `error`, and must never become it: one color per capture type (text is
+     * plum, audio is mint, photo is this red) so the association forms at capture
+     * time and repeats in Pending. Using the error red here would make every
+     * queued photo look like a broken one.
      */
     val Parrot = Color(0xFFC4243C)
     val ParrotContainer = Color(0xFFFBEAEC)
@@ -40,12 +40,12 @@ object VocabuColors {
 }
 
 /**
- * Se o tema corrente é o escuro.
+ * Whether the current theme is dark.
  *
- * Não é preferência de estilo: no handoff o cartão claro tem contorno de 1 px
- * para se separar do fundo quase branco, e o escuro não tem nenhum — a própria
- * superfície já se destaca. Sem esse sinal cada tela adivinharia sozinha, que é
- * como metade delas acabou com contorno no escuro.
+ * Not a style preference: the light card has a 1 px outline to separate it from
+ * the near-white background, and the dark one has none. Without this signal each
+ * screen would guess for itself, which is how half of them ended up outlined in
+ * dark.
  */
 val LocalDarkTheme = staticCompositionLocalOf { false }
 
@@ -141,11 +141,11 @@ private val Shapes = Shapes(
 )
 
 /**
- * Se o tema escuro está valendo, conforme a escolha da tela Configurações.
+ * Whether dark is in effect, per the Settings choice.
  *
- * `SYSTEM` é o padrão e o único valor que consulta o aparelho — `LIGHT` e `DARK`
- * são decisões da pessoa e não voltam atrás quando o sistema muda de humor à
- * noite.
+ * `SYSTEM` is the default and the only value that consults the device — `LIGHT`
+ * and `DARK` are the person's decisions and do not reverse when the system
+ * changes mood at night.
  */
 @Composable
 fun darkAccordingTo(preference: ThemePreference): Boolean = when (preference) {

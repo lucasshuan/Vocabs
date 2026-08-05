@@ -45,12 +45,12 @@ import com.jean.vocabs.ui.components.levelLabel
 import com.jean.vocabs.ui.components.nextReviewText
 
 /**
- * Tela 4c do handoff — "O que falta".
+ * "What's left".
  *
- * Cada palavra com o degrau em que está e quantos acertos faltam para o próximo
- * nome. É a tela que fala em **degraus**, e não em força de memória: a pergunta
- * aqui é o que fazer, e a força de memória responde outra coisa — quanto se
- * lembra agora, que anda para trás sozinha e não é uma tarefa.
+ * Each word with the step it is on and how many correct answers remain to the
+ * next name. This screen speaks in **steps**, not memory strength: the question
+ * here is what to do, and memory strength answers something else — how much is
+ * remembered now, which walks backwards on its own and is not a task.
  */
 @Composable
 fun WhatsLeftScreen(
@@ -182,11 +182,11 @@ private fun WordRow(entry: Entry, onClick: () -> Unit) {
 }
 
 /**
- * A escada como cinco traços.
+ * The ladder as five strokes.
  *
- * Cinco traços separados e não uma barra contínua: degrau é contagem, e uma
- * barra sugeriria que existem posições entre um degrau e o seguinte — que é
- * justamente o que a força de memória mostra, na outra tela.
+ * Five separate strokes rather than one continuous bar: a step is a count, and a
+ * bar would suggest positions exist between one step and the next — which is
+ * exactly what memory strength shows, on the other screen.
  */
 @Composable
 private fun StepLadder(step: Int, modifier: Modifier = Modifier) {

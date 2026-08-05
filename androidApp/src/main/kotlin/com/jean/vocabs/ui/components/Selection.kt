@@ -40,15 +40,13 @@ import com.jean.vocabs.shared.domain.tokenizeSnippet
 import com.jean.vocabs.ui.theme.Bricolage
 
 /**
- * O trecho como campo de seleção: toque escolhe uma palavra, arraste escolhe uma
- * expressão.
+ * The snippet as a selection field: a tap picks a word, a drag picks a phrase.
  *
- * O realce existe **só enquanto o dedo está na tela**. Terminado o gesto, o
- * trecho volta ao normal e o que foi escolhido aparece embaixo, como pílula. É o
- * que o handoff mostra: o mesmo trecho pode render `fence` e `on the fence`, e
- * intervalos que se sobrepõem pintados ao mesmo tempo viram uma sopa de cor que
- * não diz mais quantas seleções existem. A lista de pílulas diz, e é ela que
- * também permite desfazer.
+ * The highlight exists **only while the finger is on the screen**. Once the
+ * gesture ends the snippet returns to normal and what was chosen appears below as
+ * a chip. One snippet can yield both `fence` and `on the fence`, and overlapping
+ * ranges painted at once become a soup of color that no longer says how many
+ * selections exist. The chip list says it, and is also what allows undoing.
  */
 @Composable
 fun TermPicker(
@@ -117,14 +115,13 @@ fun TermPicker(
 }
 
 /**
- * As pílulas do que já foi escolhido: termo, tipo e o ✕ que desfaz.
+ * The chips of what has been chosen: term, type, and the ✕ that undoes it.
  *
- * Cada uma entra com um pulinho quando o dedo solta o trecho. É o recibo do
- * gesto: o realce no texto some no instante em que a seleção termina — por
- * decisão de desenho, para que intervalos sobrepostos não virem sopa de cor — e
- * sem esse movimento aqui embaixo o gesto acabaria sem nada confirmando que ele
- * pegou. O `key` prende a animação ao intervalo, e não à posição na lista: sem
- * ele, remover a primeira pílula faria todas as outras entrarem de novo.
+ * Each springs in when the finger releases the snippet. It is the receipt for the
+ * gesture, since the highlight in the text disappears the instant the selection
+ * ends. The `key` ties the animation to the range rather than the position in the
+ * list: without it, removing the first chip would make every other one enter
+ * again.
  */
 @Composable
 fun SelectionChips(

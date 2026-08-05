@@ -16,11 +16,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * O que acabou de ser guardado, enquanto a IA trabalha.
+ * What was just saved, while the AI works.
  *
- * [totalDoCurso] é o estoque **depois** da captura — "26 fichas agora". O
- * número existe para fechar o ciclo: a pessoa acabou de acrescentar duas coisas
- * a alguma coisa, e o tamanho dessa coisa é o que dá sentido ao gesto.
+ * [courseTotal] is the stock **after** the capture — "26 cards now". The number
+ * closes the loop: something was just added to something, and the size of that
+ * something is what gives the gesture meaning.
  */
 data class SavedState(
     val entries: List<Entry> = emptyList(),
@@ -28,7 +28,7 @@ data class SavedState(
 ) {
     val target: String get() = entries.firstOrNull()?.languagePair?.target.orEmpty()
 
-    /** Enquanto houver ficha em construção há o que olhar, e a tela não se fecha sozinha. */
+    /** While a card is still being built there is something to watch. */
     val working: Boolean
         get() = entries.any { it.status == EntryStatus.PENDING || it.status == EntryStatus.GENERATING }
 }

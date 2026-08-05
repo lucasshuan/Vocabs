@@ -42,21 +42,16 @@ import com.jean.vocabs.ui.components.cardOutline
 import com.jean.vocabs.ui.components.rememberHaptics
 
 /**
- * O que fica no lugar do cartão que foi arrastado para fora.
+ * What takes the place of a card that was dragged away.
  *
- * Ela é a metade indispensável do gesto de excluir. Arrastar é rápido, e o que é
- * rápido erra: sem esta faixa, um deslize distraído numa fila de dez capturas
- * apagaria um áudio gravado na rua e o arquivo junto, sem que nada na tela
- * tivesse perguntado nada. Com ela, o gesto continua custando um movimento só —
- * e a conta de errar cai para um toque.
+ * The indispensable half of the delete gesture. Dragging is fast, and fast makes
+ * mistakes: without this strip a distracted swipe would erase an audio recorded
+ * in the street, and the file with it, without anything having asked. With it,
+ * the gesture still costs one movement and the price of being wrong is one tap.
  *
- * Ela conta o que sumiu **pelo nome** ("Áudio · 0:12", o trecho colado, o título
- * da ficha). Uma faixa que dissesse apenas "1 item excluído" obrigaria a desfazer
- * por precaução para descobrir o que era.
- *
- * A barra de baixo é a mesma do aviso de captura, com o mesmo sentido: mostra
- * quanto tempo ainda resta para mudar de ideia, e é o que torna deixá-la passar
- * uma decisão em vez de um descuido.
+ * It names what disappeared ("Audio · 0:12", the pasted snippet, the card title).
+ * A strip saying only "1 item deleted" would force an undo out of caution just to
+ * find out what it was.
  */
 @Composable
 fun UndoStrip(
@@ -64,8 +59,8 @@ fun UndoStrip(
     onUndo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // O último conteúdo não nulo continua desenhado enquanto o cartão desce:
-    // sem isto a faixa sairia vazia no primeiro quadro da saída.
+    // The last non-null content stays drawn while the card descends: without it
+    // the strip would leave empty on the first frame of the exit.
     var last by remember { mutableStateOf<PendingDeletion?>(null) }
     LaunchedEffect(deletion) { if (deletion != null) last = deletion }
 
@@ -74,9 +69,9 @@ fun UndoStrip(
         if (deletion == null) return@LaunchedEffect
         remaining.snapTo(1f)
         remaining.animateTo(0f, tween(VISIBLE_WINDOW_MS, easing = LinearEasing))
-        // Quem apaga de verdade é o ViewModel, no fim da mesma janela. A barra
-        // só desenha o tempo passando: dois relógios disputando quem manda
-        // fariam a faixa sumir antes ou depois da exclusão acontecer.
+        // The ViewModel is what actually erases, at the end of the same window.
+        // The bar only draws the time passing: two clocks competing would make
+        // the strip disappear before or after the deletion happened.
     }
 
     AnimatedVisibility(
@@ -94,8 +89,8 @@ fun UndoStrip(
 }
 
 /**
- * Os mesmos 5 s da janela do ViewModel, escritos aqui porque quem desenha o
- * relógio não decide a hora — só a mostra.
+ * The same 5 s as the ViewModel's window, written here because whoever draws the
+ * clock does not decide the time — it only shows it.
  */
 private const val VISIBLE_WINDOW_MS = 5_000
 

@@ -3,12 +3,10 @@ package com.jean.vocabs.shared.data.local
 import app.cash.sqldelight.db.SqlDriver
 
 /**
- * A costura de plataforma do banco. Hoje só existe a implementação Android;
- * o iOS entra depois com uma classe que devolve um NativeSqliteDriver, sem
- * tocar em nada do resto do módulo.
+ * The database's platform seam. Only the Android implementation exists today.
  *
- * É uma interface e não um expect/actual porque isso também deixa os testes
- * injetarem um driver em memória sem precisar de emulador.
+ * An interface rather than expect/actual, because that also lets tests inject an
+ * in-memory driver without an emulator.
  */
 fun interface DatabaseDriverFactory {
     fun create(): SqlDriver

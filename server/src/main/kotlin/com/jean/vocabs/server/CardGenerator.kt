@@ -12,25 +12,25 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.json.Json
 
 /**
- * Par de idiomas que o catálogo não conhece.
+ * A language pair the catalog does not know.
  *
- * Vira 400, e não 503: repetir o mesmo pedido nunca vai dar certo, e o app
- * precisa saber a diferença entre "tente de novo" e "isto não existe".
+ * Becomes a 400, not a 503: repeating the same request will never work, and the
+ * app needs to tell "try again" apart from "this does not exist".
  */
 class UnknownLanguagePair(native: String, target: String) :
     IllegalArgumentException("Par de languages desconhecido: $native → $target.")
 
 /**
- * Traduz uma captura crua (trecho + alvo) numa ficha completa, via Claude.
+ * Turns a raw capture (snippet plus target) into a full card, via Claude.
  *
- * O ponto crítico aqui é o structured output: o schema abaixo obriga a resposta
- * a vir no formato exato de [CardResponse]. Sem isso, o modelo às vezes devolve
- * o JSON embrulhado em markdown ou com um comentário antes, e você acaba
- * escrevendo regex para extrair — que quebra no primeiro caso estranho.
+ * The critical part is structured output: the schema below forces the response
+ * into [CardResponse]'s exact shape. Without it the model sometimes returns the
+ * JSON wrapped in markdown or with a comment first, and you end up writing a
+ * regex to extract it — which breaks on the first odd case.
  */
 class CardGenerator(
-    // Preguiçoso de propósito: sem isto, a falta de ANTHROPIC_API_KEY derruba o
-    // servidor no boot e você não consegue nem testar /health ou a autenticação.
+    // Lazy on purpose: without it, a missing ANTHROPIC_API_KEY brings the server
+    // down at boot and you cannot even test /health or authentication.
     clientFactory: () -> AnthropicClient = {
         AnthropicOkHttpClient.builder()
             .apiKey(Config.obrigatorio("ANTHROPIC_API_KEY"))
@@ -41,12 +41,12 @@ class CardGenerator(
     private val json = Json { ignoreUnknownKeys = true }
 
     /**
-     * O prompt de cada par, montado uma vez só.
+     * Each pair's prompt, built once.
      *
-     * O texto do sistema é o pedaço mais longo e mais repetido de toda chamada, e
-     * remontá-lo por requisição produziria strings diferentes byte a byte só por
-     * azar de formatação — o que basta para perder o cache de prompt do outro
-     * lado. São poucos pares por instalação; guardar todos custa nada.
+     * The system text is the longest and most repeated piece of every call, and
+     * rebuilding it per request would produce byte-different strings through
+     * formatting luck alone — enough to lose the prompt cache on the other side.
+     * There are few pairs per install; keeping them all costs nothing.
      */
     private val prompts = ConcurrentHashMap<LanguagePairSpec, String>()
 
@@ -61,13 +61,13 @@ class CardGenerator(
             .outputConfig(
                 OutputConfig.builder()
                     .apply {
-                        // Nem todo modelo aceita `effort` — o Haiku 4.5 responde
-                        // 400 "does not support the effort parameter". Mandar
-                        // mesmo assim faz a ficha falhar inteira, então só envia
-                        // para quem suporta.
+                        // Not every model accepts `effort` — Haiku 4.5 answers
+                        // 400 "does not support the effort parameter". Sending it
+                        // anyway fails the whole card, so it only goes to models
+                        // that support it.
                         if (supportsEffort) {
-                            // Tarefa de extração curta e bem definida: não precisa
-                            // de raciocínio profundo. É ajuste de custo/latência.
+                            // A short, well-defined extraction task: no deep
+                            // reasoning needed. This is a cost/latency choice.
                             effort(OutputConfig.Effort.LOW)
                         }
                     }
@@ -93,30 +93,27 @@ class CardGenerator(
         return applyLocalDecisions(request, card)
     }
 
-    // Configurável para dar para comparar modelos sem recompilar. O padrão é o
-    // mais capaz para produzir definições contextualizadas e termos relacionados.
+    // Configurable so models can be compared without recompiling. The default is
+    // the most capable, for contextual definitions and related terms.
     private val model: String = Config["MODELO"] ?: DEFAULT_MODEL
 
-    /** Haiku 4.5 rejeita `effort` com 400; Opus e Sonnet aceitam. */
+    /** Haiku 4.5 rejects `effort` with a 400; Opus and Sonnet accept it. */
     private val supportsEffort: Boolean = !model.startsWith("claude-haiku")
 
-    /** Interno, e não privado, para o teste conferir que o prompt cita os dois languages. */
+    /** Internal, not private, so a test can check the prompt names both languages. */
     internal companion object {
         const val DEFAULT_MODEL = "claude-opus-5"
 
         /**
-         * O prompt é a única coisa deste projeto escrita em inglês — todo o resto,
-         * inclusive estes comentários, continua em português.
+         * The instruction's language and the output's are independent: the model
+         * reads this and writes the translation in the native language because
+         * the instruction says so, not because the instruction is in that
+         * language. Keeping a translated copy per native language would mean N
+         * versions of calibrated prose — the WORD versus PHRASE test is the
+         * subtlest part of a card, and translating is recalibrating by accident.
          *
-         * Dois motivos. O idioma da instrução e o idioma da saída são
-         * independentes: o modelo lê inglês e escreve a tradução em português
-         * porque a instrução manda, não porque a instrução esteja em português.
-         * E manter uma cópia traduzida do prompt por idioma nativo seria manter N
-         * versões de uma prosa calibrada — o teste de WORD vs PHRASE é a
-         * parte mais sutil da ficha, e traduzir é recalibrar sem querer.
-         *
-         * Os nomes dos campos e os valores do enum ficam como estão: são o
-         * contrato com [CardResponse], não texto para o modelo traduzir.
+         * Field names and enum values stay as they are: they are the contract
+         * with [CardResponse], not text for the model to translate.
          */
         fun promptFor(languages: LanguagePairSpec): String {
             val native = languages.native.englishName
@@ -148,8 +145,8 @@ class CardGenerator(
         }
 
         /**
-         * Espelha [CardResponse]. `additionalProperties: false` e todos os campos
-         * em `required` são exigidos pelo structured outputs da API.
+         * Mirrors [CardResponse]. `additionalProperties: false` and every field in
+         * `required` are demanded by the API's structured outputs.
          *
          * Kept as a plain map, not inlined into [SCHEMA], so a test can compare
          * its keys against [CardResponse]'s serial names. Nothing else connects
@@ -174,10 +171,11 @@ class CardGenerator(
                     ),
                     "example" to mapOf("type" to "string"),
                     "pronunciation" to mapOf("type" to "string"),
-                    // Sem `minItems`/`maxItems`: o structured outputs da API só
-                    // aceita `minItems` 0 ou 1 e rejeita o resto com 400, o que
-                    // derrubaria toda ficha. A faixa de 3 a 6 fica no prompt, e o
-                    // teto é garantido de verdade em [applyLocalDecisions].
+                    // No `minItems`/`maxItems`: the API's structured outputs only
+                    // accepts `minItems` 0 or 1 and rejects the rest with a 400,
+                    // which would fail every card. The 3-to-6 range lives in the
+                    // prompt, and the ceiling is really enforced in
+                    // [applyLocalDecisions].
                     "related" to mapOf(
                         "type" to "array",
                         "items" to mapOf("type" to "string"),
@@ -189,7 +187,7 @@ class CardGenerator(
     }
 }
 
-/** A seleção no aparelho é a autoridade; a saída do model nunca a sobrescreve. */
+/** The device's selection is the authority; the model's output never overrides it. */
 internal fun applyLocalDecisions(
     request: GenerateCardRequest,
     card: CardResponse,

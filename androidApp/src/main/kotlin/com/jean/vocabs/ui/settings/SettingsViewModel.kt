@@ -21,12 +21,11 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferences.theme)
 
     /**
-     * O idioma-base, observado e não lido uma vez.
+     * The native language, observed rather than read once.
      *
-     * Trocá-lo abre a tela de escolha por cima desta e volta para cá: sem o
-     * fluxo, a linha continuaria mostrando o idioma antigo até a Configurações
-     * ser recriada — e a única prova de que a troca pegou é justamente essa
-     * linha.
+     * Changing it opens the picker over this screen and returns here: without the
+     * flow the row would keep showing the old language until Settings was
+     * recreated — and that row is the only proof the change took.
      */
     val native: StateFlow<String> = preferences.observeNativeLanguage()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferences.native)

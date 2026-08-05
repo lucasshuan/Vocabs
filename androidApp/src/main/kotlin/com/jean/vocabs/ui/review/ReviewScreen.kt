@@ -96,12 +96,11 @@ fun ReviewScreen(onBack: () -> Unit, vm: ReviewViewModel = viewModel()) {
 }
 
 /**
- * A barra do topo, que avança um cartão de cada vez.
+ * The top bar, advancing one card at a time.
  *
- * É a única coisa na tela que mostra a sessão inteira, e ela só cumpre esse papel
- * se o avanço for visto: saltando de um quadro para o outro junto com o cartão
- * novo, ela some no meio da troca e a sessão vira uma sequência de perguntas sem
- * fim à vista.
+ * The only thing on screen showing the whole session, and it only plays that part
+ * if the advance is seen — jumping between frames along with the new card, it
+ * disappears mid-swap.
  */
 @Composable
 private fun ProgressBar(fraction: Float, modifier: Modifier = Modifier) {
@@ -123,11 +122,10 @@ private fun ProgressBar(fraction: Float, modifier: Modifier = Modifier) {
 @Composable
 private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
     val keyboard = LocalSoftwareKeyboardController.current
-    // O veredito que a caixa mostra é uma cópia, e não uma leitura do estado.
-    // "Continuar" limpa o feedback e troca o cartão no mesmo instante, enquanto a
-    // caixa ainda está encolhendo: lendo o estado ao vivo, esses 150 ms de saída
-    // exibiriam a resposta do cartão **seguinte** — a revisão entregaria de
-    // graça a palavra que está prestes a perguntar.
+    // The verdict the box shows is a copy, not a read of the state. "Continue"
+    // clears the feedback and swaps the card at the same instant, while the box
+    // is still shrinking: reading live, those 150 ms of exit would show the
+    // **next** card's answer — giving away the word about to be asked.
     var lastVerdict by remember { mutableStateOf<Pair<ReviewFeedback, String>?>(null) }
     LaunchedEffect(state.feedback, state.entry.id) {
         state.feedback?.let { lastVerdict = it to state.entry.target.orEmpty() }
@@ -136,11 +134,10 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
         verticalArrangement = Arrangement.spacedBy(18.dp),
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
-        // O trecho é a única coisa que muda de um cartão para o seguinte, e por
-        // isso é ele — e não a tela — que se move: o antigo sai pela esquerda, o
-        // novo entra pela direita, e o campo de resposta logo abaixo fica onde
-        // está, com o cursor intacto. Trocar a coluna inteira derrubaria o foco
-        // do teclado a cada palavra respondida.
+        // The snippet is the only thing that changes between cards, so it is the
+        // snippet that moves and not the screen: the answer field below stays
+        // where it is with the cursor intact. Swapping the whole column would
+        // drop keyboard focus on every answered word.
         AnimatedContent(
             targetState = state.entry,
             transitionSpec = {
@@ -181,18 +178,18 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // O veredito se abre empurrando o botão para baixo, em vez de aparecer
-        // pronto no lugar dele. É o único instante da revisão em que a pessoa
-        // descobriu alguma coisa, e 240 ms de abertura é o que separa "a tela
-        // respondeu" de "a tela já estava assim".
+        // The verdict opens by pushing the button down rather than appearing
+        // ready in its place. It is the one moment of the review where something
+        // was found out, and 240 ms of opening separates "the screen answered"
+        // from "the screen was already like this".
         AnimatedVisibility(
             visible = state.feedback != null,
             enter = expandVertically(tween(Motion.DEFAULT)) + fadeIn(tween(Motion.DEFAULT)),
             exit = shrinkVertically(tween(Motion.FAST)) + fadeOut(tween(Motion.FAST)),
         ) {
-            // Ao vivo enquanto o feedback existe, pela cópia enquanto ele sai —
-            // assim a caixa nunca fica um quadro sem conteúdo na entrada nem
-            // mostra o cartão errado na saída.
+            // Live while the feedback exists, from the copy while it leaves — so
+            // the box is never a frame without content on entry and never shows
+            // the wrong card on exit.
             val verdict = state.feedback?.let { it to state.entry.target.orEmpty() } ?: lastVerdict
             if (verdict != null) {
                 val (feedback, answer) = verdict
@@ -228,7 +225,7 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
     }
 }
 
-/** A lacuna vira um traço de ameixa: no handoff ela é um sublinhado, não underscores. */
+/** The gap becomes a plum rule: a solid underline, not underscores. */
 @Composable
 private fun annotatedCloze(snippet: String) = buildAnnotatedString {
     val cut = snippet.indexOf(GAP)
@@ -266,10 +263,9 @@ private fun Summary(state: ReviewState.Summary, vm: ReviewViewModel, onBack: () 
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.smoothEntrance().padding(top = 48.dp),
         )
-        // Acertos e sequência contam do zero; "para reforçar" não. Os dois
-        // primeiros são o que a sessão rendeu, e vê-los subir é a recompensa da
-        // tela inteira — o terceiro é o que ficou faltando, e uma contagem
-        // crescente ali transformaria o erro em placar.
+        // Hits and streak count up from zero; "to reinforce" does not. The first
+        // two are what the session earned; the third is what is still missing,
+        // and a rising count there would turn a mistake into a score.
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
             MetricCard("${animatedCount(state.hits, "hits")}", "acertos", Modifier.weight(1f), highlight = true)
             MetricCard("${state.misses}", "para reforçar", Modifier.weight(1f))

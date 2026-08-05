@@ -15,12 +15,11 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * O que a folha do `+` precisa saber: em que idiomas dá para guardar, e qual
- * deles vem marcado.
+ * What the `+` sheet needs to know: which languages can be saved to, and which
+ * one arrives marked.
  *
- * O marcado é o curso aberto — que na Início é a página visível e nas outras
- * abas é o último usado. Não há um terceiro conceito de "último idioma de
- * captura": ele seria mais um estado para divergir do que a tela mostra.
+ * The marked one is the open course. There is no third notion of "last capture
+ * language" — it would be one more state to diverge from what the screen shows.
  */
 data class CaptureState(
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
@@ -41,12 +40,13 @@ class CaptureViewModel(app: Application) : AndroidViewModel(app) {
     ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CaptureState())
 
     /**
-     * Guarda o trecho e devolve a captura, que é para onde a seleção vai.
+     * Saves the snippet and returns the capture, which is where the selection
+     * goes.
      *
-     * O "Continuar" grava antes de haver seleção nenhuma de propósito: a partir
-     * daqui, desistir da marcação, fechar o app ou perder a conexão deixa a
-     * captura em Pendentes com o idioma já escolhido, em vez de jogar fora o que
-     * a pessoa colou.
+     * "Continue" records before there is any selection on purpose: from here on,
+     * abandoning the marking, closing the app or losing the connection leaves the
+     * capture in Pending with the language already chosen, instead of throwing
+     * away what was pasted.
      */
     fun saveSnippet(snippet: String, target: String, onReady: (Long) -> Unit) {
         val languagePair = LanguagePair(native = state.value.languagePair.native, target = target)
@@ -56,11 +56,11 @@ class CaptureViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * OCR e voz são locais e demoram; a captura já está salva antes deles.
+     * OCR and speech are local and slow; the capture is already saved before them.
      *
-     * Roda no escopo de aplicação porque a folha fecha na hora: preso ao
-     * `viewModelScope`, o cancelamento da tela deixaria a captura para sempre em
-     * TRANSCRIBING.
+     * Runs in the application scope because the sheet closes immediately: tied to
+     * `viewModelScope`, the screen's cancellation would leave the capture in
+     * TRANSCRIBING forever.
      */
     fun saveMedia(
         format: CaptureFormat,

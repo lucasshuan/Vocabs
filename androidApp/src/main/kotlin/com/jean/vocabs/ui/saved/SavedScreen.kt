@@ -55,16 +55,14 @@ import com.jean.vocabs.ui.languages.languageOf
 import kotlinx.coroutines.delay
 
 /**
- * Tela 11 do handoff — "Guardado".
+ * "Saved".
  *
- * Confirma em menta, mostra o que entrou e em qual idioma, e deixa a IA
- * trabalhando ao fundo. A ação em destaque é **capturar de novo**, e não sair:
- * quem acabou de guardar duas coisas de um mesmo trecho quase sempre tem uma
- * terceira, e o custo da próxima captura é o assunto do app inteiro.
+ * The highlighted action is **capture again**, not leave: whoever just saved two
+ * things from one snippet usually has a third, and the cost of the next capture
+ * is the whole app's subject.
  *
- * Ela se fecha sozinha quando não há mais nada acontecendo. Enquanto uma ficha
- * estiver sendo montada, fica: seria estranho prometer mostrar o trabalho e
- * sumir com ele no meio.
+ * It closes itself once nothing is happening. While a card is still being built
+ * it stays — promising to show the work and then vanishing with it would be odd.
  */
 @Composable
 fun SavedScreen(
@@ -96,9 +94,9 @@ fun SavedScreen(
             modifier = Modifier.fillMaxWidth().padding(top = 34.dp),
         ) {
             ConfirmBadge()
-            // A contagem vem da rota e não do banco: ela já é conhecida no
-            // primeiro frame, e um "0 guardadas" piscando antes da consulta
-            // desmentiria justo a tela que existe para confirmar.
+            // The count comes from the route rather than the database: it is
+            // known on the first frame, and a "0 saved" flashing before the query
+            // would contradict the one screen that exists to confirm.
             Text(
                 text = "${ids.size} ${if (ids.size == 1) "guardada" else "guardadas"}",
                 style = MaterialTheme.typography.headlineMedium,
@@ -155,7 +153,7 @@ fun SavedScreen(
     }
 }
 
-/** O tique entra com mola: é a única comemoração do app, e ela dura 300 ms. */
+/** The tick springs in: the app's only celebration, and it lasts 300 ms. */
 @Composable
 private fun ConfirmBadge() {
     val colors = MaterialTheme.colorScheme
@@ -181,12 +179,11 @@ private fun ConfirmBadge() {
 }
 
 /**
- * Uma linha do que acabou de entrar.
+ * One row of what just came in.
  *
- * É a única tela do app em que o conteúdo muda **sozinho**, com a pessoa olhando:
- * a IA volta e "montando o sentido" vira a tradução. Essa troca é a promessa da
- * tela sendo cumprida, e por isso as duas metades da linha — o subtexto e o selo
- * da direita — cruzam em vez de trocar de um quadro para o outro.
+ * The only screen whose content changes **on its own** while being watched: the
+ * AI returns and "working out the sense" becomes the translation. Both halves of
+ * the row crossfade rather than switching between frames.
  */
 @Composable
 private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
@@ -236,8 +233,8 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
                     }
                 }
             }
-            // O selo de pronta entra com mola: ele é o desfecho de uma espera, e
-            // é a única coisa da linha que a pessoa pode estar esperando ver.
+            // The ready badge springs in: it is the end of a wait, and the only
+            // thing on the row someone may be watching for.
             AnimatedVisibility(
                 visible = isReady,
                 enter = scaleIn(Motion.elasticSpring()) + fadeIn(tween(Motion.DEFAULT)),
@@ -262,11 +259,10 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
 }
 
 /**
- * A barra que anda sem saber quanto falta.
+ * The bar that moves without knowing how much is left.
  *
- * A geração não tem progresso mensurável — ela é uma requisição que volta ou
- * não. Uma barra que fingisse porcentagem estaria inventando; esta só diz que
- * alguma coisa está acontecendo.
+ * Generation has no measurable progress — it is a request that returns or does
+ * not. A bar faking a percentage would be inventing one.
  */
 @Composable
 private fun IndeterminateBar() {
@@ -298,5 +294,5 @@ private fun ExitAction(text: String, modifier: Modifier = Modifier, onClick: () 
     }
 }
 
-/** Tempo de leitura de duas linhas curtas, e nada além disso. */
+/** Reading time for two short lines, and nothing beyond that. */
 private const val AUTO_CLOSE_MS = 3_500L

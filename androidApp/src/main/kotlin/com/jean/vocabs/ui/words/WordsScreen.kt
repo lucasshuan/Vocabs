@@ -45,13 +45,13 @@ import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**
- * Tela 06 do handoff — "Vocabulários", os três idiomas juntos.
+ * "Words", all three languages together.
  *
- * Os níveis continuam logo abaixo da busca, onde sempre estiveram. O que mudou é
- * o idioma: ele deixou de ser mais uma pílula na mesma fileira e virou cabeçalho
- * de grupo. Duas fileiras de filtro na mesma tela ensinariam que idioma e nível
- * são a mesma espécie de escolha, e eles não são — nível é um recorte, idioma é
- * uma divisão.
+ * The levels stay just below the search, where they have always been. What
+ * changed is the language: it stopped being one more pill in the same row and
+ * became a group header. Two filter rows on one screen would teach that language
+ * and level are the same kind of choice, and they are not — level is a slice,
+ * language is a division.
  */
 @Composable
 fun WordsScreen(
@@ -110,8 +110,9 @@ fun WordsScreen(
             }
         }
 
-        // Busca sem resultado nenhum mostra só o vazio: repetir três cabeçalhos
-        // sem nada embaixo transformaria a resposta numa lista de nãos.
+        // A search with no results shows only the empty state: repeating three
+        // headers with nothing under them would turn the answer into a list of
+        // noes.
         val withGroups = state.matches > 0
 
         state.groups.forEach { group ->
@@ -134,11 +135,10 @@ fun WordsScreen(
 }
 
 /**
- * O cabeçalho de um idioma: bandeira, nome, o que há dentro e a chevron.
+ * A language header: flag, name, what is inside, and the chevron.
  *
- * A chevron gira em vez de trocar de ícone — é o mesmo elemento mudando de
- * estado, e o giro de 90° diz para onde a lista foi sem exigir que ninguém
- * compare dois desenhos.
+ * The chevron rotates rather than swapping icon — it is the same element changing
+ * state, and 90° says where the list went without anyone comparing two drawings.
  */
 @Composable
 private fun LanguageHeader(

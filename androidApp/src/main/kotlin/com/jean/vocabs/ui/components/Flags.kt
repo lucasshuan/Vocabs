@@ -15,17 +15,11 @@ import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.flagOf
 
 /**
- * A bandeira como disco.
+ * The flag as a disc.
  *
- * O recorte é do Compose e não do desenho: o `clip` tem antialiasing de verdade,
- * enquanto um `clip-path` dentro do VectorDrawable serrilha a borda em algumas
- * versões do Android. O desenho em si é a arte original, quadrada, e o círculo
- * some com o que sobra.
- *
- * A pílula do par de idiomas que morava aqui saiu junto com o cabeçalho antigo
- * do Início: o par deixou de ser uma coisa só. O alvo agora é a página do
- * carrossel e o nativo é uma linha da tela Você — desenhá-los grudados sugeriria
- * que os dois se trocam no mesmo lugar, e não se trocam mais.
+ * The clipping is Compose's rather than the drawing's: `clip` has real
+ * antialiasing, while a `clip-path` inside the VectorDrawable jags the edge on
+ * some Android versions. The drawing itself is the original square art.
  */
 @Composable
 fun CircularFlag(language: Language, modifier: Modifier = Modifier, size: Dp = 20.dp) {

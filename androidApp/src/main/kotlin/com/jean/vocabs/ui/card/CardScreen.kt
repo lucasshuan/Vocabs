@@ -140,9 +140,9 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(item.title, style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f, fill = false))
-                    // Sem voz instalada para o idioma da ficha o botão não
-                    // aparece: um botão que não faz nada é pior que a ausência
-                    // dele, e falar alemão com voz portuguesa seria pior ainda.
+                    // With no voice installed for the card's language the button
+                    // does not appear: a button that does nothing is worse than
+                    // its absence, and German in a Portuguese voice is worse yet.
                     tts?.let { voice ->
                         Surface(
                             onClick = { voice.speak(item.title, TextToSpeech.QUEUE_FLUSH, null, "Vocabu-ficha") },
@@ -169,11 +169,11 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
                 }
             }
 
-            // A ficha pode ficar pronta com a tela aberta: quem toca numa linha de
-            // Pendentes cai aqui enquanto a IA ainda trabalha. O corpo inteiro
-            // cruza de um estado para o outro em vez de ser trocado no lugar —
-            // sem isso, a tela pisca de "sendo criada…" para uma página cheia de
-            // texto, e o que foi a resposta chegando parece um erro de desenho.
+            // The card can become ready with the screen open: tapping a Pending
+            // row lands here while the AI is still working. The whole body
+            // crossfades rather than being swapped in place — otherwise the
+            // screen blinks from "being created…" to a full page of text, and the
+            // answer arriving looks like a drawing glitch.
             AnimatedContent(
                 targetState = item.status,
                 transitionSpec = { fadeIn(tween(Motion.DEFAULT)) togetherWith fadeOut(tween(Motion.FAST)) },
@@ -226,12 +226,11 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
 }
 
 /**
- * O corpo da ficha depois que a IA respondeu.
+ * The card body once the AI has answered.
  *
- * Saiu de dentro do `when` para virar um filho só: o `AnimatedContent` que cruza
- * os estados da ficha entrega um slot por estado, e a coluna com o mesmo
- * espaçamento da tela é o que mantém os quatro blocos com o respiro que tinham
- * quando eram irmãos diretos.
+ * Pulled out of the `when` into a single child: the `AnimatedContent` crossing
+ * the card's states hands one slot per state, and the column keeps the four
+ * blocks spaced as they were when they were direct siblings.
  */
 @Composable
 private fun CardReady(
@@ -292,9 +291,9 @@ private fun CardReady(
         if (card.related.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 SectionLabel("Puxa outras palavras")
-                // `animateContentSize` porque "ver mais" muda a altura do bloco:
-                // sem ele, o resto da ficha salta para baixo de um quadro para o
-                // outro e ninguém vê de onde as pílulas novas saíram.
+                // `animateContentSize` because "see more" changes the block's
+                // height: without it the rest of the card jumps down between
+                // frames and nobody sees where the new pills came from.
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
@@ -316,7 +315,7 @@ private fun CardReady(
     }
 }
 
-/** O trecho do usuário, com a barra de ameixa que diz "isto é seu, não do dicionário". */
+/** The user's snippet, with the plum bar saying "this is yours, not the dictionary's". */
 @Composable
 private fun HighlightedSnippet(snippet: String) {
     Surface(
@@ -338,24 +337,22 @@ private fun HighlightedSnippet(snippet: String) {
 }
 
 /**
- * A voz na língua da **ficha**, e não na do curso aberto.
+ * The voice speaks the **card's** language, not the open course's.
  *
- * A ficha guarda o par em que nasceu justamente para isto: abrir uma palavra
- * alemã antiga depois de trocar para o espanhol tem que falar alemão. Falar a
- * palavra certa com o sotaque errado é pior do que não falar.
+ * The card stores the pair it was born in for exactly this: opening an old German
+ * word after switching to Spanish has to speak German.
  *
- * `setLanguage` devolve `LANG_MISSING_DATA`/`LANG_NOT_SUPPORTED` quando o
- * aparelho não tem a voz instalada — o mesmo caso do transcritor sem modelo. Aí
- * o botão some, em vez de pronunciar alemão em português.
+ * `setLanguage` returns `LANG_MISSING_DATA`/`LANG_NOT_SUPPORTED` when the device
+ * has no voice installed — the same case as a transcriber with no model. The
+ * button then disappears rather than pronouncing German in Portuguese.
  */
 @Composable
 private fun rememberTts(tag: String): TextToSpeech? {
     val context = LocalContext.current
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     DisposableEffect(context, tag) {
-        // O callback pode ler o próprio motor porque `onInit` só chega depois de
-        // a construção retornar: ela depende de um bind de serviço, que é
-        // assíncrono.
+        // The callback may read the engine itself because `onInit` only arrives
+        // after construction returns: it depends on an asynchronous service bind.
         var engine: TextToSpeech? = null
         engine = TextToSpeech(context) { status ->
             val isAvailable = status == TextToSpeech.SUCCESS &&

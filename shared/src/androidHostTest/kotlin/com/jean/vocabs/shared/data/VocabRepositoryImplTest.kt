@@ -125,7 +125,7 @@ class VocabRepositoryImplTest {
         course.value = LanguagePair("pt-BR", "en")
         assertEquals(listOf("fence"), repo.observeInbox().first().map { it.target })
 
-        // A captura guarda o par em que nasceu, e não o par de agora.
+        // The capture keeps the pair it was born in, not the current one.
         assertEquals(LanguagePair("pt-BR", "en"), repo.observeInbox().first().single().languagePair)
     }
 
@@ -140,12 +140,12 @@ class VocabRepositoryImplTest {
         val german = "der Zaun"
         repo.captureText(german, listOf(selectTokens(german, 1)!!))
 
-        // Vocabulários, Pendentes e Você leem assim: tudo, sempre.
+        // Words, Pending and Profile read like this: everything, always.
         assertEquals(
             setOf("fence", "Zaun"),
             repo.observeInbox(Scope.All).first().mapNotNull { it.target }.toSet(),
         )
-        // "Seu progresso · inglês" lê assim, sem trocar o curso aberto.
+        // "Your progress" reads like this, without switching the active course.
         assertEquals(listOf("fence"), repo.observeInbox(Scope.Course("en")).first().map { it.target })
         assertEquals(LanguagePair("pt-BR", "de"), course.value)
     }
@@ -161,7 +161,7 @@ class VocabRepositoryImplTest {
         val pending = repo.observePendingCaptures(Scope.All).first().single()
         assertEquals(id, pending.id)
         assertEquals("es", pending.languagePair.target)
-        // E some do curso aberto, que continua sendo o inglês.
+        // And leaves the active course, which is still English.
         assertTrue(repo.observePendingCaptures().first().isEmpty())
     }
 
@@ -186,7 +186,7 @@ class VocabRepositoryImplTest {
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
         assertTrue(repo.generateCard(id))
 
-        // Ficha recém-pronta: em dia, com uma revisão agendada para depois.
+        // A just-ready card: up to date, with a review scheduled for later.
         val upToDate = repo.observeCourses().first().single()
         assertEquals(0, upToDate.inQueue)
         assertTrue(upToDate.nextInMillis!! > 0)
@@ -208,7 +208,7 @@ class VocabRepositoryImplTest {
         )
 
         assertEquals(ids.sorted(), repo.observeEntries(ids).first().map { it.id })
-        // Lista vazia é o estado normal antes do argumento de rota chegar.
+        // An empty list is the normal state before the route argument arrives.
         assertTrue(repo.observeEntries(emptyList()).first().isEmpty())
     }
 
@@ -233,10 +233,10 @@ class VocabRepositoryImplTest {
         val id = repo.captureText(snippet, listOf(selectTokens(snippet, 0)!!)).single()
         assertTrue(repo.generateCard(id))
 
-        // Ficha recém-pronta está com 100 pontos: nada na fila, nada feito.
+        // A just-ready card sits at 100 points: nothing queued, nothing done.
         assertEquals(DailyQuota(done = 0, inQueue = 0), repo.observeReviewSummary().first().quota)
 
-        // Passado o intervalo, ela pede revisão e a quota do dia passa a ter 1.
+        // Past the interval it becomes due and the day's quota goes to 1.
         now += 2 * 86_400_000L
         assertEquals(DailyQuota(done = 0, inQueue = 1), repo.observeReviewSummary().first().quota)
 
@@ -262,7 +262,8 @@ class VocabRepositoryImplTest {
         assertEquals("1", hit.detail)
         assertEquals("verdant", hit.target)
 
-        // Três acertos depois ela cruza para familiar, e só aí um SUBIU_NIVEL sai.
+        // Three hits later it crosses into familiar, and only then is a
+        // LEVELED_UP recorded.
         repeat(3) { repo.recordAnswer(id, correct = true) }
         val rises = repo.observeEvents(84).first().filter { it.type == EventType.LEVELED_UP }
         assertEquals(listOf(MemoryLevel.MASTERED.name, MemoryLevel.FAMILIAR.name), rises.map { it.detail })

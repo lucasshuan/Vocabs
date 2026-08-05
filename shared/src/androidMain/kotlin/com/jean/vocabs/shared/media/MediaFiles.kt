@@ -4,11 +4,11 @@ import android.content.Context
 import java.io.File
 
 /**
- * Onde as fotos e os áudios das capturas ficam.
+ * Where captured photos and audio live.
  *
- * Tudo dentro de `filesDir`: armazenamento privado do app, que não pede
- * permissão nenhuma e some junto com o app se você desinstalar. Coerente com o
- * "local-first" do produto — nada disso aparece na galeria do celular.
+ * All inside `filesDir`: app-private storage, which needs no permission and goes
+ * away with the app. Consistent with the product being local-first — none of it
+ * appears in the phone's gallery.
  */
 object MediaFiles {
 
@@ -23,7 +23,7 @@ object MediaFiles {
         return File(folder, "$prefix-${System.currentTimeMillis()}.$extension")
     }
 
-    /** Silencioso de propósito: se o file já não existe, o objetivo foi atingido. */
+    /** Silent on purpose: if the file is already gone, the goal was met. */
     fun remove(path: String) {
         runCatching { File(path).delete() }
     }

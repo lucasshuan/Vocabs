@@ -16,15 +16,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * A tela Você: o total primeiro, a quebra por idioma depois.
+ * Profile: the totals first, the per-language breakdown after.
  *
- * Sequência e estoque são hábito, e hábito é da pessoa e não do curso — quem
- * estudou espanhol ontem e francês hoje estudou dois dias seguidos. Por isso os
- * três números do topo somam tudo, e a lista logo abaixo é que reparte.
+ * Streak and stock are habit, and habit belongs to the person rather than the
+ * course — someone who studied Spanish yesterday and French today studied two
+ * days running. So the three numbers at the top sum everything.
  */
 data class ProfileState(
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
-    /** Todos os cursos matriculados, na ordem da faixa — inclusive os vazios. */
+    /** Every enrolled course, in strip order — empty ones included. */
     val courses: List<CourseSummary> = emptyList(),
     val dayStreak: Int = 0,
     val aiUsage: AiUsage = AiUsage("", 0),
@@ -40,8 +40,7 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<ProfileState> = combine(
         enrolledCourses(repository, preferences),
         preferences.observeLanguagePair(),
-        // De todos os cursos: a sequência de dias conta atividade em qualquer
-        // idioma, e é o único número desta tela que já era assim antes.
+        // Across every course: the day streak counts activity in any language.
         repository.observeReviewSummary(Scope.All),
         repository.observeAiUsage(),
     ) { courseList, languagePair, review, aiUsage ->
@@ -53,7 +52,7 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProfileState())
 
-    /** Quantos idiomas ainda dá para escolher — o "37 idiomas" da tela Novo idioma. */
+    /** How many languages are still choosable — New language's "37 languages". */
     val available: StateFlow<Int> = preferences.observeCourses()
         .map { enrolled -> com.jean.vocabs.contracts.Languages.CATALOG.count { it.code !in enrolled } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)

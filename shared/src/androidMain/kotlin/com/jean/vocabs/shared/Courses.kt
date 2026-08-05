@@ -7,17 +7,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
 /**
- * Todos os cursos matriculados, na ordem da faixa e com o resumo de cada um.
+ * Every enrolled course, in strip order, with each one's summary.
  *
- * A lista vem da preferência, e não do que existe no banco: um curso recém
- * criado não tem palavra nenhuma, e montá-la a partir das fichas faria o idioma
- * que a pessoa acabou de escolher desaparecer no instante seguinte. Os que ainda
- * não têm ficha entram zerados, que é o que o estado vazio precisa para desenhar
- * o esqueleto sem inventar número.
- *
- * A tela Você e a gaveta de "Seu progresso" mostram a mesma lista, e lê-la de
- * dois jeitos faria os mesmos idiomas aparecerem em quantidades diferentes em
- * duas telas que abrem uma da outra.
+ * The list comes from the preference rather than from what exists in the
+ * database: a newly created course has no words, and building it from the cards
+ * would make the language someone just chose vanish the instant after. Ones with
+ * no cards yet enter at zero, which is what the empty state needs to draw the
+ * skeleton without inventing a number.
  */
 fun enrolledCourses(
     repository: VocabRepository,

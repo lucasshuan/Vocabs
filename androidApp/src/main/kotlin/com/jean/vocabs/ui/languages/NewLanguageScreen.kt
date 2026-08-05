@@ -48,12 +48,12 @@ import com.jean.vocabs.ui.components.cardOutline
 import com.jean.vocabs.ui.displayName
 
 /**
- * Tela 5c do handoff — "Novo idioma".
+ * "New language".
  *
- * Serve às duas escolhas de idioma, e não a uma só: matricular num curso novo e
- * trocar o idioma de partida são a mesma lista, a mesma busca e a mesma linha
- * selecionável. Duplicá-la para mudar o título e o verbo do botão seria manter
- * duas telas iguais que divergiriam no primeiro ajuste.
+ * Serves both language choices, not one: enrolling in a new course and switching
+ * the native language are the same list, the same search and the same selectable
+ * row. Duplicating it to change the title and the button's verb would mean two
+ * identical screens that diverge on the first adjustment.
  */
 @Composable
 fun NewLanguageScreen(
@@ -186,11 +186,11 @@ private fun LanguageRow(language: Language, selected: Boolean, onClick: () -> Un
 }
 
 /**
- * O campo de busca.
+ * The search field.
  *
- * `BasicTextField` e não `OutlinedTextField`: o handoff pede um cartão de 14 de
- * raio com a lupa dentro, e o campo do Material traz consigo label flutuante,
- * contorno próprio e uma altura mínima que não cabem nesse desenho.
+ * `BasicTextField` rather than `OutlinedTextField`: the design is a 14-radius
+ * card with the magnifier inside, and Material's field brings a floating label,
+ * its own outline and a minimum height that do not fit it.
  */
 @Composable
 private fun SearchField(value: String, onChange: (String) -> Unit) {

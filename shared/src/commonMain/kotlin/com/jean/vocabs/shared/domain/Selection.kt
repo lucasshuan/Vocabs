@@ -11,7 +11,7 @@ data class SnippetToken(
 private val validToken = Regex("[\\p{L}\\p{N}]+(?:['’\\-][\\p{L}\\p{N}]+)*")
 private val repeatedSpaces = Regex("\\s+")
 
-/** Pontuação externa fica fora; apóstrofos e hífens internos permanecem. */
+/** External punctuation is dropped; internal apostrophes and hyphens stay. */
 fun tokenizeSnippet(snippet: String): List<SnippetToken> = validToken.findAll(snippet).map { found ->
     SnippetToken(
         text = found.value,
@@ -21,8 +21,8 @@ fun tokenizeSnippet(snippet: String): List<SnippetToken> = validToken.findAll(sn
 }.toList()
 
 /**
- * Cria uma seleção contínua entre dois tokens. Os limites são [início, fim), o
- * mesmo formato usado pelo banco e por String.substring.
+ * Builds a continuous selection between two tokens. Bounds are [start, end), the
+ * same shape the database and String.substring use.
  */
 fun selectTokens(snippet: String, first: Int, last: Int = first): SelectedTarget? {
     val tokens = tokenizeSnippet(snippet)
@@ -42,7 +42,7 @@ fun selectTokens(snippet: String, first: Int, last: Int = first): SelectedTarget
 fun SelectedTarget.isValidIn(snippet: String): Boolean =
     start >= 0 && end in (start + 1)..snippet.length && snippet.substring(start, end) == text
 
-/** Só caixa e espaços repetidos são ignorados; acentos e pontuação continuam valendo. */
+/** Only case and repeated spaces are ignored; accents and punctuation still count. */
 fun normalizeAnswer(value: String): String = value.trim().lowercase().replace(repeatedSpaces, " ")
 
 fun isAnswerCorrect(answer: String, expected: String): Boolean =

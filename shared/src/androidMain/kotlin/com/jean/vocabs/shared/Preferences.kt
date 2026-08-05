@@ -12,16 +12,16 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 /**
- * O que a pessoa escolheu e o banco não guarda: idioma nativo, que cursos ela
- * tem, qual está aberto e o tema.
+ * What the person chose and the database does not keep: native language, which
+ * courses they have, which one is open, and the theme.
  *
- * `SharedPreferences` e não DataStore: são cinco valores escalares lidos na
- * primeira composição de várias telas, e o DataStore obrigaria toda leitura a
- * ser suspensa — inclusive a do tema, que precisa estar resolvida antes do
- * primeiro frame para a tela não piscar do claro para o escuro.
+ * `SharedPreferences` rather than DataStore: five scalar values read in the first
+ * composition of several screens, and DataStore would make every read suspend —
+ * including the theme's, which has to be resolved before the first frame so the
+ * app does not flash from light to dark.
  *
- * Nada aqui é fonte da verdade sobre **fichas**. Em que par cada ficha nasceu
- * está no banco, na captura. Estas preferências dizem só o que fazer agora.
+ * Nothing here is the source of truth about **cards**. Which pair each card was
+ * born in lives in the database, on the capture.
  */
 class Preferences(context: Context) {
 
@@ -36,7 +36,7 @@ class Preferences(context: Context) {
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences("vocabu_prefs", Context.MODE_PRIVATE)
 
-    // ---- idiomas ------------------------------------------------------------
+    // ---- languages ----------------------------------------------------------
 
     var native: String
         get() = prefs.getString(NATIVE, null) ?: Languages.DEFAULT_NATIVE
@@ -47,11 +47,11 @@ class Preferences(context: Context) {
         set(value) = prefs.edit().putString(TARGET, value).apply()
 
     /**
-     * Os cursos matriculados, na ordem em que a faixa os mostra.
+     * The enrolled courses, in the order the strip shows them.
      *
-     * Uma lista à parte, e não "os idiomas que já têm ficha": um curso recém
-     * criado não tem palavra nenhuma, e sumir da faixa no instante seguinte ao
-     * de ser criado é o oposto do que a tela promete.
+     * A separate list rather than "the languages that already have cards": a newly
+     * created course has no words, and disappearing from the strip the instant
+     * after being created is the opposite of what the screen promises.
      */
     var courses: List<String>
         get() = prefs.getString(COURSES, null)
@@ -65,25 +65,24 @@ class Preferences(context: Context) {
 
     val languagePair: LanguagePair get() = LanguagePair(native = native, target = target)
 
-    /** Matricula num language novo e já o deixa aberto — é o que o botão da tela 5c faz. */
+    /** Enrolls in a new language and opens it — what the New language button does. */
     fun enroll(code: String) {
         courses = courses + code
         target = code
     }
 
-    /** Troca o course aberto. Matricula por segurança: escolher o que não existe seria um beco. */
+    /** Switches the open course, enrolling first so it can never point nowhere. */
     fun openCourse(code: String) {
         if (code !in courses) courses = courses + code
         target = code
     }
 
     /**
-     * Tira um idioma da faixa. As fichas dele continuam no banco.
+     * Removes a language from the strip. Its cards stay in the database.
      *
-     * Nunca esvazia a lista: sem curso nenhum a Início não teria página, o `+`
-     * não teria destino e a única saída seria enroll de novo às cegas. Sair
-     * do curso aberto abre o primeiro que sobrou, para que a tela não fique
-     * apontando para um idioma que não está mais ali.
+     * Never empties the list: with no course, Home would have no page, the `+` no
+     * destination, and the only way out would be enrolling blind. Leaving the open
+     * course opens the first one left.
      */
     fun unenroll(code: String) {
         val rest = courses - code
@@ -93,12 +92,12 @@ class Preferences(context: Context) {
     }
 
     /**
-     * Que grupos de Vocabulários estão fechados.
+     * Which Words groups are closed.
      *
-     * É preferência e não estado de tela: quem estuda três idiomas e só quer ver
-     * um deles fecha os outros dois uma vez, e reabri-los a cada volta para a aba
-     * anularia o gesto. Guarda os fechados (e não os abertos) porque o padrão é
-     * tudo aberto — um idioma novo aparece expandido sem precisar ser inscrito.
+     * A preference, not screen state: someone studying three languages who wants
+     * to see one closes the other two once, and reopening them on every return to
+     * the tab would undo the gesture. Stores the closed ones because the default
+     * is open — a new language appears expanded without being registered.
      */
     var collapsedGroups: Set<String>
         get() = prefs.getStringSet(COLLAPSED, emptySet()).orEmpty()
@@ -108,20 +107,19 @@ class Preferences(context: Context) {
         collapsedGroups = collapsedGroups.let { if (code in it) it - code else it + code }
     }
 
-    // ---- tema ---------------------------------------------------------------
+    // ---- theme --------------------------------------------------------------
 
     var theme: ThemePreference
         get() = ThemePreference.de(prefs.getString(THEME, null))
         set(value) = prefs.edit().putString(THEME, value.name).apply()
 
-    // ---- observação ---------------------------------------------------------
+    // ---- observation --------------------------------------------------------
 
     /**
-     * Um fluxo por chave, alimentado pelo listener do próprio SharedPreferences.
+     * One flow per key, fed by SharedPreferences' own listener.
      *
-     * É isso que faz a faixa de idiomas e a lista de palavras se refazerem no
-     * mesmo frame em que a pessoa troca de curso, em vez de na próxima vez que a
-     * tela for recriada.
+     * This is what makes the language strip and the word list rebuild on the same
+     * frame the course changes, rather than the next time the screen is recreated.
      */
     private fun <T> observe(vararg keys: String, read: () -> T): Flow<T> = callbackFlow {
         trySend(read())
@@ -131,9 +129,9 @@ class Preferences(context: Context) {
         prefs.registerOnSharedPreferenceChangeListener(listener)
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
-        // Conflate porque o que interessa é o valor atual, não a série de
-        // valores: quem trocar de curso três vezes seguidas com a tela ocupada
-        // quer ver o terceiro, e não as três telas em sequência.
+        // Conflated because what matters is the current value, not the series:
+        // switching course three times with the screen busy should show the
+        // third, not all three in sequence.
         .conflate()
         .distinctUntilChanged()
 
@@ -145,7 +143,7 @@ class Preferences(context: Context) {
 
     fun observeCollapsedGroups(): Flow<Set<String>> = observe(COLLAPSED) { collapsedGroups }
 
-    /** O native sozinho, para a row "Meu language" da tela Configurações. */
+    /** The native language alone, for Settings' "My language" row. */
     fun observeNativeLanguage(): Flow<String> = observeLanguagePair().map { it.native }
 
     private companion object {
@@ -155,12 +153,12 @@ class Preferences(context: Context) {
         const val THEME = "theme"
         const val COLLAPSED = "collapsed_groups"
 
-        /** Vírgula não aparece em código de language nenhum do catálogo. */
+        /** No language code in the catalog contains a comma. */
         const val SEPARATOR = ","
     }
 }
 
-/** Claro, escuro ou o que o aparelho mandar — o segmentado da tela Configurações. */
+/** Light, dark, or whatever the device says — Settings' segmented control. */
 enum class ThemePreference {
     LIGHT,
     DARK,

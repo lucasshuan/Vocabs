@@ -3,28 +3,27 @@ package com.jean.vocabs.shared
 import android.os.Build
 
 /**
- * Onde o app está rodando — emulador ou aparelho de verdade.
- *
- * Existe por um motivo só: o servidor local tem endereços diferentes nos dois
- * casos, e errar isso dá um timeout que parece problema do servidor.
+ * Whether the app is running on an emulator or a real device. Exists for one
+ * reason: the local server has different addresses in the two cases, and getting
+ * it wrong gives a timeout that looks like a server problem.
  */
 object Device {
 
     /**
-     * `ro.hardware` é o sinal confiável.
+     * `ro.hardware` is the reliable signal.
      *
-     * A receita que circula por aí — testar se `Build.BRAND` ou `Build.FINGERPRINT`
-     * começam com "generic" — **não funciona mais**. Um emulador atual reporta
-     * brand `google`, modelo `sdk_gphone64_x86_64` e fingerprint começando em
-     * `google/`, e passaria por aparelho físico.
+     * The recipe that circulates — testing whether `Build.BRAND` or
+     * `Build.FINGERPRINT` start with "generic" — **no longer works**. A current
+     * emulator reports brand `google`, model `sdk_gphone64_x86_64` and a
+     * fingerprint starting with `google/`, and would pass as physical.
      *
-     * `goldfish` é o emulador antigo do Android, `ranchu` é o atual; `vbox86` é o
-     * Genymotion e `gce_x86`/`cutf` são os emuladores de nuvem usados em CI.
+     * `goldfish` is the old Android emulator, `ranchu` the current one; `vbox86`
+     * is Genymotion, and `gce_x86`/`cutf` are the cloud emulators used in CI.
      */
     val isEmulator: Boolean by lazy {
         Build.HARDWARE.lowercase() in EMULATED_HARDWARE ||
-            // Rede de segurança para emuladores de fabricantes que não estão na
-            // lista: o nome do produto praticamente sempre entrega.
+            // Safety net for vendor emulators not on the list: the product name
+            // almost always gives them away.
             Build.PRODUCT.lowercase().let { product ->
                 product.startsWith("sdk") || product.contains("emulator")
             }

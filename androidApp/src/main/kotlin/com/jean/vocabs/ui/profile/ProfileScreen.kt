@@ -48,17 +48,15 @@ import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**
- * Tela 07 do handoff — "Você".
+ * "You".
  *
- * Total antes da quebra: sequência e estoque são hábito, e hábito não pertence a
- * um curso. Cada linha de idioma abre o "Seu progresso" **daquele** curso, com
- * semana, quota e estoque próprios — e sem trocar o curso aberto por baixo de
- * quem só queria olhar.
+ * Totals before the breakdown: streak and stock are habit, and habit does not
+ * belong to a course. Each language row opens "Your progress" for **that** course
+ * without switching the open course underneath someone who only wanted a look.
  *
- * A troca de idioma saiu daqui: ela agora é o deslize da Início. O idioma-base
- * saiu depois, para Configurações — ele não é sobre curso nenhum, e ao pé de uma
- * lista em que cada linha abre um curso ele lia-se como mais uma delas. O que
- * sobrou desse assunto nesta tela é adicionar e remover.
+ * Switching language left this screen — it is Home's swipe now. The native
+ * language left later, for Settings: it is about no course at all, and at the
+ * foot of a list where every row opens one it read as one more of them.
  */
 @Composable
 fun ProfileScreen(
@@ -86,9 +84,9 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            // Os três contam do zero. São o balanço do hábito inteiro, somando
-            // todos os idiomas, e é a única tela do app em que esses números são
-            // o assunto e não um detalhe de apoio — aqui a contagem é o conteúdo.
+            // All three count up from zero. They are the balance of the whole
+            // habit across every language, and the only screen where these
+            // numbers are the subject rather than a supporting detail.
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
                 SummaryNumber(
                     value = "${animatedCount(state.totalMastered, "masteredTotal")}",
@@ -123,9 +121,9 @@ fun ProfileScreen(
 
         AiUsageRow(used = state.aiUsage.used, limit = state.aiUsage.limit)
 
-        // O subtexto não é enfeite: o idioma-base era uma linha desta tela e agora
-        // está um toque mais fundo. Sem citá-lo aqui, quem o procura onde ele
-        // estava não tem nenhuma pista de para onde olhar.
+        // The subtext is not decoration: the native language used to be a row on
+        // this screen and is now one tap deeper. Without naming it here, anyone
+        // looking where it was has no clue where to look instead.
         ListRow(
             title = "Configurações",
             detail = "meu idioma, tema e meus dados",
@@ -138,11 +136,11 @@ fun ProfileScreen(
 }
 
 /**
- * A lista de cursos numa caixa com rolagem própria.
+ * The course list in a box with its own scroll.
  *
- * Sem o teto de altura, quem estuda seis idiomas empurraria "Gerações por IA" e
- * "Configurações" para fora da primeira tela — e essas linhas são justamente as
- * que ninguém procura rolando, porque não mudam nunca.
+ * Without the height cap, studying six languages would push "AI generations" and
+ * "Settings" off the first screen — and those are exactly the rows nobody finds
+ * by scrolling, because they never change.
  */
 @Composable
 private fun ProgressByLanguage(
@@ -256,5 +254,5 @@ private fun VerticalDivider() {
     Box(Modifier.width(1.dp).height(34.dp).background(MaterialTheme.colorScheme.outlineVariant))
 }
 
-/** Três linhas e meia: a meia diz que há mais, e o rodapé de conta continua na tela. */
+/** Three and a half rows: the half says there is more. */
 private val MAX_LIST_HEIGHT = 232.dp

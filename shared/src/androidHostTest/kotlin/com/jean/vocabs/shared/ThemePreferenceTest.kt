@@ -7,15 +7,15 @@ class ThemePreferenceTest {
 
     @Test
     fun `sem nada recorded o theme e o do device`() {
-        // Instalação nova: ninguém escolheu ainda, e escolher pela pessoa seria
-        // ignorar o que ela já configurou no sistema.
+        // A fresh install: nobody has chosen yet, and choosing for them would
+        // ignore what they already set on the system.
         assertEquals(ThemePreference.SYSTEM, ThemePreference.de(null))
     }
 
     @Test
     fun `value invalid cai no auto, e nao no light`() {
-        // Vale para o dia em que um nome mudar: uma preferência ilegível volta a
-        // seguir o aparelho, em vez de acender a tela branca de madrugada.
+        // For the day a name changes: an unreadable preference goes back to
+        // following the device rather than lighting a white screen at 3am.
         assertEquals(ThemePreference.SYSTEM, ThemePreference.de(""))
         assertEquals(ThemePreference.SYSTEM, ThemePreference.de("SEPIA"))
     }

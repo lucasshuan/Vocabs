@@ -11,10 +11,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 
-/** De quanto em quanto tempo a agulha é lida do player enquanto toca. */
+/** How often the needle is read from the player while playing. */
 private const val NEEDLE_INTERVAL = 60L
 
-/** Estado de reprodução de um memo de voz, já amarrado ao ciclo de vida da tela. */
+/** Playback state for a voice memo, already tied to the screen's lifecycle. */
 class AudioState internal constructor(private val path: String) {
 
     private var player: MediaPlayer? = null
@@ -22,17 +22,17 @@ class AudioState internal constructor(private val path: String) {
     private var internalPosition by mutableLongStateOf(0L)
 
     /**
-     * A duração vem do player e não precisa ser estado observável: ela é escrita
-     * antes de [tocandoInterno] virar `true`, e é essa virada que recompõe.
+     * The duration comes from the player and need not be observable state: it is
+     * written before [internalPlaying] turns `true`, and that is what recomposes.
      */
     private var internalDuration = 0L
 
     val playing: Boolean get() = internalPlaying
 
-    /** Quanto já tocou, em ms. Zera ao parar. */
+    /** How much has played, in ms. Resets on stop. */
     val positionMs: Long get() = internalPosition
 
-    /** De 0 a 1: onde a agulha está. É o que a onda usa para se preencher. */
+    /** 0 to 1: where the needle is. What the wave uses to fill itself. */
     val progress: Float
         get() = if (internalDuration > 0L) (internalPosition.toFloat() / internalDuration).coerceIn(0f, 1f) else 0f
 
@@ -70,12 +70,12 @@ class AudioState internal constructor(private val path: String) {
     }
 
     /**
-     * Acompanha a agulha enquanto o áudio corre.
+     * Follows the needle while the audio runs.
      *
-     * Dezesseis leituras por segundo, e não uma por quadro: a onda é desenhada em
-     * barras de 3 dp, então a agulha só muda de casa a cada punhado de quadros —
-     * pedir a posição ao `MediaPlayer` sessenta vezes por segundo pagaria a
-     * travessia para o nativo sem mexer um pixel a mais.
+     * Sixteen reads a second rather than one per frame: the wave is drawn in 3 dp
+     * bars, so the needle only moves a slot every handful of frames. Asking
+     * `MediaPlayer` sixty times a second would pay the native crossing without
+     * moving one extra pixel.
      */
     internal suspend fun follow() {
         while (internalPlaying) {
@@ -86,8 +86,8 @@ class AudioState internal constructor(private val path: String) {
 }
 
 /**
- * O `DisposableEffect` não é detalhe: sem soltar o MediaPlayer ao sair da tela,
- * o áudio continuaria tocando por cima da próxima tela.
+ * The `DisposableEffect` is not a detail: without releasing the MediaPlayer on
+ * leaving, the audio would keep playing over the next screen.
  */
 @Composable
 fun rememberPlayer(path: String): AudioState {

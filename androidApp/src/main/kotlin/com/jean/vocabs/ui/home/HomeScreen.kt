@@ -55,15 +55,15 @@ import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**
- * Tela 01/02 do handoff — a Início, uma página por curso.
+ * Home — one page per course.
  *
- * É a **única** aba recortada por idioma, e a troca é um deslize. As outras três
- * mostram sempre tudo: um filtro que continuasse ligado ao mudar de aba faria
- * palavras sumirem sem que ninguém tivesse pedido.
+ * The **only** tab sliced by language, and the switch is a swipe. The other three
+ * always show everything: a filter left on across a tab change would make words
+ * disappear without anyone asking.
  *
- * Deslizar não é só navegar — é trocar o curso aberto. Por isso o botão de
- * revisar e a folha do `+` seguem a página visível sem que nenhum dos dois
- * precise saber que existe um carrossel.
+ * Swiping does not just navigate — it changes the open course. That is why the
+ * review button and the `+` sheet follow the visible page without either needing
+ * to know a carousel exists.
  */
 @Composable
 fun HomeScreen(
@@ -77,10 +77,10 @@ fun HomeScreen(
     val pages = state.pages
     val pager = rememberPagerState(pageCount = { pages.size })
 
-    // Duas direções, e a ordem entre elas importa. O pager nasce na página 0, que
-    // quase nunca é o curso aberto — deixá-lo mandar antes de estar posicionado
-    // faria abrir o app no inglês trocar o curso para o inglês, em silêncio.
-    // Por isso ele só passa a mandar depois do primeiro posicionamento.
+    // Two directions, and the order between them matters. The pager starts on
+    // page 0, which is almost never the open course; letting it lead before it is
+    // positioned would silently switch the course to English on every launch. So
+    // it only leads after the first positioning.
     var positioned by remember { mutableStateOf(false) }
 
     LaunchedEffect(pages.size, state.activeTarget) {
@@ -144,9 +144,8 @@ fun HomeScreen(
             }
         }
 
-        // Fora do pager, de propósito: aqui os pontos não pertencem a nenhuma
-        // página nem a nenhum cartão, e ficam no mesmo lugar não importa o que
-        // muda acima.
+        // Outside the pager on purpose: the dots belong to no page and no card,
+        // and stay put no matter what changes above.
         PageDots(
             total = pages.size,
             current = pager.currentPage,
@@ -201,10 +200,10 @@ private fun CoursePage(
             }
         }
 
-        // As capturas do dia entram escalonadas, de cima para baixo. É a lista
-        // que cresce enquanto a pessoa usa o app, e é o único lugar do Início
-        // onde ela vê o próprio dia se acumulando — chegar montada faz três
-        // capturas parecerem um histórico velho em vez do que aconteceu hoje.
+        // The day's captures enter staggered. This is the list that grows while
+        // the app is used, and the only place on Home where the day is seen
+        // accumulating — arriving fully assembled would make three captures look
+        // like old history instead of what happened today.
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
             SectionLabel("Capturadas hoje em ${language.displayName.lowercase()}")
             if (page.capturedToday.isEmpty()) {
@@ -221,10 +220,10 @@ private fun CoursePage(
 }
 
 /**
- * O anel do curso: a força média por dentro, ou o tique quando não há fila.
+ * The course ring: average strength inside, or the tick when the queue is empty.
  *
- * Curso em dia repete no anel o mesmo tique que a bandeira mostra na faixa — é a
- * confirmação de que o selo lá em cima não estava falando de outra coisa.
+ * A course up to date repeats in the ring the same tick the flag shows in the
+ * strip — confirmation that the badge up there meant this.
  */
 @Composable
 private fun CourseRing(page: HomePage) {
@@ -238,15 +237,15 @@ private fun CourseRing(page: HomePage) {
         if (upToDate) {
             Icon(AppIcons.Check, null, tint = colors.tertiary, modifier = Modifier.size(26.dp))
         } else {
-            // A porcentagem sobe no mesmo tempo em que o arco corre: os dois são
-            // a mesma medida, e vê-los chegarem juntos é o que impede o anel de
-            // parecer decoração ao redor de um número.
+            // The percentage rises in the same time the arc runs: they are the
+            // same measure, and arriving together is what keeps the ring from
+            // looking like decoration around a number.
             Text("${animatedCount(page.averageStrength, "averageStrength")}%", style = MaterialTheme.typography.headlineSmall)
         }
     }
 }
 
-/** "Próximas 5 em 19h · nada a fazer hoje" — o cartão de um curso sem fila. */
+/** "Next 5 in 19h · nothing to do today" — the card of a course with no queue. */
 @Composable
 private fun UpNextRow(page: HomePage, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
@@ -303,7 +302,7 @@ private fun CapturedRow(entry: Entry, modifier: Modifier = Modifier) {
     }
 }
 
-/** Dia sem captura vira convite, e não tela vazia — o custo de capturar é o ponto do app. */
+/** A day with no capture becomes an invitation, not an empty screen. */
 @Composable
 private fun CaptureInvite(language: String, onClick: () -> Unit) {
     DashedBox(
@@ -335,5 +334,5 @@ private fun courseDetail(total: Int, mastered: Int, inQueue: Int): String {
     return "$stock\n$queue"
 }
 
-/** A barra de baixo mais o vão do botão de captura, que passa dela para cima. */
+/** The bottom bar plus the gap for the capture button that overhangs it. */
 private val BAR_SPACING = 92.dp
