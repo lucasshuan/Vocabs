@@ -1,238 +1,302 @@
-# Arquitetura da Vocabu
+# Vocabu architecture
 
-O nome público é **Vocabu**. `applicationId`, namespace, nome do banco
-(`vocabs.db`), o arquivo de preferências (`"tagarara"`) e as rotas internas
-continuam com os nomes antigos para atualizar instalações existentes sem perder
-dados.
+## Names that are not brand
 
-**Identificador de armazenamento não é marca.** Trocar o nome do app é find and
-replace; trocar qualquer um dos nomes acima não migra nada — cria um lugar vazio
-ao lado do que já existe. Um `getSharedPreferences` renomeado abre a versão nova
-sem idioma nativo, sem os cursos em que a pessoa se matriculou e no tema padrão,
-com o banco de palavras intacto e nenhuma tela sabendo em que língua exibi-lo. Se
-algum deles precisar mudar, muda junto com uma migração que leia o antigo.
+`applicationId`, the namespace and the database filename (`vocabs.db`) are
+storage identifiers, not branding. Renaming the app is find-and-replace; renaming
+any of those migrates nothing — it creates an empty place beside what already
+exists. A renamed `getSharedPreferences` opens a fresh version with no native
+language, none of the courses the person enrolled in and the default theme, with
+the word database intact and no screen knowing which language to show it in.
 
-## Módulos
+They were kept through the English rewrite for that reason, while the preference
+file, its keys, the media folders and the routes were all renamed freely — the
+database was being wiped anyway, so nothing had to be carried across. **If one of
+the three ever has to change, it changes together with a migration that reads the
+old one.** Routes are not on that list: nothing persists them, and they can be
+renamed on their own.
 
-```text
-:contracts   DTOs serializáveis compartilhados por app e servidor
-:shared      domínio, SQLDelight, retenção e cliente HTTP
-:androidApp  Compose, OCR, voz, mídia e exportação
-:server      endpoint Ktor e chamada estruturada à IA
-```
-
-Dentro de `:androidApp`, cada tela é uma pasta com `Screen` e `ViewModel`, e
-`ui/components` guarda o que se repete entre elas — cartão, linha de lista,
-métrica, pílula, seletor de termos, bandeiras, a faixa de idiomas e as cores de
-categoria. Nada de estilo mora numa tela só por já estar ali: o mesmo elemento em
-dois lugares vira componente antes de divergir num terceiro.
-
-Duas convenções globais que o handoff de idiomas trouxe:
-
-- **Uma cor por tipo de captura** (`ui/components/Categorias.kt`): texto é
-  ameixa, áudio é menta, foto é o vermelho do papagaio. A tripla aparece nos alvos
-  do leque do `+` e nos discos de Pendentes, e é o que forma a associação no ato
-  da captura. O vermelho é categoria, nunca erro. A única exceção é o botão de
-  descartar da gravação — o salmão de "isto some" —, e ela se paga
-  porque só existe **dentro da tela de gravação**, onde não há alvo de foto nenhum:
-  os dois sentidos nunca dividem a tela. Um segundo vermelho vindo do `error` do
-  tema seria quase igual ao primeiro, que é o jeito garantido de tornar os dois
-  ilegíveis.
-- **Toda bandeira da faixa tem selo** (`ui/components/FaixaDeIdiomas.kt`): número
-  em ameixa quando há o que revisar, tique em menta quando está em dia, ampulheta
-  cinza quando o curso ainda não tem nada agendado. Nunca vazio, nunca um "0"
-  escrito — o zero é a boa notícia da faixa. A ordem é fixa: o deslize do
-  carrossel depende de a posição não mudar.
-- **Três durações e três molas** (`ui/components/Movimento.kt`): toda animação sai
-  de `Movimento`. `RAPIDO` (150 ms) para o que só reage, `PADRAO` (240 ms) para o
-  que entra e sai, `AMPLO` (620 ms) só para o que se lê enquanto corre — o arco do
-  anel, a barra da quota, um número contando. A regra que decide entre eles:
-  **nada pelo que se espera passa de `PADRAO`**. Entradas são sempre mais longas
-  que saídas, porque quem fecha já decidiu sair.
-
-A terceira mola é `molaDeGesto`, mais dura que as outras duas: ela move os alvos
-do leque, e um alvo que leva 300 ms para chegar ao lugar ainda está viajando
-quando o dedo já decidiu para onde vai. `movimentoReduzido()` lê a escala de
-animação do sistema — com ela em zero o halo do `+` some e o botão fica parado.
-
-Do vocabulário de movimento saem quatro peças que as telas reusam: `encolheAoTocar`
-(o cartão cede sob o dedo — está dentro de `CartaoDaTela`, não em cada chamada),
-`entradaSuave` (a chegada escalonada, com teto de 5 itens e proibida em lista
-lazy, onde o certo é `animateItem`), `fracaoAnimada` (devolve `State` para que o
-`Canvas` leia o valor na fase de desenho em vez de recompor a cada quadro) e
-`contagemAnimada` (só para conquista acumulada; fila e dívida não contam do zero,
-senão o atraso vira placar).
-
-O fluxo de captura começa num **gesto**, não numa tela, e cada passo já é
-durável. `ui/captura/` guarda as cinco peças: `GestoDeCaptura.kt` é a geometria
-pura — onde ficam os três alvos e que alvo um deslocamento escolhe;
-`HubDeCaptura.kt` é o `+`, o leque e o véu, num overlay de tela cheia que fora do
-gesto não intercepta toque nenhum além do próprio botão; `TelaDeGravacao.kt` é a
-tela opaca que a gravação abre, com o relógio, a onda e as duas ações de encerrar;
-`GavetaDeTexto.kt` é o campo que o toque solto abre; `AvisoDeCaptura.kt` é o cartão de 5 s que confirma e oferece o atalho.
-Depois disso a seleção marca os termos (`Selecionar`) e a confirmação mostra o que
-entrou enquanto a IA trabalha (`Guardado`).
-
-Quatro regras do gesto, e todas se pagam:
-
-- **Soltar é a única confirmação, e vale para os três alvos.** Enquanto o dedo se
-  move nada foi escolhido e nada foi iniciado — nem gravação, nem câmera. Entrar
-  no alvo pinta; sair dele desfaz o destaque na hora; soltar fora fecha sem
-  capturar nada e sem aviso.
-- **É preciso alcançar o alvo.** O raio de 44 dp em volta do centro de cada disco
-  é o que marca, e não o setor angular em que o dedo está. Apontar bastava e saía
-  mais barato em dedo, mas com o alvo do áudio ocupando todo o setor central um
-  deslize curto para cima já marcava "gravar": o que era ponteiro virava gatilho.
-  Os três estão à mesma distância — 152 dp, num arco de ±54° —, dentro do que o
-  polegar varre sem esticar, e o raio perdoa a mira.
-- **Os três alvos nascem iguais** — 68 dp, no tom claro da própria ação, e crescem
-  para 76 dp com a cor cheia só quando alcançados. O áudio deixou de ser o disco
-  grande e verde: um alvo já pintado antes de o dedo chegar promete que alguma
-  coisa está em curso, e nada está.
-- **A gravação tem tela própria, e encerrar é um toque.** Ela começa quando o dedo
-  sai da tela, e daí em diante a mão está livre: dá para apoiar o telefone,
-  aproximá-lo de quem fala ou trocar de mão. Os dois destinos ficam à vista o
-  tempo todo e custam um toque cada — guardar preenchido e ocupando o que sobra da
-  largura, descartar estreito e só de contorno. **A assimetria é o que separa um
-  do outro**, e não a cor: dois alvos do mesmo tamanho na base de uma tela que se
-  olha de relance convidam ao toque errado, e quase toda gravação é para ficar. Um
-  deslize lateral chegou a ocupar essa base e saiu: lembrava atender uma chamada e
-  cobrava aprendizado no pior momento para cobrar. `MINIMO_DE_GRAVACAO_MS` (0,8 s)
-  descarta o que foi engano e não captura, e mede em milissegundos: comparado
-  contra um contador de segundos inteiros, o corte descartava toda gravação curta
-  e nenhuma outra.
-
-## Captura e fichas
+## Modules
 
 ```text
-captura (contexto, formato, mídia, transcrição, par de idiomas)
-   ├── entrada (intervalo selecionado, tipo, ficha, retenção)
-   └── entrada (outro intervalo, inclusive sobreposto)
+:contracts   serialisable DTOs shared by the app and the server
+:shared      domain, SQLDelight, retention and the HTTP client
+:androidApp  Compose, OCR, voice, media and export
+:server      Ktor endpoint and the structured AI call
 ```
 
-`captura` é o sinal bruto. `entrada` é um alvo selecionado e pode existir sem uma
-ficha enquanto a geração está pendente. A migração `4.sqm` transforma cada linha
-legada em uma captura-pai e, quando havia alvo, em uma entrada-filha com o mesmo
-ID, ficha, erros e histórico de retenção.
+Inside `:androidApp` each screen is a folder with a `Screen` and a `ViewModel`,
+and `ui/components` holds what repeats between them — card, list row, metric,
+pill, term picker, flags, the language strip and the category colours. No styling
+lives in one screen just because it got there first: the same element in two
+places becomes a component before it diverges in a third.
 
-Texto cria a captura e todas as entradas numa transação. Os limites são
-`[inicio, fim)` e permanecem ligados ao trecho original para o cloze. Uma palavra
-selecionada vira `PALAVRA`; dois ou mais tokens contíguos viram `EXPRESSAO`. A IA
-recebe esse tipo e o servidor o reinjeta na resposta — não há classificação remota.
+### Global conventions
 
-As fichas são geradas independentemente com semáforo de duas requisições. Falha
-de uma entrada não desfaz as irmãs. Apenas respostas gravadas com sucesso somam
-ao `uso_ia` do mês.
+- **One colour per capture type** (`ui/components/Categories.kt`): text is plum,
+  audio is mint, photo is the parrot's red. The trio shows up in the `+` fan's
+  targets and in Pending's discs, and it is what forms the association at the
+  moment of capture. The red is a category, never an error. The single exception
+  is the recording screen's discard button — the salmon of "this disappears" —
+  and it pays for itself because it exists **only inside the recording screen**,
+  where there is no photo target at all: the two meanings never share a screen. A
+  second red taken from the theme's `error` would be nearly identical to the
+  first, which is the guaranteed way to make both illegible.
+- **Every flag in the strip has a badge** (`ui/components/LanguageStrip.kt`): a
+  plum number when there is something to review, a mint tick when up to date, a
+  grey hourglass when the course has nothing scheduled yet. Never empty and never
+  a written "0" — zero is the strip's good news. The order is fixed: the
+  carousel's swipe depends on positions not moving.
+- **Three durations and three springs** (`ui/components/Motion.kt`): every
+  animation comes out of `Motion`. `FAST` (150 ms) for what merely reacts,
+  `DEFAULT` (240 ms) for what enters and leaves, `WIDE` (620 ms) only for what is
+  read while it runs — the ring's arc, the quota bar, a number counting up. The
+  rule that decides between them: **nothing you wait for exceeds `DEFAULT`.**
+  Entrances are always longer than exits, because whoever closes has already
+  decided to leave.
 
-Ao excluir uma entrada, o repositório conta as irmãs na mesma transação. A mídia
-só é removida quando a última entrada ou a captura inteira desaparece.
+The third spring is `gestureSpring`, stiffer than the other two: it moves the
+fan's targets, and a target that takes 300 ms to arrive is still travelling once
+the finger has decided where it is going. `reducedMotion()` reads the system
+animation scale — with it at zero the `+`'s halo disappears and the button holds
+still.
 
-## Cursos
+Four pieces come out of that motion vocabulary and are reused by the screens:
+`shrinkOnTouch` (the card yields under the finger — it is inside `ScreenCard`,
+not at every call site), `smoothEntrance` (the staggered arrival, capped at 5
+items and forbidden in a lazy list, where `animateItem` is the right tool),
+`animatedFraction` (returns `State` so a `Canvas` reads the value in the draw
+phase instead of recomposing every frame) and `animatedCount` (only for
+accumulated achievement; a queue and a debt do not count up from zero, or the
+backlog becomes a scoreboard).
 
-O par de idiomas mora na **captura**, não na entrada: um trecho está numa língua
-só, e toda seleção dentro dele herda essa língua por construção. É o que permite
-regerar uma ficha antiga no idioma em que ela nasceu depois de a pessoa trocar de
-curso — o pedido leva o par (`GerarFichaRequest`), e o servidor recusa um par que
-não esteja no catálogo em vez de cair no padrão.
+### The capture gesture
 
-O catálogo de idiomas fica em `:contracts` porque os dois lados precisam da mesma
-lista por motivos diferentes: a interface mostra o nome em português e a bandeira,
-o prompt cita o nome em inglês, o banco guarda o código. Do idioma alvo o servidor
-só precisa saber mais uma coisa — em que notação a pronúncia se escreve (IPA por
-padrão, pinyin no mandarim, kana + romaji no japonês).
+Capture starts from a **gesture**, not a screen, and every step is already
+durable. `ui/capture/` holds the five pieces: `CaptureGesture.kt` is pure
+geometry — where the three targets sit and which one a displacement picks;
+`CaptureHub.kt` is the `+`, the fan and the veil, in a full-screen overlay that
+intercepts no touch outside the gesture beyond the button itself;
+`RecordingScreen.kt` is the opaque screen recording opens, with the clock, the
+waveform and the two ways to finish; `TextDrawer.kt` is the field a loose tap
+opens; `CaptureNotice.kt` is the 5 s card that confirms and offers the shortcut.
+After that, selection marks the terms (`Select`) and the confirmation shows what
+went in while the AI works (`Saved`).
 
-Qual curso está aberto é preferência do aparelho (`Preferencias`) e entra no
-repositório como fluxo. **Só a Início é recortada por ele**: ela é um carrossel
-com uma página por curso, e deslizar entre páginas *é* trocar o curso aberto.
-Vocabulários, Pendentes e Você mostram sempre os três idiomas juntos, com o
-idioma marcado item a item — um filtro que continuasse ligado ao mudar de aba
-faria palavras sumirem sem que ninguém tivesse pedido.
+Four rules of the gesture, and all four pay for themselves:
 
-Os três recortes convivem via `Escopo`, um parâmetro com padrão em toda leitura
-recortável de `VocabRepository`:
+- **Releasing is the only confirmation, and it holds for all three targets.**
+  While the finger moves nothing has been chosen and nothing has started — not
+  recording, not the camera. Entering a target paints it; leaving undoes the
+  highlight immediately; releasing outside closes without capturing anything and
+  without a warning.
+- **You have to reach the target.** The 44 dp radius around each disc's centre is
+  what marks it, not the angular sector the finger is in. Pointing was enough and
+  cost less thumb, but with the audio target occupying the whole central sector a
+  short upward slide already marked "record": what was a pointer became a
+  trigger. The three sit at the same distance — 152 dp, across a ±54° arc — inside
+  what the thumb sweeps without stretching, and the radius forgives the aim.
+- **The three targets are born equal** — 68 dp, in the light tone of their own
+  action, growing to 76 dp at full colour only once reached. Audio stopped being
+  the big green disc: a target already painted before the finger arrives promises
+  that something is under way, and nothing is.
+- **Recording has its own screen, and finishing is one tap.** It starts when the
+  finger leaves the screen, and from then on the hand is free: you can put the
+  phone down, move it towards whoever is speaking, or switch hands. Both
+  destinations stay in view the whole time and cost one tap each — save filled and
+  taking what is left of the width, discard narrow and outlined only. **The
+  asymmetry is what separates them**, not the colour: two targets of the same size
+  at the foot of a screen glanced at invite the wrong tap, and nearly every
+  recording is meant to be kept. A lateral swipe once occupied that base and left:
+  it recalled answering a call and charged for learning at the worst possible
+  moment. `MIN_RECORDING_MS` (0.8 s) discards what was a slip and captures
+  nothing, and it measures in milliseconds: compared against a whole-second
+  counter, the cut discarded every short recording and nothing else.
+
+## Captures and cards
 
 ```text
-Escopo.CursoAberto   padrão — Início, revisão, geração
-Escopo.Curso(alvo)   "Seu progresso · francês", sem trocar o curso aberto
-Escopo.Todos         Vocabulários, Pendentes, Você
+capture (context, format, media, transcription, language pair)
+   ├── entry (selected range, type, card, retention)
+   └── entry (another range, overlapping included)
 ```
 
-O filtro é aplicado em memória, e não em SQL: o curso aberto é um fluxo de
-preferência, e uma consulta parametrizada por ele reabriria o cursor a cada
-deslize do carrossel.
+`capture` is the raw signal. `entry` is a selected target and can exist without a
+card while generation is pending.
 
-O idioma é decidido **no ato da gravação**, não no da seleção, e **não é
-perguntado**: a captura vai para o curso aberto no hub, congelado no instante em
-que o dedo desce, e `capturarTexto`/`capturarTrecho`/`capturarMidia` aceitam o
-par escolhido. Por isso toda linha de Pendentes tem idioma no subtexto, e por
-isso um texto colado que nunca chegou ao "Guardar" fica na fila com a língua
-certa em vez de se perder. `alterarIdiomaDaCaptura` conserta a escolha enquanto a
-captura não virou fichas — depois disso existem entradas nascidas nesse par.
+Text creates the capture and all its entries in one transaction. The bounds are
+`[start, end)` and stay tied to the original snippet for the cloze. One selected
+word becomes `WORD`; two or more contiguous tokens become `PHRASE`. The AI
+receives that type and the server reinjects it into the response — there is no
+remote classification.
 
-A folha que pedia o destino antes de deixar capturar foi removida com o handoff
-do gesto: ela cobrava um toque em toda captura para acertar as poucas em que o
-curso não era o que estava na tela, e a correção já existia em Pendentes, onde o
-erro é visível e desfazer custa um toque.
+Cards are generated independently behind a two-request semaphore. One entry
+failing does not undo its siblings. Only responses stored successfully count
+towards the month's `ai_usage`.
 
-A troca de curso saiu do perfil; lá ficaram só adicionar e remover
-(`Preferencias.desmatricular`, que nunca esvazia a lista). O idioma-base foi para
-Configurações, junto com o tema e a portabilidade: ele vale para o app inteiro, e
-não para um curso — ao pé de uma lista em que cada linha abre um curso, ele lia-se
-como mais uma delas.
+When an entry is deleted the repository counts its siblings in the same
+transaction. The media is removed only when the last entry, or the whole capture,
+disappears.
 
-## Estados
+## Courses
 
-- `Captura`: `TRANSCREVENDO`, `AGUARDANDO_SELECAO`, `PROCESSADA`.
-- `Entrada`: `PENDENTE`, `GERANDO`, `PRONTA`, `ERRO`.
+The language pair lives on the **capture**, not the entry: a snippet is in one
+language, so every selection inside it inherits that language by construction.
+That is what makes it possible to regenerate an old card in the language it was
+born in after the person switches courses — the request carries the pair
+(`GenerateCardRequest`), and the server refuses a pair outside the catalogue
+rather than falling back to a default.
 
-Pendentes combina as duas filas sem misturá-las: transcrição/seleção pertence à
-captura; geração pertence à entrada. Nada é descartado sem a pessoa pedir —
-cancelar a seleção, fechar o app ou perder a conexão no meio da transcrição
-deixa a captura em `AGUARDANDO_SELECAO`, com o idioma já escolhido, pronta para
-continuar de onde parou. É o que faz gravar primeiro nunca custar nada.
+**A course is identified by the language it teaches, not by the pair.** The
+native language belongs to the individual card generated in it. Reads filter by
+target; writes record the whole pair. Those two sentences are one rule, and
+breaking it is invisible to the compiler: keying a read by the whole pair made
+switching the native language stop matching every stored card, so the totals read
+zero and the lists came back empty — nothing deleted, no way to tell from the
+screen.
 
-## Mídia local
+The language catalogue lives in `:contracts` because both sides need the same
+list for different reasons: the interface shows a flag and a name from its own
+string resources, the prompt cites `englishName`, the database stores the code.
+Of the target language the server needs one more thing only — which notation the
+pronunciation is written in (IPA by default, pinyin for Mandarin, kana + romaji
+for Japanese).
 
-Fotos e áudios vivem em `filesDir/capturas`. Fotos passam pelo modelo latino
-empacotado do ML Kit. Áudio é WAV PCM 16 kHz mono. Em API 33+ o arquivo PCM é
-entregue ao `SpeechRecognizer` local; sem API/modelo ou em caso de falha, a
-captura passa para edição manual.
+Which course is open is a device preference (`Preferences`) and enters the
+repository as a flow. **Only Home is sliced by it**: it is a carousel with one
+page per course, and swiping between pages *is* switching the open course. Words,
+Pending and You always show every language together, marked language by language
+— a filter that stayed on across a tab change would make words disappear without
+anyone asking.
 
-O ZIP de exportação é criado em `cacheDir/exportacoes`, contém `Vocabu.json`
-com `schemaVersion` e as mídias referenciadas, e é compartilhado por
-`FileProvider` com permissão temporária de leitura.
+The three slices coexist through `Scope`, a parameter with a default on every
+sliceable read of `VocabRepository`:
 
-## Retenção e atividade
+```text
+Scope.ActiveCourse    default — Home, review, generation
+Scope.Course(target)  "Your progress · French", without switching the open course
+Scope.All             Words, Pending, You
+```
 
-Cada entrada pronta mantém pontos e taxa de decaimento. Abaixo de 60 entra na
-fila. A revisão registra apenas a primeira tentativa; um erro recoloca o cartão
-uma única vez no final da sessão. `dia_revisado` alimenta sequência e semana.
-`uso_ia` usa chave `YYYY-MM`, portanto vira naturalmente no mês local.
+The filter is applied in memory rather than in SQL: the open course is a
+preference flow, and a query parameterised by it would reopen the cursor on every
+swipe of the carousel.
 
-Sobre a mesma retenção existem **duas** leituras, e elas respondem perguntas
-diferentes:
+The language is decided **at the moment of recording**, not of selection, and is
+**not asked for**: the capture goes to the course open in the hub, frozen at the
+instant the finger goes down, and `captureText`/`captureSnippet`/`captureMedia`
+take the chosen pair. That is why every Pending row carries a language in its
+subtext, and why pasted text that never reached "Save" waits in the queue in the
+right language instead of getting lost. `changeCaptureLanguage` fixes the choice
+while the capture has not become cards — after that there are entries born in
+that pair.
 
-- **Força de memória** (`pontosEm`): quanto se lembra agora. Decai sozinha com o
-  tempo. É o que a ficha e a lista de Palavras mostram.
-- **Degrau** (`Degraus`, 1 a 5): quão longe se chegou. Sai da taxa de decaimento,
-  que já é o histórico de acertos comprimido, e só muda quando um cartão é
-  respondido. É o que "O que falta" mostra, e o que conta as dominadas em toda
-  tela de número — força de memória daria um total diferente a cada hora.
+The sheet that asked for a destination before allowing capture was removed along
+with the gesture redesign: it charged a tap on every capture to get right the few
+where the course was not the one on screen, and the correction already existed in
+Pending, where the mistake is visible and undoing costs one tap.
 
-`evento` é a linha do tempo, append-only: captura, ficha pronta, acerto, erro e
-mudança de nível, cada linha com o dia local já resolvido. Ela existe porque a
-retenção guarda só o estado de agora e não responde "o que eu fiz terça". A
-migração reconstrói apenas as capturas — o desfecho das revisões antigas não
-estava guardado, pelo mesmo motivo que `acertos` e `erros` nasceram em zero na
-migração 3.
+Switching course left the profile; only adding and removing stayed there
+(`Preferences.unenroll`, which never empties the list). The base language went to
+Settings, alongside the theme and portability: it applies to the whole app rather
+than to one course — at the foot of a list where every row opens a course, it read
+as one more of them. It now sits beside the app's own interface language, and the
+two are explicitly distinguished, including in the dialog that confirms a switch.
 
-A **quota do dia** não é meta escolhida: é o que já saiu hoje mais o que ainda
-está na fila. Uma meta fixa seria inalcançável no dia em que 30 palavras vencem
-juntas e já estaria batida num dia sem nada a revisar.
+## Interface language
 
-## Validação
+Two independent settings, and the difference is the point:
 
-`androidHostTest` usa SQLite JDBC para executar as migrações com dados legados e
-testar criação em lote, sobreposição, retenção de mídia, concorrência parcial,
-atividade, virada mensal, escopo de curso, quota, degraus e linha do tempo.
-`verifySqlDelightMigration` compara migrações com o schema novo.
+- **App language** — buttons, menus and messages. Defaults to the device and can
+  be overridden in Settings. On API 33+ the system is the store
+  (`LocaleManager`), so the picker and Android's own per-app language setting are
+  the same value; below that a preference-backed `attachBaseContext` wrap does the
+  same job. `res/xml/locales_config.xml` is what puts Vocabu in the system list.
+- **Language I speak** — what cards are written in. Changing it is a context
+  switch, not a reset, which is why it asks first.
+
+Two rules follow from this and neither is enforced by the compiler:
+
+- **Nothing below `:androidApp` produces display text.** A domain module has no
+  resources, so a sentence decided there can only ever exist in one language.
+  A `String` in `:shared` or `:contracts` is legitimate only when it holds the
+  user's own words or an opaque identifier — which is why the server sends an
+  error *code* and the app picks the sentence.
+- **Read resources through `LocalResources`, never `LocalContext`.**
+  `LocalContext.current` does not invalidate when the configuration changes, so
+  anything read through it keeps the previous language's text after a switch. Lint
+  catches this (`LocalContextGetResourceValueCall`) and it is an error here.
+
+Dates and language names come from `java.time` and the string catalogue with an
+explicit locale, read from `LocalConfiguration` — never `Locale.getDefault()`,
+which follows the device rather than the in-app picker.
+
+## States
+
+- `Capture`: `TRANSCRIBING`, `AWAITING_SELECTION`, `PROCESSED`.
+- `Entry`: `PENDING`, `GENERATING`, `READY`, `ERROR`.
+
+Pending combines the two queues without mixing them: transcription and selection
+belong to the capture; generation belongs to the entry. Nothing is discarded
+without being asked — cancelling the selection, closing the app or losing the
+connection mid-transcription leaves the capture in `AWAITING_SELECTION`, with the
+language already chosen, ready to carry on where it stopped. That is what makes
+recording first never cost anything.
+
+## Local media
+
+Photos and audio live in `filesDir/captures`. Photos go through ML Kit's bundled
+Latin model. Audio is WAV PCM 16 kHz mono. On API 33+ the PCM file is handed to
+the local `SpeechRecognizer`; with no API or model, or on failure, the capture
+falls through to manual editing.
+
+The export ZIP is created in `cacheDir/exports`, contains `Vocabu.json` with a
+`schemaVersion` and the referenced media, and is shared through `FileProvider`
+with temporary read permission.
+
+## Retention and activity
+
+Every ready entry keeps points and a decay rate. Below 60 it enters the queue.
+Review records only the first attempt; a wrong answer puts the card back exactly
+once at the end of the session. `reviewed_day` feeds the streak and the week.
+`ai_usage` is keyed `YYYY-MM`, so it turns over naturally in the local month.
+
+There are **two** readings of that same retention, and they answer different
+questions:
+
+- **Memory strength** (`pointsAt`): how much is remembered right now. It decays on
+  its own over time. It is what the card and the Words list show.
+- **Step** (`Steps`, 1 to 5): how far you have got. It comes from the decay rate,
+  which is already the history of correct answers compressed, and it only moves
+  when a card is answered. It is what "What's left" shows, and what counts the
+  mastered words on every screen with a number — memory strength would give a
+  different total every hour.
+
+`event` is the timeline, append-only: capture, card ready, correct, incorrect and
+level change, each row with the local day already resolved. It exists because
+retention stores only the state of right now and cannot answer "what did I do on
+Tuesday".
+
+The **daily quota** is not a chosen goal: it is what has already gone out today
+plus what is still in the queue. A fixed goal would be unreachable on the day 30
+words fall due together, and would already be met on a day with nothing to review.
+
+## Validation
+
+`androidHostTest` uses SQLite JDBC to test batch creation, overlap, media
+retention, partial concurrency, activity, monthly turnover, course scope, the
+quota, steps, the timeline, and that switching the native language keeps a course
+and its counts.
+
+`:androidApp` has a JVM test source set for the pure text-building functions.
+Five resource lint checks are errors, and `MissingTranslation` is what makes an
+untranslated key fail the build rather than surface on a device.
+
+The schema is a single version-1 `Vocabs.sq` with no migrations: the Portuguese
+schema and its chain were dropped along with the data during the English rewrite,
+and are recoverable from the `pre-english-schema` tag. `verifyMigrations` is
+therefore off — it replays from an empty database, and the old chain never was
+replayable, since `1.sqm` opened by altering tables only a long-replaced
+`Vocabs.sq` had created. `schemaOutputDirectory` still writes the snapshot, so
+the next schema change has something to be verified against; turn the flag on
+when a chain exists again.

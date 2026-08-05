@@ -1,214 +1,215 @@
 # Roadmap
 
-Cada fase tem um **critério de saída**. Só passe para a próxima quando ele for
-satisfeito — é isso que impede polir uma fase indefinidamente.
+Every phase has an **exit criterion**. Only move to the next one when it is met —
+that is what stops a phase being polished indefinitely.
 
-Regra de processo: revise os riscos comuns (no fim deste arquivo) antes de começar
-cada fase nova.
-
----
-
-## Fase 0 — Validação pessoal · 1-2 semanas
-
-Provar que o hábito de captura funciona **antes** de construir qualquer coisa.
-
-- [ ] Capturar palavras por 1-2 semanas com qualquer ferramenta que já existe (notas, planilha)
-- [ ] Observar: você captura no momento ou esquece? Quantas por dia?
-- [ ] Anotar em que contexto as palavras mais surgem
-
-**Critério de saída:** lista real de 20-40 palavras, com contexto identificado.
+Process rule: review the common traps (at the end of this file) before starting
+each new phase.
 
 ---
 
-## Fase 1 — MVP de captura + ficha · 2-4 semanas
+## Phase 0 — Personal validation · 1–2 weeks
 
-**Telas:** Captura · Ficha · Lista/home
+Prove the capture habit works **before** building anything.
 
-- [x] Armazenamento local no aparelho, sem backend/autenticação de usuário
-- [x] Tela de captura (trecho + alvo, origem opcional)
-- [x] Ficha gerada automaticamente: tradução, 1-2 definições, 1 exemplo, IPA
-- [x] Classificação automática palavra vs expressão
-- [x] Lista/home simples
-- [ ] **Critério de saída:** captura em menos de 10s, ficha em menos de 1 minuto
+- [ ] Capture words for 1–2 weeks with whatever tool already exists (notes, spreadsheet)
+- [ ] Observe: do you capture in the moment or forget? How many a day?
+- [ ] Note the contexts words most often come from
 
-> **Ficha: cronometrada e aprovada com folga.** Medida em 01/08/2026 com
-> `claude-opus-5`. Fim a fim dentro do app (toque em "Salvar" até `status =
-> PRONTA`): **6,65s**. Direto no servidor, 5 amostras: 4,61 / 4,98 / 5,10 / 5,50 /
-> 6,24s — média 5,05s. O teto de 60s tem quase 90% de folga sobrando, então não há
-> motivo para trocar por um modelo mais rápido: a classificação PALAVRA vs
-> EXPRESSAO acertou 5 de 5.
->
-> A entrada vira `GERANDO` em **0,13s**, ou seja, salvar não espera a IA de fato.
-> O app abre a frio em ~1,05s.
->
-> **Captura: falta o teste humano.** O que sobra dos 10s depois do cold start são
-> ~9s de digitação, e isso não dá para medir por automação — injetar texto via adb
-> não representa ninguém. Só fecha com você, o celular na mão e uma palavra que
-> apareceu de verdade.
->
-> Desvio do plano original: existe um backend (`:server`) intermediando a chamada
-> de IA, para a chave não ficar no aparelho. Os dados de vocabulário continuam
-> 100% locais.
+**Exit criterion:** a real list of 20–40 words, with their context identified.
 
 ---
 
-## Fase 1.5 — Inbox multi-formato · 1-2 semanas
+## Phase 1 — Capture + card MVP · 2–4 weeks
 
-**Telas novas:** Inbox · Captura por foto · Captura por áudio · Processamento manual
+**Screens:** Capture · Card · List/home
 
-- [x] Captura por foto (sem OCR — você transcreve depois)
-- [x] Captura por áudio memo (sem transcrição automática)
-- [x] Tela de inbox, separada das fichas prontas
-- [x] Tela de processamento manual (ver a mídia e transcrever)
-- [ ] Testar nos 3 contextos reais: PC, Kindle, DS
-- [ ] **Critério de saída:** capturar em qualquer um dos 3 contextos em menos de 5s
+- [x] Local storage on the device, no backend or user authentication
+- [x] Capture screen (snippet + target, optional source)
+- [x] Card generated automatically: translation, 1–2 definitions, 1 example, IPA
+- [x] Automatic word vs phrase classification
+- [x] Simple list/home
+- [ ] **Exit criterion:** capture in under 10s, card in under 1 minute
 
-> **Implementado e testado no emulador nos três formatos.** Áudio grava com um
-> toque e para com outro; foto usa o app de câmera do sistema via FileProvider;
-> os dois entram como `RASCUNHO` e viram ficha depois da transcrição — o caminho
-> foto → transcrição → ficha foi percorrido inteiro (`verdant`, PALAVRA).
+> **Card: timed and passed with room to spare.** Measured on 2026-08-01 with
+> `claude-opus-5`. End to end inside the app (tapping "Save" until `status =
+> READY`): **6.65s**. Straight against the server, 5 samples: 4.61 / 4.98 / 5.10 /
+> 5.50 / 6.24s — average 5.05s. The 60s ceiling has nearly 90% headroom left, so
+> there is no reason to swap in a faster model: the WORD vs PHRASE classification
+> got 5 out of 5.
 >
-> O inbox saiu quase de graça, como previsto, mas não como `status = 'PENDENTE'`:
-> virou `status != 'PRONTA'`, que também recolhe rascunhos e erros. A home passou
-> a listar só o que já é ficha — é essa a separação que a fase pedia.
+> The entry turns `GENERATING` in **0.13s**, meaning saving genuinely does not
+> wait for the AI. The app cold-starts in ~1.05s.
 >
-> **Falta o teste de campo.** Os 5s em PC, Kindle e DS dependem de você com os
-> aparelhos na mão; o emulador não simula ter as mãos ocupadas segurando um livro.
+> **Capture: the human test is still missing.** What is left of the 10s after the
+> cold start is ~9s of typing, and that cannot be measured by automation —
+> injecting text over adb represents nobody. It only closes with you, the phone in
+> hand, and a word that actually turned up.
+>
+> Deviation from the original plan: there is a backend (`:server`) brokering the
+> AI call, so the key does not sit on the device. The vocabulary data stays 100%
+> local.
 
 ---
 
-## Fase 2 — Retenção ativa · 3-5 semanas
+## Phase 1.5 — Multi-format inbox · 1–2 weeks
 
-**Tela nova:** Revisão/flashcard · **Mudam:** Home (indicador de revisões) · Ficha (barra de pontos)
+**New screens:** Inbox · Photo capture · Audio capture · Manual processing
 
-- [x] Sistema de pontos (0-100) por palavra
-- [x] Taxa de decaimento variável (desce no acerto, sobe no erro)
-- [x] Cálculo sob demanda: `max(0, pontos − taxa × dias)`
-- [x] Exercício de flashcard
-- [x] Indicador "X pra revisar hoje" na home
-- [x] Barra de progresso na ficha
-- [ ] **Critério de saída:** 7 dias seguidos revisando, sentindo que lembra palavras de 3+ dias atrás
+- [x] Photo capture (no OCR — you transcribe afterwards)
+- [x] Audio memo capture (no automatic transcription)
+- [x] Inbox screen, separate from finished cards
+- [x] Manual processing screen (see the media and transcribe it)
+- [ ] Test in the 3 real contexts: PC, Kindle, DS
+- [ ] **Exit criterion:** capture in any of the 3 contexts in under 5s
 
-> **Implementado e verificado no emulador**, envelhecendo o banco à mão para não
-> depender de esperar dias. Acerto devolve 100 pontos e divide a taxa por 1,5;
-> erro zera e multiplica por 3 — que é o valor que faz o erro cortar o intervalo
-> pela metade. A escada de acertos seguidos dá 1 · 1,5 · 2,25 · 3,4 · 5,1 · 7,6
-> dias, então a terceira revisão de cada palavra já cai depois de 3+ dias.
+> **Built and tested on the emulator in all three formats.** Audio records with one
+> tap and stops with another; photo uses the system camera app through
+> FileProvider; both enter as a draft and become a card after transcription — the
+> photo → transcription → card path was walked end to end (`verdant`, WORD).
 >
-> Um erro no meio da sessão traz o cartão de volta uma vez, no fim da fila, mas
-> **só a primeira resposta é gravada** — a repetição é para você ver a palavra de
-> novo, não para apagar o erro.
+> The inbox came almost free, as expected, but not as `status = 'PENDING'`: it
+> became `status != 'READY'`, which also collects drafts and errors. Home then
+> listed only what is already a card — that is the separation the phase asked for.
 >
-> O flashcard mostra o trecho capturado com o alvo apagado, virando um cloze
-> contra o seu próprio contexto; no verso a frase volta inteira. É o que o
-> documento de produto pede para a "trava de leitura", e sai sem custo de IA.
->
-> **O critério de saída depende de uso real**: 7 dias seguidos não dá para
-> simular. A sequência já é registrada (tabela `dia_revisado`), então o app conta
-> por você — é só usar.
+> **The field test is missing.** The 5s on a PC, a Kindle and a DS depend on you
+> with the devices in hand; the emulator does not simulate having your hands full
+> holding a book.
 
 ---
 
-## Fase 3 — Rede de associações · 3-4 semanas
+## Phase 2 — Active retention · 3–5 weeks
 
-**Tela nova:** Montar palavra (afixos) · **Muda:** Ficha (palavras relacionadas)
+**New screen:** Review/flashcard · **Changed:** Home (review indicator) · Card (points bar)
 
-A parte diferenciada da ideia: palavras puxando outras palavras.
+- [x] Points system (0–100) per word
+- [x] Variable decay rate (falls on a correct answer, rises on a wrong one)
+- [x] Calculated on demand: `max(0, points − rate × days)`
+- [x] Flashcard exercise
+- [x] "X to review today" indicator on home
+- [x] Progress bar on the card
+- [ ] **Exit criterion:** 7 days straight reviewing, feeling that you remember words from 3+ days ago
 
-- [ ] Sinônimos, antônimos, família de palavras
+> **Built and verified on the emulator**, ageing the database by hand rather than
+> waiting days. A correct answer returns 100 points and divides the rate by 1.5; a
+> wrong one zeroes it and multiplies by 3 — the value that makes a mistake halve
+> the interval. The ladder of consecutive correct answers gives 1 · 1.5 · 2.25 ·
+> 3.4 · 5.1 · 7.6 days, so each word's third review already lands after 3+ days.
+>
+> A mistake mid-session brings the card back once, at the end of the queue, but
+> **only the first answer is recorded** — the repeat is for you to see the word
+> again, not to erase the mistake.
+>
+> The flashcard shows the captured snippet with the target blanked out, turning it
+> into a cloze against your own context; the back returns the whole sentence. That
+> is what the product document asks for as the "reading lock", and it costs no AI.
+>
+> **The exit criterion depends on real use**: 7 days straight cannot be simulated.
+> The streak is already recorded (the `reviewed_day` table), so the app counts for
+> you — you just have to use it.
+
+---
+
+## Phase 3 — Association network · 3–4 weeks
+
+**New screen:** Build the word (affixes) · **Changed:** Card (related words)
+
+The distinctive part of the idea: words pulling in other words.
+
+- [ ] Synonyms, antonyms, word families
 - [ ] Collocations
-- [ ] Navegação entre palavras conectadas na ficha
-- [ ] Jogo de montar palavra (radical + afixos)
-- [ ] **Critério de saída:** "passear" por 3-5 palavras relacionadas a partir de 1 capturada, e aprender algo
+- [ ] Navigation between connected words on the card
+- [ ] Word-building game (root + affixes)
+- [ ] **Exit criterion:** "wander" through 3–5 words related to 1 captured one, and learn something
 
 ---
 
-## Fase 4 — Exercícios fáceis (IA) · 4-6 semanas
+## Phase 4 — Easy exercises (AI) · 4–6 weeks
 
-**Tela nova:** Hub de exercícios (com indicador de consumo de IA)
+**New screen:** Exercise hub (with an AI-usage indicator)
 
-Priorize 2-3, **não os 6 de uma vez**.
+Prioritise 2–3, **not all 6 at once**.
 
-- [ ] Hub de exercícios
-- [ ] Leitura contextual
-- [ ] Gramática/cloze
-- [ ] Desembaralhar frase
-- [ ] Associação (reaproveita a rede da Fase 3)
-- [ ] Adivinhar pela definição
-- [ ] Rodada relâmpago
-- [ ] Verdadeiro ou falso de uso
-- [ ] Registro/formalidade
-- [ ] Indicador de consumo de IA no hub
-- [ ] **Critério de saída:** cada palavra dominada passou por 2+ tipos de exercício
-
----
-
-## Fase 5 — Áudio e cruzadas · 3-4 semanas
-
-- [ ] TTS a partir de frases geradas por IA (não áudio real)
-- [ ] Ditado por áudio
-- [ ] Palavras cruzadas
-- [ ] Matching (palavra/definição, expressão/significado)
-- [ ] Revisão em lote (história com várias palavras do dia)
-- [ ] **Critério de saída:** exercício de escuta disponível para qualquer palavra
+- [ ] Exercise hub
+- [ ] Contextual reading
+- [ ] Grammar/cloze
+- [ ] Unscramble the sentence
+- [ ] Association (reuses the Phase 3 network)
+- [ ] Guess from the definition
+- [ ] Lightning round
+- [ ] True or false usage
+- [ ] Register/formality
+- [ ] AI-usage indicator in the hub
+- [ ] **Exit criterion:** every mastered word has been through 2+ exercise types
 
 ---
 
-## Fase 6 — Fala e conteúdo real · contínuo, mais tardio
+## Phase 5 — Audio and crosswords · 3–4 weeks
 
-As partes mais caras tecnicamente. Só depois do resto maduro.
-
-- [ ] Reconhecimento de voz nativo
-- [ ] Exercício de fala com comparação de pronúncia
-- [ ] Avaliar fontes externas para trechos reais (atenção a licenciamento)
-- [ ] Tela de leitura com conteúdo real
-- [ ] **Critério de saída:** sem prazo fixo — entra quando o resto estiver estável no uso diário
-
----
-
-## Fase 7 — Polimento e hábito · contínuo
-
-- [ ] OCR automático nas fotos
-- [ ] Transcrição automática dos áudios
-- [ ] Exportação do Kindle Vocabulary Builder
-- [ ] Captura via compartilhamento do sistema
-- [ ] Home com decks (por origem, por status)
-- [ ] Gamificação leve (streak, progresso visual)
-- [ ] Notificações de revisão
-- [ ] Painel de transparência de uso
-- [ ] Add-on "IA Boost"
-- [ ] Add-on "Sync na nuvem"
-- [ ] Exportação de dados sempre disponível
+- [ ] TTS from AI-generated sentences (not real audio)
+- [ ] Audio dictation
+- [ ] Crossword
+- [ ] Matching (word/definition, phrase/meaning)
+- [ ] Batch review (a story using several of the day's words)
+- [ ] **Exit criterion:** a listening exercise available for any word
 
 ---
 
-## Fase 8 — Painel de métricas · 2-3 semanas
+## Phase 6 — Speaking and real content · ongoing, later
 
-Só faz sentido com volume real de dados. Detalhes em
-[EXERCICIOS-E-METRICAS.md](EXERCICIOS-E-METRICAS.md).
+The technically most expensive parts. Only once the rest is mature.
 
-- [ ] Funil de conversão e backlog do inbox — os sinais mais importantes
-- [ ] Crescimento de vocabulário e heatmap de consistência
-- [ ] Taxa de acerto ao longo do tempo e por tipo de exercício
-- [ ] Origem do conteúdo e padrões de dificuldade
-- [ ] Nível estimado de inglês (CEFR) — por último, depende de fonte externa
-- [ ] **Critério de saída:** entender o progresso num relance, sem calcular nada de cabeça
+- [ ] Native speech recognition
+- [ ] Speaking exercise with pronunciation comparison
+- [ ] Evaluate external sources for real snippets (mind the licensing)
+- [ ] Reading screen with real content
+- [ ] **Exit criterion:** no fixed deadline — it enters when the rest is stable in daily use
 
 ---
 
-## Riscos comuns
+## Phase 7 — Polish and habit · ongoing
 
-| Armadilha | Resposta |
+- [ ] Automatic OCR on photos
+- [ ] Automatic transcription of audio
+- [ ] Kindle Vocabulary Builder export
+- [ ] Capture through the system share sheet
+- [ ] Home with decks (by origin, by status)
+- [ ] Light gamification (streak, visual progress)
+- [ ] Review notifications
+- [ ] Usage transparency panel
+- [ ] "AI Boost" add-on
+- [ ] "Cloud sync" add-on
+- [ ] Data export always available
+
+---
+
+## Phase 8 — Metrics dashboard · 2–3 weeks
+
+Only makes sense with a real volume of data. Details in
+[docs/EXERCISES-AND-METRICS.md](docs/EXERCISES-AND-METRICS.md).
+
+- [ ] Conversion funnel and inbox backlog — the most important signals
+- [ ] Vocabulary growth and a consistency heatmap
+- [ ] Accuracy over time and per exercise type
+- [ ] Content origin and difficulty patterns
+- [ ] Estimated level (CEFR) — last, it depends on an external source
+- [ ] **Exit criterion:** understand the progress at a glance, without doing arithmetic
+
+---
+
+## Common traps
+
+| Trap | Answer |
 |---|---|
-| "Vou deixar a ficha perfeita antes de usar" | Não. Feia e simples valida o loop; estética é fase tardia. |
-| "Vou construir os 6 jogos de uma vez" | Não. Comece com 1, use por uma semana, só então adicione. |
-| "Preciso decidir toda a arquitetura de dados antes" | Não. Comece com o mínimo e evolua com necessidade real. |
-| "Preciso de OCR e reconhecimento de voz já" | Comece com um campo de texto. Você pode nem sentir falta. |
+| "I'll make the card perfect before using it" | No. Ugly and simple validates the loop; aesthetics are a late phase. |
+| "I'll build all 6 games at once" | No. Start with 1, use it for a week, only then add. |
+| "I need to settle the whole data architecture first" | No. Start with the minimum and evolve it against real need. |
+| "I need OCR and speech recognition right away" | Start with a text field. You may not even miss them. |
 
-## Métricas nas fases 0-2
+## Metrics in phases 0–2
 
-Antes do painel completo, acompanhe só o essencial — pode ser manual:
+Before the full dashboard, track only the essentials — by hand is fine:
 
-- Quantas palavras você captura por semana (constância importa mais que volume)
-- Quantas revisões por semana
-- De 10 palavras capturadas há 2 semanas, quantas você lembra sem olhar a ficha?
+- How many words you capture per week (consistency matters more than volume)
+- How many reviews per week
+- Of 10 words captured two weeks ago, how many do you remember without looking at the card?
