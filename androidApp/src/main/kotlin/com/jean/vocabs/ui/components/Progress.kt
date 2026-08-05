@@ -41,15 +41,10 @@ import androidx.compose.ui.unit.sp
 /**
  * A fraction drawn as an arc, with the number inside.
  *
- * Serves Home's average strength and Progress's word stock — the same shape with
- * different content, which is why the core is a slot rather than text formatted
- * in here.
- *
- * The arc fills from the top when the screen opens. It is the app's longest
- * animation ([Motion.WIDE]) and the cheapest: nobody waits on it, because the
- * number is already legible on the first frame and the ring only confirms what it
- * says. The fraction is read inside the `Canvas`, so each frame invalidates the
- * drawing and nothing else.
+ * The core is a slot rather than text formatted here, because Home's average
+ * strength and Progress's word stock are the same shape with different content.
+ * The fraction is read inside the `Canvas`, so each frame invalidates the drawing
+ * and nothing else.
  */
 @Composable
 fun ProgressRing(
@@ -73,8 +68,6 @@ fun ProgressRing(
 }
 
 /**
- * One day of the week strip.
- *
  * [future] is kept apart from "no reviews" on purpose: a Saturday with nothing is
  * an empty day, a Sunday that has not arrived yet is not a failure, and painting
  * them the same would turn every Monday into a report card of lost days.
@@ -88,19 +81,11 @@ data class WeekDay(
 )
 
 /**
- * The seven days of the current week, today in plum and what is done in mint.
- *
- * Appears on the Progress card and at the top of Day-by-day — the same strip, so
- * moving between the two screens does not read as changing subject.
- *
- * The days enter Monday to Sunday, one just behind the next. The stagger is not
- * decoration: it draws the direction the week reads in, and at 34 ms a step
- * Sunday arrives 170 ms after Monday, before anyone has finished looking at the
- * first square.
+ * The seven days of the current week.
  *
  * [dashed] is the same week for a course with no words yet: the anatomy does not
- * change, the squares just keep only their outline. Today stays marked — it is
- * the only date that exists before there is any history.
+ * change, the squares just keep their outline. Today stays marked — it is the
+ * only date that exists before there is any history.
  */
 @Composable
 fun WeekStrip(
@@ -131,11 +116,8 @@ fun WeekStrip(
 }
 
 /**
- * A day of a week with no history: outline and nothing else.
- *
  * Deliberately without the number. A faded "27" inside an empty square is the
- * date of a day when nothing happened, and seven of them in a row read as a lost
- * week — exactly what nobody needs on opening a course that started today.
+ * date of a day when nothing happened, and seven in a row read as a lost week.
  */
 @Composable
 private fun EmptySquare() {
@@ -150,9 +132,8 @@ private fun EmptySquare() {
 @Composable
 private fun DaySquare(day: WeekDay) {
     val colors = MaterialTheme.colorScheme
-    // Two shades of mint rather than a gradient: the strip has seven 40 dp
-    // squares, and a fine scale on those is not legible. What has to read is
-    // "worked" against "worked a lot".
+    // Two shades of mint rather than a gradient: at seven 40 dp squares a fine
+    // scale is not legible. What has to read is "worked" against "worked a lot".
     val targetBackground = when {
         day.today -> colors.secondaryContainer
         day.future -> colors.surfaceVariant
@@ -160,10 +141,8 @@ private fun DaySquare(day: WeekDay) {
         day.reviews > 0 -> colors.tertiaryContainer
         else -> colors.outlineVariant
     }
-    // Today's square changes color mid-session, when the third review takes it
-    // from light mint to strong. The transition is what makes that step get
-    // noticed: repainted between one frame and the next it would only show up the
-    // next time someone came to look at the week.
+    // Today's square changes color mid-session, at the third review. The
+    // transition is what makes that step get noticed.
     val background by animateColorAsState(targetBackground, tween(Motion.DEFAULT), label = "fundoDoDia")
     val text = when {
         day.today -> colors.primary
@@ -204,16 +183,11 @@ private fun DaySquare(day: WeekDay) {
 private const val FULL_DAY_REVIEWS = 3
 
 /**
- * A bar splitting a total into proportional bands — mastered, familiar, learning.
+ * Zero-weight bands disappear rather than becoming a 1 px thread, which would
+ * only say a category is empty — and the legend beside it already says that.
  *
- * Zero-weight bands disappear rather than becoming a 1 px thread: a stroke with
- * no useful width only says a category is empty, and the legend beside it already
- * says that.
- *
- * It draws left to right on open, in the same time as the ring above it — both
- * describe the same stock, and growing together is what says so. The stroke is
- * `scaleX` on a `graphicsLayer` rather than animated width, so the three bands
- * are measured once and the animation stays entirely in the draw phase.
+ * The stroke is `scaleX` on a `graphicsLayer` rather than animated width, so the
+ * three bands are measured once and the animation stays in the draw phase.
  */
 @Composable
 fun BandBars(strips: List<Pair<Int, Color>>, modifier: Modifier = Modifier, height: Dp = 8.dp) {
@@ -240,8 +214,6 @@ fun BandBars(strips: List<Pair<Int, Color>>, modifier: Modifier = Modifier, heig
 }
 
 /**
- * The header of the inner pages: back arrow and title on one line.
- *
  * Progress, Day-by-day, What's left, Settings and New language open over a tab
  * and return to it. Without this arrow they would be dead ends, because the
  * bottom bar keeps marking the tab they came from.
@@ -273,11 +245,8 @@ fun InnerHeader(
 }
 
 /**
- * The monthly AI usage row.
- *
- * The same thing on both Profile and Progress: an informative counter with no
- * consequence when it runs over. It is not a safety quota, which is why the bar
- * is a supporting element rather than an alert.
+ * An informative counter with no consequence when it runs over. It is not a
+ * safety quota, which is why the bar is a supporting element rather than an alert.
  */
 @Composable
 fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
@@ -309,7 +278,6 @@ fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
     )
 }
 
-/** The quiet count label in a section's corner ("37 languages", "All · 24"). */
 @Composable
 fun SectionCount(text: String, modifier: Modifier = Modifier) {
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, modifier = modifier) {

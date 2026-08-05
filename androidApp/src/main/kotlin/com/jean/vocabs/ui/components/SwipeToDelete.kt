@@ -49,57 +49,44 @@ import kotlin.math.sign
 import kotlinx.coroutines.launch
 
 /**
- * The discard threshold, as a fraction of the card's width.
- *
  * A third is what separates "nudged it while scrolling" from "decided to throw
- * this away". Below it the card returns on its own; above it, releasing deletes.
+ * this away".
  */
 private const val THRESHOLD_FRACTION = 0.32f
 
 /**
- * The threshold's floor, for narrow cards. The fraction alone would let a small
- * card be discarded by a two-centimeter drag — too close to an accidental swipe.
+ * The fraction alone would let a small card be discarded by a two-centimeter
+ * drag — too close to an accidental swipe.
  */
 private val MIN_THRESHOLD = 96.dp
 
 /**
- * The fling: past this, speed decides instead of distance. Still requires half
- * the threshold travelled, so a fast diagonal graze deletes nothing.
+ * Past this, speed decides instead of distance. Still requires half the threshold
+ * travelled, so a fast diagonal graze deletes nothing.
  */
 private const val DISMISS_VELOCITY = 1_100f
 private const val MIN_FLING_FRACTION = 0.5f
 
 /**
- * How much the card weighs once past the threshold.
- *
  * It does not lock — locking makes the gesture feel broken — but it moves less
- * than the finger. That is the physical signal that the decision is made and all
- * that is left is to let go.
+ * than the finger, which is the physical signal that the decision is made.
  */
 private const val RESISTANCE_PAST_THRESHOLD = 0.42f
 
 /**
  * Drag the card sideways to delete what is on it.
  *
- * The gesture is destructive, and is the only one in the app built entirely
- * around **warning first**. Three things happen in order:
+ * The only destructive gesture in the app, and it is built around **warning
+ * first**: the red is behind the card from the first millimeter, and past
+ * [THRESHOLD_FRACTION] the background fills, the label enters and the device
+ * buzzes — the moment it stops being reversible by the finger alone is announced
+ * by color, text and touch at once. Dragging back disarms everything.
  *
- * 1. The red appears **behind** the card from the first millimeter, with the
- *    trash icon, so the gesture explains itself before any decision is made.
- * 2. Past [THRESHOLD_FRACTION] the background goes from soft red to full, the
- *    trash grows, "Release to delete" enters and the device buzzes. The moment
- *    the gesture stops being reversible by the finger alone is announced by
- *    color, text and touch at once.
- * 3. Backing out is always possible **without releasing**: dragging back disarms
- *    everything, and releasing before the threshold springs the card home.
+ * Both directions work on purpose: fixing one would leave half the people never
+ * finding the gesture, and no second action competes for the other side.
  *
- * Both directions work on purpose. Fixing one direction would leave half the
- * people never discovering the gesture, and no second action is competing for the
- * other side — if one ever is, that is the time to split it.
- *
- * What happens **after** [onDelete] is not this file's problem: the card flies
- * off and the caller decides whether that is an immediate deletion or one that
- * can still be undone. In Pending it is the second.
+ * What happens **after** [onDelete] is the caller's: in Pending it is a deletion
+ * that can still be undone.
  */
 @Composable
 fun SwipeToDelete(
@@ -117,8 +104,8 @@ fun SwipeToDelete(
 
     val offset = remember { Animatable(0f) }
     var width by remember { mutableIntStateOf(0) }
-    // Once the card has left the screen the gesture is over: no new touch brings
-    // it back, and `onDelete` must not be called twice.
+    // Once the card has left the screen the gesture is over: `onDelete` must not
+    // be called twice.
     var discarding by remember { mutableStateOf(false) }
 
     val threshold = if (width == 0) thresholdFloor else maxOf(width * THRESHOLD_FRACTION, thresholdFloor)
@@ -178,10 +165,8 @@ fun SwipeToDelete(
                     if (abs(walked) >= threshold || fling) {
                         discarding = true
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        // Leaves past the edge before the list closes the gap:
-                        // you see where the card went, and only then do the ones
-                        // below rise. Both at once is a flicker in which nothing
-                        // is legible.
+                        // Leaves past the edge before the list closes the gap.
+                        // Both at once is a flicker in which nothing is legible.
                         offset.animateTo(
                             targetValue = sign(walked) * (width.toFloat() + thresholdFloor),
                             animationSpec = tween(Motion.FAST, easing = FastOutLinearInEasing),
@@ -193,8 +178,8 @@ fun SwipeToDelete(
                 },
             ),
     ) {
-        // The background is decoration for the gesture: it does not exist for the
-        // screen reader, which gets the deletion as an action on the card itself.
+        // Decoration for the gesture: it does not exist for the screen reader,
+        // which gets the deletion as an action on the card itself.
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -211,8 +196,7 @@ fun SwipeToDelete(
             ) {
                 // The trash stays against the edge the card uncovered and the
                 // label grows inward. Inverted, the invisible label would push
-                // the trash under the card and the start of the gesture would
-                // show nothing.
+                // the trash under the card and the gesture would start blank.
                 if (toLeft) DiscardLabel(armedLabel, tinta, labelOpacity)
                 Icon(
                     imageVector = AppIcons.Trash,
@@ -228,8 +212,8 @@ fun SwipeToDelete(
 
         Box(
             modifier = Modifier
-                // Read inside the lambda: moving the card costs one layout pass
-                // per frame and no recomposition.
+                // Read inside the lambda: one layout pass per frame and no
+                // recomposition.
                 .offset { IntOffset(offset.value.roundToInt(), 0) }
                 // Screen-reader navigation cannot drag, so deletion becomes an
                 // action on the card, with the same wording the gesture shows.

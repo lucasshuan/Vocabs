@@ -27,18 +27,13 @@ import kotlinx.coroutines.delay
 /**
  * Audio and photo capture, with no screen of its own.
  *
- * The wiring — recorder, camera, microphone permission — is separate from the
- * buttons because what triggers these actions is the bottom bar, which lives
- * outside any screen. The state has to survive a tab change: inside a navigation
- * destination, leaving the tab mid-recording would lose it.
+ * The wiring is separate from the buttons because what triggers these actions is
+ * the bottom bar, which lives outside any screen. Inside a navigation
+ * destination, leaving the tab mid-recording would lose the state.
  *
- * Two things the previous version did not give:
- *
- * - **duration in milliseconds**, not a whole-second counter. The
- *   [MIN_RECORDING_MS] cut is 0.8 s; against a counter that only ticks at 1 s it
- *   discarded every short recording and nothing else.
- * - **microphone level**, so the recording screen's wave is speech and not an
- *   animation that runs the same through silence.
+ * Duration is in milliseconds, not whole seconds: the [MIN_RECORDING_MS] cut is
+ * 0.8 s, and against a counter that only ticks at 1 s it discarded every short
+ * recording and nothing else.
  */
 @Stable
 class QuickCapture internal constructor() {
@@ -47,12 +42,9 @@ class QuickCapture internal constructor() {
         internal set
 
     /**
-     * The recording clock, counted from the start rather than accumulated per
-     * tick.
-     *
      * Deliberately outside Compose state: what needs it is the save-or-discard
-     * decision. Publishing every millisecond as state would recompose the screen
-     * 20 times a second to write the same "0:07" — [seconds] exists for that.
+     * decision. Publishing every millisecond would recompose the screen 20 times
+     * a second to write the same "0:07".
      */
     val durationMs: Long
         get() = if (isRecording) SystemClock.elapsedRealtime() - startedAt else lastDurationMs
@@ -60,7 +52,6 @@ class QuickCapture internal constructor() {
     var seconds by mutableLongStateOf(0L)
         internal set
 
-    /** Whether the microphone is already granted — re-evaluated each composition. */
     var hasAudioPermission by mutableStateOf(false)
         internal set
 
@@ -74,18 +65,14 @@ class QuickCapture internal constructor() {
     internal var readLevel: () -> Float = { 0f }
 
     /**
-     * The microphone's peak right now, 0 to 1.
-     *
      * A function rather than observable state: the wave samples this at its own
      * rate, and state changing at 60 Hz would recompose the whole recording
      * screen to move nineteen rectangles.
      */
     fun levelNow(): Float = readLevel()
 
-    /** Starts recording immediately — the gesture only arrives with permission. */
     fun recordAudio() = onRequestAudio()
 
-    /** Ends and saves, if it ran past [MIN_RECORDING_MS]. */
     fun saveAudio() = onFinish(true)
 
     /**
@@ -100,20 +87,16 @@ class QuickCapture internal constructor() {
 }
 
 /**
- * Below this the recording was a mistake, not a capture.
- *
- * Recording starts on releasing at the audio target and ends on a tap; the
- * shortest path between the two is someone who released on the wrong target and
- * went straight to undo. It measures in milliseconds for that reason.
+ * Below this the recording was a mistake, not a capture: the shortest path from
+ * starting to ending is someone who released on the wrong target.
  */
 const val MIN_RECORDING_MS = 800L
 
 /**
- * [onSave] receives the finished capture and decides what to do with it, without
- * a second callback just to notify the screen. The bottom notice needs the
- * duration, the format and the course in the same call that records the capture,
- * because the id the database returns is what links the card to the "Select"
- * shortcut.
+ * [onSave] receives the finished capture and decides what to do with it. The
+ * bottom notice needs the duration, format and course in the same call that
+ * records the capture, because the id the database returns is what links the card
+ * to the "Select" shortcut.
  */
 @Composable
 fun rememberQuickCapture(
@@ -147,11 +130,9 @@ fun rememberQuickCapture(
     }
 
     /**
-     * The destination course is frozen the instant the capture starts.
-     *
-     * The carousel page can change while the audio runs or the camera is open,
-     * and the destination has to be what was marked when the finger went down,
-     * not what is on screen when it comes back.
+     * The destination course is frozen when the capture starts: the carousel page
+     * can change while the audio runs, and the destination has to be what was
+     * marked when the finger went down.
      */
     var recordingTarget by remember { mutableStateOf(target) }
 

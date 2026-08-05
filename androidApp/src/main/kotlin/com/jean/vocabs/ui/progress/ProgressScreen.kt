@@ -73,19 +73,13 @@ import kotlinx.coroutines.launch
 /**
  * "Your progress", for one course.
  *
- * Two blocks, always the same: the week with today's quota, and the word stock.
- * Each is the door to a deeper screen, and the two chevrons are the only exits.
- * There is no hit rate, no words per day and no best streak — the marked days are
- * the only record of frequency this screen keeps.
- *
- * With no words in the language the structure does not change: the same two cards
- * go dashed, labels in place and no invented numbers. A skeleton shows where
- * things will go; a "0 of 10" would say something had already been failed.
+ * With no words in the language the same two cards go dashed, labels in place and
+ * no invented numbers: a skeleton shows where things will go, while a "0 of 10"
+ * would say something had already been failed.
  *
  * The flag pill is both the course indicator and the switch. Switching here does
  * **not** change the app's open course — someone who only wanted to look at
- * French should not find the `+` and the review queue in another language
- * afterwards.
+ * French should not find the `+` in another language afterwards.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -176,11 +170,8 @@ fun ProgressScreen(
 }
 
 /**
- * The first block: the week and today's quota on one card.
- *
- * Together because they answer the same question over two spans — "did I move
- * this week?" and "did I move today?". Apart, the quota would look like a
- * separate goal, and it is only today's square from the strip above it.
+ * Week and quota together because they answer the same question over two spans.
+ * Apart, the quota would look like a separate goal.
  */
 @Composable
 private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
@@ -271,11 +262,8 @@ private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
 }
 
 /**
- * The second block: how much of the stock is yours.
- *
- * Empty, it shows neither "0 of 0" nor a zeroed ring — it shows where the ring
- * goes and when it starts to exist. The promise is dated: four correct reviews,
- * which is literally the [Steps] ladder from the first rung to the last.
+ * Empty, it shows neither "0 of 0" nor a zeroed ring. The promise is dated: four
+ * correct reviews, which is the [Steps] ladder from first rung to last.
  */
 @Composable
 private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
@@ -315,8 +303,6 @@ private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) 
                 size = 78.dp,
                 thickness = 9.dp,
             ) {
-                // Counts up with the arc: this is the accumulated achievement
-                // `animatedCount` exists for.
                 Text(
                     text = "${animatedCount(state.mastered, "mastered")}",
                     style = MaterialTheme.typography.headlineMedium,
@@ -361,11 +347,7 @@ private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) 
 }
 
 /**
- * The three band names, spread across the card's width.
- *
- * No color swatch: the bar just above is already in the same order. When empty
- * the three names stand alone with no numbers — it is the label of the place, not
- * a scoreboard.
+ * No color swatch: the bar just above is already in the same order.
  */
 @Composable
 private fun StockLegend(labels: List<String>, color: Color, modifier: Modifier = Modifier) {
@@ -377,12 +359,8 @@ private fun StockLegend(labels: List<String>, color: Color, modifier: Modifier =
 }
 
 /**
- * The course flag in the header, and the button that switches course.
- *
- * Without it these would be identical screens with no way to tell them apart;
- * without the chevron it would be a label, and switching would mean going back to
- * Profile. The chevron points up while the drawer is open, which is what promises
- * another tap closes it.
+ * The course flag in the header, and the button that switches course. The chevron
+ * points up while the drawer is open, which is what promises another tap closes it.
  */
 @Composable
 private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
@@ -425,10 +403,8 @@ private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
 }
 
 /**
- * The flag drawer: the enrolled courses, with what each has yielded.
- *
- * Each row carries its own "9 of 24" because comparing is exactly what makes
- * someone open the drawer — requiring three visits for one answer would not.
+ * Each row carries its own "9 of 24" because comparing is what makes someone open
+ * the drawer — requiring three visits for one answer would not.
  */
 @Composable
 private fun CourseDrawer(
@@ -532,19 +508,15 @@ internal fun streakLabel(days: Int): String =
     if (days == 1) "1 dia seguido" else "$days dias seguidos"
 
 /**
- * The quota number, right of the label: "6 of 10".
- *
- * An em dash when the day asked for nothing, whether because there are no words
- * or because none came due. "0 of 0" would be the score of a match never played.
+ * An em dash when the day asked for nothing. "0 of 0" would be the score of a
+ * match never played.
  */
 internal fun quotaText(quota: DailyQuota): String =
     if (quota.total == 0) "—" else "${quota.done} de ${quota.total}"
 
-/** The empty ring's line: when it starts to exist. */
 internal fun whenItAppearsText(): String =
     "aparece depois de ${SPELLED_NUMBERS[Steps.TOTAL - 1].lowercase()} revisões"
 
-/** "9 of 24 are yours" — or their absence, with no invented number. */
 internal fun courseSummaryText(course: CourseSummary): String =
     if (course.total == 0) "nenhuma palavra ainda" else "${course.mastered} de ${course.total} já são suas"
 
@@ -553,10 +525,8 @@ private val SPELLED_NUMBERS = listOf(
 )
 
 /**
- * "Nine words are already yours".
- *
- * Spelled out up to ten because that is how an achievement reads aloud; past
- * that the digits come back, which is how a large number reads.
+ * Spelled out up to ten because that is how an achievement reads aloud; past that
+ * the digits come back, which is how a large number reads.
  */
 internal fun stockTitle(mastered: Int): String = when {
     mastered == 0 -> "Nenhuma palavra é sua ainda"

@@ -78,21 +78,10 @@ import java.io.File
 import kotlin.math.roundToInt
 
 /**
- * Settings.
+ * Settings — what applies to the whole app rather than to one course.
  *
- * Gathers what applies to the whole app rather than to one course: the language
- * cards are written in, the theme, and getting the data out. That is what
- * separates this screen from Profile, where everything is per course.
- *
- * "My language" lives here for the same reason — the native language is the one
- * language setting that is not about a single course. Note that it changes the
- * language cards are generated in; it does not change the interface. The
- * interface language is a separate setting.
- *
- * The screen is a stack of sections, each with a label, an icon and a rule
- * separating it from the next. With four subjects in one column the label alone
- * was not enough: "Data" and "About" sat 15 dp apart and read as one list of six
- * rows.
+ * "My language" changes the language cards are generated in; it does not change
+ * the interface. The interface language is a separate setting.
  */
 @Composable
 fun SettingsScreen(
@@ -124,9 +113,6 @@ fun SettingsScreen(
     ) {
         InnerHeader("Configurações", onBack, Modifier.padding(top = 8.dp))
 
-        // The sections arrive staggered top to bottom, which here does extra
-        // work: it gives a reading order to four blocks that, at rest, carry the
-        // same weight.
         Section(icon = AppIcons.Globe, title = "Language", index = 0) {
             ListRow(
                 onClick = onSwitchNativeLanguage,
@@ -188,9 +174,7 @@ fun SettingsScreen(
                 start = { IconDisc(AppIcons.Export, null, color = colors.primary, background = colors.primaryContainer) },
                 end = {
                     // The spinner replaces the chevron rather than sitting beside
-                    // it: while the ZIP is being built the row opens nothing, and
-                    // an arrow promising otherwise would be a lie for a few
-                    // seconds.
+                    // it: while the ZIP is being built the row opens nothing.
                     AnimatedContent(
                         targetState = exporting,
                         transitionSpec = { fadeIn(tween(Motion.FAST)).togetherWith(fadeOut(tween(Motion.FAST))) },
@@ -231,11 +215,9 @@ fun SettingsScreen(
 }
 
 /**
- * One block: label with icon, content, and the staggered entrance.
- *
- * The icon is the size of the label and in the same color — it marks where the
- * section starts when scrolling cuts off the rule above, and must not compete
- * with the colored discs of the rows below.
+ * The icon marks where the section starts when scrolling cuts off the rule above,
+ * so it is the size of the label and must not compete with the colored discs of
+ * the rows below.
  */
 @Composable
 private fun Section(
@@ -249,9 +231,8 @@ private fun Section(
         modifier = Modifier.smoothEntrance(index).fillMaxWidth().padding(top = 4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Three of the four icons never change. Appearance's is the one that
-            // moves: it follows the choice — sun, moon, half disc — and the
-            // spring's overshoot is the confirmation left for someone whose
+            // Appearance's icon follows the choice — sun, moon, half disc — and
+            // the spring's overshoot is the confirmation left for someone whose
             // finger covered the segmented control while the pill slid under it.
             AnimatedContent(
                 targetState = icon,
@@ -274,7 +255,6 @@ private fun Section(
     }
 }
 
-/** The rule between two sections, with air on both sides. */
 @Composable
 private fun Divider() {
     HorizontalDivider(
@@ -283,7 +263,6 @@ private fun Divider() {
     )
 }
 
-/** A section's footer line — the reason for the row above it. */
 @Composable
 private fun SectionNote(text: String) {
     Text(
@@ -295,8 +274,6 @@ private fun SectionNote(text: String) {
 }
 
 /**
- * The supporting line of a [ListRow], crossfading between texts.
- *
  * A hard cut between two sentences in the same position reads as a rendering
  * glitch rather than a change.
  */
@@ -317,11 +294,8 @@ private fun SwappingDetail(text: String) {
 }
 
 /**
- * The native language's flag, with a ring.
- *
  * The ring exists because half the catalog's flags have white at the edge: on the
- * white surface of the light card the disc would lose its outline on one side and
- * look clipped.
+ * white surface of the light card the disc would look clipped.
  */
 @Composable
 private fun NativeFlag(code: String) {
@@ -342,7 +316,6 @@ private fun NativeFlag(code: String) {
     }
 }
 
-/** The "exists, but not yet" badge — grey, tiny, promising no date. */
 @Composable
 private fun ComingSoonBadge(modifier: Modifier = Modifier) {
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, modifier = modifier) {
@@ -355,7 +328,6 @@ private fun ComingSoonBadge(modifier: Modifier = Modifier) {
     }
 }
 
-/** The "switch >" pill on the native-language row. */
 @Composable
 private fun SwitchPill() {
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant) {
@@ -379,12 +351,9 @@ private fun SwitchPill() {
 }
 
 /**
- * The screen's footer: the mark and the installed version.
- *
- * Left-aligned rather than centered. It is the last thing in the column, and what
- * ends up at the bottom of this screen sits under the capture `+`, which floats
- * at the center of the base — a centered signature disappears behind it exactly
- * when the scroll reaches the end.
+ * Left-aligned rather than centered: what ends up at the bottom of this screen
+ * sits under the capture `+`, and a centered signature disappears behind it
+ * exactly when the scroll reaches the end.
  */
 @Composable
 private fun Signature() {
@@ -424,15 +393,13 @@ private fun themeIcon(theme: ThemePreference): ImageVector = when (theme) {
 }
 
 /**
- * The theme segmented control: three equal parts and one pill that slides.
- *
- * Equal parts rather than text-sized widths — otherwise three choices of the same
- * weight get three different target sizes, and the smallest falls under the touch
- * minimum.
+ * Equal parts rather than text-sized widths — otherwise three choices of the
+ * same weight get three different target sizes, and the smallest falls under the
+ * touch minimum.
  *
  * The pill is a **single** one, drawn behind the three labels and moved by a
- * spring. Previously each option painted its own background, so a change was a
- * hard cut in two places at once with nothing saying it was one selection moving.
+ * spring. Each option painting its own background made a change a hard cut in two
+ * places at once, with nothing saying it was one selection moving.
  */
 @Composable
 private fun ThemeSegmented(
@@ -458,8 +425,8 @@ private fun ThemeSegmented(
                 label = "deslizeDoTema",
             )
 
-            // `offset` with a lambda: the value is read in the placement phase, so
-            // the pill crosses the row without recomposing or remeasuring anyone.
+            // `offset` with a lambda: read in the placement phase, so the pill
+            // crosses the row without recomposing or remeasuring anyone.
             Box(
                 Modifier
                     .offset { IntOffset((destination * width.toPx()).roundToInt(), 0) }

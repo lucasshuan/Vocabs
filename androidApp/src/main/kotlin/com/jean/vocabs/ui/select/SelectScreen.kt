@@ -82,19 +82,14 @@ import com.jean.vocabs.ui.languages.languageOf
 import com.jean.vocabs.ui.theme.LocalDarkTheme
 
 /**
- * "What caught your eye?"
- *
- * One task: marking. It serves pasted text, transcribed audio and read photos
- * alike, which is why it is not called "transcribe" — transcribing is what the
- * machine already attempted before anything got here.
+ * "What caught your eye?" — one task: marking.
  *
  * The marking does not stay in the text: each confirmed selection clears the
- * snippet and becomes a chip in the list below. That is what lets one snippet
- * yield both `fence` and `on the fence` without turning into a soup of
- * overlapping highlights.
+ * snippet and becomes a chip below. That is what lets one snippet yield both
+ * `fence` and `on the fence` without a soup of overlapping highlights.
  *
- * The language at the top is the destination and is still changeable here: the
- * capture exists, but no card has been born in this pair until "Save".
+ * The language at the top is still changeable here: the capture exists, but no
+ * card has been born in this pair until "Save".
  */
 @Composable
 fun SelectScreen(
@@ -254,21 +249,15 @@ fun SelectScreen(
  *
  * It used to be a `TextButton` in `outline`, which in light is a lilac with 1 px
  * of contrast: the only exit for someone who opened a capture by mistake was
- * written in the color of the borders. Too discreet is invisible, and a button
- * that cannot be found is not secondary — it is absent.
- *
- * It is now a pill with a light red background and error-red text: still behind
- * the primary action in weight, but findable at a glance. It is the same pairing
- * (light container plus error ink) that the delete swipe in Pending uses before
- * its threshold, and the repetition is deliberate — across the app that pair
- * means "this erases, and you can still back out".
+ * written in the color of the borders. It is now the same pairing (light
+ * container plus error ink) the delete swipe uses before its threshold — across
+ * the app that pair means "this erases, and you can still back out".
  */
 @Composable
 private fun DiscardCaptureButton(onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
     // In dark, Material's `errorContainer` is a nearly opaque wine, too heavy for
-    // a supporting action. The theme's light red at 14% carries the same message
-    // over a dark background without becoming a red block in the footer.
+    // a supporting action.
     val background = if (LocalDarkTheme.current) colors.error.copy(alpha = 0.14f) else colors.errorContainer
     val toque = rememberHaptics()
     Surface(
@@ -291,10 +280,8 @@ private fun DiscardCaptureButton(onClick: () -> Unit) {
 }
 
 /**
- * The header's language chip, which opens the course list.
- *
- * It is a destination, not a label: whoever recorded with the wrong language
- * marked fixes it here, at the last moment it is still cheap.
+ * A destination, not a label: whoever recorded with the wrong language marked
+ * fixes it here, at the last moment it is still cheap.
  */
 @Composable
 private fun LanguagePicker(target: String, courses: List<String>, onChoose: (String) -> Unit) {
@@ -332,7 +319,6 @@ private fun LanguagePicker(target: String, courses: List<String>, onChoose: (Str
     }
 }
 
-/** "Pasted text · now" — where this snippet came from, in the category's color. */
 @Composable
 private fun TextSource(createdAt: Long) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -355,8 +341,6 @@ private fun PhotoPreview(path: String) {
 }
 
 /**
- * Play, wave and duration, with "fix text" beside them.
- *
  * Deliberately without word-level sync: listening again solves it, and a
  * highlight following the speech would need per-word alignment the local
  * transcription does not provide.
@@ -384,8 +368,6 @@ private fun AudioPlayerBar(path: String, durationMs: Long?, correcting: Boolean,
                 modifier = Modifier.weight(1f),
             )
             Text(
-                // While playing, the number moves with the wave: a listener wants
-                // to know how much is left, not how long the file is.
                 text = if (player.playing) formatDurationMs(player.positionMs)
                 else durationMs?.let(::formatDurationMs).orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
@@ -440,19 +422,14 @@ private fun ErrorNotice(text: String) {
 /** What the lowest bar still occupies, so silence is a line and not a gap. */
 private val MIN_WAVE_HEIGHT = 3.dp
 
-/** How far the untouched part of the bar fades against what has been heard. */
 private const val PRESS_OPACITY = 0.3f
 
 /**
- * The drawn wave, with a fixed bar width rather than ten stretched bars.
- *
- * Splitting the available width between ten bars works in a 340 px mockup and
- * becomes ten lying-down tablets on a real phone: what reads as "audio" is the
+ * A fixed bar width rather than ten stretched bars: what reads as "audio" is the
  * repeated thin bar, not the count of them.
  *
- * The relief comes from the file and the fill from the needle. Until the profile
- * arrives — or if the file is unreadable — every bar stays at minimum height; an
- * invented wave would say something about the recording nobody measured.
+ * Until the profile arrives — or if the file is unreadable — every bar stays at
+ * minimum height; an invented wave would say something nobody measured.
  */
 @Composable
 private fun AudioWave(
@@ -482,7 +459,6 @@ private fun AudioWave(
     }
 }
 
-/** Text that acts without becoming a button: "fix text" is a shortcut. */
 @Composable
 private fun Modifier.clickableWithoutRipple(onClick: () -> Unit): Modifier {
     val interaction = remember { MutableInteractionSource() }
