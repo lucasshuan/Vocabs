@@ -39,6 +39,15 @@ sqldelight {
     databases {
         create("VocabsDatabase") {
             packageName.set("com.jean.vocabs.shared.db")
+
+            schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
+
+            // Off because the current .sqm chain cannot be replayed from empty:
+            // 1.sqm opens by dropping an index and renaming a table that only a
+            // long-replaced version of Vocabs.sq ever created. Verification
+            // starts from an empty database, so it could never have passed here.
+            // Turn on with the fresh schema, when the chain restarts at zero.
+            verifyMigrations.set(false)
         }
     }
 }

@@ -27,8 +27,13 @@
         </intent>
     </queries>
 
+    <!-- Temporary, for the schema rewrite: auto-backup can restore a pre-rewrite
+         database over a fresh install, and the crash that follows reads like a
+         code bug. Once the schema settles this is an open product question again
+         (no account means backup is the only thing standing between a lost phone
+         and lost cards) — revisit rather than assume it must stay false. -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"

@@ -98,6 +98,18 @@ android {
             isMinifyEnabled = false
         }
     }
+
+    // Resources have no compiler: an untranslated key or a `%1$d` that became
+    // `%1$s` only shows up on a device, in the language you don't run.
+    lint {
+        error += listOf(
+            "MissingTranslation",
+            "ImpliedQuantity",
+            "MissingQuantity",
+            "StringFormatInvalid",
+            "StringFormatMatches",
+        )
+    }
 }
 
 kotlin {
@@ -120,4 +132,10 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     // Modelo latino empacotado: OCR disponível offline desde o primeiro uso.
     implementation(libs.mlkit.text.recognition)
+
+    // JVM only, no Robolectric — these tests cover pure text-building functions.
+    // The -junit artifact, not plain kotlin-test: `kotlin.test.Test` is a
+    // typealias that only resolves once a framework binding is on the classpath.
+    testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.junit)
 }
