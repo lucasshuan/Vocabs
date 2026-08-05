@@ -14,16 +14,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 /**
- * The progress screens' text logic, in two halves.
+ * What is left of the progress screens' text logic once the strings moved.
  *
- * The builders still holding Portuguese are pinned as they stand — plural and
- * gender are hand-rolled in them and nothing else covers it, so extracting them
- * would otherwise happen with no before/after signal. Those assertions are a
- * snapshot, not a statement of intent, and go when the strings do.
- *
- * The rest have already moved: they assert which branch or locale was chosen,
- * never the resolved sentence. Asserting resolved text fails on every copy edit
- * with nothing actually wrong.
+ * The builders themselves are gone from here: they are resource lookups in
+ * composition now, and asserting a resolved sentence fails on every copy edit
+ * with nothing actually wrong. What stays is the logic that outlived them —
+ * branch selection, locale handling, and the one place where copy and a
+ * constant have to agree.
  */
 class ProgressTextsTest {
 
@@ -31,47 +28,15 @@ class ProgressTextsTest {
 
     private val languagePair = LanguagePair(native = "pt-BR", target = "en")
 
+    /**
+     * progress_ring_appears_after spells the count out in prose ("appears after
+     * four reviews") because Steps.TOTAL is a compile-time constant, not data.
+     * That leaves the copy and the constant free to drift apart, so this is what
+     * ties them: change the ladder and this fails, pointing at both strings.
+     */
     @Test
-    fun `one day streak takes no plural`() {
-        assertEquals("1 dia seguido", streakLabel(1))
-        assertEquals("0 dias seguidos", streakLabel(0))
-        assertEquals("5 dias seguidos", streakLabel(5))
-    }
-
-    @Test
-    fun `a day with nothing due shows a dash, not zero of zero`() {
-        assertEquals("—", quotaText(DailyQuota(done = 0, inQueue = 0)))
-        assertEquals("6 de 10", quotaText(DailyQuota(done = 6, inQueue = 4)))
-        assertEquals("3 de 3", quotaText(DailyQuota(done = 3, inQueue = 0)))
-    }
-
-    @Test
-    fun `stock spells the number out up to ten, then digits return`() {
-        assertEquals("Nenhuma palavra é sua ainda", stockTitle(0))
-        assertEquals("Uma palavra já é sua", stockTitle(1))
-        assertEquals("Duas palavras já são suas", stockTitle(2))
-        assertEquals("Dez palavras já são suas", stockTitle(10))
-        assertEquals("11 palavras já são suas", stockTitle(11))
-    }
-
-    @Test
-    fun `course summary invents no number when there are no words`() {
-        assertEquals("nenhuma palavra ainda", courseSummaryText(CourseSummary(languagePair, total = 0, mastered = 0)))
-        assertEquals("9 de 24 já são suas", courseSummaryText(CourseSummary(languagePair, total = 24, mastered = 9)))
-    }
-
-    /** Guards the copy against [Steps.TOTAL] drifting; the ladder size is baked into the sentence. */
-    @Test
-    fun `the empty-ring sentence follows the ladder size`() {
+    fun `the empty-ring copy is written for a five-step ladder`() {
         assertEquals(5, Steps.TOTAL)
-        assertEquals("aparece depois de quatro revisões", whenItAppearsText())
-    }
-
-    @Test
-    fun `close to levelling up agrees with the count`() {
-        assertEquals("Nenhuma está perto de virar.", closeToLevelingText(0))
-        assertEquals("1 está perto de virar.", closeToLevelingText(1))
-        assertEquals("3 estão perto de virar.", closeToLevelingText(3))
     }
 
     // `whatsLeftText` is now a plurals lookup in composition. Its count-to-form

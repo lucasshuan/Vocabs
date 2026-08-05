@@ -292,6 +292,7 @@
     <string name="review_session_done">Sessão concluída</string>
     <string name="review_hits">acertos</string>
     <string name="review_to_reinforce">para reforçar</string>
+    <string name="review_day_streak">dias seguidos</string>
 
     <string name="swipe_release_to_delete">Solte para excluir</string>
     <string name="swipe_delete">Excluir</string>
@@ -377,6 +378,39 @@
     <string name="error_unreachable">Não foi possível falar com o servidor.</string>
     <string name="error_http">O servidor respondeu algo inesperado.</string>
     <string name="error_generation_failed">Não foi possível gerar a ficha.</string>
+
+    <!-- Femininos: concordam com "palavra". -->
+    <string-array name="spelled_numbers">
+        <item>Nenhuma</item>
+        <item>Uma</item>
+        <item>Duas</item>
+        <item>Três</item>
+        <item>Quatro</item>
+        <item>Cinco</item>
+        <item>Seis</item>
+        <item>Sete</item>
+        <item>Oito</item>
+        <item>Nove</item>
+        <item>Dez</item>
+    </string-array>
+    <string name="progress_stock_none">Nenhuma palavra é sua ainda</string>
+    <string name="progress_stock_one">Uma palavra já é sua</string>
+    <string name="progress_stock_many">%1$s palavras já são suas</string>
+    <string name="progress_ring_appears_after">aparece depois de quatro revisões</string>
+    <string name="progress_course_no_words">nenhuma palavra ainda</string>
+    <string name="progress_course_summary">%1$d de %2$d já são suas</string>
+    <string name="progress_quota_none">—</string>
+    <string name="progress_close_none">Nenhuma está perto de virar.</string>
+    <plurals name="progress_close_to_leveling">
+        <item quantity="one">%1$d está perto de virar.</item>
+        <item quantity="many">%1$d de estão perto de virar.</item>
+        <item quantity="other">%1$d estão perto de virar.</item>
+    </plurals>
+    <plurals name="progress_day_streak">
+        <item quantity="one">%1$d dia seguido</item>
+        <item quantity="many">%1$d de dias seguidos</item>
+        <item quantity="other">%1$d dias seguidos</item>
+    </plurals>
 
     <!-- Configurações -->
     <string name="settings_section_language">Idioma</string>

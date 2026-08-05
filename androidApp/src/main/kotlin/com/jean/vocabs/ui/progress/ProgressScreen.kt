@@ -44,6 +44,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -513,39 +515,44 @@ private fun DrawerRow(course: CourseSummary, chosen: Boolean, onClick: () -> Uni
     }
 }
 
+@Composable
 internal fun streakLabel(days: Int): String =
-    if (days == 1) "1 dia seguido" else "$days dias seguidos"
+    pluralStringResource(R.plurals.progress_day_streak, days, days)
 
 /**
  * An em dash when the day asked for nothing. "0 of 0" would be the score of a
  * match never played.
  */
+@Composable
 internal fun quotaText(quota: DailyQuota): String =
-    if (quota.total == 0) "—" else "${quota.done} de ${quota.total}"
+    if (quota.total == 0) stringResource(R.string.progress_quota_none)
+    else stringResource(R.string.fraction, quota.done, quota.total)
 
-internal fun whenItAppearsText(): String =
-    "aparece depois de ${SPELLED_NUMBERS[Steps.TOTAL - 1].lowercase()} revisões"
+@Composable
+internal fun whenItAppearsText(): String = stringResource(R.string.progress_ring_appears_after)
 
+@Composable
 internal fun courseSummaryText(course: CourseSummary): String =
-    if (course.total == 0) "nenhuma palavra ainda" else "${course.mastered} de ${course.total} já são suas"
-
-private val SPELLED_NUMBERS = listOf(
-    "Nenhuma", "Uma", "Duas", "Três", "Quatro", "Cinco", "Seis", "Sete", "Oito", "Nove", "Dez",
-)
+    if (course.total == 0) stringResource(R.string.progress_course_no_words)
+    else stringResource(R.string.progress_course_summary, course.mastered, course.total)
 
 /**
  * Spelled out up to ten because that is how an achievement reads aloud; past that
  * the digits come back, which is how a large number reads.
  */
-internal fun stockTitle(mastered: Int): String = when {
-    mastered == 0 -> "Nenhuma palavra é sua ainda"
-    mastered == 1 -> "Uma palavra já é sua"
-    mastered <= 10 -> "${SPELLED_NUMBERS[mastered]} palavras já são suas"
-    else -> "$mastered palavras já são suas"
+@Composable
+internal fun stockTitle(mastered: Int): String {
+    val spelled = stringArrayResource(R.array.spelled_numbers)
+    return when {
+        mastered == 0 -> stringResource(R.string.progress_stock_none)
+        mastered == 1 -> stringResource(R.string.progress_stock_one)
+        mastered < spelled.size -> stringResource(R.string.progress_stock_many, spelled[mastered])
+        else -> stringResource(R.string.progress_stock_many, mastered.toString())
+    }
 }
 
+@Composable
 internal fun closeToLevelingText(count: Int): String = when (count) {
-    0 -> "Nenhuma está perto de virar."
-    1 -> "1 está perto de virar."
-    else -> "$count estão perto de virar."
+    0 -> stringResource(R.string.progress_close_none)
+    else -> pluralStringResource(R.plurals.progress_close_to_leveling, count, count)
 }

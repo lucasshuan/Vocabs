@@ -273,7 +273,7 @@ private fun Summary(state: ReviewState.Summary, vm: ReviewViewModel, onBack: () 
             MetricCard("${state.misses}", stringResource(R.string.review_to_reinforce), Modifier.weight(1f))
             MetricCard(
                 value = "${animatedCount(state.dayStreak, "dayStreak")}",
-                label = "dias seguidos",
+                label = stringResource(R.string.review_day_streak),
                 modifier = Modifier.weight(1f),
                 highlight = true,
             )

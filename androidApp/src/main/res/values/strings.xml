@@ -327,6 +327,7 @@
     <string name="review_session_done">Session complete</string>
     <string name="review_hits">right</string>
     <string name="review_to_reinforce">to reinforce</string>
+    <string name="review_day_streak">days in a row</string>
 
     <!-- Swipe to delete -->
     <string name="swipe_release_to_delete">Release to delete</string>
@@ -399,6 +400,44 @@
     <string name="error_unreachable">The server could not be reached.</string>
     <string name="error_http">The server answered something unexpected.</string>
     <string name="error_generation_failed">The card could not be generated.</string>
+
+    <!--
+      Achievement copy. The stock title spells the number out to ten because
+      that is how an achievement reads aloud; past that the digits come back.
+      The array is index-keyed and index == the value it names, which is
+      self-checking — unlike the language list, where an index would drift.
+    -->
+    <string-array name="spelled_numbers">
+        <item>No</item>
+        <item>One</item>
+        <item>Two</item>
+        <item>Three</item>
+        <item>Four</item>
+        <item>Five</item>
+        <item>Six</item>
+        <item>Seven</item>
+        <item>Eight</item>
+        <item>Nine</item>
+        <item>Ten</item>
+    </string-array>
+    <string name="progress_stock_none">No word is yours yet</string>
+    <string name="progress_stock_one">One word is yours already</string>
+    <string name="progress_stock_many">%1$s words are yours already</string>
+    <!-- Steps.TOTAL is a compile-time constant, so the count is prose here and a
+         test pins the two together rather than a plural lookup. -->
+    <string name="progress_ring_appears_after">appears after four reviews</string>
+    <string name="progress_course_no_words">no words yet</string>
+    <string name="progress_course_summary">%1$d of %2$d are yours already</string>
+    <string name="progress_quota_none">—</string>
+    <string name="progress_close_none">Nothing is close to levelling.</string>
+    <plurals name="progress_close_to_leveling">
+        <item quantity="one">%1$d is close to levelling.</item>
+        <item quantity="other">%1$d are close to levelling.</item>
+    </plurals>
+    <plurals name="progress_day_streak">
+        <item quantity="one">%1$d day in a row</item>
+        <item quantity="other">%1$d days in a row</item>
+    </plurals>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
