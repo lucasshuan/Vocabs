@@ -38,13 +38,13 @@ data class HomePage(
 
 data class HomeState(
     val pages: List<HomePage> = emptyList(),
-    val ativo: String = "",
+    val activeTarget: String = "",
     val native: String = "",
     val loaded: Boolean = false,
 ) {
     val courses: List<CourseSummary> get() = pages.map { it.summary }
 
-    val activeIndex: Int get() = pages.indexOfFirst { it.languagePair.target == ativo }.coerceAtLeast(0)
+    val activeIndex: Int get() = pages.indexOfFirst { it.languagePair.target == activeTarget }.coerceAtLeast(0)
 
     /** Com um curso só não há faixa nem carrossel: não há para onde deslizar. */
     val hasCarousel: Boolean get() = pages.size > 1
@@ -80,7 +80,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                     today = today,
                 )
             },
-            ativo = languagePair.target,
+            activeTarget = languagePair.target,
             native = languagePair.native,
             loaded = true,
         )

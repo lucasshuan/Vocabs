@@ -7,94 +7,90 @@ import androidx.compose.ui.unit.dp
 import com.jean.vocabs.shared.domain.CaptureFormat
 
 /**
- * Onde o dedo está, do ponto de vista do gesto de captura.
+ * Where the finger is, as far as the capture gesture is concerned.
  *
- * As três posições são exaustivas e é isso que faz o gesto ser reversível: não
- * existe um estado "quase escolheu" nem um alvo que continua marcado depois que
- * o dedo saiu dele. Soltar sempre executa exatamente o que a tela está mostrando
- * no instante em que o dedo sobe — e **só** soltar executa: entrar no alvo pinta,
- * não dispara.
+ * The three positions are exhaustive, and that is what makes the gesture
+ * reversible: there is no "almost chose" state and no target that stays marked
+ * after the finger left it. Releasing always runs exactly what the screen is
+ * showing at that instant — and **only** releasing runs anything.
  */
 sealed interface GestureTarget {
 
-    /** Em cima do `+`, de onde o gesto saiu. */
+    /** On the `+`, where the gesture started. */
     data object Origin : GestureTarget
 
-    /** Nem origem nem alvo. Soltar aqui não faz nada. */
+    /** Neither origin nor target. Releasing here does nothing. */
     data object Outward : GestureTarget
 
     data class Mode(val format: CaptureFormat) : GestureTarget
 }
 
 /**
- * A posição dos três alvos em volta do `+`, em dp e a partir do centro dele.
+ * Where the three targets sit around the `+`, in dp from its center.
  *
- * Um arco de verdade: os três estão à **mesma distância** do `+` — 152 dp —, o
- * áudio no eixo por ser o alvo mais provável e os outros dois a ±54°. Nenhum dos
- * três custa mais dedo que o outro, e é literalmente um arco: o polegar varre a
- * mesma curva sem esticar nem recolher.
+ * A real arc: all three are the **same distance** from the `+` — 152 dp — with
+ * audio on the axis as the likeliest and the other two at ±54°. None costs more
+ * reach than another; the thumb sweeps one curve.
  *
- * A abertura é larga de propósito. Com os laterais mais altos e mais para dentro
- * os três discos se acotovelavam, e a terra de ninguém entre um e outro — o que
- * garante que atravessar o leque não marque nada por acidente — ficava estreita
- * demais para ser sentida. Descê-los e jogá-los para as bordas separa os vizinhos
- * em ~137 dp de centro a centro, quase 50 dp de folga entre as áreas de toque.
+ * The spread is wide on purpose. With the side targets higher and further in, the
+ * discs crowded each other and the no-man's-land between them — what keeps
+ * crossing the fan from marking anything by accident — was too narrow to feel.
+ * Lowering them and pushing them to the edges leaves ~137 dp center to center.
  */
 val AUDIO_OFFSET = DpOffset(0.dp, (-152).dp)
 val TEXT_OFFSET = DpOffset((-122).dp, (-90).dp)
 val PHOTO_OFFSET = DpOffset(122.dp, (-90).dp)
 
 /**
- * Os três alvos nascem iguais.
+ * The three targets are born identical.
  *
- * Nenhum é maior nem preenchido antes de ser alcançado: o áudio deixou de ser o
- * disco grande e verde porque um alvo já pintado antes do dedo chegar promete que
- * alguma coisa está em curso — e nada está. [DIAMETRO_DO_ALVO_MARCADO] é o
- * tamanho do que está sob o dedo, e é o único sinal de escolha que existe.
+ * None is larger or filled before being reached: a target already painted before
+ * the finger arrives promises something is underway, and nothing is.
+ * [MARKED_TARGET_DIAMETER] is the size of what is under the finger, and it is the
+ * only signal of choice that exists.
  */
 val TARGET_DIAMETER = 68.dp
 val MARKED_TARGET_DIAMETER = 76.dp
 
 /**
- * O quanto o dedo pode passar perto de um alvo e ainda contar como estando nele.
+ * How close the finger can pass and still count as being on a target.
  *
- * 44 dp de raio dão uma área de toque de 88 dp — bem acima do mínimo de 48 dp do
- * Material e maior que o próprio disco de 68 dp, para o alvo ser mais fácil de
- * acertar do que de ver. Entre dois alvos vizinhos sobram ~27 dp de terra de
- * ninguém, e é ali que o gesto não escolhe nada: um alvo que se marcasse por
- * proximidade relativa marcaria alguma coisa em toda a metade de cima da tela.
+ * A 44 dp radius gives an 88 dp touch area — well over Material's 48 dp minimum
+ * and larger than the 68 dp disc, so the target is easier to hit than to see.
+ * Between two neighbours ~27 dp of no-man's-land is left, and that is where the
+ * gesture chooses nothing: a target marked by relative proximity would mark
+ * something across the whole top half of the screen.
  */
 val TARGET_RADIUS = 44.dp
 
 /**
- * O raio em volta do `+` onde o gesto ainda não escolheu nada.
- *
- * É a zona de "só toquei": soltar aqui abre o texto, que é o que quem encostou no
- * botão devagar estava pedindo.
+ * The radius around the `+` where the gesture has chosen nothing — the "I only
+ * touched it" zone. Releasing here opens text, which is what a slow tap on the
+ * button was asking for.
  */
 val ORIGIN_RADIUS = 56.dp
 
-/** Depois disto o toque virou pressão e o leque abre mesmo sem o dedo ter andado. */
+/** Past this the touch became a press and the fan opens even without movement. */
 const val FAN_OPEN_MS = 180L
 
 /**
- * O realce do alvo persegue o dedo, e por isso é mais curto que qualquer duração
- * do vocabulário de movimento do app.
+ * The target highlight chases the finger, so it is shorter than any duration in
+ * the app's motion vocabulary.
  *
- * `Movimento.RAPIDO` (150 ms) é a reação de um chip que troca de cor depois de um
- * toque que já terminou. Aqui o dedo ainda está andando: 90 ms é o teto para o
- * realce chegar antes de a mão duvidar se aquele alvo é mesmo o que está marcado.
+ * `Motion.FAST` (150 ms) is a chip reacting to a touch that already ended. Here
+ * the finger is still moving: 90 ms is the ceiling for the highlight to land
+ * before the hand doubts which target is marked.
  */
 const val TARGET_HIGHLIGHT_MS = 90
 
-/** O deslocamento de cada modo, para quem desenha os alvos. */
+/** Each mode's offset, for whoever draws the targets. */
 fun offsetOf(format: CaptureFormat): DpOffset = when (format) {
     CaptureFormat.TEXT -> TEXT_OFFSET
     CaptureFormat.AUDIO -> AUDIO_OFFSET
     CaptureFormat.PHOTO -> PHOTO_OFFSET
 }
 
-/** Os mesmos três deslocamentos em pixels, prontos para comparar com o dedo. */
+/** The same three offsets in pixels, ready to compare against the finger. */
 fun Density.targetsInPixels(): List<Pair<CaptureFormat, Offset>> =
     CaptureFormat.entries.map { format ->
         val destination = offsetOf(format)
@@ -102,18 +98,16 @@ fun Density.targetsInPixels(): List<Pair<CaptureFormat, Offset>> =
     }
 
 /**
- * Que alvo um deslocamento a partir do `+` escolhe.
+ * Which target an offset from the `+` selects.
  *
- * **É preciso alcançar o alvo.** A versão anterior escolhia por ângulo — apontar
- * bastava, e o disco desenhado era só a ilustração de um setor — o que economizava
- * dedo e cobrava o preço em outro lugar: com o alvo do áudio ocupando todo o setor
- * central, um deslize curto para cima já marcava "gravar", e o que era para ser
- * ponteiro virava gatilho. Agora o alvo é uma coisa no lugar dela: o dedo chega
- * nele, ele se pinta, e soltar ali executa. Os três estão a ~150 dp, dentro do
- * arco do polegar, e o raio de 44 dp perdoa a mira.
+ * **The target has to be reached.** The earlier version chose by angle — pointing
+ * was enough, and the drawn disc was just the illustration of a sector. That
+ * saved reach and charged for it elsewhere: with audio filling the whole central
+ * sector, a short upward swipe already marked "record", and what was meant as a
+ * pointer became a trigger. Now the target is a thing in a place.
  *
- * Todas as medidas chegam em pixels porque quem chama está dentro de um
- * `PointerInputScope`, onde as posições são pixels e a densidade está à mão.
+ * Every measure arrives in pixels because the caller is inside a
+ * `PointerInputScope`, where positions are pixels and density is at hand.
  */
 fun targetFor(
     shift: Offset,

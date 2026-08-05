@@ -42,18 +42,18 @@ class VocabRepositoryImplTest {
 
     @Test
     fun `batch overlaid limita concurrency preserva success partial e contabiliza so success`() = runBlocking {
-        val ativas = AtomicInteger(0)
+        val running = AtomicInteger(0)
         val maximum = AtomicInteger(0)
         val calls = AtomicInteger(0)
         val repo = repository { 
-            val inProgress = ativas.incrementAndGet()
+            val inProgress = running.incrementAndGet()
             maximum.updateAndGet { maxOf(it, inProgress) }
             try {
                 delay(60)
                 if (calls.getAndIncrement() == 1) HttpStatusCode.InternalServerError to "{\"message\":\"failed\"}"
                 else HttpStatusCode.OK to CARD_JSON
             } finally {
-                ativas.decrementAndGet()
+                running.decrementAndGet()
             }
         }
         val snippet = "He is on the fence today"

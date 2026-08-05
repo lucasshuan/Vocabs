@@ -39,17 +39,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * O anel de rosca: uma fração desenhada como arco, com o número dentro.
+ * A fraction drawn as an arc, with the number inside.
  *
- * Serve à força média do Início e ao estoque de palavras do Progresso, que são a
- * mesma forma com conteúdos diferentes — daí o miolo ser um slot em vez de um
- * texto formatado aqui dentro.
+ * Serves Home's average strength and Progress's word stock — the same shape with
+ * different content, which is why the core is a slot rather than text formatted
+ * in here.
  *
- * O arco se preenche do topo até o valor quando a tela abre. É a animação mais
- * longa do app ([Movimento.AMPLO]) e a que menos custa: ninguém espera por ela —
- * o número do miolo já está legível no primeiro quadro, e o anel é o que confirma
- * o que ele diz. A fração é lida dentro do `Canvas`, então cada quadro invalida o
- * desenho e nada mais.
+ * The arc fills from the top when the screen opens. It is the app's longest
+ * animation ([Motion.WIDE]) and the cheapest: nobody waits on it, because the
+ * number is already legible on the first frame and the ring only confirms what it
+ * says. The fraction is read inside the `Canvas`, so each frame invalidates the
+ * drawing and nothing else.
  */
 @Composable
 fun ProgressRing(
@@ -73,11 +73,11 @@ fun ProgressRing(
 }
 
 /**
- * Um dia da faixa da semana.
+ * One day of the week strip.
  *
- * [futuro] é separado de "sem revisão" de propósito: sábado sem nada é um dia
- * vazio, domingo que ainda não chegou não é falha nenhuma, e pintá-los igual
- * transformaria a semana inteira num boletim de dias perdidos toda segunda.
+ * [future] is kept apart from "no reviews" on purpose: a Saturday with nothing is
+ * an empty day, a Sunday that has not arrived yet is not a failure, and painting
+ * them the same would turn every Monday into a report card of lost days.
  */
 data class WeekDay(
     val abbreviation: String,
@@ -88,19 +88,19 @@ data class WeekDay(
 )
 
 /**
- * Os sete dias da semana corrente, com hoje em ameixa e o que já foi em menta.
+ * The seven days of the current week, today in plum and what is done in mint.
  *
- * Aparece no cartão de Progresso e no topo do Dia a dia — a mesma faixa, para
- * que passar de uma tela para a outra não pareça trocar de assunto.
+ * Appears on the Progress card and at the top of Day-by-day — the same strip, so
+ * moving between the two screens does not read as changing subject.
  *
- * Os sete dias entram da segunda para o domingo, um logo atrás do outro. O
- * escalonamento aqui não é enfeite: ele desenha na tela a direção em que a semana
- * se lê, e como o passo é de 34 ms, o domingo chega 170 ms depois da segunda —
- * antes de a pessoa ter terminado de olhar para o primeiro quadrado.
+ * The days enter Monday to Sunday, one just behind the next. The stagger is not
+ * decoration: it draws the direction the week reads in, and at 34 ms a step
+ * Sunday arrives 170 ms after Monday, before anyone has finished looking at the
+ * first square.
  *
- * [tracejada] é a mesma semana de um curso que ainda não tem palavra nenhuma: a
- * anatomia não muda, os quadrados é que ficam só com o contorno. Hoje continua
- * marcado — é a única data que existe antes de haver histórico.
+ * [dashed] is the same week for a course with no words yet: the anatomy does not
+ * change, the squares just keep only their outline. Today stays marked — it is
+ * the only date that exists before there is any history.
  */
 @Composable
 fun WeekStrip(
@@ -131,12 +131,11 @@ fun WeekStrip(
 }
 
 /**
- * O dia de uma semana que ainda não tem histórico: contorno e mais nada.
+ * A day of a week with no history: outline and nothing else.
  *
- * Sem o número, de propósito. Um "27" apagado dentro de um quadrado vazio é a
- * data de um dia em que nada aconteceu, e sete deles em fileira se leem como uma
- * semana perdida — que é justamente o que ninguém precisa ver ao abrir um curso
- * que começou hoje.
+ * Deliberately without the number. A faded "27" inside an empty square is the
+ * date of a day when nothing happened, and seven of them in a row read as a lost
+ * week — exactly what nobody needs on opening a course that started today.
  */
 @Composable
 private fun EmptySquare() {
@@ -151,9 +150,9 @@ private fun EmptySquare() {
 @Composable
 private fun DaySquare(day: WeekDay) {
     val colors = MaterialTheme.colorScheme
-    // Dois tons de menta e não um gradiente: a faixa tem sete quadrados de 40 dp,
-    // e uma escala fina neles não é legível — o que precisa ficar claro é
-    // "trabalhei" contra "trabalhei bastante".
+    // Two shades of mint rather than a gradient: the strip has seven 40 dp
+    // squares, and a fine scale on those is not legible. What has to read is
+    // "worked" against "worked a lot".
     val targetBackground = when {
         day.today -> colors.secondaryContainer
         day.future -> colors.surfaceVariant
@@ -161,10 +160,10 @@ private fun DaySquare(day: WeekDay) {
         day.reviews > 0 -> colors.tertiaryContainer
         else -> colors.outlineVariant
     }
-    // O quadrado de hoje muda de cor no meio da sessão, quando a terceira revisão
-    // o leva de menta clara a menta forte. A transição é o que faz esse degrau
-    // ser notado: repintado de um quadro para o outro, ele só aparece na próxima
-    // vez que alguém vier olhar a semana.
+    // Today's square changes color mid-session, when the third review takes it
+    // from light mint to strong. The transition is what makes that step get
+    // noticed: repainted between one frame and the next it would only show up the
+    // next time someone came to look at the week.
     val background by animateColorAsState(targetBackground, tween(Motion.DEFAULT), label = "fundoDoDia")
     val text = when {
         day.today -> colors.primary
@@ -201,20 +200,20 @@ private fun DaySquare(day: WeekDay) {
     }
 }
 
-/** A partir daqui o dia ganha a menta forte. É o piso da carga diária em regime. */
+/** From here the day earns the strong mint. It is the steady-state daily load. */
 private const val FULL_DAY_REVIEWS = 3
 
 /**
- * A barra que reparte um total em faixas proporcionais — dominadas, familiares e
- * aprendendo, lado a lado.
+ * A bar splitting a total into proportional bands — mastered, familiar, learning.
  *
- * Faixas de peso zero somem em vez de virarem um fio de 1 px: um traço sem
- * largura útil só diz que existe uma categoria vazia, e a legenda ao lado já diz.
+ * Zero-weight bands disappear rather than becoming a 1 px thread: a stroke with
+ * no useful width only says a category is empty, and the legend beside it already
+ * says that.
  *
- * Ela se desenha da esquerda para a direita ao abrir, no mesmo tempo do anel logo
- * acima — os dois falam do mesmo estoque, e crescerem juntos é o que diz isso. O
- * traçado é `scaleX` num `graphicsLayer`, e não largura animada: assim as três
- * faixas são medidas uma vez só, e a animação fica inteira na fase de desenho.
+ * It draws left to right on open, in the same time as the ring above it — both
+ * describe the same stock, and growing together is what says so. The stroke is
+ * `scaleX` on a `graphicsLayer` rather than animated width, so the three bands
+ * are measured once and the animation stays entirely in the draw phase.
  */
 @Composable
 fun BandBars(strips: List<Pair<Int, Color>>, modifier: Modifier = Modifier, height: Dp = 8.dp) {
@@ -241,11 +240,11 @@ fun BandBars(strips: List<Pair<Int, Color>>, modifier: Modifier = Modifier, heig
 }
 
 /**
- * O cabeçalho das páginas de dentro: voltar e título, na mesma linha.
+ * The header of the inner pages: back arrow and title on one line.
  *
- * Progresso, Dia a dia, O que falta, Configurações e Novo idioma abrem por cima
- * da aba e voltam para ela — sem esta seta elas seriam becos, porque a barra de
- * baixo continua marcando a aba de origem e não tem como desfazer a entrada.
+ * Progress, Day-by-day, What's left, Settings and New language open over a tab
+ * and return to it. Without this arrow they would be dead ends, because the
+ * bottom bar keeps marking the tab they came from.
  */
 @Composable
 fun InnerHeader(
@@ -274,11 +273,11 @@ fun InnerHeader(
 }
 
 /**
- * A linha de consumo mensal de IA.
+ * The monthly AI usage row.
  *
- * Está na tela Você e na de Progresso, e é a mesma coisa nas duas: um contador
- * informativo, sem consequência nenhuma quando estoura — não é quota de
- * segurança, e por isso a barra é de apoio e não um alerta.
+ * The same thing on both Profile and Progress: an informative counter with no
+ * consequence when it runs over. It is not a safety quota, which is why the bar
+ * is a supporting element rather than an alert.
  */
 @Composable
 fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
@@ -310,7 +309,7 @@ fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
     )
 }
 
-/** O rótulo de contagem discreto do canto de uma seção ("37 idiomas", "Todas · 24"). */
+/** The quiet count label in a section's corner ("37 languages", "All · 24"). */
 @Composable
 fun SectionCount(text: String, modifier: Modifier = Modifier) {
     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceVariant, modifier = modifier) {

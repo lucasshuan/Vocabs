@@ -77,35 +77,22 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * O `+` e tudo que sai dele.
+ * The `+` and everything that comes out of it.
  *
- * O handoff troca dois toques por um gesto: **arrastar do `+`**. Segurar abre um
- * leque de três alvos, o dedo alcança um e soltar executa.
+ * Dragging from the `+` replaces two taps with one gesture: holding opens a fan
+ * of three targets, the finger reaches one, releasing runs it.
  *
- * Uma regra só governa os três alvos: **soltar é a única confirmação**. Enquanto o
- * dedo se move nada foi escolhido e nada foi iniciado — nem gravação, nem câmera,
- * nem campo de texto. Os três nascem iguais e neutros, no tom claro da própria
- * ação, e cada um ganha a cor cheia apenas quando o dedo chega nele. Foi o áudio
- * quem mais mudou: ele deixou de ser o alvo grande e verde que já estava gravando
- * quando o dedo passou por cima. Um alvo que dispara ao ser tocado transforma o
- * caminho até os outros dois num campo minado.
+ * **Releasing is the only confirmation.** While the finger moves nothing has
+ * started — no recording, no camera, no text field. A target that fired on being
+ * touched would turn the path to the other two into a minefield.
  *
- * Três decisões sustentam o fluxo, e as três estão aqui:
+ * The language is never asked first: a capture goes to the course open in the
+ * hub, and correcting it lives in Pending, where the mistake is visible and undo
+ * costs one tap.
  *
- * 1. **O idioma não é perguntado antes.** Sumiu a folha "Capturar" com a fileira
- *    de bandeiras: a captura vai para o curso aberto no hub, e a correção mora em
- *    Pendentes, onde o erro é visível e desfazer custa um toque. Perguntar antes
- *    cobra a pergunta em toda captura para acertar as poucas em que a resposta
- *    não era a óbvia.
- * 2. **A captura entra em Pendentes no instante em que termina**, antes de
- *    qualquer decisão. Transcrição e ficha correm em segundo plano.
- * 3. **Selecionar agora é atalho, nunca etapa** — o que o aviso de 5 s oferece.
- *
- * O hub ocupa a tela inteira porque o leque e o véu precisam desenhar por cima da
- * barra e do conteúdo. Fora de um gesto nada aqui intercepta toque além do próprio
- * botão: um `Box` sem `pointerInput` não consome nada, e a barra de baixo
- * continua clicável através dele. A gravação, essa sim, tem tela própria —
- * [TelaDeGravacao] —, e é ela quem toma a tela quando o áudio começa.
+ * The hub fills the screen because the fan and the veil draw over the bar and the
+ * content. Outside a gesture nothing here intercepts touch: a `Box` without
+ * `pointerInput` consumes nothing, so the bottom bar stays clickable through it.
  */
 @Composable
 fun CaptureHub(
@@ -119,21 +106,19 @@ fun CaptureHub(
     val reduced = reducedMotion()
     val openText by rememberUpdatedState(onOpenText)
 
-    var activePair by remember { mutableStateOf(false) }
+    var fanOpen by remember { mutableStateOf(false) }
     var target by remember { mutableStateOf<GestureTarget>(GestureTarget.Origin) }
     val isRecording = capture.isRecording
 
-    // "O hub tomou a tela": o que está atrás desfoca e sai do alcance do leitor de
-    // tela. Vale para o leque e para a gravação — a tela de gravação é opaca, mas
-    // o conteúdo continua composto por baixo dela, e um `+` alcançável pelo
-    // TalkBack debaixo de uma tela que já não é aquela é uma armadilha.
-    val inGesture = activePair || isRecording
+    // Applies to the recording too: that screen is opaque, but the content stays
+    // composed beneath it, and a `+` TalkBack can still reach is a trap.
+    val inGesture = fanOpen || isRecording
     LaunchedEffect(inGesture) { onPhaseChange(inGesture) }
 
-    // Rede de segurança: o hub sai de cena quando uma tela cheia abre, e sair de
-    // cena cancela a corrotina do gesto sem passar por `concluir`. Sem isto, uma
-    // gravação apanhada por uma navegação continuaria correndo com o microfone
-    // aberto e sem nada na tela dizendo isso.
+    // The hub leaves the composition when a full screen opens, which cancels the
+    // gesture coroutine without going through the normal finish. Without this, a
+    // recording caught by a navigation keeps the microphone open with nothing on
+    // screen saying so.
     DisposableEffect(Unit) {
         onDispose {
             if (capture.isRecording) capture.cancelAudio()
@@ -141,18 +126,17 @@ fun CaptureHub(
         }
     }
 
-    // Leque e gravação continuam compostos por um instante depois de fechar, para
-    // a saída poder ser animada. Sem isto os alvos desapareceriam no quadro em que
-    // o dedo sobe, e o gesto terminaria num corte seco.
-    val drawingFan = stillOnScreen(activePair)
+    // Fan and recording stay composed briefly after closing so the exit can
+    // animate; otherwise the targets vanish in the frame the finger lifts.
+    val drawingFan = stillOnScreen(fanOpen)
     val drawingRecording = stillOnScreen(isRecording)
 
-    // O véu do leque deixa o conteúdo legível por trás: a pessoa está decidindo, e
-    // o app é o contexto da decisão.
+    // The veil leaves the content legible behind it: the person is deciding, and
+    // the app is the context of the decision.
     val veil = animateFloatAsState(
-        targetValue = if (activePair) 0.46f else 0f,
+        targetValue = if (fanOpen) 0.46f else 0f,
         animationSpec = tween(Motion.FAST, easing = FastOutSlowInEasing),
-        label = "veu",
+        label = "veil",
     )
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -169,42 +153,38 @@ fun CaptureHub(
                 .navigationBarsPadding()
                 .fillMaxWidth()
                 .height(ANCHOR_HEIGHT)
-                // O `+` fica debaixo da tela de gravação, que é opaca. Deixá-lo
-                // no alcance do leitor de tela ofereceria "Capturar" no meio de
-                // uma gravação em curso.
+                // The `+` sits under the opaque recording screen; leaving it
+                // reachable would offer "Capture" mid-recording.
                 .then(if (isRecording) Modifier.clearAndSetSemantics {} else Modifier)
-                // A âncora é alta para caber o leque inteiro sem apertar as
-                // medidas de ninguém, e desce até o centro dela coincidir com o
-                // centro do botão. Daí em diante todo alvo é um `offset` puro a
-                // partir do `+`, que é como o handoff descreve as posições.
+                // The anchor is tall enough to hold the whole fan, and drops
+                // until its center meets the button's. From there every target
+                // is a pure `offset` from the `+`.
                 .offset(y = ANCHOR_HEIGHT / 2 - BAR_HEIGHT / 2 - BUTTON_ELEVATION),
         ) {
             if (drawingFan) {
-                GuideToTarget(target, activePair)
+                GuideToTarget(target, fanOpen)
                 CaptureFormat.entries.forEach { format ->
                     FanTarget(
                         format = format,
                         marked = target == GestureTarget.Mode(format),
-                        isVisible = activePair,
+                        isVisible = fanOpen,
                         delay = ENTER_DELAY.getValue(format),
                         reduced = reduced,
                     )
                 }
-                GestureHint(target, activePair)
+                GestureHint(target, fanOpen)
             }
 
             HubButton(
-                activePair = activePair,
+                fanOpen = fanOpen,
                 isRecording = isRecording,
                 reduced = reduced,
                 modifier = Modifier
                     .offset(y = -BUTTON_ELEVATION)
                     .semantics {
                         contentDescription = "Capturar"
-                        // O arrasto não tem equivalente para quem navega por
-                        // leitor de tela: as três saídas do leque viram ações do
-                        // próprio botão, e a gravação aberta por aqui é encerrada
-                        // pelas ações da tela de gravação.
+                        // The drag has no screen-reader equivalent, so the fan's
+                        // three exits become actions on the button itself.
                         customActions = listOf(
                             CustomAccessibilityAction("Escrever") { openText(); true },
                             CustomAccessibilityAction("Fotografar") { capture.takePhoto(); true },
@@ -226,11 +206,10 @@ fun CaptureHub(
                             first.consume()
                             val centro = Offset(size.width / 2f, size.height / 2f)
 
-                            // Até 180 ms parado ainda é toque; a partir daí, ou
-                            // a partir de um dedo que andou, é pressão e o leque
-                            // abre. O limiar do sistema (500 ms) é longo demais
-                            // para um gesto que precisa render antes de a frase
-                            // terminar de passar.
+                            // Up to 180 ms held still is a tap; past that, or
+                            // once the finger has moved, the fan opens. The
+                            // system's 500 ms is too long for a gesture that has
+                            // to land before the sentence scrolls past.
                             val releasedEarly = withTimeoutOrNull(FAN_OPEN_MS) {
                                 var loose: PointerInputChange? = null
                                 while (true) {
@@ -249,7 +228,7 @@ fun CaptureHub(
                                 return@awaitEachGesture
                             }
 
-                            activePair = true
+                            fanOpen = true
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
 
                             var current: GestureTarget = GestureTarget.Origin
@@ -267,10 +246,9 @@ fun CaptureHub(
                                 if (new != current) {
                                     current = new
                                     target = new
-                                    // Chegar num alvo tem toque tátil; sair dele
-                                    // não. O que a mão precisa sentir é o encaixe,
-                                    // e um segundo pulso na saída transformaria
-                                    // atravessar o leque numa vibração contínua.
+                                    // Arriving at a target buzzes; leaving does
+                                    // not. A second pulse on exit would make
+                                    // crossing the fan one long vibration.
                                     if (new is GestureTarget.Mode) {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     }
@@ -282,7 +260,7 @@ fun CaptureHub(
                                 }
                             }
 
-                            activePair = false
+                            fanOpen = false
                             target = GestureTarget.Origin
                             finish(capture, current, released, haptic, openText)
                         }
@@ -290,8 +268,8 @@ fun CaptureHub(
             )
         }
 
-        // Por último no `Box`, portanto por cima de tudo — inclusive do `+`, que
-        // some atrás dela em vez de continuar clicável debaixo de uma tela opaca.
+        // Last in the `Box`, so above everything including the `+`, which hides
+        // behind it instead of staying clickable under an opaque screen.
         if (drawingRecording) {
             RecordingScreen(
                 capture = capture,
@@ -303,30 +281,29 @@ fun CaptureHub(
 }
 
 /**
- * Se algo que já saiu ainda precisa estar composto para terminar de sair.
- *
- * Entra no mesmo quadro em que [ativo] vira verdadeiro e só desaparece depois de
- * a animação de saída ter tido tempo de correr.
+ * Whether something already dismissed still needs to be composed to finish
+ * leaving. Enters on the same frame [active] turns true, and only disappears
+ * once the exit animation has had time to run.
  */
 @Composable
-private fun stillOnScreen(ativo: Boolean, leftover: Long = Motion.DEFAULT.toLong() + 80): Boolean {
-    var presente by remember { mutableStateOf(ativo) }
-    LaunchedEffect(ativo) {
-        if (ativo) {
-            presente = true
+private fun stillOnScreen(active: Boolean, leftover: Long = Motion.DEFAULT.toLong() + 80): Boolean {
+    var present by remember { mutableStateOf(active) }
+    LaunchedEffect(active) {
+        if (active) {
+            present = true
         } else {
             delay(leftover)
-            presente = false
+            present = false
         }
     }
-    return presente || ativo
+    return present || active
 }
 
 /**
- * O próximo estado deste mesmo dedo, ou nulo quando ele deixou de existir.
+ * The next state of this same finger, or null once it is gone.
  *
- * Todo evento é consumido: o hub fica por cima de listas roláveis, e um arrasto
- * para cima que vazasse para o conteúdo rolaria a tela debaixo do leque.
+ * Every event is consumed: the hub sits above scrollable lists, and an upward
+ * drag leaking through would scroll the screen underneath the fan.
  */
 private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.nextChange(
     source: PointerInputChange,
@@ -338,12 +315,11 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.nex
 }
 
 /**
- * O que soltar o dedo significa — e é o único lugar do gesto onde alguma coisa
- * acontece.
+ * What releasing means — the only place in the gesture where anything happens.
  *
- * [soltou] separa o dedo que subiu do gesto que o sistema cancelou — outro
- * ponteiro, a tela apagando, o app indo para trás. Um cancelamento tratado como
- * soltura abriria a câmera sozinho no meio de uma ligação.
+ * [released] separates a finger that lifted from a gesture the system cancelled:
+ * another pointer, the screen going dark, the app backgrounding. Treating a
+ * cancellation as a release would open the camera by itself mid-call.
  */
 private fun finish(
     capture: QuickCapture,
@@ -364,30 +340,30 @@ private fun finish(
                     else capture.requestAudioPermission()
             }
         }
-        // O leque abriu por tempo e o dedo nunca saiu do `+`. Isso é um toque
-        // devagar, não uma desistência: quem só encostou no botão fica com o
-        // caminho do texto em vez de com um gesto que não fez nada.
+        // The fan opened on time and the finger never left the `+`. That is a
+        // slow tap, not a change of mind, so it lands on the text path rather
+        // than on a gesture that did nothing.
         GestureTarget.Origin -> openText()
-        // Soltar fora fecha sem capturar nada e sem aviso.
+        // Releasing outside closes without capturing and without a notice.
         GestureTarget.Outward -> Unit
     }
 }
 
-/** Cor única do véu e do fundo da gravação: ameixa quase preta, nos dois temas. */
+/** One color for the veil and the recording background, in both themes. */
 internal val NIGHT = Color(0xFF17111F)
 
-/** O quanto o botão sobe em relação ao centro da fileira de ícones da barra. */
+/** How far the button rises above the center of the bar's icon row. */
 private val BUTTON_ELEVATION = 10.dp
 
 /**
- * O diâmetro do `+`.
+ * The `+` diameter.
  *
- * O handoff pede 84 e desenha o botão sangrando 8 px abaixo da borda de baixo da
- * tela. Isso vem de uma moldura de iPhone: no Android essa faixa é a área do
- * gesto de home, e alvo de toque dentro dela é alvo que o sistema intercepta.
- * Aqui o botão fica inteiro na área segura e ganha altura em vez de profundidade
- * — sobe [ELEVACAO_DO_BOTAO] e rompe a **borda de cima** da barra, que no Android
- * é a borda que está livre.
+ * The handoff asks for 84 and bleeds the button 8 px past the bottom edge of the
+ * screen, which comes from an iPhone frame. On Android that strip is the
+ * home-gesture area and the system intercepts touches inside it, so the button
+ * stays whole in the safe area and gains height instead of depth: it rises
+ * [BUTTON_ELEVATION] and breaks the bar's **top** edge, the one Android leaves
+ * free.
  */
 val BUTTON_DIAMETER = 76.dp
 
@@ -399,7 +375,7 @@ val BUTTON_DIAMETER = 76.dp
  */
 private val ANCHOR_HEIGHT = 520.dp
 
-/** O áudio parte primeiro: é o alvo mais provável, e é dele que o olho precisa antes. */
+/** Audio leaves first: it is the likeliest target, and the eye needs it soonest. */
 private val ENTER_DELAY = mapOf(
     CaptureFormat.AUDIO to 0L,
     CaptureFormat.TEXT to 20L,
@@ -407,19 +383,13 @@ private val ENTER_DELAY = mapOf(
 )
 
 /**
- * O `+`, em dois estados.
- *
- * Em repouso é um disco cheio de ameixa com o halo respirando. Com o leque aberto
- * vira contorno: deixou de ser botão e passou a ser a origem do gesto, e um disco
- * cheio ali competiria com os alvos.
- *
- * Não há mais um terceiro estado vermelho: descartar a gravação virou o lado
- * esquerdo do controle da tela de gravação, e o `+` não precisa mais dizer duas
- * coisas.
+ * The `+`, in two states: a filled disc at rest, an outline once the fan is open
+ * — it stops being a button and becomes the origin of the gesture, and a filled
+ * disc there would compete with the targets.
  */
 @Composable
 private fun HubButton(
-    activePair: Boolean,
+    fanOpen: Boolean,
     isRecording: Boolean,
     reduced: Boolean,
     modifier: Modifier = Modifier,
@@ -427,37 +397,36 @@ private fun HubButton(
     val colors = MaterialTheme.colorScheme
 
     val background by animateColorAsState(
-        targetValue = if (activePair) Color.Transparent else colors.primary,
+        targetValue = if (fanOpen) Color.Transparent else colors.primary,
         animationSpec = tween(Motion.FAST),
         label = "fundoDoBotao",
     )
     val outline by animateColorAsState(
-        targetValue = if (activePair) Color.White.copy(alpha = 0.38f) else Color.Transparent,
+        targetValue = if (fanOpen) Color.White.copy(alpha = 0.38f) else Color.Transparent,
         animationSpec = tween(Motion.FAST),
         label = "contornoDoBotao",
     )
     val tinta by animateColorAsState(
-        targetValue = if (activePair) Color.White.copy(alpha = 0.5f) else colors.onPrimary,
+        targetValue = if (fanOpen) Color.White.copy(alpha = 0.5f) else colors.onPrimary,
         animationSpec = tween(Motion.FAST),
         label = "tintaDoBotao",
     )
     val scale = animateFloatAsState(
-        targetValue = if (activePair) 0.94f else 1f,
+        targetValue = if (fanOpen) 0.94f else 1f,
         animationSpec = Motion.gestureSpring(),
         label = "escalaDoBotao",
     )
-    // A sombra vale para o botão sólido. Sobre o véu ela não separa nada de nada
-    // e só borra o contorno tracejado.
+    // The shadow is for the solid button. Over the veil it separates nothing and
+    // only blurs the dashed outline.
     val shadow = animateFloatAsState(
-        targetValue = if (activePair) 0f else 1f,
+        targetValue = if (fanOpen) 0f else 1f,
         animationSpec = tween(Motion.FAST),
         label = "sombraDoBotao",
     )
 
-    // Nada respira enquanto o leque está aberto nem por trás da tela de gravação:
-    // uma animação infinita rodando debaixo de uma superfície opaca é bateria
-    // gasta em quadro nenhum.
-    val atRest = !activePair && !isRecording && !reduced
+    // Nothing breathes while the fan is open or behind the recording screen: an
+    // infinite animation under an opaque surface is battery spent on no frame.
+    val atRest = !fanOpen && !isRecording && !reduced
 
     Box(
         contentAlignment = Alignment.Center,
@@ -471,8 +440,8 @@ private fun HubButton(
                 spotShadowColor = colors.primary
             }
             .size(BUTTON_DIAMETER)
-            .halo(ativo = atRest, color = colors.primary)
-            .hubBreath(ativo = atRest)
+            .halo(active = atRest, color = colors.primary)
+            .hubBreath(active = atRest)
             .background(background, CircleShape)
             .dashedCircleOutline { outline },
     ) {
@@ -486,18 +455,16 @@ private fun HubButton(
 }
 
 /**
- * O halo: uma onda de 4 s que sai do botão e se apaga antes de chegar longe.
+ * A 4 s wave leaving the button and fading before it gets far. One animation, no
+ * new color, no blinking: 2.8 s growing and 1.2 s still, because a continuous
+ * pulse would read as an alarm.
  *
- * Uma animação só, sem cor nova e sem piscar. Existe para o botão não sumir no
- * canto do olho de quem abriu o app para outra coisa, e por isso gasta 2,8 s
- * crescendo e 1,2 s parada — um pulso contínuo viraria alarme.
- *
- * O valor animado é lido **dentro** do `drawBehind`, e não na composição: assim
- * só a fase de desenho é invalidada a cada quadro, em vez de o botão inteiro
- * recompor 60 vezes por segundo para desenhar um círculo.
+ * The animated value is read **inside** `drawBehind`, so only the draw phase is
+ * invalidated each frame rather than the whole button recomposing 60 times a
+ * second to draw a circle.
  */
-private fun Modifier.halo(ativo: Boolean, color: Color): Modifier = composed {
-    if (!ativo) return@composed this
+private fun Modifier.halo(active: Boolean, color: Color): Modifier = composed {
+    if (!active) return@composed this
     val transition = rememberInfiniteTransition(label = "halo")
     val advance = transition.animateFloat(
         initialValue = 0f,
@@ -523,9 +490,9 @@ private fun Modifier.halo(ativo: Boolean, color: Color): Modifier = composed {
     }
 }
 
-/** O respiro de 4,5% que acompanha o halo. */
-private fun Modifier.hubBreath(ativo: Boolean): Modifier = composed {
-    if (!ativo) return@composed this
+/** The 4.5% breath that accompanies the halo. */
+private fun Modifier.hubBreath(active: Boolean): Modifier = composed {
+    if (!active) return@composed this
     val transition = rememberInfiniteTransition(label = "respiro")
     val scale = transition.animateFloat(
         initialValue = 1f,
@@ -542,7 +509,7 @@ private fun Modifier.hubBreath(ativo: Boolean): Modifier = composed {
     }
 }
 
-/** O contorno tracejado do `+` quando ele é origem e não botão. */
+/** The dashed outline of the `+` when it is an origin rather than a button. */
 private fun Modifier.dashedCircleOutline(color: () -> Color): Modifier = drawBehind {
     val tinta = color()
     if (tinta.alpha < 0.01f) return@drawBehind
@@ -557,23 +524,18 @@ private fun Modifier.dashedCircleOutline(color: () -> Color): Modifier = drawBeh
     )
 }
 
-/** O quanto o alvo cresce ao ser alcançado: de 68 dp para 76 dp. */
+/** How much a target grows on being reached: 68 dp to 76 dp. */
 private val HIGHLIGHT_GROWTH =
     MARKED_TARGET_DIAMETER.value / TARGET_DIAMETER.value - 1f
 
 /**
- * Um dos três alvos, saindo de dentro do `+`.
+ * One of the three targets, flying out of the `+` rather than appearing in place
+ * — that is what says it came from here, and that the way back undoes it.
  *
- * O alvo **voa** do botão até o lugar dele em vez de aparecer lá: é o que conta
- * que aquilo saiu daqui e que o caminho de volta desfaz. A posição é interpolada
- * dentro do `graphicsLayer`, na fase de desenho — três alvos animando posição por
- * layout obrigariam a âncora inteira a remedir a cada quadro do gesto.
- *
- * Em repouso o disco é o tom claro da própria ação com o ícone na cor cheia; sob
- * o dedo ele inverte — enche de cor, ganha o anel por fora, cresce 12% e engrossa
- * o rótulo. Tudo isso sai de **um** valor animado, lido na fase de desenho: o
- * realce persegue o dedo, e um alvo que recompusesse a cada quadro para trocar
- * quatro propriedades chegaria atrasado.
+ * Position is interpolated inside `graphicsLayer`, in the draw phase: three
+ * targets animating position by layout would remeasure the whole anchor every
+ * frame of the gesture. The highlight comes from **one** animated value read the
+ * same way, so it chases the finger instead of arriving a frame late.
  */
 @Composable
 private fun FanTarget(
@@ -607,11 +569,11 @@ private fun FanTarget(
         label = "tintaDoAlvo",
     )
 
-    // O rótulo pendura **fora** da caixa do disco, e não dentro de uma coluna com
-    // ele: numa coluna o que se centraliza no destino é o conjunto disco+rótulo, e
-    // o disco desenhado subiria uns 13 dp acima do ponto que o dedo testa. Com
-    // seleção por proximidade essa diferença é a distância entre o alvo que se vê
-    // e o alvo que existe.
+    // The label hangs **outside** the disc's box rather than sharing a column
+    // with it: in a column what centers on the destination is disc plus label,
+    // and the disc would draw some 13 dp above the point the finger tests. With
+    // proximity selection that gap is the distance between the target you see
+    // and the target that exists.
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -628,8 +590,8 @@ private fun FanTarget(
             .drawBehind {
                 val r = emphasis.value
                 val radius = size.minDimension / 2f
-                // O anel fica por fora do disco: confirma a escolha sem disputar
-                // espaço com o ícone que está sendo apontado.
+                // The ring sits outside the disc: it confirms the choice without
+                // competing for space with the icon being pointed at.
                 if (r > 0.01f) {
                     drawCircle(color = palette.color, radius = radius + 7.dp.toPx() * r, alpha = 0.26f * r)
                 }
@@ -657,23 +619,22 @@ private fun FanTarget(
     }
 }
 
-/** O comprimento do toco que aponta para cima enquanto nenhum alvo está marcado. */
+/** Length of the stub pointing up while no target is marked. */
 private val GUIDE_STUB = 46.dp
 
 /**
- * A linha pontilhada do `+` até o alvo.
+ * The dotted line from the `+` to the target.
  *
- * O gesto precisa de um trilho visível: sem nada ligando as pontas, três discos
- * flutuando sobre um véu não dizem que saíram do botão nem que o caminho de volta
- * desfaz. Com nada marcado ela é um toco apontando para cima — a única instrução
- * que falta a quem acabou de abrir o leque é *para onde* —, e ela se estica até o
- * alvo quando o dedo escolhe um.
+ * Without a visible rail, three discs floating over a veil say neither that they
+ * came from the button nor that the way back undoes it. With nothing marked it is
+ * a stub pointing up — the one instruction missing right after the fan opens is
+ * *where* — and it stretches to the target once the finger picks one.
  *
- * A ponta é um `Animatable<Offset>` lido na fase de desenho: a linha acompanha a
- * troca de alvo com a mesma mola dos discos, sem recompor ninguém.
+ * The tip is an `Animatable<Offset>` read in the draw phase, so the line follows
+ * a change of target with the discs' own spring without recomposing anyone.
  */
 @Composable
-private fun GuideToTarget(target: GestureTarget, activePair: Boolean) {
+private fun GuideToTarget(target: GestureTarget, fanOpen: Boolean) {
     val density = LocalDensity.current
     val marked = (target as? GestureTarget.Mode)?.format
     val destination = with(density) {
@@ -685,7 +646,7 @@ private fun GuideToTarget(target: GestureTarget, activePair: Boolean) {
     LaunchedEffect(destination) { tip.animateTo(destination, Motion.gestureSpring()) }
 
     val presence = animateFloatAsState(
-        targetValue = if (activePair) 1f else 0f,
+        targetValue = if (fanOpen) 1f else 0f,
         animationSpec = tween(Motion.FAST),
         label = "guia",
     )
@@ -717,15 +678,15 @@ private fun GuideToTarget(target: GestureTarget, activePair: Boolean) {
 }
 
 /**
- * A frase que muda conforme o dedo anda.
+ * The sentence that changes as the finger moves.
  *
- * "arraste e solte no alvo" só serve enquanto nada está marcado; assim que há um
- * alvo sob o dedo, a frase útil é o que **soltar** vai fazer — e a pílula veste a
- * cor daquele alvo, que é o segundo lugar em que a associação cor→modo se forma.
- * É o que ensina o leque na primeira vez sem ninguém explicar.
+ * "drag and drop on a target" only holds while nothing is marked; once a target
+ * is under the finger the useful sentence is what **releasing** will do — and the
+ * pill wears that target's color, which is the second place the color-to-mode
+ * association forms.
  */
 @Composable
-private fun GestureHint(target: GestureTarget, activePair: Boolean) {
+private fun GestureHint(target: GestureTarget, fanOpen: Boolean) {
     val marked = (target as? GestureTarget.Mode)?.format
     val text = when (marked) {
         CaptureFormat.TEXT -> "solte para escrever"
@@ -739,7 +700,7 @@ private fun GestureHint(target: GestureTarget, activePair: Boolean) {
         label = "fundoDaDica",
     )
     val presence = animateFloatAsState(
-        targetValue = if (activePair) 1f else 0f,
+        targetValue = if (fanOpen) 1f else 0f,
         animationSpec = tween(Motion.FAST),
         label = "dica",
     )
@@ -749,8 +710,8 @@ private fun GestureHint(target: GestureTarget, activePair: Boolean) {
         modifier = Modifier
             .offset(y = (-238).dp)
             .graphicsLayer { alpha = presence.value }
-            // A frase troca de tamanho junto com o alvo: sem isto a pílula daria
-            // um salto de largura a cada vez que o dedo entra num disco.
+            // The sentence resizes with the target; without this the pill jumps
+            // in width every time the finger enters a disc.
             .animateContentSize(tween(TARGET_HIGHLIGHT_MS, easing = LinearOutSlowInEasing))
             .background(background, CircleShape)
             .padding(horizontal = 14.dp, vertical = 7.dp),

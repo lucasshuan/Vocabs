@@ -83,7 +83,7 @@ fun HomeScreen(
     // Por isso ele só passa a mandar depois do primeiro posicionamento.
     var positioned by remember { mutableStateOf(false) }
 
-    LaunchedEffect(pages.size, state.ativo) {
+    LaunchedEffect(pages.size, state.activeTarget) {
         if (pages.isEmpty()) return@LaunchedEffect
         if (!positioned) {
             pager.scrollToPage(state.activeIndex)
@@ -123,7 +123,7 @@ fun HomeScreen(
         if (state.hasCarousel) {
             LanguageStrip(
                 courses = state.courses,
-                ativo = state.ativo,
+                activeTarget = state.activeTarget,
                 onChoose = vm::openCourse,
                 onAdd = onAddLanguage,
                 modifier = Modifier.padding(bottom = 14.dp),

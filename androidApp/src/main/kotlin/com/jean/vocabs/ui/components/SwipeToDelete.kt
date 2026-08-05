@@ -49,64 +49,57 @@ import kotlin.math.sign
 import kotlinx.coroutines.launch
 
 /**
- * O limiar do descarte, como fração da largura do cartão.
+ * The discard threshold, as a fraction of the card's width.
  *
- * Um terço é o que separa "empurrei sem querer enquanto rolava a lista" de
- * "decidi jogar isto fora". Abaixo disso o cartão volta sozinho; acima, soltar
- * exclui.
+ * A third is what separates "nudged it while scrolling" from "decided to throw
+ * this away". Below it the card returns on its own; above it, releasing deletes.
  */
 private const val THRESHOLD_FRACTION = 0.32f
 
 /**
- * O piso do limiar, para cartões estreitos.
- *
- * A fração sozinha faria um cartão pequeno ser descartado por um arrasto de dois
- * centímetros — perto demais do deslize acidental.
+ * The threshold's floor, for narrow cards. The fraction alone would let a small
+ * card be discarded by a two-centimeter drag — too close to an accidental swipe.
  */
 private val MIN_THRESHOLD = 96.dp
 
 /**
- * O arremesso: a partir daqui a velocidade decide no lugar da distância.
- *
- * Quem joga o cartão para fora com um golpe rápido não espera que ele volte só
- * porque o dedo saiu da tela antes do terço. Exige metade do limiar percorrida
- * para que um roçar veloz na diagonal não exclua nada.
+ * The fling: past this, speed decides instead of distance. Still requires half
+ * the threshold travelled, so a fast diagonal graze deletes nothing.
  */
 private const val DISMISS_VELOCITY = 1_100f
 private const val MIN_FLING_FRACTION = 0.5f
 
 /**
- * O quanto o cartão pesa depois de passar do limiar.
+ * How much the card weighs once past the threshold.
  *
- * Ele não trava — travar faz o gesto parecer quebrado —, mas anda menos que o
- * dedo. É o sinal físico de que dali para a frente não falta mais nada: a
- * decisão já está tomada e o que resta é soltar.
+ * It does not lock — locking makes the gesture feel broken — but it moves less
+ * than the finger. That is the physical signal that the decision is made and all
+ * that is left is to let go.
  */
 private const val RESISTANCE_PAST_THRESHOLD = 0.42f
 
 /**
- * Arrastar o cartão para o lado para excluir o que está nele.
+ * Drag the card sideways to delete what is on it.
  *
- * O gesto é destrutivo, e por isso é o único do app construído inteiro em torno
- * de **avisar antes**. Três coisas acontecem em ordem, e cada uma existe para que
- * ninguém exclua nada sem ter visto que ia excluir:
+ * The gesture is destructive, and is the only one in the app built entirely
+ * around **warning first**. Three things happen in order:
  *
- * 1. O vermelho aparece **atrás** do cartão desde o primeiro milímetro, com a
- *    lixeira. O gesto se explica sozinho antes de qualquer decisão ser tomada.
- * 2. Passado [FRACAO_DO_LIMIAR], o fundo troca do vermelho suave para o vermelho
- *    cheio, a lixeira cresce, a frase "Solte para excluir" entra e o aparelho dá
- *    um toque. É o momento em que o gesto deixa de ser reversível pelo próprio
- *    dedo, e ele é anunciado por cor, texto e tato ao mesmo tempo.
- * 3. Voltar atrás é sempre possível **sem soltar**: arrastar de volta desarma
- *    tudo, e soltar antes do limiar devolve o cartão ao lugar com mola.
+ * 1. The red appears **behind** the card from the first millimeter, with the
+ *    trash icon, so the gesture explains itself before any decision is made.
+ * 2. Past [THRESHOLD_FRACTION] the background goes from soft red to full, the
+ *    trash grows, "Release to delete" enters and the device buzzes. The moment
+ *    the gesture stops being reversible by the finger alone is announced by
+ *    color, text and touch at once.
+ * 3. Backing out is always possible **without releasing**: dragging back disarms
+ *    everything, and releasing before the threshold springs the card home.
  *
- * Vale para os dois lados de propósito. Fixar uma direção só faria metade das
- * pessoas descobrir que o gesto existe, e não há segunda ação disputando o outro
- * lado — se um dia houver, esta é a hora de dividir.
+ * Both directions work on purpose. Fixing one direction would leave half the
+ * people never discovering the gesture, and no second action is competing for the
+ * other side — if one ever is, that is the time to split it.
  *
- * O que acontece **depois** de [aoExcluir] não é problema daqui: o cartão sai
- * voando e quem chama decide se aquilo vira uma exclusão imediata ou uma que
- * ainda pode ser desfeita. Em Pendentes é a segunda.
+ * What happens **after** [onDelete] is not this file's problem: the card flies
+ * off and the caller decides whether that is an immediate deletion or one that
+ * can still be undone. In Pending it is the second.
  */
 @Composable
 fun SwipeToDelete(
@@ -124,20 +117,20 @@ fun SwipeToDelete(
 
     val offset = remember { Animatable(0f) }
     var width by remember { mutableIntStateOf(0) }
-    // Depois que o cartão parte para fora da tela o gesto acabou: nenhum toque
-    // novo o traz de volta, e `aoExcluir` não pode ser chamado duas vezes.
+    // Once the card has left the screen the gesture is over: no new touch brings
+    // it back, and `onDelete` must not be called twice.
     var discarding by remember { mutableStateOf(false) }
 
     val threshold = if (width == 0) thresholdFloor else maxOf(width * THRESHOLD_FRACTION, thresholdFloor)
 
-    // `derivedStateOf` porque o deslocamento muda a cada quadro e isto aqui só
-    // muda duas vezes por gesto: sem ele, arrastar um cartão recomporia a linha
-    // inteira sessenta vezes por segundo.
+    // `derivedStateOf` because the offset changes every frame and this changes
+    // twice per gesture: without it, dragging one card would recompose the whole
+    // row sixty times a second.
     val armed by remember(threshold) { derivedStateOf { abs(offset.value) >= threshold } }
     val toLeft by remember { derivedStateOf { offset.value <= 0f } }
 
-    // Só na entrada. Um segundo pulso ao desarmar transformaria vaivém em
-    // vibração contínua — a mesma regra que o leque de captura já segue.
+    // On arming only. A second pulse on disarming would turn a back-and-forth
+    // into one continuous vibration.
     LaunchedEffect(armed) {
         if (armed) haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
     }
@@ -185,10 +178,10 @@ fun SwipeToDelete(
                     if (abs(walked) >= threshold || fling) {
                         discarding = true
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        // Sai pela borda antes de a lista fechar o buraco: a
-                        // pessoa vê para onde o cartão foi, e só então os de
-                        // baixo sobem. As duas coisas ao mesmo tempo viram um
-                        // piscar de tela em que nada é legível.
+                        // Leaves past the edge before the list closes the gap:
+                        // you see where the card went, and only then do the ones
+                        // below rise. Both at once is a flicker in which nothing
+                        // is legible.
                         offset.animateTo(
                             targetValue = sign(walked) * (width.toFloat() + thresholdFloor),
                             animationSpec = tween(Motion.FAST, easing = FastOutLinearInEasing),
@@ -200,8 +193,8 @@ fun SwipeToDelete(
                 },
             ),
     ) {
-        // O fundo é decoração do gesto: para o leitor de tela ele não existe, e
-        // a exclusão chega como ação do próprio cartão, logo abaixo.
+        // The background is decoration for the gesture: it does not exist for the
+        // screen reader, which gets the deletion as an action on the card itself.
         Box(
             modifier = Modifier
                 .matchParentSize()
@@ -216,10 +209,10 @@ fun SwipeToDelete(
                     .align(if (toLeft) Alignment.CenterEnd else Alignment.CenterStart)
                     .padding(horizontal = 18.dp),
             ) {
-                // A lixeira fica sempre encostada na borda que o cartão
-                // descobriu, e o rótulo cresce para dentro. Invertido, o rótulo
-                // invisível empurraria a lixeira para debaixo do cartão e o
-                // início do gesto não mostraria nada.
+                // The trash stays against the edge the card uncovered and the
+                // label grows inward. Inverted, the invisible label would push
+                // the trash under the card and the start of the gesture would
+                // show nothing.
                 if (toLeft) DiscardLabel(armedLabel, tinta, labelOpacity)
                 Icon(
                     imageVector = AppIcons.Trash,
@@ -235,12 +228,11 @@ fun SwipeToDelete(
 
         Box(
             modifier = Modifier
-                // Lido dentro da lambda: mover o cartão custa uma passada de
-                // layout por quadro, e nenhuma recomposição.
+                // Read inside the lambda: moving the card costs one layout pass
+                // per frame and no recomposition.
                 .offset { IntOffset(offset.value.roundToInt(), 0) }
-                // Quem navega por leitor de tela não tem como arrastar nada. A
-                // exclusão vira uma ação do cartão, com o mesmo nome que o
-                // gesto mostra escrito.
+                // Screen-reader navigation cannot drag, so deletion becomes an
+                // action on the card, with the same wording the gesture shows.
                 .semantics(mergeDescendants = true) {
                     customActions = listOf(CustomAccessibilityAction(actionLabel) { onDelete(); true })
                 },

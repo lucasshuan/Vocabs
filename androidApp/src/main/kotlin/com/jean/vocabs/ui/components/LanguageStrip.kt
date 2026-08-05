@@ -67,14 +67,14 @@ import com.jean.vocabs.ui.languages.languageOf
 @Composable
 fun LanguageStrip(
     courses: List<CourseSummary>,
-    ativo: String,
+    activeTarget: String,
     onChoose: (String) -> Unit,
     onAdd: () -> Unit,
     modifier: Modifier = Modifier,
     filling: PaddingValues = PaddingValues(horizontal = 20.dp),
 ) {
     val state = rememberLazyListState()
-    val activeIndex = courses.indexOfFirst { it.languagePair.target == ativo }
+    val activeIndex = courses.indexOfFirst { it.languagePair.target == activeTarget }
 
     LaunchedEffect(activeIndex) {
         if (activeIndex >= 0) state.animateScrollToItem(activeIndex)
@@ -91,7 +91,7 @@ fun LanguageStrip(
             LanguageChip(
                 language = languageOf(course.languagePair.target),
                 badge = course.badge,
-                selected = course.languagePair.target == ativo,
+                selected = course.languagePair.target == activeTarget,
                 onClick = { onChoose(course.languagePair.target) },
             )
         }
@@ -102,7 +102,7 @@ fun LanguageStrip(
 /**
  * Uma bandeira da faixa: disco, nome e selo.
  *
- * O selo do curso ativo inverte as cores porque o chip inteiro ficou ameixa — um
+ * O selo do curso activeTarget inverte as cores porque o chip inteiro ficou ameixa — um
  * selo ameixa sobre ameixa desapareceria justo na única página que está aberta.
  */
 @Composable
@@ -288,14 +288,14 @@ fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
     Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = modifier) {
         repeat(total) { index ->
-            val activePair = index == current
+            val isCurrent = index == current
             val width by androidx.compose.animation.core.animateDpAsState(
-                targetValue = if (activePair) 16.dp else 5.dp,
+                targetValue = if (isCurrent) 16.dp else 5.dp,
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
                 label = "larguraDoPonto",
             )
             val color by animateColorAsState(
-                targetValue = if (activePair) colors.primary else colors.outlineVariant,
+                targetValue = if (isCurrent) colors.primary else colors.outlineVariant,
                 animationSpec = tween(Motion.FAST),
                 label = "corDoPonto",
             )

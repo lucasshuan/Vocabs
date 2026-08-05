@@ -474,9 +474,9 @@ private fun ThemeSegmented(
 
             Row(Modifier.fillMaxWidth()) {
                 options.forEach { option ->
-                    val ativa = option == isSelected
+                    val isActive = option == isSelected
                     val tinta by animateColorAsState(
-                        targetValue = if (ativa) colors.onPrimary else colors.onSurfaceVariant,
+                        targetValue = if (isActive) colors.onPrimary else colors.onSurfaceVariant,
                         animationSpec = tween(Motion.DEFAULT),
                         label = "tintaDoSegmento",
                     )

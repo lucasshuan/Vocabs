@@ -51,34 +51,29 @@ import androidx.compose.ui.unit.dp
 import com.jean.vocabs.ui.theme.LocalDarkTheme
 
 /**
- * Os blocos que o handoff repete em todas as telas.
+ * The blocks every screen repeats.
  *
- * Cada um existe porque a mesma forma aparecia em três ou quatro lugares e ia
- * divergindo em cada um: o cartão que ganhava contorno no escuro numa tela e não
- * na outra, o número grande que era centralizado aqui e alinhado à esquerda ali.
- * Manter a regra num lugar só é o que faz as telas continuarem parecidas.
+ * Each one exists because the same shape appeared in three or four places and was
+ * drifting in each: the card that gained an outline in dark on one screen but not
+ * another, the big number centered here and left-aligned there.
  */
 
 /**
- * O contorno do cartão — nulo no escuro, de propósito.
+ * The card outline — deliberately null in dark.
  *
- * No claro a superfície é branca sobre um fundo quase branco e precisa da linha
- * para existir; no escuro a superfície já é mais clara que o fundo e a linha só
- * sujaria a borda.
+ * In light the surface is white on a near-white background and needs the line to
+ * exist at all; in dark the surface is already lighter than the background and
+ * the line would only dirty the edge.
  */
 @Composable
 fun cardOutline(): BorderStroke? =
     if (LocalDarkTheme.current) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 
 /**
- * O contorno tracejado de "aqui cabe mais alguma coisa".
+ * The dashed outline of "something else fits here": the box exists, the content
+ * does not yet. A solid outline would say "this is a card".
  *
- * O handoff o usa em quatro lugares — o `+` da faixa, "Adicionar idioma", o
- * convite de captura do dia vazio e o rodapé da fila — e sempre com o mesmo
- * sentido: a caixa existe, o conteúdo é que ainda não. Um contorno sólido diria
- * "isto é um cartão"; o tracejado diz "isto é um espaço".
- *
- * Desenhado à mão porque `BorderStroke` não aceita `PathEffect`.
+ * Hand-drawn because `BorderStroke` does not accept a `PathEffect`.
  */
 fun Modifier.dashedOutline(
     color: Color,
@@ -98,7 +93,7 @@ fun Modifier.dashedOutline(
     )
 }
 
-/** A caixa tracejada pronta: fundo do tema, contorno pontilhado, conteúdo livre. */
+/** The dashed box, ready to use. */
 @Composable
 fun DashedBox(
     modifier: Modifier = Modifier,
@@ -123,12 +118,12 @@ fun DashedBox(
 }
 
 /**
- * A superfície padrão de conteúdo: surface, contorno conforme o tema, cantos grandes.
+ * The default content surface.
  *
- * Quando é clicável, cede sob o dedo. O encolhimento mora aqui e não em cada
- * chamada porque é justamente a espécie de detalhe que só existe se for de graça:
- * há dezenas de cartões clicáveis no app, e nenhuma tela lembraria de pedir por
- * ele um a um.
+ * When clickable it gives under the finger. The shrink lives here rather than at
+ * each call because it is exactly the kind of detail that only survives if it is
+ * free: there are dozens of clickable cards, and no screen would remember to ask
+ * for it one at a time.
  */
 @Composable
 fun ScreenCard(
@@ -160,10 +155,10 @@ fun ScreenCard(
 }
 
 /**
- * O rótulo de apoio acima de cada bloco ("Seu contexto", "Capturadas hoje").
+ * The supporting label above each block.
  *
- * Caixa normal e 12 sp: o handoff abandonou o versalete espaçado do desenho
- * antigo, que competia em peso com o próprio conteúdo que anunciava.
+ * Normal case at 12 sp: the spaced small-caps of the older design competed in
+ * weight with the content it was announcing.
  */
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
@@ -175,7 +170,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/** O ladrilho de número grande: Início, Perfil e o resumo da revisão usam o mesmo. */
+/** The big-number tile, shared by Home, Profile and the review summary. */
 @Composable
 fun MetricCard(
     value: String,
@@ -190,11 +185,10 @@ fun MetricCard(
         filling = PaddingValues(horizontal = 14.dp, vertical = 13.dp),
         onClick = onClick,
     ) {
-        // Sem transição no número, de propósito. O ladrilho recebe uma `String`
-        // já formatada — "42%", "4,2", "—" — e quem quer ver o valor subir passa
-        // o resultado de `contagemAnimada`. Um `AnimatedContent` aqui dispararia
-        // uma transição por quadro justamente nesse caso, que é o único em que o
-        // número de fato se move.
+        // Deliberately no transition on the number. The tile takes an already
+        // formatted `String`, and a caller wanting it to count up passes the
+        // result of `animatedCount`. An `AnimatedContent` here would fire one
+        // transition per frame in exactly that case.
         Text(
             text = value,
             style = MaterialTheme.typography.headlineMedium,
@@ -209,7 +203,7 @@ fun MetricCard(
     }
 }
 
-/** A linha de lista com ícone/valor nas pontas — Pendentes, Perfil e o aviso do Início. */
+/** The list row with icon and value at the ends. */
 @Composable
 fun ListRow(
     modifier: Modifier = Modifier,
@@ -238,7 +232,7 @@ fun ListRow(
     }
 }
 
-/** O caso comum de [LinhaDeLista]: título e uma linha de apoio. */
+/** The common case of [ListRow]: title plus one supporting line. */
 @Composable
 fun ListRow(
     title: String,
@@ -261,7 +255,7 @@ fun ListRow(
     }
 }
 
-/** O disco colorido que abre as linhas de Pendentes. */
+/** The colored disc that opens Pending's rows. */
 @Composable
 fun IconDisc(
     icon: ImageVector,
@@ -278,7 +272,7 @@ fun IconDisc(
     }
 }
 
-/** A chevron de "isto abre outra tela", no cinza-lilás de informação de apoio. */
+/** The "this opens another screen" chevron. */
 @Composable
 fun RowChevron() {
     Icon(
@@ -289,7 +283,7 @@ fun RowChevron() {
     )
 }
 
-/** A ação principal da tela: ameixa, largura inteira, cantos de 18. */
+/** The screen's primary action: plum, full width, 18 dp corners. */
 @Composable
 fun PrimaryButton(
     text: String,
@@ -299,8 +293,8 @@ fun PrimaryButton(
     initialContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val toque = rememberHaptics()
-    // Menos que os cartões (0,97): este botão ocupa a largura da tela, e a mesma
-    // proporção num alvo desse tamanho vira um solavanco em vez de um toque.
+    // Less than the cards (0.97): this button spans the screen, and the same
+    // ratio on a target that size reads as a jolt rather than a touch.
     Button(
         onClick = onClick,
         enabled = enabled,
@@ -314,7 +308,7 @@ fun PrimaryButton(
     }
 }
 
-/** A pílula de filtro de Palavras e a aba de formato da Capture são a mesma coisa. */
+/** Words' filter pill and Capture's format tab are the same thing. */
 @Composable
 fun SelectablePill(
     label: String,
@@ -325,9 +319,9 @@ fun SelectablePill(
 ) {
     val colors = MaterialTheme.colorScheme
     val toque = rememberHaptics()
-    // As cores transitam em vez de trocar de um quadro para o outro: numa fileira
-    // de filtros, o corte seco faz duas pílulas piscarem ao mesmo tempo e nenhuma
-    // das duas diz de onde a seleção veio.
+    // The colors transition rather than cutting between frames: in a row of
+    // filters a hard cut makes two pills blink at once, and neither says where
+    // the selection came from.
     val background by animateColorAsState(
         targetValue = if (isSelected) colors.primary else colors.surface,
         animationSpec = tween(Motion.FAST),
@@ -354,10 +348,10 @@ fun SelectablePill(
 }
 
 /**
- * Pílula de conteúdo: termo relacionado, "ver mais", "tentar de novo".
+ * A content pill: related term, "see more", "try again".
  *
- * Com [destaque] ela vira ameixa sobre lilás — é o que separa "isto é mais uma
- * palavra" de "isto faz alguma coisa".
+ * With [highlight] it turns plum on lilac — the difference between "this is one
+ * more word" and "this does something".
  */
 @Composable
 fun Pill(
@@ -395,12 +389,12 @@ fun Pill(
 }
 
 /**
- * O vazio de Palavras, Pendentes e Revisão: disco de menta, título e uma linha.
+ * The empty state of Words, Pending and Review.
  *
- * O disco entra com mola e o texto sobe atrás dele. Uma tela vazia é o único
- * lugar do app em que não há conteúdo nenhum para segurar o olho, e chegar
- * montada faz "Memória em dia" parecer uma falha de carregamento em vez do
- * desfecho bom que ela é.
+ * The disc springs in and the text rises behind it. An empty screen is the one
+ * place with no content to hold the eye, and arriving fully assembled makes
+ * "Memory up to date" look like a loading failure instead of the good outcome it
+ * is.
  */
 @Composable
 fun EmptyState(
@@ -449,7 +443,7 @@ fun EmptyState(
     }
 }
 
-/** O botão redondo de cabeçalho (voltar, fechar, descartar). */
+/** The round header button (back, close, discard). */
 @Composable
 fun CircularButton(
     icon: ImageVector,
@@ -472,7 +466,7 @@ fun CircularButton(
     }
 }
 
-/** Botão de texto discreto ("Não lembro"), centralizado sob a ação principal. */
+/** The quiet text button, centered under the primary action. */
 @Composable
 fun SecondaryAction(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(

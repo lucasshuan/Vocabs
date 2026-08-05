@@ -65,25 +65,19 @@ import kotlin.math.pow
 import kotlinx.coroutines.delay
 
 /**
- * A gravação, com tela e ações próprias.
+ * The recording, with its own screen and actions.
  *
- * O gesto acaba quando o dedo sobe: a gravação **começa** com a mão já livre, e
- * não enquanto o dedo segura o `+`. Isso muda o que a tela precisa dar. Antes o
- * gesto era o controle — soltar guardava, voltar à origem descartava — e o preço
- * era o telefone preso ao dedo: não dava para apoiar o aparelho na mesa,
- * aproximá-lo de quem estava falando nem trocar de mão sem arriscar a captura.
- * Agora a tela é estável e encerrar é uma decisão à parte.
+ * The gesture ends when the finger lifts, so recording **starts** with the hand
+ * already free. That is what lets the phone be set down on a table, moved closer
+ * to whoever is talking, or swapped between hands without risking the capture.
  *
- * **Encerrar é um toque, e nunca um gesto.** O arrasto lateral que ocupava esta
- * base foi embora: ele lembrava atender uma chamada, adiava guardar e descartar
- * até o fim de um movimento e cobrava aprendizado numa tela que a pessoa olha de
- * relance enquanto alguém fala. Os dois destinos agora estão à vista o tempo todo
- * e custam um toque cada — ver [AcoesDaGravacao] para por que eles não têm o
- * mesmo tamanho.
+ * **Ending is a tap, never a gesture.** Both destinations stay in view the whole
+ * time and cost one tap each — see [RecordingActions] for why they are not the
+ * same size.
  *
- * A tela é opaca e barra todo toque no que está debaixo dela. Ela é a última
- * coisa desenhada pelo hub, portanto está por cima do `+`, que não pode continuar
- * clicável debaixo de uma tela que já não é aquela.
+ * The screen is opaque and blocks every touch below it. It is the last thing the
+ * hub draws, so it sits above the `+`, which must not stay clickable under a
+ * screen that is no longer it.
  */
 @Composable
 internal fun RecordingScreen(
@@ -95,17 +89,15 @@ internal fun RecordingScreen(
     val save: () -> Unit = { capture.saveAudio() }
     val cancel: () -> Unit = { capture.cancelAudio() }
 
-    // Voltar **guarda**. A regra do app é que nada é descartado sem a pessoa
-    // pedir, e o pedido tem um lugar só: o botão de descartar. Quem apertou
-    // voltar pediu para sair dali, não para perder o que falou — e o áudio
-    // guardado por engano custa um toque em Pendentes, enquanto o descartado por
-    // engano não custa nada porque não existe mais.
+    // Back **saves**. Nothing is discarded without being asked for, and the ask
+    // has exactly one place: the discard button. Audio saved by mistake costs one
+    // tap in Pending; audio discarded by mistake costs nothing to undo because it
+    // no longer exists.
     BackHandler(enabled = isRecording) { save() }
 
-    // A tela apaga tudo, e o app desenha atrás da barra de status. No tema claro
-    // os ícones do sistema são escuros e sumiriam sobre este fundo: vira o relógio
-    // e a bateria para o claro enquanto durar, e devolve ao que o tema pede
-    // quando a gravação termina.
+    // The app draws behind the status bar. On the light theme the system icons
+    // are dark and would vanish against this background, so they flip to light
+    // for the duration and go back to what the theme asks when recording ends.
     val view = LocalView.current
     val darkTheme = LocalDarkTheme.current
     DisposableEffect(darkTheme) {
@@ -160,11 +152,10 @@ internal fun RecordingScreen(
                 horizontalArrangement = Arrangement.spacedBy(7.dp),
             ) {
                 CircularFlag(language, size = 16.dp)
-                // O handoff escreve "o idioma sai da fala". Não sai: não há
-                // detector de idioma no app, e o que existe é a regra de fallback
-                // do próprio handoff — cai no curso aberto no hub. A frase diz o
-                // que de fato acontece, e é ela que precisa mudar no dia em que
-                // houver detecção.
+                // There is no language detector in the app. What exists is the
+                // fallback rule: the capture lands in the course open in the hub.
+                // This sentence describes what actually happens, and it is the
+                // one that has to change the day detection exists.
                 Text(
                     text = "vai para o curso de ${language.displayName}",
                     style = MaterialTheme.typography.bodyMedium,
@@ -187,48 +178,43 @@ internal fun RecordingScreen(
 }
 
 /**
- * Barra o toque no que está debaixo desta tela, sem consumir nada.
+ * Blocks touch on what is under this screen without consuming anything.
  *
- * Estar no caminho basta: o teste de toque do Compose para no filho mais acima
- * que é atingido, então um `pointerInput` de tela cheia já impede que o `+` e a
- * barra — que continuam compostos debaixo de uma superfície opaca — recebam
- * qualquer coisa.
+ * Being in the way is enough: Compose stops its hit test at the topmost child it
+ * reaches, so a full-screen `pointerInput` already keeps the `+` and the bar —
+ * still composed under an opaque surface — from receiving anything.
  *
- * Consumir, além disso, era ativamente nocivo: um pai que consome o evento depois
- * de o filho vê-lo parece inofensivo, mas os gestos do Compose desistem quando
- * encontram uma mudança já consumida. Barrar é trabalho do teste de toque;
- * consumir é do gesto que de fato quer o evento.
+ * Consuming as well was actively harmful: Compose gestures give up when they meet
+ * an already-consumed change. Blocking is the hit test's job; consuming belongs
+ * to the gesture that actually wants the event.
  */
 private fun Modifier.barTaps(): Modifier = pointerInput(Unit) {
     awaitEachGesture { awaitFirstDown(requireUnconsumed = false) }
 }
 
 /**
- * Cores da gravação: a tela é escura nos dois temas, e as cores são as claras.
+ * Recording colors: the screen is dark in both themes, so these are the light
+ * ones. `colorScheme.tertiary` is the dark green on the light theme — legible on
+ * white and nearly invisible here.
  *
- * `colorScheme.tertiary` é o verde escuro no tema claro — legível sobre branco e
- * quase invisível sobre este fundo. Aqui o par é sempre o mesmo: menta clara e
- * salmão para o que se lê, e o verde cheio para o botão de guardar, que leva
- * texto branco por cima.
- *
- * O vermelho merece uma linha. A regra do app é que ele é **categoria** — a foto —
- * e nunca erro nem ação, para que uma foto na fila não pareça uma foto com
- * problema. Esta tela abre a única exceção e a paga: aqui o salmão quer dizer
- * descartar, e aqui não existe alvo de foto nenhum — os dois sentidos nunca
- * dividem a tela. Puxar o `error` do tema para cá criaria um segundo vermelho
- * quase igual ao primeiro, que é o jeito garantido de tornar os dois ilegíveis.
+ * The red deserves a line. Everywhere else in the app red means **category** —
+ * photo — and never error or action, so a queued photo never looks like a broken
+ * one. This screen is the one exception and pays for it: here salmon means
+ * discard, and no photo target exists here, so the two senses never share a
+ * screen. Pulling the theme's `error` in would create a second red almost
+ * identical to the first, which is the reliable way to make both illegible.
  */
 private val MINT_AT_NIGHT = VocabuColors.Mint
 private val SALMON_AT_NIGHT = VocabuColors.ParrotDark
 private val FULL_GREEN = VocabuColors.MintDark
 
 /**
- * O selo de "está gravando", no alto.
+ * The "recording" badge, at the top.
  *
- * Mora longe das ações de propósito: em cima está o que a tela **é**, embaixo o
- * que ela faz. O ponto pulsa porque é o único elemento da tela que prova que o
- * microfone está aberto agora — o relógio correndo diz o mesmo, mas o olho que dá
- * uma conferida rápida no aparelho apoiado na mesa não lê números.
+ * Far from the actions on purpose: the top says what the screen **is**, the
+ * bottom what it does. The dot pulses because it is the only element proving the
+ * microphone is open right now — the running clock says the same, but an eye
+ * glancing at a phone left on the table does not read numbers.
  */
 @Composable
 private fun RecordingBadge(isRecording: Boolean, modifier: Modifier = Modifier) {
@@ -253,30 +239,29 @@ private fun RecordingBadge(isRecording: Boolean, modifier: Modifier = Modifier) 
     }
 }
 
-/** O fundo translúcido do selo — uma pílula de 8% de branco sobre a noite. */
+/** The badge's translucent background — a pill of 8% white over the night. */
 private fun Modifier.darkPill(): Modifier = drawBehind {
     drawRoundRect(Color.White, alpha = 0.08f, cornerRadius = CornerRadius(size.height / 2f))
 }
 
-/** Altura e canto dos dois botões da base. */
+/** Height and corner of the two buttons at the base. */
 private val ACTION_HEIGHT = 68.dp
 private val ACTION_CORNER = 22.dp
 
 /**
- * Descartar à esquerda, guardar à direita, um toque cada.
+ * Discard on the left, save on the right, one tap each.
  *
- * **Os dois não têm o mesmo tamanho, e é isso que sustenta a opção.** Dois alvos
- * na base de uma tela que se olha de relance convidam ao toque errado; o que
- * separa um do outro aqui não é a cor, é a área. Guardar ocupa o que sobra da
- * largura e é o único preenchido — o polegar acha sem mirar. Descartar é estreito,
- * só contorno, e mora no canto onde o dedo não cai por acaso. A assimetria é a
- * frequência escrita em layout: quase toda gravação é para ficar.
+ * **They are deliberately different sizes, and that is what makes the choice
+ * safe.** Two targets at the base of a screen read at a glance invite the wrong
+ * tap; what separates them here is area, not color. Save takes the remaining
+ * width and is the only filled one, so the thumb finds it without aiming.
+ * Discard is narrow, outline only, and lives in the corner a finger does not
+ * reach by accident. The asymmetry is frequency written as layout.
  *
- * Nenhum dos dois pede confirmação. Guardar por engano se desfaz em Pendentes, e
- * o aviso de 5 s já leva até lá; descartar é o próprio pedido de descarte, e a
- * regra do app é que nada some sem alguém pedir — perguntar "tem certeza?" depois
- * de a pessoa ter escolhido o alvo pequeno seria cobrar duas vezes pela mesma
- * decisão.
+ * Neither asks for confirmation. Saving by mistake is undone in Pending, and the
+ * 5 s notice already leads there; discarding is itself the request to discard,
+ * and asking "are you sure?" after someone picked the small target would charge
+ * twice for one decision.
  */
 @Composable
 private fun RecordingActions(
@@ -335,8 +320,8 @@ private fun RowScope.BotaoDeGuardar(onClick: () -> Unit) {
         modifier = Modifier
             .weight(1f)
             .fillMaxHeight()
-            // Menos que os cartões (0,97): num alvo deste tamanho a mesma
-            // proporção vira solavanco em vez de toque.
+            // Less than the cards (0.97): at this size the same ratio reads as a
+            // jolt rather than a touch.
             .shrinkOnTouch(toque, minimum = 0.985f),
     ) {
         Row(
@@ -350,22 +335,21 @@ private fun RowScope.BotaoDeGuardar(onClick: () -> Unit) {
     }
 }
 
-/** Quantas barras a onda tem, e de quanto em quanto tempo entra uma nova. */
+/** How many bars the wave holds, and how often a new one enters. */
 private const val WAVE_BARS = 22
 private const val WAVE_INTERVAL = 70L
 
 /**
- * A onda: o pico real do microfone, uma barra a cada 70 ms.
+ * The wave: the microphone's real peak, one bar every 70 ms.
  *
- * A barra nova entra pela direita e empurra a fila. É o desenho de um gravador
- * de verdade, e responde à única pergunta de quem está falando: *está pegando?*
- * A raiz aplicada ao pico é perceptual e não estética — a fala normal vive na
- * parte de baixo da escala linear, e sem ela a onda passaria a gravação inteira
- * rente ao chão.
+ * A new bar enters from the right and pushes the queue along, answering the only
+ * question someone speaking has — is it picking me up? The square root on the
+ * peak is perceptual, not decorative: normal speech lives at the bottom of the
+ * linear scale, and without it the wave would spend the whole recording flat.
  *
- * O histórico é um `FloatArray` cru com um cursor observável. Só o cursor é
- * estado do Compose, e ele é lido dentro do `drawBehind`: catorze quadros por
- * segundo invalidam o desenho de um retângulo e nada mais.
+ * History is a raw `FloatArray` with an observable cursor. Only the cursor is
+ * Compose state, and it is read inside `drawBehind`: fourteen frames a second
+ * invalidate the drawing of a rectangle and nothing else.
  */
 @Composable
 private fun MicWave(isRecording: Boolean, level: () -> Float) {
@@ -392,7 +376,7 @@ private fun MicWave(isRecording: Boolean, level: () -> Float) {
                 val gap = 5.5.dp.toPx()
                 val smallest = 4.dp.toPx()
                 for (i in 0 until WAVE_BARS) {
-                    // A mais recente à direita, as antigas caminhando à esquerda.
+                    // Newest on the right, older ones walking left.
                     val index = ((position - 1 - i) % WAVE_BARS + WAVE_BARS) % WAVE_BARS
                     val height = smallest + (size.height - smallest) * history[index].coerceIn(0f, 1f).pow(0.42f)
                     val x = size.width - width - i * gap
