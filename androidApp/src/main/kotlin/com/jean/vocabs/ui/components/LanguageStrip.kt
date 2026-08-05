@@ -47,22 +47,20 @@ import com.jean.vocabs.ui.displayName
 import com.jean.vocabs.ui.languages.languageOf
 
 /**
- * A faixa de cursos do topo da Início.
+ * The course strip at the top of Home.
  *
- * Duas regras a governam, e as duas são sobre confiança na posição:
+ * The **order is fixed** — never reordered by what is due. Changing page is a
+ * swipe, and a swipe is only cheap while muscle memory knows Spanish sits right
+ * of English. A strip that reshuffled on every due review would mean rereading
+ * the three flags every morning.
  *
- * A **ordem é fixa** — nunca reordenada por pendência. A troca de página é um
- * deslize, e o deslize só é barato enquanto a memória muscular souber que o
- * espanhol fica à direita do inglês. Uma faixa que se reordena a cada revisão
- * vencida faria a pessoa reler as três bandeiras toda manhã.
+ * Every flag **has a badge** — a plum number when there is something to review, a
+ * mint tick when up to date, a grey hourglass when nothing is scheduled yet.
+ * Never empty and never a written "0": zero is the strip's only good news, and
+ * writing it as a number would turn it into a scoreboard of nothing done.
  *
- * Toda bandeira **tem selo** — número em ameixa quando há o que revisar, tique
- * em menta quando está em dia, ampulheta cinza quando o curso ainda não tem nada
- * agendado. Nunca vazio, nunca um "0" escrito: o zero é a única boa notícia da
- * faixa, e escrevê-lo como número o transformaria num placar de nada feito.
- *
- * A rolagem acompanha a página: quem chega ao francês deslizando o carrossel
- * encontra o chip do francês já visível, sem precisar arrastar a faixa também.
+ * The scroll follows the page, so arriving at French by swiping the carousel
+ * finds the French chip already visible.
  */
 @Composable
 fun LanguageStrip(
@@ -100,10 +98,10 @@ fun LanguageStrip(
 }
 
 /**
- * Uma bandeira da faixa: disco, nome e selo.
+ * One flag in the strip: disc, name and badge.
  *
- * O selo do curso activeTarget inverte as cores porque o chip inteiro ficou ameixa — um
- * selo ameixa sobre ameixa desapareceria justo na única página que está aberta.
+ * The active course's badge inverts its colors because the whole chip went plum —
+ * a plum badge on plum would vanish on the one page that is open.
  */
 @Composable
 fun LanguageChip(
@@ -149,11 +147,11 @@ fun LanguageChip(
 }
 
 /**
- * O selo, nos três estados.
+ * The badge, in its three states.
  *
- * O número troca com uma transição vertical curta: quando uma revisão sai da
- * fila, o "3" sobe e o "2" entra por baixo — o movimento diz que o número desceu
- * sem precisar de mais nada na tela.
+ * The number changes with a short vertical transition: as a review leaves the
+ * queue the "3" rises and the "2" enters underneath, which says the number went
+ * down without anything else on screen having to.
  */
 @Composable
 private fun CourseBadgeView(badge: CourseBadge, inverted: Boolean) {
@@ -202,7 +200,7 @@ private fun CourseBadgeView(badge: CourseBadge, inverted: Boolean) {
     }
 }
 
-/** O `+` que fecha a faixa e leva para adicionar idioma. */
+/** The `+` that closes the strip and leads to adding a language. */
 @Composable
 private fun AddLanguageChip(onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -221,10 +219,10 @@ private fun AddLanguageChip(onClick: () -> Unit) {
 }
 
 /**
- * O chip de filtro de Pendentes: bandeira e contagem, ou só texto no "Tudo".
+ * Pending's filter chip: flag and count, or text alone for "All".
  *
- * O "Tudo" é o único sem bandeira de propósito — ele não é um idioma a mais na
- * fileira, é a ausência de recorte, e uma bandeira ali sugeriria o contrário.
+ * "All" is deliberately the only one without a flag — it is not one more language
+ * in the row, it is the absence of a slice, and a flag would suggest otherwise.
  */
 @Composable
 fun LanguageFilterPill(
@@ -261,8 +259,8 @@ fun LanguageFilterPill(
 }
 
 /**
- * A pastilha de idioma que abre as linhas de Pendentes e os cabeçalhos de
- * Vocabulários: bandeira pequena e nome, sem estado.
+ * The language pill that opens Pending's rows and Words' headers: small flag and
+ * name, no state.
  */
 @Composable
 fun LanguageMark(
@@ -281,7 +279,7 @@ fun LanguageMark(
     }
 }
 
-/** O ponto do carrossel: uma barrinha para a página aberta, discos para as outras. */
+/** The carousel dot: a small bar for the open page, discs for the others. */
 @Composable
 fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
     if (total <= 1) return

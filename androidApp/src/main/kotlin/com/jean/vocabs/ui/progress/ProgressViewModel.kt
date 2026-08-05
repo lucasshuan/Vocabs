@@ -29,21 +29,20 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * O estado das três telas de progresso.
+ * The state of the three progress screens.
  *
- * Um ViewModel para as três porque elas leem exatamente a mesma coisa em cortes
- * diferentes: a semana e a quota aparecem em duas, o estoque de palavras em
- * duas, e navegar entre elas com estados independentes faria os números piscarem
- * de uma para a outra enquanto cada uma refizesse suas contas.
+ * One ViewModel for all three because they read the same thing in different
+ * slices: the week and the quota appear in two, the word stock in two.
+ * Independent states would make the numbers flicker while each redid its counts.
  */
 data class ProgressState(
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
     /**
-     * A semana de hoje, vazia, enquanto o banco não responde.
+     * Today's week, empty, while the database has not answered.
      *
-     * É o mesmo desenho do curso sem palavra nenhuma — e é por isso que ele pode
-     * ser o estado inicial: quem abre a tela vê o esqueleto tracejado no lugar
-     * certo e ele se preenche, em vez de ver "0 de 10" por dois quadros.
+     * It is the same drawing as a course with no words, which is why it can be
+     * the initial state: the dashed skeleton appears in the right place and
+     * fills in, rather than showing "0 of 10" for two frames.
      */
     val semana: List<ProgressDay> = weekOf(LocalDate.now(), emptyList()),
     val month: String = monthName(LocalDate.now()),
@@ -54,7 +53,7 @@ data class ProgressState(
 ) {
     val total: Int get() = words.size
 
-    /** Contadas por degrau: é o número que não muda sozinho enquanto a pessoa dorme. */
+    /** Counted by step: the number that does not change on its own overnight. */
     val byLevel: Map<MemoryLevel, List<Entry>>
         get() = words.groupBy { Steps.level(it.step) }
 
@@ -62,7 +61,7 @@ data class ProgressState(
     val familiar: Int get() = byLevel[MemoryLevel.FAMILIAR]?.size ?: 0
     val learning: Int get() = total - mastered - familiar
 
-    /** As que estão a um acerto de mudar de nome — o "3 estão perto de virar". */
+    /** The ones one correct answer from changing name. */
     val closeToLeveling: List<Entry>
         get() = words.filter { entry ->
             val step = entry.step
@@ -70,7 +69,7 @@ data class ProgressState(
         }
 }
 
-/** Um dia da faixa da semana, já com o número e as revisões resolvidos. */
+/** One day of the week strip, with its number and reviews already resolved. */
 data class ProgressDay(
     val data: LocalDate,
     val reviews: Int,
@@ -79,19 +78,19 @@ data class ProgressDay(
 )
 
 /**
- * O progresso de **um** curso, que não é necessariamente o aberto.
+ * The progress of **one** course, not necessarily the open one.
  *
- * A tela abre de uma linha da Você, e a Você mostra os três idiomas. Trocar o
- * curso aberto só para poder olhar o progresso do francês mexeria na página da
- * Início e no destino do `+` — um efeito que ninguém pediu ao tocar numa linha.
- * Daí o curso entrar por [abrir] e virar um [Escopo.Curso] nomeado.
+ * The screen opens from a Profile row, and Profile lists all three languages.
+ * Changing the open course just to look at French would move Home's page and the
+ * `+`'s destination — an effect nobody asked for by tapping a row. So the course
+ * enters through [open] and becomes a named [Scope.Course].
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProgressViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
     private val preferences = AppContainer.preferences(app)
 
-    /** Nulo até a rota dizer qual curso; nesse intervalo vale o curso aberto. */
+    /** Null until the route says which course; until then the open one applies. */
     private val course = MutableStateFlow<String?>(null)
 
     private val scope: Flow<Scope> = course.map { target ->
@@ -99,7 +98,7 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val state: StateFlow<ProgressState> = scope.flatMapLatest { crop ->
-        /** Em duas etapas: `combine` só tem sobrecarga tipada até cinco fluxos. */
+        /** In two stages: `combine` only has a typed overload up to five flows. */
         val weekAndQuota = combine(
             repository.observeReviewSummary(crop),
             repository.observeActivity(84),
@@ -108,9 +107,9 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
             ProgressState(
                 semana = weekOf(today, activity),
                 month = monthName(today),
-                // A sequência conta atividade em qualquer idioma; a quota é do
-                // curso. São perguntas diferentes: hábito é da pessoa, carga é
-                // da matéria.
+                // The streak counts activity in any language; the quota belongs
+                // to the course. Different questions: habit is the person's, load
+                // is the subject's.
                 dayStreak = review.dayStreak,
                 quota = review.quota,
             )
@@ -128,38 +127,37 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
                 events = events,
             )
         }
-            // Trocar de curso zera a tela antes de o banco responder.
+            // Switching course clears the screen before the database answers.
             //
-            // Sem isto, escolher o espanhol na gaveta deixaria os números do
-            // inglês debaixo da bandeira espanhola pelo tempo de uma consulta —
-            // e o rótulo "Quota de hoje no espanhol" sobre o "6 de 10" do inglês
-            // é uma frase errada, não uma frase atrasada. O esqueleto é o único
-            // estado honesto enquanto a resposta não chega.
+            // Without this, picking Spanish in the drawer would leave English's
+            // numbers under the Spanish flag for the length of a query — and
+            // "Today's quota in Spanish" over English's "6 of 10" is a wrong
+            // sentence, not a late one. The skeleton is the only honest state
+            // while the answer is in flight.
             .onStart { emit(ProgressState(languagePair = pairOf(crop, preferences.languagePair))) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressState())
 
-    /** O curso do recorte, com o nativo de quem lê — [Scope.CursoAberto] cai no aberto. */
+    /** The slice's course, with the reader's native language. */
     private fun pairOf(crop: Scope, activePair: LanguagePair) = LanguagePair(
         native = activePair.native,
         target = (crop as? Scope.Course)?.target ?: activePair.target,
     )
 
     /**
-     * Trocar o curso **olhado**, e não o aberto.
+     * Changes the course being **looked at**, not the open one.
      *
-     * É o que a gaveta da bandeira faz, e é a mesma porta por onde a rota entra:
-     * daí ela recarregar os dois cartões sem mexer na página da Início nem no
-     * destino do `+`.
+     * This is what the flag drawer does, and the same door the route enters
+     * through: it reloads both cards without touching Home's page or the `+`.
      */
     fun open(target: String?) {
         course.value = target?.takeIf { it.isNotBlank() }
     }
 
-    /** Os cursos da gaveta: todos os matriculados, inclusive os que ainda não têm ficha. */
+    /** The drawer's courses: everyone enrolled, including those with no cards. */
     val courses: StateFlow<List<CourseSummary>> = enrolledCourses(repository, preferences)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** Quantos cursos existem — remover o último deixaria o app sem página nenhuma. */
+    /** How many courses exist — removing the last would leave the app pageless. */
     val canRemove: StateFlow<Boolean> = preferences.observeCourses()
         .map { it.size > 1 }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
@@ -168,10 +166,10 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
 }
 
 /**
- * A semana corrente, de segunda a domingo.
+ * The current week, Monday to Sunday.
  *
- * Segunda como primeiro dia porque é assim que o handoff a desenha, e porque a
- * sequência de estudo é uma semana de trabalho, não de calendário americano.
+ * Monday first is a deliberate design choice, not a locale artifact: a study
+ * streak is a work week.
  */
 internal fun weekOf(today: LocalDate, activity: List<DailyActivity>): List<ProgressDay> {
     val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -188,11 +186,11 @@ internal fun weekOf(today: LocalDate, activity: List<DailyActivity>): List<Progr
 }
 
 /**
- * A diferença entre o dia juliano que o banco guarda e o epoch day do `java.time`.
+ * The gap between the Julian day the database stores and `java.time`'s epoch day.
  *
- * O banco resolve o dia local em SQL (`julianday(...) + 0.5`) para que a virada
- * do dia siga o fuso do aparelho sem o Kotlin comum precisar de uma biblioteca
- * de datas. Quem lê aqui converte uma vez, em vez de espalhar a soma.
+ * The database resolves the local day in SQL (`julianday(...) + 0.5`) so the turn
+ * of the day follows the device's timezone without common Kotlin needing a date
+ * library. Readers convert once here instead of spreading the addition around.
  */
 private const val JULIAN_DAY_OF_EPOCH = 2_440_588L
 
@@ -201,7 +199,7 @@ private val MONTHS = listOf(
     "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 )
 
-/** Escrito à mão porque `Locale("pt","BR")` depende dos dados de ICU do aparelho. */
+/** Hand-written because `Locale("pt","BR")` depends on the device's ICU data. */
 internal fun monthName(data: LocalDate): String = MONTHS[data.monthValue - 1]
 
 internal val WEEKDAY_LABELS = listOf("seg", "ter", "qua", "qui", "sex", "sáb", "dom")

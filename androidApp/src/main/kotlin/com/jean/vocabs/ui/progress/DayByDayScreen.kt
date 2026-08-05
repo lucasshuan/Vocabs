@@ -46,11 +46,11 @@ import com.jean.vocabs.ui.components.levelLabel
 import java.time.LocalDate
 
 /**
- * Tela 4b do handoff — "Dia a dia".
+ * "Day by day".
  *
- * A mesma faixa da semana do Progresso, e abaixo dela o que de fato aconteceu em
- * cada dia. Dia sem nada aparece assim mesmo, escrito: pular os dias vazios
- * deixaria a lista compacta e mentirosa, com terça encostada em sexta.
+ * The same week strip as Progress, and below it what actually happened each day.
+ * A day with nothing appears spelled out: skipping empty days would make the
+ * list compact and dishonest, with Tuesday against Friday.
  */
 @Composable
 fun DayByDayScreen(
@@ -127,23 +127,22 @@ fun DayByDayScreen(
 }
 
 /**
- * Um dia da linha do tempo: o ponto no trilho e o que aconteceu ao lado dele.
+ * One day of the timeline: the dot on the rail and what happened beside it.
  *
- * O trilho é o que faz esta tela ser uma linha do tempo e não uma lista com
- * subtítulos. Ele liga um dia ao seguinte inclusive por cima dos dias parados —
- * e é justamente aí que ele trabalha, porque a linha atravessando um "nada aqui"
- * é o que mostra o buraco em vez de escondê-lo.
+ * The rail is what makes this a timeline rather than a list with subheadings. It
+ * connects one day to the next including across idle days, which is exactly where
+ * it works — the line crossing a "nothing here" shows the hole instead of hiding
+ * it.
  *
- * A linha é desenhada atrás da linha inteira, e não empilhada como um filho de
- * altura fixa: só no `drawBehind` se sabe até onde o conteúdo do dia foi, e é
- * assim que ela chega exatamente ao ponto do dia de baixo, com um cartão ou com
- * quatro. Fora isso, ela vive na fase de desenho e não remede ninguém.
+ * Drawn behind the whole row rather than stacked as a fixed-height child: only in
+ * `drawBehind` is it known how far the day's content went, which is how it lands
+ * exactly on the next day's dot with one card or with four.
  */
 @Composable
 private fun DayGroup(group: EventDay, last: Boolean, onOpenCard: (Long) -> Unit) {
     val colors = MaterialTheme.colorScheme
-    // Hoje é ameixa mesmo estando vazio: é o dia em que ainda dá para fazer
-    // alguma coisa, e não mais um buraco no histórico.
+    // Today is plum even when empty: it is the day something can still be done
+    // in, not one more hole in the history.
     val point = when {
         group.today -> colors.primary
         group.events.isEmpty() -> colors.outline
@@ -155,8 +154,8 @@ private fun DayGroup(group: EventDay, last: Boolean, onOpenCard: (Long) -> Unit)
         modifier = Modifier
             .fillMaxWidth()
             .drawBehind {
-                // O último dia não tem para onde continuar: a linha pararia no ar,
-                // sugerindo um passado que a tela não tem como mostrar.
+                // The last day has nowhere to continue: the line would stop in
+                // mid-air, suggesting a past the screen cannot show.
                 if (last) return@drawBehind
                 val meio = TRACK_WIDTH.toPx() / 2f
                 val beginning = (DOT_TOP + DOT_SIZE + TRACK_GAP).toPx()
@@ -200,11 +199,11 @@ private fun DayGroup(group: EventDay, last: Boolean, onOpenCard: (Long) -> Unit)
 }
 
 /**
- * O dia sem nada, como caixa e não como frase solta.
+ * The empty day, as a box rather than a loose sentence.
  *
- * Do lado de cartões brancos, um texto sem caixa se leria como legenda do dia de
- * cima. A caixa lilás ocupa o mesmo lugar de um cartão e diz que ali havia
- * espaço para alguma coisa — é o dia que está vazio, não a lista.
+ * Beside white cards, text without a box would read as a caption for the day
+ * above. The lilac box takes a card's place and says there was room for
+ * something — the day is empty, not the list.
  */
 @Composable
 private fun IdleDay() {
@@ -242,12 +241,11 @@ private fun EventCard(event: Event, onClick: () -> Unit) {
 }
 
 /**
- * A cor do desfecho, agora no texto e não num ponto.
+ * The outcome's color, now on the text rather than on a dot.
  *
- * O ponto colorido saiu de cada evento e virou o do dia, no trilho — dois níveis
- * de ponto na mesma coluna disputariam a leitura vertical que o trilho existe
- * para dar. Quem carrega o significado passou a ser a própria palavra à direita:
- * menta no que avançou, vermelho no que caiu, cinza no que só aconteceu.
+ * The colored dot left each event and became the day's dot on the rail — two
+ * levels of dot in one column would fight over the vertical reading the rail
+ * exists to give. The word on the right carries the meaning now.
  */
 @Composable
 private fun eventColor(type: EventType): Color = when (type) {
@@ -256,15 +254,15 @@ private fun eventColor(type: EventType): Color = when (type) {
     EventType.CAPTURED, EventType.CARD_READY -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
-/** O ponto do dia e a linha que desce dele ficam nesta coluna, à esquerda de tudo. */
+/** The day's dot and the line descending from it live in this left column. */
 private val TRACK_WIDTH = 20.dp
 
-/** Alinha o ponto com a primeira linha do título do dia, e não com o topo do bloco. */
+/** Aligns the dot with the first line of the day's title, not the block's top. */
 private val DOT_TOP = 5.dp
 private val DOT_SIZE = 10.dp
 private val TRACK_GAP = 4.dp
 
-/** Um dia da linha do tempo, com o que aconteceu nele. */
+/** One day of the timeline, with what happened in it. */
 internal data class EventDay(
     val day: Long,
     val title: String,
@@ -274,12 +272,11 @@ internal data class EventDay(
 )
 
 /**
- * Agrupa por dia e preenche os buracos.
+ * Groups by day and fills the holes.
  *
- * Do dia mais recente com evento até hoje, todo dia entra na lista, mesmo os
- * vazios — é o "Dia parado. Nada aqui." do handoff. O limite é o dia mais antigo
- * com evento: inventar meses vazios antes da primeira captura só encheria a
- * rolagem de nada.
+ * Every day from the most recent one with an event through today enters the list,
+ * empty ones included. The floor is the oldest day with an event: inventing empty
+ * months before the first capture would fill the scroll with nothing.
  */
 internal fun groupByDay(
     events: List<Event>,
@@ -297,8 +294,8 @@ internal fun groupByDay(
             day = day,
             title = dayTitle(day, todayDay),
             today = day == todayDay,
-            // A quota é uma conta sobre a fila de agora, e a fila de terça já
-            // passou — só o dia de hoje pode dizer quanto falta.
+            // The quota is a count over the queue as it is now, and Tuesday's
+            // queue is gone — only today can say how much is left.
             quota = todayQuota.takeIf { day == todayDay },
             events = byDay[day].orEmpty(),
         )
@@ -318,11 +315,11 @@ private fun dayTitle(day: Long, today: Long): String {
 }
 
 /**
- * O que a linha diz à direita: "capturada", "2ª revisão certa", "virou dominada".
+ * What the row says on the right: "captured", "2nd review correct", "mastered".
  *
- * O ordinal vem do número da revisão guardado no evento — sem ele a linha diria
- * só "revisão certa" e a linha do tempo perderia justamente a noção de avanço
- * que ela existe para mostrar.
+ * The ordinal comes from the review number stored on the event; without it the
+ * row would say only "review correct" and the timeline would lose the sense of
+ * advancing it exists to show.
  */
 internal fun eventDescription(event: Event): String = when (event.type) {
     EventType.CAPTURED -> "capturada"

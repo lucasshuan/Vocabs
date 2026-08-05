@@ -35,11 +35,11 @@ import com.jean.vocabs.shared.domain.Retention
 import com.jean.vocabs.ui.theme.LocalDarkTheme
 
 /**
- * Selo "palavra" / "expressão".
+ * The "word" / "phrase" badge.
  *
- * A expressão é a que ganha o tom de ameixa: dois ou mais tokens é o caso menos
- * frequente e o que o handoff quer que salte na lista. Caixa baixa de propósito
- * — é classificação, não título.
+ * Phrase is the one that gets the plum tone: two or more tokens is the less
+ * frequent case and the one that should stand out in a list. Lower case on
+ * purpose — it is a classification, not a title.
  */
 @Composable
 fun TypeBadge(type: TargetType, modifier: Modifier = Modifier) {
@@ -124,7 +124,7 @@ private fun duplicateStatusLabel(status: EntryStatus): String = when (status) {
     EntryStatus.ERROR -> "com erro"
 }
 
-/** "agora", "há 5min", "há 2h", "ontem", "há 3d". */
+/** "now", "5m ago", "2h ago", "yesterday", "3d ago". */
 fun relativeTime(entao: Long, now: Long = System.currentTimeMillis()): String {
     val minutes = ((now - entao) / 60_000L).coerceAtLeast(0)
     return when {
@@ -137,13 +137,12 @@ fun relativeTime(entao: Long, now: Long = System.currentTimeMillis()): String {
 }
 
 /**
- * O espelho de [tempoRelativo] olhando para a frente: "agora", "em 4h", "amanhã",
- * "em 3 dias".
+ * The forward-looking mirror of [relativeTime]: "now", "in 4h", "tomorrow".
  *
- * Recebe uma **duração**, não um instante, de propósito. [tempoRelativo] tem um
- * `System.currentTimeMillis()` embutido como default — um relógio da camada de UI
- * que ignora a costura de tempo injetada no repositório. Repetir isso aqui faria
- * a barra da ficha e o cartão da home discordarem sobre que horas são.
+ * Takes a **duration**, not an instant, on purpose. [relativeTime] has a
+ * `System.currentTimeMillis()` default — a UI-layer clock that ignores the time
+ * source injected into the repository. Repeating that here would let the card's
+ * bar and the home card disagree about what time it is.
  */
 fun timeUntil(millis: Long): String {
     val minutes = (millis / 60_000L).coerceAtLeast(0)
@@ -156,7 +155,7 @@ fun timeUntil(millis: Long): String {
     }
 }
 
-/** "0:12", "1:03:20" — a duração de um áudio, a partir de millis. */
+/** "0:12", "1:03:20" — an audio duration, from millis. */
 fun formatDurationMs(durationMs: Long): String {
     val totalSeconds = (durationMs / 1_000).coerceAtLeast(0)
     val hours = totalSeconds / 3_600
@@ -166,19 +165,18 @@ fun formatDurationMs(durationMs: Long): String {
     return if (hours > 0) "$hours:${minutes.toString().padStart(2, '0')}:$paddedSeconds" else "$minutes:$paddedSeconds"
 }
 
-/** A mesma duração, a partir de segundos — o que o cronômetro da gravação conta. */
+/** The same duration from seconds — what the recording timer counts. */
 fun formatDuration(seconds: Long): String = formatDurationMs(seconds * 1_000L)
 
 /**
- * Como chamar uma captura crua: "Áudio · 0:12", "Foto do Kindle", "“tant pis”".
+ * What to call a raw capture: "Audio · 0:12", "Photo from Kindle", "“tant pis”".
  *
- * A lista de Pendentes e o cabeçalho da seleção precisam do mesmo nome — quem
- * toca numa linha tem que reconhecer a tela que abriu. É também o único lugar
- * onde `origem` aparece, o que a torna útil de preencher.
+ * Pending's list and the selection header need the same name — tapping a row has
+ * to lead to a recognizable screen. It is also the only place `source` appears,
+ * which is what makes it worth filling in.
  *
- * Texto colado mostra o próprio trecho entre aspas, e não a palavra "Texto":
- * numa fila de cinco capturas, "Texto" três vezes não distingue nada, e o
- * trecho é o que a pessoa reconhece de imediato.
+ * Pasted text shows its own snippet in quotes rather than the word "Text": in a
+ * queue of five captures, "Text" three times distinguishes nothing.
  */
 fun captureTitle(capture: Capture): String {
     val source = capture.source?.takeIf { it.isNotBlank() }
@@ -191,7 +189,7 @@ fun captureTitle(capture: Capture): String {
     }
 }
 
-/** Uma linha de trecho para caber num título, cortada na palavra e não na letra. */
+/** One line of snippet for a title, cut at the word rather than the letter. */
 fun summarize(text: String, limit: Int = 38): String {
     val clean = text.trim().replace(Regex("\\s+"), " ")
     if (clean.length <= limit) return clean
@@ -199,9 +197,7 @@ fun summarize(text: String, limit: Int = 38): String {
     return "$cut…"
 }
 
-/**
- * A ameixa identifica a marca/ações; a menta fica reservada para progresso.
- */
+/** Plum identifies the brand and actions; mint is reserved for progress. */
 @Composable
 fun levelColor(level: MemoryLevel): Color = when (level) {
     MemoryLevel.NEW -> MaterialTheme.colorScheme.onSurfaceVariant
@@ -211,11 +207,11 @@ fun levelColor(level: MemoryLevel): Color = when (level) {
 }
 
 /**
- * O rótulo do nível só ganha menta quando é "dominada".
+ * The level label only earns mint at "mastered".
  *
- * Nos outros níveis ele é informação de apoio e fica em cinza-lilás — quem
- * carrega o estado é a barra ao lado, e dois elementos coloridos dizendo a mesma
- * coisa fariam "familiar" parecer uma conquista.
+ * At the other levels it is supporting information: the bar beside it carries the
+ * state, and two colored elements saying the same thing would make "familiar"
+ * look like an achievement.
  */
 @Composable
 fun levelLabelColor(level: MemoryLevel): Color =
@@ -230,10 +226,10 @@ fun levelLabel(level: MemoryLevel): String = when (level) {
 }
 
 /**
- * "revisar agora" quando já cruzou o limiar, senão "em 2d 4h".
+ * "review now" once past the threshold, otherwise "in 2d 4h".
  *
- * Nulo quando não há retenção: sem ficha pronta não existe revisão marcada, e
- * dizer "revisar agora" nesse caso mandaria a pessoa a uma fila vazia.
+ * Null when there is no retention: with no card ready there is no scheduled
+ * review, and "review now" would send someone to an empty queue.
  */
 fun nextReviewText(retention: Retention?, now: Long): String? {
     val missing = retention?.nextReviewIn(now) ?: return null
@@ -241,11 +237,10 @@ fun nextReviewText(retention: Retention?, now: Long): String? {
 }
 
 /**
- * A força de memória como barra.
+ * Memory strength as a bar.
  *
- * Dá para usá-la curta (a lista de Palavras reserva 84 dp para ela, ao lado do
- * rótulo) ou inteira (a ficha), por isso ela não força largura nenhuma: quem
- * chama decide pelo modifier.
+ * Usable short (Words reserves 84 dp beside the label) or full width (the card),
+ * so it forces no width of its own — the caller decides with the modifier.
  */
 @Composable
 fun MemoryBar(

@@ -71,23 +71,21 @@ import com.jean.vocabs.ui.languages.languageOf
 import kotlinx.coroutines.launch
 
 /**
- * Tela 08 do handoff — "Seu progresso", de um curso.
+ * "Your progress", for one course.
  *
- * Dois blocos, sempre os mesmos: a semana com a quota do dia e o estoque de
- * palavras. Cada um é a porta de uma tela mais funda, e os dois chevrons são as
- * únicas saídas. A tela não tem porcentagem de acerto, palavras por dia nem
- * melhor sequência — os dias marcados na semana são o único registro de
- * frequência que ela guarda.
+ * Two blocks, always the same: the week with today's quota, and the word stock.
+ * Each is the door to a deeper screen, and the two chevrons are the only exits.
+ * There is no hit rate, no words per day and no best streak — the marked days are
+ * the only record of frequency this screen keeps.
  *
- * Sem palavra nenhuma no idioma a estrutura não muda: os mesmos dois cartões
- * ficam tracejados, com os rótulos no lugar e nenhum número inventado. Um
- * esqueleto mostra onde as coisas vão ficar; um "0 de 10" diria que já se
- * falhou em alguma coisa.
+ * With no words in the language the structure does not change: the same two cards
+ * go dashed, labels in place and no invented numbers. A skeleton shows where
+ * things will go; a "0 of 10" would say something had already been failed.
  *
- * A pastilha da bandeira é o único indicador de curso e também o botão de troca:
- * um toque abre a gaveta, escolher fecha e recarrega os dois cartões. Trocar
- * aqui **não** troca o curso aberto do app — quem só quis olhar o francês não
- * deve encontrar o `+` e a revisão mudados de idioma depois.
+ * The flag pill is both the course indicator and the switch. Switching here does
+ * **not** change the app's open course — someone who only wanted to look at
+ * French should not find the `+` and the review queue in another language
+ * afterwards.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,7 +107,7 @@ fun ProgressScreen(
     var drawerOpen by remember { mutableStateOf(false) }
     val drawerState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    /** O curso olhado agora — o da rota, o escolhido na gaveta, ou o aberto. */
+    /** The course being looked at: the route's, the drawer's, or the open one. */
     val viewed = state.languagePair.target
     val empty = state.total == 0
 
@@ -178,11 +176,11 @@ fun ProgressScreen(
 }
 
 /**
- * O primeiro bloco: a semana e a quota de hoje, no mesmo cartão.
+ * The first block: the week and today's quota on one card.
  *
- * Os dois estão juntos porque respondem a mesma pergunta em dois prazos —
- * "andei esta semana?" e "andei hoje?". Separá-los faria a quota parecer uma
- * meta à parte, e ela é só o dia de hoje da faixa logo acima.
+ * Together because they answer the same question over two spans — "did I move
+ * this week?" and "did I move today?". Apart, the quota would look like a
+ * separate goal, and it is only today's square from the strip above it.
  */
 @Composable
 private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
@@ -234,8 +232,8 @@ private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
             )
         }
 
-        // Sem barra no vazio: uma trilha cinza de ponta a ponta é uma promessa de
-        // que existe alguma coisa para preencher hoje, e não existe ainda.
+        // No bar when empty: a grey track from end to end promises there is
+        // something to fill in today, and there is not yet.
         if (!empty) {
             val advance by animatedFraction(state.quota.fraction, "fracaoDaQuota")
             Box(
@@ -273,11 +271,11 @@ private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
 }
 
 /**
- * O segundo bloco: quanto do estoque já é seu.
+ * The second block: how much of the stock is yours.
  *
- * Vazio, ele não mostra "0 de 0" nem um anel zerado — mostra o lugar do anel e
- * diz quando ele começa a existir. A promessa é datada: quatro revisões certas,
- * que é literalmente a escada de [Degraus] do primeiro degrau ao último.
+ * Empty, it shows neither "0 of 0" nor a zeroed ring — it shows where the ring
+ * goes and when it starts to exist. The promise is dated: four correct reviews,
+ * which is literally the [Steps] ladder from the first rung to the last.
  */
 @Composable
 private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
@@ -317,8 +315,8 @@ private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) 
                 size = 78.dp,
                 thickness = 9.dp,
             ) {
-                // Conta do zero junto com o arco: é a contagem de conquista
-                // acumulada que `contagemAnimada` existe para servir.
+                // Counts up with the arc: this is the accumulated achievement
+                // `animatedCount` exists for.
                 Text(
                     text = "${animatedCount(state.mastered, "mastered")}",
                     style = MaterialTheme.typography.headlineMedium,
@@ -363,11 +361,11 @@ private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) 
 }
 
 /**
- * Os três nomes das faixas, espalhados na largura do cartão.
+ * The three band names, spread across the card's width.
  *
- * Sem quadradinho de cor: a barra logo acima já está na mesma ordem, e um
- * marcador por rótulo repetiria o que ela diz melhor. No estado vazio os mesmos
- * três nomes ficam sozinhos, sem número — é o rótulo do lugar, não um placar.
+ * No color swatch: the bar just above is already in the same order. When empty
+ * the three names stand alone with no numbers — it is the label of the place, not
+ * a scoreboard.
  */
 @Composable
 private fun StockLegend(labels: List<String>, color: Color, modifier: Modifier = Modifier) {
@@ -379,12 +377,12 @@ private fun StockLegend(labels: List<String>, color: Color, modifier: Modifier =
 }
 
 /**
- * A bandeira do curso no cabeçalho — e o botão que troca de curso.
+ * The course flag in the header, and the button that switches course.
  *
- * Sem ela seriam telas iguais e nenhum jeito de dizer qual é qual; sem o chevron
- * ela seria só um rótulo, e trocar de idioma exigiria voltar até a tela Você.
- * O chevron aponta para cima enquanto a gaveta está aberta, que é o que promete
- * que outro toque a fecha.
+ * Without it these would be identical screens with no way to tell them apart;
+ * without the chevron it would be a label, and switching would mean going back to
+ * Profile. The chevron points up while the drawer is open, which is what promises
+ * another tap closes it.
  */
 @Composable
 private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
@@ -427,11 +425,10 @@ private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
 }
 
 /**
- * A gaveta da bandeira: os cursos matriculados, com o que cada um já rendeu.
+ * The flag drawer: the enrolled courses, with what each has yielded.
  *
- * Cada linha traz o próprio "9 de 24" porque a pergunta que leva alguém a abrir
- * a gaveta é justamente comparar — e obrigar a entrar em cada idioma para
- * descobrir onde está o progresso seria pedir três viagens para uma resposta.
+ * Each row carries its own "9 of 24" because comparing is exactly what makes
+ * someone open the drawer — requiring three visits for one answer would not.
  */
 @Composable
 private fun CourseDrawer(
@@ -535,20 +532,19 @@ internal fun streakLabel(days: Int): String =
     if (days == 1) "1 dia seguido" else "$days dias seguidos"
 
 /**
- * O número da quota, à direita do rótulo: "6 de 10".
+ * The quota number, right of the label: "6 of 10".
  *
- * Travessão quando o dia não pediu nada — seja porque não há palavra nenhuma,
- * seja porque nenhuma venceu hoje. "0 de 0" seria um placar de uma partida que
- * não houve.
+ * An em dash when the day asked for nothing, whether because there are no words
+ * or because none came due. "0 of 0" would be the score of a match never played.
  */
 internal fun quotaText(quota: DailyQuota): String =
     if (quota.total == 0) "—" else "${quota.done} de ${quota.total}"
 
-/** A linha do anel vazio: quando é que ele passa a existir. */
+/** The empty ring's line: when it starts to exist. */
 internal fun whenItAppearsText(): String =
     "aparece depois de ${SPELLED_NUMBERS[Steps.TOTAL - 1].lowercase()} revisões"
 
-/** "9 de 24 já são suas" — ou a falta delas, sem número inventado. */
+/** "9 of 24 are yours" — or their absence, with no invented number. */
 internal fun courseSummaryText(course: CourseSummary): String =
     if (course.total == 0) "nenhuma palavra ainda" else "${course.mastered} de ${course.total} já são suas"
 
@@ -557,10 +553,10 @@ private val SPELLED_NUMBERS = listOf(
 )
 
 /**
- * "Nove palavras já são suas".
+ * "Nine words are already yours".
  *
- * Por extenso até dez porque é assim que se lê em voz alta uma conquista; a
- * partir daí o algarismo volta, que é como se lê um número grande.
+ * Spelled out up to ten because that is how an achievement reads aloud; past
+ * that the digits come back, which is how a large number reads.
  */
 internal fun stockTitle(mastered: Int): String = when {
     mastered == 0 -> "Nenhuma palavra é sua ainda"

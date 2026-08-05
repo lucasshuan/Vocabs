@@ -82,18 +82,19 @@ import com.jean.vocabs.ui.languages.languageOf
 import com.jean.vocabs.ui.theme.LocalDarkTheme
 
 /**
- * Telas 09/10 do handoff — "O que chamou atenção?".
+ * "What caught your eye?"
  *
- * Uma tarefa só: marcar. Serve igual para texto colado, áudio transcrito e foto
- * lida, e é por isso que o nome não é "transcrever" — transcrever é o que a
- * máquina já tentou fazer antes de chegar aqui.
+ * One task: marking. It serves pasted text, transcribed audio and read photos
+ * alike, which is why it is not called "transcribe" — transcribing is what the
+ * machine already attempted before anything got here.
  *
- * A marcação não fica no texto: cada seleção confirmada limpa o trecho e vira
- * etiqueta na lista de baixo. É o que permite ao mesmo trecho render `fence` e
- * `on the fence` sem virar uma sopa de realces sobrepostos.
+ * The marking does not stay in the text: each confirmed selection clears the
+ * snippet and becomes a chip in the list below. That is what lets one snippet
+ * yield both `fence` and `on the fence` without turning into a soup of
+ * overlapping highlights.
  *
- * O idioma do topo é o destino, e ainda é trocável aqui — a captura já existe,
- * mas nenhuma ficha nasceu neste par até o "Guardar".
+ * The language at the top is the destination and is still changeable here: the
+ * capture exists, but no card has been born in this pair until "Save".
  */
 @Composable
 fun SelectScreen(
@@ -249,30 +250,25 @@ fun SelectScreen(
 }
 
 /**
- * "Descartar captura" — vermelho suave e com a lixeira.
+ * "Discard capture" — soft red, with the trash icon.
  *
- * Ele era um `TextButton` em `outline`, que no claro é um lilás de 1 px de
- * contraste: a única saída para quem abriu a captura por engano estava escrita
- * na cor das bordas. Discrição de mais vira invisibilidade, e um botão que não se
- * acha não é secundário — é ausente.
+ * It used to be a `TextButton` in `outline`, which in light is a lilac with 1 px
+ * of contrast: the only exit for someone who opened a capture by mistake was
+ * written in the color of the borders. Too discreet is invisible, and a button
+ * that cannot be found is not secondary — it is absent.
  *
- * Agora ele é uma pílula de fundo avermelhado claro com o texto no vermelho de
- * erro: continua atrás da ação principal em peso — não tem a largura inteira, não
- * é preenchido de cor forte, não fica no caminho do polegar —, mas se acha de
- * relance e diz o que faz antes de ser lido, pela cor e pelo ícone. É a mesma
- * dupla (recipiente claro + tinta de erro) que o arrasto de exclusão em Pendentes
- * usa antes do limiar, e a repetição é de propósito: no app inteiro, este par
- * significa "isto apaga, e ainda dá para voltar atrás".
- *
- * O que ele abre continua sendo a confirmação — aqui não há desfazer, porque sair
- * da tela leva a captura junto.
+ * It is now a pill with a light red background and error-red text: still behind
+ * the primary action in weight, but findable at a glance. It is the same pairing
+ * (light container plus error ink) that the delete swipe in Pending uses before
+ * its threshold, and the repetition is deliberate — across the app that pair
+ * means "this erases, and you can still back out".
  */
 @Composable
 private fun DiscardCaptureButton(onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    // No escuro o `errorContainer` do Material é um vinho quase opaco, pesado
-    // demais para uma ação de apoio. O vermelho claro do tema a 14% dá o mesmo
-    // recado sobre o fundo escuro sem virar um bloco vermelho no rodapé.
+    // In dark, Material's `errorContainer` is a nearly opaque wine, too heavy for
+    // a supporting action. The theme's light red at 14% carries the same message
+    // over a dark background without becoming a red block in the footer.
     val background = if (LocalDarkTheme.current) colors.error.copy(alpha = 0.14f) else colors.errorContainer
     val toque = rememberHaptics()
     Surface(
@@ -295,10 +291,10 @@ private fun DiscardCaptureButton(onClick: () -> Unit) {
 }
 
 /**
- * O chip de idioma do cabeçalho, que abre a lista de cursos.
+ * The header's language chip, which opens the course list.
  *
- * Ele é destino, e não etiqueta: quem gravou com o idioma errado marcado
- * conserta aqui, no último instante em que isso ainda é barato.
+ * It is a destination, not a label: whoever recorded with the wrong language
+ * marked fixes it here, at the last moment it is still cheap.
  */
 @Composable
 private fun LanguagePicker(target: String, courses: List<String>, onChoose: (String) -> Unit) {
@@ -336,7 +332,7 @@ private fun LanguagePicker(target: String, courses: List<String>, onChoose: (Str
     }
 }
 
-/** "Texto colado · agora" — de onde este trecho veio, na cor da categoria. */
+/** "Pasted text · now" — where this snippet came from, in the category's color. */
 @Composable
 private fun TextSource(createdAt: Long) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -359,11 +355,11 @@ private fun PhotoPreview(path: String) {
 }
 
 /**
- * Play, onda e duração — e o "corrigir texto" ao lado.
+ * Play, wave and duration, with "fix text" beside them.
  *
- * Sem sincronia palavra-a-áudio de propósito: ouvir o trecho de novo resolve, e
- * um destaque que acompanha a fala exigiria alinhamento por palavra que a
- * transcrição local não entrega.
+ * Deliberately without word-level sync: listening again solves it, and a
+ * highlight following the speech would need per-word alignment the local
+ * transcription does not provide.
  */
 @Composable
 private fun AudioPlayerBar(path: String, durationMs: Long?, correcting: Boolean, onCorrect: () -> Unit) {
@@ -388,8 +384,8 @@ private fun AudioPlayerBar(path: String, durationMs: Long?, correcting: Boolean,
                 modifier = Modifier.weight(1f),
             )
             Text(
-                // Tocando, o número anda junto com a onda: quem está ouvindo quer
-                // saber quanto falta, não quanto o arquivo tem.
+                // While playing, the number moves with the wave: a listener wants
+                // to know how much is left, not how long the file is.
                 text = if (player.playing) formatDurationMs(player.positionMs)
                 else durationMs?.let(::formatDurationMs).orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
@@ -441,23 +437,22 @@ private fun ErrorNotice(text: String) {
     }
 }
 
-/** O que a barra mais baixa ainda ocupa, para o silêncio virar linha e não sumiço. */
+/** What the lowest bar still occupies, so silence is a line and not a gap. */
 private val MIN_WAVE_HEIGHT = 3.dp
 
-/** Quanto a barra ainda não tocada se apaga em relação à já ouvida. */
+/** How far the untouched part of the bar fades against what has been heard. */
 private const val PRESS_OPACITY = 0.3f
 
 /**
- * A onda desenhada, com barra de largura fixa em vez de dez barras esticadas.
+ * The drawn wave, with a fixed bar width rather than ten stretched bars.
  *
- * Repartir a largura disponível entre dez barras funciona na maquete de 340 px e
- * vira dez comprimidos deitados num celular de verdade: o que dá a leitura de
- * "áudio" é a barra fina repetida, não a contagem delas.
+ * Splitting the available width between ten bars works in a 340 px mockup and
+ * becomes ten lying-down tablets on a real phone: what reads as "audio" is the
+ * repeated thin bar, not the count of them.
  *
- * O relevo vem do arquivo, e o preenchimento vem da agulha: o que já passou fica
- * na cor cheia e o que falta fica apagado. Enquanto o perfil não chegou — ou se o
- * arquivo não for legível — todas as barras ficam na altura mínima; uma onda
- * inventada diria sobre a gravação uma coisa que ninguém mediu.
+ * The relief comes from the file and the fill from the needle. Until the profile
+ * arrives — or if the file is unreadable — every bar stays at minimum height; an
+ * invented wave would say something about the recording nobody measured.
  */
 @Composable
 private fun AudioWave(
@@ -487,7 +482,7 @@ private fun AudioWave(
     }
 }
 
-/** Texto que age sem virar botão: "corrigir texto" é um atalho, não uma ação da tela. */
+/** Text that acts without becoming a button: "fix text" is a shortcut. */
 @Composable
 private fun Modifier.clickableWithoutRipple(onClick: () -> Unit): Modifier {
     val interaction = remember { MutableInteractionSource() }

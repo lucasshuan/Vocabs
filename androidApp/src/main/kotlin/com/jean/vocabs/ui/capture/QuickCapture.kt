@@ -25,20 +25,20 @@ import java.io.File
 import kotlinx.coroutines.delay
 
 /**
- * Captura de áudio e foto sem tela própria.
+ * Audio and photo capture, with no screen of its own.
  *
- * A fiação — gravador, câmera, permissão de microfone — foi separada dos botões
- * porque quem dispara essas ações agora é a barra inferior, que vive fora de
- * qualquer tela. O estado precisa sobreviver à troca de aba: se morasse dentro
- * de um destino de navegação, sair da aba no meio de uma gravação a perderia.
+ * The wiring — recorder, camera, microphone permission — is separate from the
+ * buttons because what triggers these actions is the bottom bar, which lives
+ * outside any screen. The state has to survive a tab change: inside a navigation
+ * destination, leaving the tab mid-recording would lose it.
  *
- * O gesto do handoff pede duas coisas que a versão anterior não dava:
+ * Two things the previous version did not give:
  *
- * - **duração em milissegundos**, e não o contador de segundos inteiros. O corte
- *   de [MINIMO_DE_GRAVACAO_MS] mede 0,8 s; comparado contra um contador que só
- *   vira em 1 s, ele descartava toda gravação curta e nenhuma outra.
- * - **nível do microfone**, para a onda da tela de gravação ser a fala e não uma
- *   animação que corre igual no silêncio.
+ * - **duration in milliseconds**, not a whole-second counter. The
+ *   [MIN_RECORDING_MS] cut is 0.8 s; against a counter that only ticks at 1 s it
+ *   discarded every short recording and nothing else.
+ * - **microphone level**, so the recording screen's wave is speech and not an
+ *   animation that runs the same through silence.
  */
 @Stable
 class QuickCapture internal constructor() {
@@ -47,12 +47,12 @@ class QuickCapture internal constructor() {
         internal set
 
     /**
-     * O relógio da gravação, contado do início e não acumulado a cada tique.
+     * The recording clock, counted from the start rather than accumulated per
+     * tick.
      *
-     * Fica fora do estado do Compose de propósito: quem precisa dele é a decisão
-     * de guardar ou descartar, no instante em que o dedo sai da tela. Publicar
-     * cada milissegundo como estado obrigaria a tela a recompor 20 vezes por
-     * segundo para escrever o mesmo "0:07" — [segundos] existe para isso.
+     * Deliberately outside Compose state: what needs it is the save-or-discard
+     * decision. Publishing every millisecond as state would recompose the screen
+     * 20 times a second to write the same "0:07" — [seconds] exists for that.
      */
     val durationMs: Long
         get() = if (isRecording) SystemClock.elapsedRealtime() - startedAt else lastDurationMs
@@ -60,7 +60,7 @@ class QuickCapture internal constructor() {
     var seconds by mutableLongStateOf(0L)
         internal set
 
-    /** Se o microfone já está liberado — reavaliado a cada composição. */
+    /** Whether the microphone is already granted — re-evaluated each composition. */
     var hasAudioPermission by mutableStateOf(false)
         internal set
 
@@ -74,24 +74,23 @@ class QuickCapture internal constructor() {
     internal var readLevel: () -> Float = { 0f }
 
     /**
-     * O pico do microfone agora, de 0 a 1.
+     * The microphone's peak right now, 0 to 1.
      *
-     * Função e não propriedade observável: a onda amostra isto no ritmo dela, e
-     * um estado que mudasse a 60 Hz recomporia a tela de gravação inteira para
-     * mexer dezenove retângulos.
+     * A function rather than observable state: the wave samples this at its own
+     * rate, and state changing at 60 Hz would recompose the whole recording
+     * screen to move nineteen rectangles.
      */
     fun levelNow(): Float = readLevel()
 
-    /** Começa a gravar já — o gesto só chega aqui com a permissão em mãos. */
+    /** Starts recording immediately — the gesture only arrives with permission. */
     fun recordAudio() = onRequestAudio()
 
-    /** Encerra e guarda, se passou de [MINIMO_DE_GRAVACAO_MS]. */
+    /** Ends and saves, if it ran past [MIN_RECORDING_MS]. */
     fun saveAudio() = onFinish(true)
 
     /**
-     * Encerra sem guardar — o botão de descartar da tela de gravação. Uma fila
-     * cheia de áudios de meio segundo custaria mais para limpar do que o gesto
-     * economiza.
+     * Ends without saving. A queue full of half-second audio would cost more to
+     * clean up than the gesture saves.
      */
     fun cancelAudio() = onFinish(false)
 
@@ -101,21 +100,20 @@ class QuickCapture internal constructor() {
 }
 
 /**
- * Abaixo disto a gravação foi um engano, e não uma captura.
+ * Below this the recording was a mistake, not a capture.
  *
- * A gravação começa ao soltar no alvo do áudio e termina num toque; o caminho
- * mais curto entre os dois é alguém que soltou no alvo errado e foi direto
- * desfazer. O áudio de alguns décimos que sai daí é o que este número joga fora,
- * e é por isso que ele mede em milissegundos.
+ * Recording starts on releasing at the audio target and ends on a tap; the
+ * shortest path between the two is someone who released on the wrong target and
+ * went straight to undo. It measures in milliseconds for that reason.
  */
 const val MIN_RECORDING_MS = 800L
 
 /**
- * [aoGuardar] recebe a captura pronta e é quem decide o que fazer com ela — sem
- * um segundo retorno de chamada só para avisar a tela. Os dois existiam antes e
- * eram a mesma coisa dita em dois lugares; agora o aviso de baixo precisa da
- * duração, do formato e do curso na mesma chamada em que a captura é gravada,
- * porque é o id devolvido pelo banco que liga o cartão ao atalho "Selecionar".
+ * [onSave] receives the finished capture and decides what to do with it, without
+ * a second callback just to notify the screen. The bottom notice needs the
+ * duration, the format and the course in the same call that records the capture,
+ * because the id the database returns is what links the card to the "Select"
+ * shortcut.
  */
 @Composable
 fun rememberQuickCapture(
@@ -132,8 +130,8 @@ fun rememberQuickCapture(
         Manifest.permission.RECORD_AUDIO,
     ) == PackageManager.PERMISSION_GRANTED
 
-    // O arquivo de destino precisa existir antes de chamar a câmera: o app de
-    // câmera escreve nele, não devolve um caminho.
+    // The destination file has to exist before calling the camera: the camera app
+    // writes into it, it does not hand back a path.
     var pendingPhoto by remember { mutableStateOf<File?>(null) }
     var photoTarget by remember { mutableStateOf(target) }
     val camera = rememberLauncherForActivityResult(
@@ -149,11 +147,11 @@ fun rememberQuickCapture(
     }
 
     /**
-     * O curso de destino é congelado no instante em que a captura começa.
+     * The destination course is frozen the instant the capture starts.
      *
-     * A pessoa pode trocar de página do carrossel enquanto o áudio corre ou
-     * enquanto a câmera está aberta — e o destino tem que ser o que estava
-     * marcado quando o dedo desceu, não o que estiver na tela quando voltar.
+     * The carousel page can change while the audio runs or the camera is open,
+     * and the destination has to be what was marked when the finger went down,
+     * not what is on screen when it comes back.
      */
     var recordingTarget by remember { mutableStateOf(target) }
 
@@ -207,14 +205,14 @@ fun rememberQuickCapture(
         }
     }
 
-    // Se o app morrer gravando, o arquivo pela metade é descartado em vez de
-    // virar um áudio mudo na lista de pendentes.
+    // If the app dies mid-recording the half file is discarded rather than
+    // becoming a mute audio in the pending list.
     DisposableEffect(Unit) {
         onDispose { if (recorder.isRecording) recorder.cancel() }
     }
 
-    // O cronômetro publica só a virada do segundo. A precisão de verdade está em
-    // `duracaoMs`, que é lido direto do relógio quando alguém pergunta.
+    // The timer publishes only the turn of the second. The real precision is in
+    // `durationMs`, read straight off the clock when someone asks.
     LaunchedEffect(state.isRecording) {
         while (state.isRecording) {
             state.seconds = state.durationMs / 1_000L

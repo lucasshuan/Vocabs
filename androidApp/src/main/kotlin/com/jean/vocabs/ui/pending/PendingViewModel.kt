@@ -20,12 +20,12 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * Pendentes é uma fila, não uma notificação por curso.
+ * Pending is a queue, not a per-course notification.
  *
- * Ela nunca é recortada por idioma — nem pelo curso aberto, nem por um filtro
- * que tenha ficado ligado da visita passada. O que chega aqui é trabalho parado,
- * e trabalho parado num idioma não deixa de existir porque a pessoa foi estudar
- * outro. O selo da aba conta tudo pela mesma razão.
+ * It is never sliced by language — not by the open course, not by a filter left
+ * on from a previous visit. What lands here is stalled work, and stalled work in
+ * one language does not stop existing because the person went to study another.
+ * The tab badge counts everything for the same reason.
  */
 data class PendingState(
     val captures: List<Capture> = emptyList(),
@@ -33,7 +33,7 @@ data class PendingState(
 ) {
     val total: Int get() = captures.size + cards.size
 
-    /** Quantas capturas cruas por idioma — o número que cada chip de filtro mostra. */
+    /** Raw captures per language — the number each filter chip shows. */
     val byLanguage: Map<String, Int>
         get() = (captures.map { it.languagePair.target } + cards.map { it.languagePair.target })
             .groupingBy { it }
@@ -41,11 +41,11 @@ data class PendingState(
 }
 
 /**
- * Uma exclusão que já saiu da tela e ainda pode voltar.
+ * A deletion that has left the screen and can still come back.
  *
- * [chave] existe pelo mesmo motivo que a do aviso de captura: duas exclusões
- * seguidas do mesmo tipo precisam contar como eventos diferentes para a faixa
- * reiniciar a contagem em vez de continuar a anterior.
+ * [key] exists so that two deletions of the same kind in a row count as different
+ * events, and the strip restarts its countdown instead of continuing the previous
+ * one.
  */
 data class PendingDeletion(
     val key: Long,
@@ -55,12 +55,11 @@ data class PendingDeletion(
 )
 
 /**
- * Quanto tempo o "Desfazer" fica de pé.
+ * How long "Undo" stands.
  *
- * Os mesmos 5 s do aviso de captura, e não é coincidência: é o intervalo que o
- * app já ensinou como "o tempo que uma faixa dura". A barra que corre no rodapé
- * da faixa mostra quanto sobra, para que ignorá-la seja uma escolha e não um
- * susto.
+ * The same 5 s as the capture notice, and not by coincidence: it is the interval
+ * the app has already taught as "how long a strip lasts". The bar running along
+ * the footer shows what is left, so ignoring it is a choice and not a surprise.
  */
 private const val UNDO_WINDOW_MS = 5_000L
 
@@ -69,18 +68,18 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _exclusao = MutableStateFlow<PendingDeletion?>(null)
 
-    /** A última exclusão ainda dentro da janela de arrependimento, se houver. */
+    /** The last deletion still inside the regret window, if any. */
     val deletion: StateFlow<PendingDeletion?> = _exclusao.asStateFlow()
 
     private var count: Job? = null
 
     /**
-     * A fila **já sem** o que acabou de ser arrastado para fora.
+     * The queue **already without** what was just swiped away.
      *
-     * O item some da lista no instante do gesto, muito antes de o banco saber
-     * disso: quem arrastou precisa ver a fila diminuir na hora, e a exclusão de
-     * verdade só acontece quando a janela de desfazer fecha. Como o selo da aba
-     * sai de `total`, que sai daqui, os dois nunca discordam.
+     * The item leaves the list at the instant of the gesture, long before the
+     * database knows: whoever swiped needs to see the queue shrink now, and the
+     * real deletion only happens when the undo window closes. The tab badge comes
+     * from `total`, which comes from here, so the two never disagree.
      */
     val state: StateFlow<PendingState> = combine(
         repository.observePendingCaptures(Scope.All),
@@ -108,7 +107,7 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
         schedule(PendingDeletion(System.nanoTime(), entry.id, isCapture = false, title = entry.title))
     }
 
-    /** O gesto foi um engano: o item volta para a fila e nada chega ao banco. */
+    /** The gesture was a mistake: the item returns and nothing reaches the database. */
     fun undo() {
         count?.cancel()
         count = null
@@ -116,11 +115,11 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Uma exclusão de cada vez.
+     * One deletion at a time.
      *
-     * Quem arrasta o segundo cartão antes de a faixa do primeiro sumir **confirma**
-     * o primeiro — empilhar faixas obrigaria a ler três confirmações para limpar
-     * três linhas, e é justamente limpar a fila em série que o gesto veio permitir.
+     * Swiping a second card before the first strip disappears **confirms** the
+     * first — stacking strips would mean reading three confirmations to clear
+     * three rows, and clearing the queue in series is what the gesture is for.
      */
     private fun schedule(fresh: PendingDeletion) {
         count?.cancel()
@@ -134,12 +133,12 @@ class PendingViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * A janela fechou — daqui não volta: a captura leva junto o arquivo de mídia.
+     * The window closed — no way back: the capture takes its media file with it.
      *
-     * O apagamento em si corre no escopo do app, e não no da tela, porque fechar
-     * Pendentes no meio da chamada deixaria a linha apagada pela metade. Já a
-     * contagem dos 5 s é do ViewModel de propósito: se o processo morrer antes de
-     * ela terminar, o item simplesmente continua na fila — o erro seguro dos dois.
+     * The erase itself runs in the app's scope rather than the screen's, because
+     * leaving Pending mid-call would leave the row half-deleted. The 5 s count is
+     * the ViewModel's on purpose: if the process dies before it finishes the item
+     * simply stays in the queue, which is the safe error of the two.
      */
     private fun confirm(deletion: PendingDeletion) {
         AppContainer.scope.launch {
