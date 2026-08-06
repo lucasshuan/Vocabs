@@ -47,6 +47,8 @@ import io.github.lucasshuan.vocabu.shared.domain.CourseBadge
 import io.github.lucasshuan.vocabu.shared.domain.CourseSummary
 import io.github.lucasshuan.vocabu.ui.languages.displayName
 import io.github.lucasshuan.vocabu.ui.languages.languageOf
+import io.github.lucasshuan.vocabu.ui.theme.LocalDarkTheme
+import io.github.lucasshuan.vocabu.ui.theme.VocabuColors
 
 /**
  * Fixed order, never reordered by what is due: a swipe is only cheap while
@@ -268,6 +270,8 @@ fun LanguageMark(
 fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
     if (total <= 1) return
     val colors = MaterialTheme.colorScheme
+    // Not the ring's track: these sit on the background, not on a card.
+    val idle = if (LocalDarkTheme.current) VocabuColors.QuartzDark else VocabuColors.Quartz
     Row(horizontalArrangement = Arrangement.spacedBy(5.dp), modifier = modifier) {
         repeat(total) { index ->
             val isCurrent = index == current
@@ -277,7 +281,7 @@ fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
                 label = "dotWidth",
             )
             val color by animateColorAsState(
-                targetValue = if (isCurrent) colors.primary else colors.outlineVariant,
+                targetValue = if (isCurrent) colors.primary else idle,
                 animationSpec = tween(Motion.FAST),
                 label = "dotColor",
             )

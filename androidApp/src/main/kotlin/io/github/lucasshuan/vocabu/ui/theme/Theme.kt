@@ -22,7 +22,7 @@ import io.github.lucasshuan.vocabu.shared.ThemePreference
 
 /** Semantic colors with no role of their own in Material's ColorScheme. */
 object VocabuColors {
-    val Mint = Color(0xFF8FDC5E)
+    val Mint = Color(0xFF5FB33C)
     val MintDark = Color(0xFF3F8A22)
 
     /**
@@ -31,8 +31,15 @@ object VocabuColors {
      */
     val Parrot = Color(0xFFC4243C)
     val ParrotContainer = Color(0xFFFBEAEC)
-    val ParrotDark = Color(0xFFF0798F)
+    val ParrotDark = Color(0xFFF08696)
     val ParrotContainerDark = Color(0xFF3A2028)
+
+    /**
+     * The page dot nobody is on. Darker than the ring's empty track, which sits
+     * on a card: these sit on the background, where the track disappears.
+     */
+    val Quartz = Color(0xFFDCD2E6)
+    val QuartzDark = Color(0xFF3E3350)
 }
 
 /**
@@ -45,11 +52,11 @@ val LocalDarkTheme = staticCompositionLocalOf { false }
 private val LightColors = lightColorScheme(
     primary = Color(0xFF8C34B4),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFEED9F7),
-    onPrimaryContainer = Color(0xFF4C1264),
+    primaryContainer = Color(0xFFF7EDFC),
+    onPrimaryContainer = Color(0xFF6B1E8C),
     secondary = Color(0xFF6C6178),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFF1EBF8),
+    secondaryContainer = Color(0xFFEDE6F4),
     onSecondaryContainer = Color(0xFF33273F),
     tertiary = VocabuColors.MintDark,
     onTertiary = Color.White,
@@ -59,7 +66,7 @@ private val LightColors = lightColorScheme(
     onBackground = Color(0xFF221A2C),
     surface = Color.White,
     onSurface = Color(0xFF221A2C),
-    surfaceVariant = Color(0xFFF1EBF8),
+    surfaceVariant = Color(0xFFEDE6F4),
     onSurfaceVariant = Color(0xFF6C6178),
     outline = Color(0xFFE4DAEE),
     outlineVariant = Color(0xFFEDE6F4),
@@ -70,28 +77,28 @@ private val LightColors = lightColorScheme(
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFBC7BE8),
-    onPrimary = Color(0xFF1A1222),
-    primaryContainer = Color(0xFF4A275E),
-    onPrimaryContainer = Color(0xFFEFD9FF),
-    secondary = Color(0xFFB8ACCA),
-    onSecondary = Color(0xFF271F30),
-    secondaryContainer = Color(0xFF332A40),
-    onSecondaryContainer = Color(0xFFE6DDF0),
+    primary = Color(0xFFB45CDA),
+    onPrimary = Color(0xFF1B1322),
+    primaryContainer = Color(0xFF2E1E3C),
+    onPrimaryContainer = Color(0xFFE3B6F7),
+    secondary = Color(0xFFA497B4),
+    onSecondary = Color(0xFF1B1322),
+    secondaryContainer = Color(0xFF332942),
+    onSecondaryContainer = Color(0xFFF4EFF8),
     tertiary = VocabuColors.Mint,
-    onTertiary = Color(0xFF183109),
+    onTertiary = Color(0xFF1B1322),
     tertiaryContainer = Color(0xFF294B1A),
     onTertiaryContainer = Color(0xFFD9F4CA),
-    background = Color(0xFF14101A),
-    onBackground = Color(0xFFF0EAF6),
-    surface = Color(0xFF1E1826),
-    onSurface = Color(0xFFF0EAF6),
-    surfaceVariant = Color(0xFF2A2234),
-    onSurfaceVariant = Color(0xFF9A8FA8),
-    outline = Color(0xFF332A40),
-    outlineVariant = Color(0xFF2A2234),
-    error = Color(0xFFFFB4AB),
-    onError = Color(0xFF690005),
+    background = Color(0xFF17121D),
+    onBackground = Color(0xFFF4EFF8),
+    surface = Color(0xFF241C2E),
+    onSurface = Color(0xFFF4EFF8),
+    surfaceVariant = Color(0xFF332942),
+    onSurfaceVariant = Color(0xFFA497B4),
+    outline = Color(0xFF362B44),
+    outlineVariant = Color(0xFF332942),
+    error = Color(0xFFF2837C),
+    onError = Color(0xFF1B1322),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
 )

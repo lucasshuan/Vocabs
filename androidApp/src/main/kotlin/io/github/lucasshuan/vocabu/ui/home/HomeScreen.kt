@@ -286,7 +286,7 @@ private fun CapturedRow(entry: Entry, modifier: Modifier = Modifier) {
             Text(
                 text = entry.card?.translation.orEmpty(),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
