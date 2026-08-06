@@ -24,30 +24,22 @@ import kotlinx.serialization.json.Json
 object AppContainer {
 
     /**
-     * The server as a physical device sees it: `machine-ip:port`.
-     *
-     * Comes from the build (`BuildConfig.LAN_SERVER`), which detects the
-     * machine's IP on the local network or reads `SERVER_LAN` from `.env`. Empty
-     * when there was no network at compile time.
+     * `machine-ip:port`, from `BuildConfig.LAN_SERVER`. Empty when there was no
+     * network at compile time.
      */
     var lanServer: String = ""
 
-    /** Must match the APP_TOKEN set in the server's environment. */
+    /** Must match the server's APP_TOKEN. */
     var token: String = "local-test-token"
 
-    /**
-     * Overrides URL and token when the cloud arrives — today only `androidApp`
-     * calls this, passing what the build baked into the APK.
-     */
     fun configure(lanServer: String, token: String) {
         this.lanServer = lanServer
         this.token = token
     }
 
     /**
-     * 10.0.2.2 is how the emulator sees your machine's localhost — an address that
-     * exists on no real device. Choosing wrong gives no clear error: it gives a
-     * timeout, which is easy to mistake for a server that is down.
+     * 10.0.2.2 is the emulator's view of the host's localhost, and exists on no
+     * real device. The wrong choice gives a timeout, not an error.
      */
     private val baseUrl: String
         get() = if (Device.isEmulator) {
@@ -57,11 +49,8 @@ object AppContainer {
         }
 
     /**
-     * Application scope for card generation.
-     *
-     * Cannot be the capture screen's viewModelScope: it closes immediately after
-     * saving by design, and the cancelled scope would leave the entry stuck in
-     * PENDING forever.
+     * Generation cannot run on the capture screen's viewModelScope: that screen
+     * closes on save, and the cancelled scope leaves the entry stuck in PENDING.
      */
     val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -88,8 +77,8 @@ object AppContainer {
                 json(Json { ignoreUnknownKeys = true })
             }
             install(HttpTimeout) {
-                // AI generation is slow. Ktor's default would drop the request
-                // midway and the card would never arrive.
+                // Generation outlasts Ktor's default, which drops the request
+                // mid-flight and the card never arrives.
                 requestTimeoutMillis = 90_000
                 connectTimeoutMillis = 15_000
                 socketTimeoutMillis = 90_000

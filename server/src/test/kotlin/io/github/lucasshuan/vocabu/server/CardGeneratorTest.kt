@@ -45,8 +45,8 @@ class GeradorDeFichaTest {
 
     @Test
     fun `an unknown language pair does not fall back to the default`() {
-        // Refusing is the point: falling back would return an English card for
-        // a German word, and the person would only find out by reading it.
+        // Falling back would answer a German word with an English card, found
+        // out only by reading it.
         assertNull(LanguagePairSpec.of("pt-BR", "klingon"))
         assertNull(LanguagePairSpec.of("elfico", "en"))
     }
@@ -60,9 +60,8 @@ class GeradorDeFichaTest {
     }
 
     /**
-     * The schema is hand-written JSON mirroring a data class, and nothing but
-     * this test connects them. Drift does not fail to compile — it fails to
-     * decode, on every card, at runtime.
+     * Nothing but this connects the hand-written schema to the data class: drift
+     * still compiles, and fails to decode on every card.
      */
     @OptIn(ExperimentalSerializationApi::class)
     @Test

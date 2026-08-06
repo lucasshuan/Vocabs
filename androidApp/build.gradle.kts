@@ -9,11 +9,8 @@ plugins {
 }
 
 /**
- * Reads a key from the root `.env`, with the environment variable winning.
- *
- * Same semantics as the server's `Config`, but resolved at build time: a phone
- * cannot read the `.env` on your machine, so the value has to be baked into the
- * APK.
+ * The server's `Config` semantics, resolved at build time: a phone cannot read
+ * the `.env` on your machine, so the value is baked into the APK.
  */
 fun fromEnv(key: String): String? {
     System.getenv(key)?.takeIf { it.isNotBlank() }?.let { return it }
@@ -32,15 +29,12 @@ fun fromEnv(key: String): String? {
 }
 
 /**
- * This machine's address on the local network, so a real phone can find the server.
+ * `isSiteLocalAddress` accepts only 10/8, 172.16/12 and 192.168/16, which
+ * discards VPN adapters on its own — they hand out addresses outside those
+ * ranges, and are the classic reason the app points at the wrong place on a
+ * machine running Radmin, Hamachi or ZeroTier.
  *
- * `isSiteLocalAddress` does the heavy lifting: it accepts only the private ranges
- * (10/8, 172.16/12, 192.168/16) and so discards VPN adapters on its own — those
- * usually hand out addresses outside them, and are the classic reason the app
- * points at the wrong place on a machine running Radmin, Hamachi or ZeroTier.
- *
- * Among the candidates, 192.168.x.x wins because it is the range nearly every
- * home router uses.
+ * 192.168.x.x wins among candidates: nearly every home router uses it.
  */
 fun lanAddress(): String? = runCatching {
     NetworkInterface.getNetworkInterfaces()
@@ -55,17 +49,14 @@ fun lanAddress(): String? = runCatching {
 }.getOrNull()
 
 /**
- * Where the server lives when the app runs on a real device.
- *
- * The default is detected, not typed: whoever builds is the same machine that
- * runs `:server`, so its LAN address is almost always the right answer.
- * `SERVER_LAN` in `.env` overrides — the way out when the server is elsewhere.
+ * Detected, not typed: whoever builds usually also runs `:server`. `SERVER_LAN`
+ * in `.env` overrides, for when it is elsewhere.
  */
 val lanServer: String = fromEnv("SERVER_LAN")
     ?: lanAddress()?.let { "$it:8080" }
     ?: ""
 
-/** Has to match the server's APP_TOKEN, which is why it comes from the same place. */
+/** Must match the server's APP_TOKEN, hence the same source. */
 val appToken: String = fromEnv("APP_TOKEN") ?: "local-test-token"
 
 android {
@@ -99,8 +90,8 @@ android {
         }
     }
 
-    // Resources have no compiler: an untranslated key or a `%1$d` that became
-    // `%1$s` only shows up on a device, in the language you don't run.
+    // Resources have no compiler: an untranslated key, or a `%1$d` that became
+    // `%1$s`, otherwise shows up on a device, in the language you don't run.
     lint {
         error += listOf(
             "MissingTranslation",
@@ -133,9 +124,8 @@ dependencies {
     // Latin model bundled: OCR works offline from first launch.
     implementation(libs.mlkit.text.recognition)
 
-    // JVM only, no Robolectric — these tests cover pure text-building functions.
     // The -junit artifact, not plain kotlin-test: `kotlin.test.Test` is a
-    // typealias that only resolves once a framework binding is on the classpath.
+    // typealias that resolves only with a framework binding on the classpath.
     testImplementation(libs.kotlin.test.junit)
     testImplementation(libs.junit)
 }

@@ -49,12 +49,8 @@ import io.github.lucasshuan.vocabu.ui.languages.displayName
 import io.github.lucasshuan.vocabu.ui.languages.languageOf
 
 /**
- * "Words", all three languages together.
- *
- * The levels stay just below the search, where they have always been. What
- * changed is the language: it stopped being one more pill in the same row and
- * became a group header. Two filter rows on one screen would teach that language
- * and level are the same kind of choice, and they are not — level is a slice,
+ * Language is a header, not a second row of pills: two filter rows would teach
+ * that language and level are the same kind of choice. Level is a slice,
  * language is a division.
  */
 @Composable
@@ -118,9 +114,7 @@ fun WordsScreen(
             }
         }
 
-        // A search with no results shows only the empty state: repeating three
-        // headers with nothing under them would turn the answer into a list of
-        // noes.
+        // Three headers with nothing under them turn one answer into a list of noes.
         val withGroups = state.matches > 0
 
         state.groups.forEach { group ->
@@ -143,10 +137,8 @@ fun WordsScreen(
 }
 
 /**
- * A language header: flag, name, what is inside, and the chevron.
- *
- * The chevron rotates rather than swapping icon — it is the same element changing
- * state, and 90° says where the list went without anyone comparing two drawings.
+ * The chevron rotates rather than swapping icon: one element changing state, and
+ * 90° says where the list went without comparing two drawings.
  */
 @Composable
 private fun LanguageHeader(

@@ -31,20 +31,14 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * The state of the three progress screens.
- *
- * One ViewModel for all three because they read the same thing in different
- * slices: the week and the quota appear in two, the word stock in two.
- * Independent states would make the numbers flicker while each redid its counts.
+ * One ViewModel for all three progress screens: they read the same thing in
+ * different slices, and separate states would flicker while each redid its counts.
  */
 data class ProgressState(
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
     /**
-     * Today's week, empty, while the database has not answered.
-     *
-     * It is the same drawing as a course with no words, which is why it can be
-     * the initial state: the dashed skeleton appears in the right place and
-     * fills in, rather than showing "0 of 10" for two frames.
+     * Today's week, empty — the same drawing as a course with no words, so the
+     * skeleton fills in instead of showing "0 of 10" for two frames.
      */
     val week: List<ProgressDay> = weekOf(LocalDate.now(), emptyList()),
     val month: LocalDate = LocalDate.now(),
@@ -55,7 +49,7 @@ data class ProgressState(
 ) {
     val total: Int get() = words.size
 
-    /** Counted by step: the number that does not change on its own overnight. */
+    /** By step: the number that does not change on its own overnight. */
     val byLevel: Map<MemoryLevel, List<Entry>>
         get() = words.groupBy { Steps.level(it.step) }
 
@@ -71,7 +65,6 @@ data class ProgressState(
         }
 }
 
-/** One day of the week strip, with its number and reviews already resolved. */
 data class ProgressDay(
     val date: LocalDate,
     val reviews: Int,
@@ -80,12 +73,9 @@ data class ProgressDay(
 )
 
 /**
- * The progress of **one** course, not necessarily the open one.
- *
- * The screen opens from a Profile row, and Profile lists all three languages.
- * Changing the open course just to look at French would move Home's page and the
- * `+`'s destination — an effect nobody asked for by tapping a row. So the course
- * enters through [open] and becomes a named [Scope.Course].
+ * One course, not necessarily the open one: the screen opens from a Profile row,
+ * and switching the open course to look at French would move Home's page and the
+ * `+`'s destination. The course enters through [open] as a named [Scope.Course].
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProgressViewModel(app: Application) : AndroidViewModel(app) {
@@ -100,7 +90,7 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val state: StateFlow<ProgressState> = scope.flatMapLatest { crop ->
-        /** In two stages: `combine` only has a typed overload up to five flows. */
+        // In two stages: `combine` is only typed up to five flows.
         val weekAndQuota = combine(
             repository.observeReviewSummary(crop),
             repository.observeActivity(84),
@@ -109,9 +99,8 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
             ProgressState(
                 week = weekOf(today, activity),
                 month = today,
-                // The streak counts activity in any language; the quota belongs
-                // to the course. Different questions: habit is the person's, load
-                // is the subject's.
+                // The streak counts any language, the quota one course: habit is
+                // the person's, load is the subject's.
                 dayStreak = review.dayStreak,
                 quota = review.quota,
             )
@@ -129,37 +118,30 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
                 events = events,
             )
         }
-            // Switching course clears the screen before the database answers.
-            //
-            // Without this, picking Spanish in the drawer would leave English's
-            // numbers under the Spanish flag for the length of a query — and
-            // "Today's quota in Spanish" over English's "6 of 10" is a wrong
-            // sentence, not a late one. The skeleton is the only honest state
-            // while the answer is in flight.
+            // Clears on switch: otherwise English's numbers sit under the Spanish
+            // flag for the length of a query, which is a wrong sentence rather
+            // than a late one.
             .onStart { emit(ProgressState(languagePair = pairOf(crop, preferences.languagePair))) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProgressState())
 
-    /** The slice's course, with the reader's native language. */
     private fun pairOf(crop: Scope, activePair: LanguagePair) = LanguagePair(
         native = activePair.native,
         target = (crop as? Scope.Course)?.target ?: activePair.target,
     )
 
     /**
-     * Changes the course being **looked at**, not the open one.
-     *
-     * This is what the flag drawer does, and the same door the route enters
-     * through: it reloads both cards without touching Home's page or the `+`.
+     * The course being looked at, not the open one — what the flag drawer does,
+     * and the door the route enters through.
      */
     fun open(target: String?) {
         course.value = target?.takeIf { it.isNotBlank() }
     }
 
-    /** The drawer's courses: everyone enrolled, including those with no cards. */
+    /** Everyone enrolled, cards or not. */
     val courses: StateFlow<List<CourseSummary>> = enrolledCourses(repository, preferences)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    /** How many courses exist — removing the last would leave the app pageless. */
+    /** Removing the last course would leave the app pageless. */
     val canRemove: StateFlow<Boolean> = preferences.observeCourses()
         .map { it.size > 1 }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
@@ -167,12 +149,7 @@ class ProgressViewModel(app: Application) : AndroidViewModel(app) {
     fun removeCourse(target: String) = preferences.unenroll(target)
 }
 
-/**
- * The current week, Monday to Sunday.
- *
- * Monday first is a deliberate design choice, not a locale artifact: a study
- * streak is a work week.
- */
+/** Monday first by choice, not by locale: a study streak is a work week. */
 internal fun weekOf(today: LocalDate, activity: List<DailyActivity>): List<ProgressDay> {
     val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
     val byDay = activity.associate { it.day to it.reviews }
@@ -188,27 +165,21 @@ internal fun weekOf(today: LocalDate, activity: List<DailyActivity>): List<Progr
 }
 
 /**
- * The gap between the Julian day the database stores and `java.time`'s epoch day.
- *
- * The database resolves the local day in SQL (`julianday(...) + 0.5`) so the turn
- * of the day follows the device's timezone without common Kotlin needing a date
- * library. Readers convert once here instead of spreading the addition around.
+ * The database resolves the local day in SQL (`julianday(...) + 0.5`), so the
+ * turn of the day follows the device's timezone without common Kotlin needing a
+ * date library. The offset to `java.time`'s epoch day is applied here only.
  */
 private const val JULIAN_DAY_OF_EPOCH = 2_440_588L
 
 /**
- * Month and weekday names come from `java.time` with the interface locale passed
- * in explicitly, resolved in the composable rather than here.
- *
- * They used to be hand-written lists, to avoid depending on the device's ICU
- * data. A written list cannot follow a language setting, which is the whole
- * point now that there is one — and `Locale.getDefault()` would not follow it
- * either, since the in-app picker can differ from the device.
+ * The locale is passed in, resolved in the composable: `Locale.getDefault()`
+ * follows the device, which the in-app picker can differ from. Hand-written name
+ * lists, the earlier approach, cannot follow a language setting at all.
  */
 internal fun monthName(date: LocalDate, locale: Locale): String =
     date.month.getDisplayName(TextStyle.FULL, locale)
 
-/** The header wants it capitalised; pt-BR returns "março" where en returns "March". */
+/** pt-BR returns "março" where en returns "March"; the header wants both capitalised. */
 internal fun monthNameCapitalised(date: LocalDate, locale: Locale): String =
     monthName(date, locale).replaceFirstChar { it.titlecase(locale) }
 

@@ -59,14 +59,11 @@ import io.github.lucasshuan.vocabu.ui.languages.languageOf
 import kotlinx.coroutines.delay
 
 /**
- * "Saved".
+ * The highlighted action is capture again, not leave: two things saved from one
+ * snippet usually means a third.
  *
- * The highlighted action is **capture again**, not leave: whoever just saved two
- * things from one snippet usually has a third, and the cost of the next capture
- * is the whole app's subject.
- *
- * It closes itself once nothing is happening. While a card is still being built
- * it stays — promising to show the work and then vanishing with it would be odd.
+ * Closes itself once nothing is happening, and only then — promising to show the
+ * work and vanishing with it would be odd.
  */
 @Composable
 fun SavedScreen(
@@ -98,9 +95,8 @@ fun SavedScreen(
             modifier = Modifier.fillMaxWidth().padding(top = 34.dp),
         ) {
             ConfirmBadge()
-            // The count comes from the route rather than the database: it is
-            // known on the first frame, and a "0 saved" flashing before the query
-            // would contradict the one screen that exists to confirm.
+            // From the route, not the database: known on the first frame, where
+            // a flashed "0 saved" would contradict the screen's whole purpose.
             Text(
                 text = pluralStringResource(R.plurals.saved_count, ids.size, ids.size),
                 style = MaterialTheme.typography.headlineMedium,
@@ -160,7 +156,7 @@ fun SavedScreen(
     }
 }
 
-/** The tick springs in: the app's only celebration, and it lasts 300 ms. */
+/** The app's only celebration, and it lasts 300ms. */
 @Composable
 private fun ConfirmBadge() {
     val colors = MaterialTheme.colorScheme
@@ -186,11 +182,8 @@ private fun ConfirmBadge() {
 }
 
 /**
- * One row of what just came in.
- *
- * The only screen whose content changes **on its own** while being watched: the
- * AI returns and "working out the sense" becomes the translation. Both halves of
- * the row crossfade rather than switching between frames.
+ * The only content in the app that changes while being watched — the AI returns
+ * and "working out the sense" becomes the translation. Both halves crossfade.
  */
 @Composable
 private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
@@ -240,8 +233,7 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
                     }
                 }
             }
-            // The ready badge springs in: it is the end of a wait, and the only
-            // thing on the row someone may be watching for.
+            // The end of a wait, and the only thing on the row worth watching for.
             AnimatedVisibility(
                 visible = isReady,
                 enter = scaleIn(Motion.elasticSpring()) + fadeIn(tween(Motion.DEFAULT)),
@@ -266,10 +258,8 @@ private fun SavedRow(entry: Entry, modifier: Modifier = Modifier) {
 }
 
 /**
- * The bar that moves without knowing how much is left.
- *
- * Generation has no measurable progress — it is a request that returns or does
- * not. A bar faking a percentage would be inventing one.
+ * Generation has no measurable progress — a request returns or it does not, and
+ * a percentage would be invented.
  */
 @Composable
 private fun IndeterminateBar() {
@@ -301,5 +291,5 @@ private fun ExitAction(text: String, modifier: Modifier = Modifier, onClick: () 
     }
 }
 
-/** Reading time for two short lines, and nothing beyond that. */
+/** Reading time for two short lines. */
 private const val AUTO_CLOSE_MS = 3_500L

@@ -14,13 +14,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 /**
- * What is left of the progress screens' text logic once the strings moved.
- *
- * The builders themselves are gone from here: they are resource lookups in
- * composition now, and asserting a resolved sentence fails on every copy edit
- * with nothing actually wrong. What stays is the logic that outlived them —
- * branch selection, locale handling, and the one place where copy and a
- * constant have to agree.
+ * The builders are resource lookups in composition now, and asserting a resolved
+ * sentence fails on every copy edit with nothing wrong. What stays is branch
+ * selection, locale handling, and the one place copy and a constant must agree.
  */
 class ProgressTextsTest {
 
@@ -29,24 +25,20 @@ class ProgressTextsTest {
     private val languagePair = LanguagePair(native = "pt-BR", target = "en")
 
     /**
-     * progress_ring_appears_after spells the count out in prose ("appears after
-     * four reviews") because Steps.TOTAL is a compile-time constant, not data.
-     * That leaves the copy and the constant free to drift apart, so this is what
-     * ties them: change the ladder and this fails, pointing at both strings.
+     * `progress_ring_appears_after` spells the count out in prose, so nothing
+     * ties it to `Steps.TOTAL` but this: change the ladder and it fails.
      */
     @Test
     fun `the empty-ring copy is written for a five-step ladder`() {
         assertEquals(5, Steps.TOTAL)
     }
 
-    // `whatsLeftText` is now a plurals lookup in composition. Its count-to-form
-    // mapping belongs to CLDR and its two keys are covered by MissingTranslation
-    // and ImpliedQuantity, so there is nothing left here worth asserting.
+    // `whatsLeftText` is a plurals lookup: its count-to-form mapping is CLDR's,
+    // and its keys are covered by MissingTranslation and ImpliedQuantity.
 
     /**
-     * Asserts the locale is honoured, not the exact wording: the strings come
-     * from the JDK's own data, and pinning "março" here would make a JDK upgrade
-     * look like a bug in this app.
+     * The locale, not the wording: the names come from the JDK's own data, and
+     * pinning "março" would make a JDK upgrade look like a bug here.
      */
     @Test
     fun `month names follow the locale they are given`() {
@@ -74,8 +66,8 @@ class ProgressTextsTest {
         assertNotEquals(english, weekdayLabels(PT_BR))
     }
 
-    // The timeline row now picks a branch here and a resource in composition.
-    // These cover the branch choice, which is the part with logic in it.
+    // The timeline row picks a branch here and a resource in composition; the
+    // branch is the part with logic in it.
 
     @Test
     fun `an unparsable review number is treated as absent`() {

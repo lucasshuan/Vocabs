@@ -44,16 +44,12 @@ import io.github.lucasshuan.vocabu.ui.components.cardOutline
 import io.github.lucasshuan.vocabu.ui.components.rememberHaptics
 
 /**
- * What takes the place of a card that was dragged away.
+ * The other half of the delete gesture: dragging is fast, and fast makes
+ * mistakes. Without it a distracted swipe erases an audio recorded in the street
+ * and the file with it, unasked.
  *
- * The indispensable half of the delete gesture. Dragging is fast, and fast makes
- * mistakes: without this strip a distracted swipe would erase an audio recorded
- * in the street, and the file with it, without anything having asked. With it,
- * the gesture still costs one movement and the price of being wrong is one tap.
- *
- * It names what disappeared ("Audio · 0:12", the pasted snippet, the card title).
- * A strip saying only "1 item deleted" would force an undo out of caution just to
- * find out what it was.
+ * Names what disappeared — "1 item deleted" would force an undo out of caution
+ * just to find out what it was.
  */
 @Composable
 fun UndoStrip(
@@ -61,8 +57,7 @@ fun UndoStrip(
     onUndo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // The last non-null content stays drawn while the card descends: without it
-    // the strip would leave empty on the first frame of the exit.
+    // Kept while the card descends, or the strip leaves empty on the first frame.
     var last by remember { mutableStateOf<PendingDeletion?>(null) }
     LaunchedEffect(deletion) { if (deletion != null) last = deletion }
 
@@ -70,10 +65,9 @@ fun UndoStrip(
     LaunchedEffect(deletion?.key) {
         if (deletion == null) return@LaunchedEffect
         remaining.snapTo(1f)
+        // The bar only draws time passing; the ViewModel erases at the end of the
+        // same window. Two clocks would drift apart.
         remaining.animateTo(0f, tween(VISIBLE_WINDOW_MS, easing = LinearEasing))
-        // The ViewModel is what actually erases, at the end of the same window.
-        // The bar only draws the time passing: two clocks competing would make
-        // the strip disappear before or after the deletion happened.
     }
 
     AnimatedVisibility(
@@ -90,10 +84,7 @@ fun UndoStrip(
     }
 }
 
-/**
- * The same 5 s as the ViewModel's window, written here because whoever draws the
- * clock does not decide the time — it only shows it.
- */
+/** The ViewModel's window; whoever draws the clock does not decide the time. */
 private const val VISIBLE_WINDOW_MS = 5_000
 
 @Composable

@@ -40,11 +40,9 @@ sqldelight {
         create("VocabsDatabase") {
             packageName.set("io.github.lucasshuan.vocabu.shared.db")
 
-            // The committed snapshot is what the next migration gets checked
-            // against. Verification replays the .sqm chain from empty and
-            // compares, so every migration from here has to be self-contained —
-            // the old chain was not, which is why it was replaced rather than
-            // extended.
+            // Verification replays the .sqm chain from empty against the
+            // committed snapshot, so every migration from here has to be
+            // self-contained. The old chain was not, which is why it went.
             schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
             verifyMigrations.set(true)
         }

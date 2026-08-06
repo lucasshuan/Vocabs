@@ -52,19 +52,16 @@ import io.github.lucasshuan.vocabu.ui.theme.LocalDarkTheme
 
 
 /**
- * Null in dark on purpose: in light the surface is white on a near-white
- * background and needs the line; in dark it is already lighter than the
- * background and the line would only dirty the edge.
+ * Null in dark: there the surface is already lighter than the background, and
+ * the line only dirties the edge. In light it is white on near-white.
  */
 @Composable
 fun cardOutline(): BorderStroke? =
     if (LocalDarkTheme.current) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
 
 /**
- * "Something else fits here": the box exists, the content does not yet. A solid
- * outline would say "this is a card".
- *
- * Hand-drawn because `BorderStroke` does not accept a `PathEffect`.
+ * "Something else fits here" — a solid outline would say "this is a card".
+ * Hand-drawn: `BorderStroke` does not accept a `PathEffect`.
  */
 fun Modifier.dashedOutline(
     color: Color,
@@ -108,9 +105,8 @@ fun DashedBox(
 }
 
 /**
- * When clickable it gives under the finger. The shrink lives here rather than at
- * each call because it only survives if it is free: there are dozens of clickable
- * cards, and no screen would remember to ask for it one at a time.
+ * The shrink lives here, not at each call: dozens of clickable cards, and no
+ * screen would remember to ask for it one at a time.
  */
 @Composable
 fun ScreenCard(
@@ -142,8 +138,8 @@ fun ScreenCard(
 }
 
 /**
- * Normal case at 12 sp: the spaced small-caps of the older design competed in
- * weight with the content it was announcing.
+ * Normal case: the older design's spaced small-caps competed in weight with the
+ * content they announced.
  */
 @Composable
 fun SectionLabel(text: String, modifier: Modifier = Modifier) {
@@ -169,10 +165,9 @@ fun MetricCard(
         filling = PaddingValues(horizontal = 14.dp, vertical = 13.dp),
         onClick = onClick,
     ) {
-        // Deliberately no transition on the number. The tile takes an already
-        // formatted `String`, and a caller wanting it to count up passes the
-        // result of `animatedCount`. An `AnimatedContent` here would fire one
-        // transition per frame in exactly that case.
+        // No transition: the value arrives formatted, and a caller wanting it to
+        // count up passes `animatedCount` — where an `AnimatedContent` here
+        // would fire one transition per frame.
         Text(
             text = value,
             style = MaterialTheme.typography.headlineMedium,
@@ -272,8 +267,7 @@ fun PrimaryButton(
     initialContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val touch = rememberHaptics()
-    // Less than the cards (0.97): this button spans the screen, and the same
-    // ratio on a target that size reads as a jolt rather than a touch.
+    // Less than the cards' 0.97: at full width that ratio reads as a jolt.
     Button(
         onClick = onClick,
         enabled = enabled,
@@ -297,8 +291,8 @@ fun SelectablePill(
 ) {
     val colors = MaterialTheme.colorScheme
     val touch = rememberHaptics()
-    // The colors transition rather than cutting: in a row of filters a hard cut
-    // makes two pills blink at once, and neither says where the selection went.
+    // A hard cut makes two pills in a filter row blink at once, and neither says
+    // where the selection went.
     val background by animateColorAsState(
         targetValue = if (isSelected) colors.primary else colors.surface,
         animationSpec = tween(Motion.FAST),
@@ -361,9 +355,8 @@ fun Pill(
 }
 
 /**
- * An empty screen is the one place with no content to hold the eye, and arriving
- * fully assembled makes "Memory up to date" look like a loading failure instead
- * of the good outcome it is.
+ * Enters in pieces: an empty screen has no content to hold the eye, and arriving
+ * fully assembled makes "Memory up to date" look like a loading failure.
  */
 @Composable
 fun EmptyState(

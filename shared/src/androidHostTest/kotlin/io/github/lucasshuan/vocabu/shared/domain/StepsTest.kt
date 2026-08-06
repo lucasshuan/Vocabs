@@ -42,15 +42,14 @@ class StepsTest {
         repeat(3) { retention = retention.after(correct = true, now = now) }
         assertEquals(4, Steps.of(retention))
 
-        // A month idle zeroes memory strength, but the step is what was already
-        // done — it does not walk backwards on its own.
+        // A month idle zeroes the points; the step does not walk backwards.
         val oneMonth = now + 30L * 86_400_000L
         assertEquals(0.0, retention.pointsAt(oneMonth))
         assertEquals(4, Steps.of(retention))
 
-        // One miss undoes 2.7 hits (MISS_MULTIPLIER = 3 against HIT_DIVISOR =
-        // 1.5), so a word on the fourth step returns to the first. The ladder
-        // inherits the retention model's severity rather than having its own.
+        // One miss undoes 2.7 hits (MISS_MULTIPLIER 3 against HIT_DIVISOR 1.5),
+        // so the fourth step returns to the first: the ladder inherits the
+        // retention model's severity rather than having its own.
         retention = retention.after(correct = false, now = oneMonth)
         assertEquals(1, Steps.of(retention))
     }

@@ -75,9 +75,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private object Routes {
-    // The argument names are shared by the route pattern and the read that
-    // follows it. Spelled out twice they are two string literals nothing checks:
-    // change one and the read returns null at runtime.
+    // Shared by the route pattern and the read that follows it. Spelled out
+    // twice, changing one makes the read return null at runtime.
     const val ARG_ID = "id"
     const val ARG_IDS = "ids"
     const val ARG_TARGET = "target"
@@ -91,9 +90,8 @@ private object Routes {
     const val SELECT = "select/{$ARG_ID}"
     const val SAVED = "saved/{$ARG_IDS}"
 
-    // Inner pages open over a tab. The bar stays visible and keeps marking the tab
-    // they came from, which is what makes "Your progress" feel like part of
-    // Profile rather than a new place.
+    // Open over a tab: the bar stays visible and keeps marking the tab they came
+    // from, so "Your progress" reads as part of Profile.
     const val PROGRESS = "progress/{$ARG_TARGET}"
     const val DAY_BY_DAY = "day-by-day/{$ARG_TARGET}"
     const val WHATS_LEFT = "whats-left/{$ARG_TARGET}"
@@ -131,9 +129,8 @@ fun VocabsApp() {
     val route = stack?.destination?.route
     val scope = rememberCoroutineScope()
 
-    // The same instance the Pending screen uses: the tab badge and the list have
-    // to agree on what was already swiped away, and this ViewModel holds the
-    // suspended deletion.
+    // The same instance Pending uses: it holds the suspended deletion, and the
+    // badge and the list have to agree on what was already swiped away.
     val pendingVm: PendingViewModel = viewModel()
     val captureVm: CaptureViewModel = viewModel()
     val pendingTotal by pendingVm.total.collectAsStateWithLifecycle()
@@ -143,16 +140,13 @@ fun VocabsApp() {
     val barVisible = route !in Routes.fullScreen
     val currentTab = Routes.tabFor(route)
 
-    // State, not a navigation destination: it has to open over any tab without
-    // pushing onto the stack, and system back must close it.
+    // State, not a destination: it opens over any tab without pushing onto the
+    // stack, and system back must close it.
     var drawerOpen by remember { mutableStateOf(false) }
     val drawerState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    /**
-     * Captures in a row **replace** the previous notice and restart the 5 s rather
-     * than stacking cards: three captures in a row want the button free for the
-     * fourth, not three confirmations.
-     */
+    // One at a time, replaced rather than stacked: three captures in a row want
+    // the button free for the fourth, not three confirmations.
     var notice by remember { mutableStateOf<Notice?>(null) }
 
     val recording = rememberQuickCapture(
@@ -161,8 +155,7 @@ fun VocabsApp() {
             val key = System.nanoTime()
             notice = Notice.Saved(key, format, durationMs, captureTarget)
             captureVm.saveMedia(format, path, durationMs, captureTarget) { id ->
-                // The id arrives from the database a few milliseconds later, and
-                // only enters the card if that card is still the same one.
+                // The id lands a few millis later, and only on the same card.
                 val current = notice
                 if (current is Notice.Saved && current.key == key) notice = current.copy(captureId = id)
             }
@@ -174,9 +167,8 @@ fun VocabsApp() {
         scope.launch { drawerState.hide() }.invokeOnCompletion { drawerOpen = false }
     }
 
-    // The `graphicsLayer` only joins the chain while the gesture lasts: a
-    // composition layer over the whole `NavHost` is cheap to hold for two seconds
-    // and expensive to hold forever.
+    // The `graphicsLayer` joins the chain only for the gesture: a composition
+    // layer over the whole `NavHost` is cheap for two seconds, not forever.
     var inGesture by remember { mutableStateOf(false) }
     var blurring by remember { mutableStateOf(false) }
     LaunchedEffect(inGesture) {
@@ -199,9 +191,8 @@ fun VocabsApp() {
             startDestination = Routes.HOME,
             modifier = Modifier
                 .fillMaxSize()
-                // While the hub owns the screen, what is behind leaves the screen
-                // reader's reach: the content stays composed under the fan and
-                // the recording.
+                // The content stays composed under the fan and the recording, so
+                // while the hub owns the screen it leaves the reader's reach.
                 .then(if (inGesture) Modifier.clearAndSetSemantics {} else Modifier)
                 .then(
                     if (blurring && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -213,9 +204,8 @@ fun VocabsApp() {
                         Modifier
                     },
                 ),
-            // A pure crossfade between four screens that share a background and a
-            // bottom bar does not read as a switch — it reads as the content
-            // being repainted in place, so the new screen arrives at 98%.
+            // Four screens sharing a background and a bar make a pure crossfade
+            // read as repainting in place, so the new one arrives at 98%.
             enterTransition = { fadeIn(tween(Motion.DEFAULT)) + scaleIn(tween(Motion.DEFAULT), initialScale = 0.98f) },
             exitTransition = { fadeOut(tween(Motion.FAST)) },
         ) {
@@ -246,9 +236,8 @@ fun VocabsApp() {
             }
             composable(Routes.PROGRESS, arguments = listOf(navArgument(Routes.ARG_TARGET) { type = NavType.StringType })) { entry ->
                 ProgressScreen(
-                    // The route's target is only how the screen was entered: the
-                    // flag drawer changes the course being looked at without
-                    // leaving the destination.
+                    // Only how the screen was entered: the flag drawer changes
+                    // the course looked at without leaving the destination.
                     target = entry.arguments?.getString(Routes.ARG_TARGET),
                     onBack = { nav.popBackStack() },
                     onOpenDayByDay = { nav.navigate(Routes.dayByDay(it)) },
@@ -303,8 +292,8 @@ fun VocabsApp() {
                     id = entry.arguments?.getLong(Routes.ARG_ID) ?: 0,
                     onBack = { nav.popBackStack() },
                     onSave = { ids ->
-                        // The selection leaves the stack too: back from the
-                        // confirmation should lead where the capture started.
+                        // Selection leaves the stack too: back from the
+                        // confirmation leads where the capture started.
                         nav.navigate(Routes.saved(ids)) {
                             popUpTo(Routes.SELECT) { inclusive = true }
                         }
@@ -336,8 +325,8 @@ fun VocabsApp() {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             NoticeStrip(
-                // Gone along with the bar: on the full screens the footer already
-                // has a primary action, and the card would land on top of it.
+                // Goes with the bar: the full screens' footers already carry a
+                // primary action, and the card would land on top of it.
                 notice = notice.takeIf { barVisible },
                 onSelect = { id ->
                     notice = null
@@ -347,9 +336,8 @@ fun VocabsApp() {
                 modifier = Modifier.padding(horizontal = 14.dp).padding(bottom = 8.dp),
             )
 
-            // Undo lives here rather than inside Pending: against the bar it does
-            // not fight the capture notice for space, and switching tabs does not
-            // take the second chance away from someone who just swiped by accident.
+            // Here, not inside Pending: switching tabs would otherwise take the
+            // second chance away from someone who just swiped by accident.
             UndoStrip(
                 deletion = pendingDeletion.takeIf { barVisible },
                 onUndo = pendingVm::undo,
@@ -369,10 +357,8 @@ fun VocabsApp() {
             }
         }
 
-        // The hub fills the screen and draws over everything, but intercepts no
-        // touch beyond its own `+`. It slides by the bar's height rather than the
-        // screen's: the only visible part outside a gesture is the `+`, which has
-        // to travel with the bar it is docked to.
+        // Slides by the bar's height, not the screen's: outside a gesture the
+        // only visible part is the `+`, docked to the bar it travels with.
         val barStep = with(LocalDensity.current) { BAR_HEIGHT.roundToPx() }
         AnimatedVisibility(
             visible = barVisible,
@@ -407,9 +393,8 @@ fun VocabsApp() {
 }
 
 /**
- * The entrance is deliberately longer than the exit, and it is that way
- * throughout the app: opening a screen means staying, and there is time to watch
- * it arrive; closing means the decision is made.
+ * Entrances outlast exits, here and everywhere: opening means staying, and
+ * whoever closes has already decided to leave.
  */
 private fun up() =
     slideInVertically(tween(Motion.DEFAULT, easing = FastOutSlowInEasing)) { it / 5 } + fadeIn(tween(Motion.DEFAULT))

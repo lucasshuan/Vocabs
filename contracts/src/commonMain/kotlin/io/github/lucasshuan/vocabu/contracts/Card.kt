@@ -4,9 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * The language pair travels with the request rather than being server
- * configuration: it belongs to the entry. A server that knew the pair on its
- * own would rewrite a German card in English the day someone switched courses.
+ * The pair travels with the request instead of being server configuration: a
+ * server holding its own pair would rewrite a German card in English the day
+ * someone switched language.
  *
  * [nativeLanguage] and [targetLanguage] are [Languages] codes, not names.
  */
@@ -25,11 +25,7 @@ data class CardResponse(
     val translation: String,
     val definitions: List<String>,
     val example: String,
-    /**
-     * Not named `ipa`: IPA is not what someone learning Mandarin wants to read,
-     * where the answer is pinyin. The notation each language asks for lives in
-     * `TargetLanguageSpec`, on the server.
-     */
+    /** Not `ipa`: Mandarin wants pinyin. Notation per language: `TargetLanguageSpec`. */
     val pronunciation: String,
     val related: List<String> = emptyList(),
 )
@@ -45,9 +41,8 @@ enum class TargetType {
 }
 
 /**
- * A code rather than a sentence, so the failure is worded in the reader's
- * language and not the server's. [detail] is what cannot be translated — the
- * AI provider's own text, for diagnosis.
+ * A code, not a sentence: the app owns the wording. [detail] is the provider's
+ * own untranslated text, the only diagnostic there is.
  */
 @Serializable
 data class ErrorResponse(
@@ -56,9 +51,9 @@ data class ErrorResponse(
 )
 
 /**
- * Sent as a `String`, not as this enum: kotlinx.serialization rejects an enum
- * value it does not know, so a newer server adding a code would break decoding
- * on an older client. [of] falls back instead.
+ * Sent as a `String`, not as this enum: kotlinx.serialization throws on an
+ * unknown enum value, so a newer server's code would break older clients.
+ * [of] falls back instead.
  */
 enum class ErrorCode {
     UNKNOWN_LANGUAGE_PAIR,

@@ -4,32 +4,23 @@ import io.github.lucasshuan.vocabu.contracts.Language
 import io.github.lucasshuan.vocabu.contracts.Languages
 
 /**
- * What changes in the prompt when the target language changes.
+ * The only thing a target language changes in the prompt: the notation the
+ * pronunciation is written in. The name comes from the catalog, and the
+ * WORD/PHRASE call arrives decided from the device.
  *
- * Only one thing, and always the same: **which notation the pronunciation is
- * written in**. The contract's catalog already gives the language name, and the
- * word-versus-phrase classification was never the AI's — it arrives decided from
- * the device. The notation genuinely varies: IPA is not what someone learning
- * Mandarin wants to read, where the answer is pinyin.
- *
- * The **native** language needs none of this: it only says which language to
- * write the translation and definitions in, and the name is enough for that.
+ * The native language needs no spec — it only names the language translations
+ * are written in.
  */
 data class TargetLanguageSpec(
     val language: Language,
-    /** How to fill the card's `pronunciation` field. */
     val pronunciationNotation: String,
 ) {
     val name: String get() = language.englishName
 }
 
 /**
- * The pair that defines a card: which language it is read in, and which it
- * teaches.
- *
- * It comes from the request rather than from server configuration, because the
- * pair belongs to the entry: a German card regenerated after switching courses
- * has to come back in German.
+ * From the request, never from server configuration: a German card regenerated
+ * after a language switch has to come back in German.
  */
 data class LanguagePairSpec(
     val native: Language,
@@ -42,12 +33,8 @@ data class LanguagePairSpec(
         )
 
         /**
-         * Null when one of the two codes does not exist, and the request is then
-         * refused.
-         *
-         * Falling back to the default would be worse than an error: the person
-         * would get an English card for a German word and only find out by
-         * reading it. A 400 says what happened.
+         * Null on an unknown code, refused upstream. Falling back to the default
+         * would answer a German word with an English card, discovered by reading it.
          */
         fun of(nativeCode: String, targetCode: String): LanguagePairSpec? {
             val native = Languages.of(nativeCode) ?: return null

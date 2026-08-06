@@ -130,13 +130,9 @@ class VocabRepositoryImplTest {
     }
 
     /**
-     * Switching the language you speak must not look like losing your cards.
-     *
-     * Everything used to be matched on the whole pair, so the moment the native
-     * side changed, no stored card matched the current course any more: the
-     * totals read zero and the lists came back empty, which reads as deletion.
-     * A course is the language it teaches; the native language belongs to the
-     * card that was generated in it.
+     * Matching on the whole pair meant that the moment the native side changed,
+     * no stored card matched: totals read zero and lists came back empty, which
+     * reads as deletion.
      */
     @Test
     fun `switching the native language keeps the course, its cards and its counts`() = runBlocking {
@@ -156,10 +152,9 @@ class VocabRepositoryImplTest {
         val after = repo.observeCourses().first().single()
         assertEquals("en", after.target)
         assertEquals(1, after.total)
-        // Scope.ActiveCourse reads through the same rule; this is the list the
-        // Today, Words and review screens are built from.
+        // Scope.ActiveCourse reads through the same rule.
         assertEquals(listOf("fence"), repo.observeReady().first().map { it.target })
-        // The card itself still records the pair it was born in.
+        // The card still records the pair it was born in.
         assertEquals("pt-BR", repo.observeReady().first().single().languagePair.native)
     }
 

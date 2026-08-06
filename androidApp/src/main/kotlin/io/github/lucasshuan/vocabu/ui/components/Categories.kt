@@ -13,15 +13,11 @@ import io.github.lucasshuan.vocabu.ui.theme.LocalDarkTheme
 import io.github.lucasshuan.vocabu.ui.theme.VocabuColors
 
 /**
- * One color per capture type, and the same three everywhere.
+ * One source rather than a `when` per screen: the association forms on the `+`
+ * sheet, where all three sit side by side, and is spent in Pending, where the
+ * disc is the only thing saying where a capture came from.
  *
- * Text is plum, audio is mint, photo is the parrot red. The association forms on
- * the `+` sheet, where all three appear side by side, and is collected in
- * Pending, where the disc at the left of each row is the only thing saying where
- * that capture came from. It only works if both screens use the same source,
- * which is why this file exists instead of a `when` per screen.
- *
- * The red is **not** `error`: a photo in the queue is not a broken photo.
+ * The red is not `error` — a photo in the queue is not a broken photo.
  */
 data class CategoryColors(val color: Color, val background: Color)
 
@@ -47,9 +43,8 @@ fun formatIcon(format: CaptureFormat): ImageVector = when (format) {
 }
 
 /**
- * Each format's name. There is no separate enum for the tabs: they **are** the
- * formats, and a second enum with the same three names would only create the
- * chance of one gaining a case the other lacks.
+ * No separate enum for the tabs: they are the formats, and a second one with the
+ * same three names is only a chance for one to gain a case the other lacks.
  */
 @Composable
 fun formatLabel(format: CaptureFormat): String = stringResource(
@@ -60,7 +55,6 @@ fun formatLabel(format: CaptureFormat): String = stringResource(
     }
 )
 
-/** The category disc, with the right colors — the start of every Pending row. */
 @Composable
 fun CategoryDisc(format: CaptureFormat, size: Dp = 38.dp) {
     val palette = formatColors(format)

@@ -17,11 +17,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * The selection screen: marking what caught the eye in an already-saved capture.
- *
- * The duplicate is looked for **in the target language**, not across the whole
- * collection: "carne" existing in Spanish is no reason to warn someone saving
- * "carne" in Italian. That is why the searched target carries its course.
+ * Duplicates are looked for in the target language, not the whole collection:
+ * "carne" in Spanish is no reason to warn someone saving "carne" in Italian.
  */
 class SelectViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
@@ -39,7 +36,6 @@ class SelectViewModel(app: Application) : AndroidViewModel(app) {
         duplicateOfTarget(query.text, (readyEntries + inbox).filter { it.languagePair.target == query.target })
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** The languages it can be saved to — the header picker's list. */
     val courses: StateFlow<List<String>> = preferences.observeCourses()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -56,9 +52,8 @@ class SelectViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * Confirms and returns the created ids, which the confirmation screen follows
-     * while the AI works. Generation continues in the app's scope: the navigation
-     * happens before the first card is ready.
+     * Generation continues in the app's scope: the navigation to the
+     * confirmation screen happens before the first card is ready.
      */
     fun save(id: Long, snippet: String, targets: List<SelectedTarget>, onReady: (List<Long>) -> Unit) {
         viewModelScope.launch {

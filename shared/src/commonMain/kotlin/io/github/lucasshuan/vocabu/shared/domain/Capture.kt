@@ -2,7 +2,7 @@ package io.github.lucasshuan.vocabu.shared.domain
 
 import io.github.lucasshuan.vocabu.contracts.TargetType
 
-/** The raw context one or several cards can be born from. */
+/** The raw context one or several entries are born from. */
 data class Capture(
     val id: Long,
     val snippet: String?,
@@ -13,7 +13,7 @@ data class Capture(
     val mediaPath: String?,
     val durationMs: Long?,
     val transcriptionError: String?,
-/** The course it was born in. A snippet is in one language only. */
+    /** On the capture, not the entries: a snippet is in one language only. */
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
 ) {
     val awaitingSelection: Boolean get() = status == CaptureStatus.AWAITING_SELECTION

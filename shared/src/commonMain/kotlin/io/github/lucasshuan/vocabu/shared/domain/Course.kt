@@ -2,10 +2,7 @@ package io.github.lucasshuan.vocabu.shared.domain
 
 import io.github.lucasshuan.vocabu.contracts.Languages
 
-/**
- * Catalog codes rather than [Languages] objects: the pair is stored and compared
- * constantly, and a stable code survives the catalog renaming something.
- */
+/** Codes, not [Languages] objects: a code is what is stored, and survives a rename. */
 data class LanguagePair(
     val native: String,
     val target: String,
@@ -16,19 +13,13 @@ data class LanguagePair(
 }
 
 /**
- * [mastered] counts steps, not points: memory strength decays on its own, so
- * counting it would change the number every hour. What the strip should show is
- * how far someone climbed, and that does not drop while they sleep.
+ * [mastered] counts steps, not points: points decay, so the number would change
+ * every hour.
  */
 data class CourseSummary(
     /**
-     * A course is identified by the language it teaches, not by a pair.
-     *
-     * The native language belongs to each individual card — the one it was
-     * generated in — and changing it does not make the course a different
-     * course. Keying this by the whole pair meant that switching native
-     * language stopped matching every card already stored, and the totals read
-     * zero as if the collection had been erased.
+     * The target alone, never the pair. Keying this by the pair made switching
+     * native language stop matching every stored card, and the totals read zero.
      */
     val target: String,
     val total: Int,
@@ -46,9 +37,8 @@ data class CourseSummary(
 }
 
 /**
- * Three states, not four. [Empty] is a new course and differs from [UpToDate],
- * which is an achievement — writing a zero where the tick goes would turn the
- * strip's only good news into a scoreboard of nothing done.
+ * [Empty] is not [UpToDate]: a zero where the tick goes turns the strip's only
+ * good news into a scoreboard of nothing done.
  */
 sealed interface CourseBadge {
     data class Review(val count: Int) : CourseBadge
@@ -57,23 +47,16 @@ sealed interface CourseBadge {
 }
 
 /**
- * The five-step ladder behind the "What's left" screen.
+ * Not [MemoryLevel]: points decay, so a bar built on them walks backwards while
+ * someone sleeps. A step moves only on an answer.
  *
- * Deliberately not [MemoryLevel]: memory strength answers "how much do you
- * remember **now**" and so decays, while a step answers "how far did you get"
- * and only moves when a card is answered. A progress bar that walks backwards
- * while someone sleeps does not say what is left to do.
- *
- * The step is derived from the decay rate, which is already the hit history
- * compressed into one number — nothing extra is stored.
+ * Derived from the decay rate — already the hit history in one number, so
+ * nothing extra is stored.
  */
 object Steps {
     const val TOTAL = 5
 
-    /**
-     * Rate boundaries: 40, 26.7, 17.8, 11.9, 7.9 — each the previous divided by
-     * one hit, so climbing a step is literally answering right once more.
-     */
+    /** 40, 26.7, 17.8, 11.9, 7.9 — one hit apart, so a step is one right answer. */
     private val LIMITS: List<Double> = generateSequence(Retention.INITIAL_RATE) { it / Retention.HIT_DIVISOR }
         .take(TOTAL)
         .toList()
@@ -104,9 +87,9 @@ object Steps {
 }
 
 /**
- * [total] is not a chosen goal — it is what decay asked for today, done plus
- * still queued. A fixed goal would lie both ways: unreachable on the day thirty
- * words come due together, already met on a day with nothing to review.
+ * [total] is what decay asked for today, not a goal. A fixed goal lies both
+ * ways: unreachable when thirty words come due together, already met on an
+ * empty day.
  */
 data class DailyQuota(
     val done: Int,
@@ -117,10 +100,7 @@ data class DailyQuota(
     val fraction: Float get() = if (total == 0) 1f else (done.toFloat() / total).coerceIn(0f, 1f)
 }
 
-/**
- * Retention holds only the state of now; the timeline needs what happened.
- * Neither reconstructs the other.
- */
+/** Retention holds only now; neither it nor the timeline reconstructs the other. */
 data class Event(
     val id: Long,
     val entryId: Long,

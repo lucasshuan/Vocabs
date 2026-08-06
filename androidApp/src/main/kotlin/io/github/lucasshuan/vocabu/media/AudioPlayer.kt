@@ -11,10 +11,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 
-/** How often the needle is read from the player while playing. */
 private const val NEEDLE_INTERVAL = 60L
 
-/** Playback state for a voice memo, already tied to the screen's lifecycle. */
 class AudioState internal constructor(private val path: String) {
 
     private var player: MediaPlayer? = null
@@ -22,17 +20,17 @@ class AudioState internal constructor(private val path: String) {
     private var internalPosition by mutableLongStateOf(0L)
 
     /**
-     * The duration comes from the player and need not be observable state: it is
-     * written before [internalPlaying] turns `true`, and that is what recomposes.
+     * Not observable: written before [internalPlaying] turns `true`, which is
+     * what recomposes.
      */
     private var internalDuration = 0L
 
     val playing: Boolean get() = internalPlaying
 
-    /** How much has played, in ms. Resets on stop. */
+    /** Resets on stop. */
     val positionMs: Long get() = internalPosition
 
-    /** 0 to 1: where the needle is. What the wave uses to fill itself. */
+    /** 0 to 1 — what the wave fills itself from. */
     val progress: Float
         get() = if (internalDuration > 0L) (internalPosition.toFloat() / internalDuration).coerceIn(0f, 1f) else 0f
 
@@ -70,12 +68,9 @@ class AudioState internal constructor(private val path: String) {
     }
 
     /**
-     * Follows the needle while the audio runs.
-     *
-     * Sixteen reads a second rather than one per frame: the wave is drawn in 3 dp
-     * bars, so the needle only moves a slot every handful of frames. Asking
-     * `MediaPlayer` sixty times a second would pay the native crossing without
-     * moving one extra pixel.
+     * Sixteen reads a second, not one per frame: the wave's bars are 3dp, so the
+     * needle moves a slot every handful of frames, and asking `MediaPlayer` at
+     * 60Hz pays the native crossing for no extra pixel.
      */
     internal suspend fun follow() {
         while (internalPlaying) {
@@ -85,10 +80,7 @@ class AudioState internal constructor(private val path: String) {
     }
 }
 
-/**
- * The `DisposableEffect` is not a detail: without releasing the MediaPlayer on
- * leaving, the audio would keep playing over the next screen.
- */
+/** Without the `DisposableEffect` the audio plays on over the next screen. */
 @Composable
 fun rememberPlayer(path: String): AudioState {
     val state = remember(path) { AudioState(path) }

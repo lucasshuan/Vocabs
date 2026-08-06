@@ -4,11 +4,8 @@ import android.content.Context
 import java.io.File
 
 /**
- * Where captured photos and audio live.
- *
- * All inside `filesDir`: app-private storage, which needs no permission and goes
- * away with the app. Consistent with the product being local-first — none of it
- * appears in the phone's gallery.
+ * `filesDir`: app-private, no permission needed, and nothing reaches the phone's
+ * gallery.
  */
 object MediaFiles {
 

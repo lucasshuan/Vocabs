@@ -35,18 +35,18 @@ application {
     mainClass.set("io.github.lucasshuan.vocabu.server.ApplicationKt")
 }
 
-// Desde o Java 18, System.out/err usam stdout.encoding/stderr.encoding, que sao
-// independentes de file.encoding e caem na codificacao nativa do SO. No Windows
-// isso faz a JVM filha escrever em cp1252, o Gradle reler como UTF-8 e os acentos
-// virarem U+FFFD no caminho. As tres precisam estar alinhadas em UTF-8.
+// Since Java 18, System.out/err follow stdout.encoding/stderr.encoding, which
+// are independent of file.encoding and default to the OS encoding. On Windows
+// the child JVM then writes cp1252, Gradle reads UTF-8, and accents arrive as
+// U+FFFD. All three have to be aligned.
 tasks.withType<JavaExec>().configureEach {
     defaultCharacterEncoding = "UTF-8"
     jvmArgs("-Dstdout.encoding=UTF-8", "-Dstderr.encoding=UTF-8")
 
-    // Lets a parallel instance start without touching .env:
+    // A parallel instance without touching .env:
     //   .\gradlew.bat :server:run -PMODEL=claude-opus-5 -PPORT=8081
-    // Goes through a Gradle property rather than an environment variable because
-    // the daemon has its own environment — exporting in the shell would not reach here.
+    // A Gradle property, not an environment variable: the daemon has its own
+    // environment, so exporting in the shell would not reach here.
     listOf("MODEL", "PORT").forEach { key ->
         providers.gradleProperty(key).orNull?.let { environment(key, it) }
     }

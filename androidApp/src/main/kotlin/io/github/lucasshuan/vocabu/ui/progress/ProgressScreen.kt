@@ -76,15 +76,11 @@ import io.github.lucasshuan.vocabu.ui.languages.languageOf
 import kotlinx.coroutines.launch
 
 /**
- * "Your progress", for one course.
+ * With no words the two cards go dashed, labels in place and no invented
+ * numbers: "0 of 10" would say something had already been failed.
  *
- * With no words in the language the same two cards go dashed, labels in place and
- * no invented numbers: a skeleton shows where things will go, while a "0 of 10"
- * would say something had already been failed.
- *
- * The flag pill is both the course indicator and the switch. Switching here does
- * **not** change the app's open course — someone who only wanted to look at
- * French should not find the `+` in another language afterwards.
+ * The flag pill switches what is looked at, never the app's open course —
+ * someone who only wanted to see French should not find the `+` in it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +102,7 @@ fun ProgressScreen(
     var drawerOpen by remember { mutableStateOf(false) }
     val drawerState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    /** The course being looked at: the route's, the drawer's, or the open one. */
+    // The route's, the drawer's, or the open one.
     val viewed = state.languagePair.target
     val empty = state.total == 0
 
@@ -175,8 +171,8 @@ fun ProgressScreen(
 }
 
 /**
- * Week and quota together because they answer the same question over two spans.
- * Apart, the quota would look like a separate goal.
+ * Together: they answer the same question over two spans, and apart the quota
+ * would look like a separate goal.
  */
 @Composable
 private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
@@ -230,8 +226,7 @@ private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
             )
         }
 
-        // No bar when empty: a grey track from end to end promises there is
-        // something to fill in today, and there is not yet.
+        // A grey track end to end promises something to fill in today.
         if (!empty) {
             val advance by animatedFraction(state.quota.fraction, "quotaFraction")
             Box(
@@ -269,8 +264,8 @@ private fun WeekCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
 }
 
 /**
- * Empty, it shows neither "0 of 0" nor a zeroed ring. The promise is dated: four
- * correct reviews, which is the [Steps] ladder from first rung to last.
+ * Empty, neither "0 of 0" nor a zeroed ring. The promise is four correct
+ * reviews — the [Steps] ladder from first rung to last.
  */
 @Composable
 private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) {
@@ -357,9 +352,7 @@ private fun StockCard(state: ProgressState, empty: Boolean, onOpen: () -> Unit) 
     }
 }
 
-/**
- * No color swatch: the bar just above is already in the same order.
- */
+/** No colour swatch: the bar just above is already in the same order. */
 @Composable
 private fun StockLegend(labels: List<String>, color: Color, modifier: Modifier = Modifier) {
     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = modifier.fillMaxWidth()) {
@@ -369,10 +362,7 @@ private fun StockLegend(labels: List<String>, color: Color, modifier: Modifier =
     }
 }
 
-/**
- * The course flag in the header, and the button that switches course. The chevron
- * points up while the drawer is open, which is what promises another tap closes it.
- */
+/** The chevron points up while the drawer is open: another tap closes it. */
 @Composable
 private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -414,8 +404,8 @@ private fun CoursePill(target: String, opened: Boolean, onClick: () -> Unit) {
 }
 
 /**
- * Each row carries its own "9 of 24" because comparing is what makes someone open
- * the drawer — requiring three visits for one answer would not.
+ * Each row carries its own "9 of 24": comparing is what opens the drawer, and
+ * three visits for one answer is not comparing.
  */
 @Composable
 private fun CourseDrawer(
@@ -519,10 +509,7 @@ private fun DrawerRow(course: CourseSummary, chosen: Boolean, onClick: () -> Uni
 internal fun streakLabel(days: Int): String =
     pluralStringResource(R.plurals.progress_day_streak, days, days)
 
-/**
- * An em dash when the day asked for nothing. "0 of 0" would be the score of a
- * match never played.
- */
+/** An em dash when nothing was asked: "0 of 0" scores a match never played. */
 @Composable
 internal fun quotaText(quota: DailyQuota): String =
     if (quota.total == 0) stringResource(R.string.progress_quota_none)
@@ -537,8 +524,8 @@ internal fun courseSummaryText(course: CourseSummary): String =
     else stringResource(R.string.progress_course_summary, course.mastered, course.total)
 
 /**
- * Spelled out up to ten because that is how an achievement reads aloud; past that
- * the digits come back, which is how a large number reads.
+ * Spelled out to ten, the way an achievement reads aloud; past that the digits
+ * come back, the way a large number reads.
  */
 @Composable
 internal fun stockTitle(mastered: Int): String {

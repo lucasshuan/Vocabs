@@ -16,11 +16,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * What was just saved, while the AI works.
- *
- * [courseTotal] is the stock **after** the capture — "26 cards now". The number
- * closes the loop: something was just added to something, and the size of that
- * something is what gives the gesture meaning.
+ * [courseTotal] is the stock after the capture — "26 cards now". It closes the
+ * loop: something was added to something, and the size gives the gesture meaning.
  */
 data class SavedState(
     val entries: List<Entry> = emptyList(),
@@ -28,7 +25,7 @@ data class SavedState(
 ) {
     val target: String get() = entries.firstOrNull()?.languagePair?.target.orEmpty()
 
-    /** While a card is still being built there is something to watch. */
+    /** While this holds, the screen does not close itself. */
     val working: Boolean
         get() = entries.any { it.status == EntryStatus.PENDING || it.status == EntryStatus.GENERATING }
 }
@@ -43,8 +40,8 @@ class SavedViewModel(app: Application) : AndroidViewModel(app) {
             repository.observeEntries(list),
             repository.observeReady(Scope.All),
         ) { entries, readyEntries ->
-            // Counted by target: the pair a card was generated in does not decide
-            // which course it belongs to.
+            // By target: the pair a card was generated in does not decide which
+            // course it belongs to.
             val target = entries.firstOrNull()?.languagePair?.target
             SavedState(
                 entries = entries,

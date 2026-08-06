@@ -37,19 +37,12 @@ import androidx.compose.ui.unit.dp
 data class Tab(val route: String, val icon: ImageVector, val label: String, val badge: Int = 0)
 
 /**
- * Five places, icons only.
+ * Icons only: four words competing with the capture button take away the one
+ * thing it has to be. The names live in `contentDescription`.
  *
- * The labels are deliberately absent: four words competing with the capture
- * button take away the one thing it has to be — the obvious target. The name
- * still exists as `contentDescription`, which is what the screen reader reads.
- */
-/**
- * The bar handles the four tabs and leaves the middle empty.
- *
- * The capture button does **not** live here, and the reason is technical before
- * it is visual: `Surface` clips its own content, and the fan has to draw above
- * the bar's top edge. The layer above composes it with the same geometry, which
- * is why [BAR_HEIGHT] is public.
+ * The `+` is not here, for a technical reason before a visual one: `Surface`
+ * clips its content and the fan has to draw above the bar's top edge. The layer
+ * above composes it against [BAR_HEIGHT], which is why that is public.
  */
 @Composable
 fun BottomBar(
@@ -78,16 +71,13 @@ fun BottomBar(
     }
 }
 
-/** The icon row's height, without insets. The capture button aligns to it. */
+/** Without insets. The capture button aligns to it. */
 val BAR_HEIGHT = 68.dp
 
 /**
- * One of the four places.
- *
- * With no written label the icon is the only thing answering the touch, and a
- * hard color change on a 23 dp drawing is nearly invisible at the edge of vision.
- * The icon of the tab just opened grows 12% and returns, which confirms the touch
- * before the new screen has even drawn.
+ * With no label the icon is the only thing answering the touch, and a colour
+ * change on a 23dp drawing is nearly invisible at the edge of vision. It grows
+ * 12% and returns, confirming the touch before the new screen has drawn.
  */
 @Composable
 private fun TabItem(tab: Tab, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier) {
@@ -118,10 +108,9 @@ private fun TabItem(tab: Tab, isSelected: Boolean, onClick: () -> Unit, modifier
                     tint = tint,
                     modifier = Modifier.size(23.dp),
                 )
-                // The badge springs in and shrinks out: the Pending queue changes
-                // on its own in the background, and a number appearing from
-                // nowhere in the icon's corner does not read as "something
-                // arrived" — it reads as a drawing defect.
+                // Springs in and shrinks out: Pending changes on its own in the
+                // background, and a number appearing from nowhere in the icon's
+                // corner reads as a drawing defect, not as "something arrived".
                 AnimatedVisibility(
                     visible = tab.badge > 0,
                     enter = scaleIn(Motion.elasticSpring()) + fadeIn(tween(Motion.FAST)),

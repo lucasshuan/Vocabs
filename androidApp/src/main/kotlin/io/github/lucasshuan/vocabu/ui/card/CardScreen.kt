@@ -149,9 +149,8 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(title, style = MaterialTheme.typography.displaySmall, modifier = Modifier.weight(1f, fill = false))
-                    // With no voice installed for the card's language the button
-                    // does not appear: a button that does nothing is worse than
-                    // its absence, and German in a Portuguese voice is worse yet.
+                    // Absent when no voice is installed for the card's language:
+                    // German read in a Portuguese voice is worse than silence.
                     tts?.let { voice ->
                         Surface(
                             onClick = { voice.speak(title, TextToSpeech.QUEUE_FLUSH, null, TTS_UTTERANCE_ID) },
@@ -178,11 +177,9 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
                 }
             }
 
-            // The card can become ready with the screen open: tapping a Pending
-            // row lands here while the AI is still working. The whole body
-            // crossfades rather than being swapped in place — otherwise the
-            // screen blinks from "being created…" to a full page of text, and the
-            // answer arriving looks like a drawing glitch.
+            // A Pending row lands here while the AI still works, so the card can
+            // become ready with the screen open. The whole body crossfades:
+            // swapped in place, the answer arriving looks like a glitch.
             AnimatedContent(
                 targetState = item.status,
                 transitionSpec = { fadeIn(tween(Motion.DEFAULT)) togetherWith fadeOut(tween(Motion.FAST)) },
@@ -208,9 +205,8 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
                             errorText(item.errorCode),
                             color = MaterialTheme.colorScheme.onErrorContainer,
                         )
-                        // Untranslated on purpose: this is the AI provider's own
-                        // sentence, kept for diagnosis. Subordinate styling so it
-                        // never reads as Vocabu's own copy.
+                        // The provider's own sentence, kept untranslated for
+                        // diagnosis. Styled subordinate so it never reads as ours.
                         item.errorDetail?.takeIf { it.isNotBlank() }?.let { detail ->
                             Text(
                                 detail,
@@ -235,11 +231,8 @@ fun CardScreen(id: Long, onBack: () -> Unit, vm: CardViewModel = viewModel()) {
 }
 
 /**
- * The card body once the AI has answered.
- *
- * Pulled out of the `when` into a single child: the `AnimatedContent` crossing
- * the card's states hands one slot per state, and the column keeps the four
- * blocks spaced as they were when they were direct siblings.
+ * One child, not four: `AnimatedContent` hands one slot per state, and the
+ * column keeps the blocks spaced as they were as direct siblings.
  */
 @Composable
 private fun CardReady(
@@ -300,9 +293,8 @@ private fun CardReady(
         if (card.related.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
                 SectionLabel(stringResource(R.string.card_related))
-                // `animateContentSize` because "see more" changes the block's
-                // height: without it the rest of the card jumps down between
-                // frames and nobody sees where the new pills came from.
+                // "See more" changes the block's height: without this the rest
+                // of the card jumps down and the new pills come from nowhere.
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(7.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
@@ -324,7 +316,7 @@ private fun CardReady(
     }
 }
 
-/** The user's snippet, with the plum bar saying "this is yours, not the dictionary's". */
+/** The plum bar says "this one is yours, not the dictionary's". */
 @Composable
 private fun HighlightedSnippet(snippet: String) {
     Surface(
@@ -346,22 +338,19 @@ private fun HighlightedSnippet(snippet: String) {
 }
 
 /**
- * The voice speaks the **card's** language, not the open course's.
+ * The card's language, not the open course's: an old German word opened after
+ * switching to Spanish has to speak German.
  *
- * The card stores the pair it was born in for exactly this: opening an old German
- * word after switching to Spanish has to speak German.
- *
- * `setLanguage` returns `LANG_MISSING_DATA`/`LANG_NOT_SUPPORTED` when the device
- * has no voice installed — the same case as a transcriber with no model. The
- * button then disappears rather than pronouncing German in Portuguese.
+ * Null when `setLanguage` answers `LANG_MISSING_DATA`/`LANG_NOT_SUPPORTED` — no
+ * voice installed, and the button disappears instead.
  */
 @Composable
 private fun rememberTts(tag: String): TextToSpeech? {
     val context = LocalContext.current
     var tts by remember { mutableStateOf<TextToSpeech?>(null) }
     DisposableEffect(context, tag) {
-        // The callback may read the engine itself because `onInit` only arrives
-        // after construction returns: it depends on an asynchronous service bind.
+        // The callback may read `engine`: `onInit` arrives after construction
+        // returns, behind an asynchronous service bind.
         var engine: TextToSpeech? = null
         engine = TextToSpeech(context) { status ->
             val isAvailable = status == TextToSpeech.SUCCESS &&
@@ -379,5 +368,5 @@ private fun rememberTts(tag: String): TextToSpeech? {
 
 private val NO_VOICE = setOf(TextToSpeech.LANG_MISSING_DATA, TextToSpeech.LANG_NOT_SUPPORTED, null)
 
-/** Identifies this app's own utterance to the TTS engine; never shown. */
+/** For the TTS engine, never shown. */
 private const val TTS_UTTERANCE_ID = "vocabu-card"

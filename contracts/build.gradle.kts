@@ -4,9 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-// Dois targets porque este módulo é consumido pelos dois lados da conversa:
-// android -> :shared (app)   |   jvm -> :server
-// É isso que faz o compilador reclamar nos dois lados quando o formato da ficha muda.
+// Two targets, one per side: android -> :shared, jvm -> :server. That is what
+// makes both sides fail to compile when a DTO changes shape.
 kotlin {
     android {
         namespace = "io.github.lucasshuan.vocabu.contracts"

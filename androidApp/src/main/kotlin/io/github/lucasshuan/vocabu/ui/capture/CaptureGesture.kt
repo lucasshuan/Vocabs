@@ -7,60 +7,53 @@ import androidx.compose.ui.unit.dp
 import io.github.lucasshuan.vocabu.shared.domain.CaptureFormat
 
 /**
- * Where the finger is, as far as the capture gesture is concerned.
- *
- * The three positions are exhaustive, and that is what makes the gesture
- * reversible: no "almost chose" state, and no target that stays marked after the
- * finger left it.
+ * Exhaustive, which is what makes the gesture reversible: no "almost chose"
+ * state, no target still marked after the finger left it.
  */
 sealed interface GestureTarget {
 
     data object Origin : GestureTarget
 
-    /** Neither origin nor target. Releasing here does nothing. */
+    /** Releasing here does nothing. */
     data object Outward : GestureTarget
 
     data class Mode(val format: CaptureFormat) : GestureTarget
 }
 
 /**
- * Where the three targets sit around the `+`, in dp from its center.
- *
- * All three are the **same distance** — 152 dp — with audio on the axis and
- * the others at ±54°, so the thumb sweeps one curve. The spread is wide on
- * purpose: closer in, the no-man's-land that keeps crossing the fan from marking
- * anything was too narrow to feel. This leaves ~137 dp center to center.
+ * All three at 152dp from the `+`, audio on the axis and the others at ±54°, so
+ * the thumb sweeps one curve. Closer in, the no-man's-land between them was too
+ * narrow to feel; this leaves ~137dp centre to centre.
  */
 val AUDIO_OFFSET = DpOffset(0.dp, (-152).dp)
 val TEXT_OFFSET = DpOffset((-122).dp, (-90).dp)
 val PHOTO_OFFSET = DpOffset(122.dp, (-90).dp)
 
 /**
- * The three targets are born identical. A target already painted before the
- * finger arrives promises something is underway, and nothing is.
+ * Born identical. A target pre-painted before the finger arrives promises
+ * something is under way, and nothing is.
  */
 val TARGET_DIAMETER = 68.dp
 val MARKED_TARGET_DIAMETER = 76.dp
 
 /**
- * A 44 dp radius gives an 88 dp touch area — over Material's 48 dp minimum and
- * larger than the 68 dp disc, so the target is easier to hit than to see. Between
- * two neighbours ~27 dp of no-man's-land is left, and there the gesture chooses
- * nothing: marking by relative proximity would mark something across the whole
- * top half of the screen.
+ * An 88dp touch area — over Material's 48dp minimum and wider than the 68dp
+ * disc, so a target is easier to hit than to see. ~27dp of no-man's-land is left
+ * between neighbours; relative proximity instead would mark something across the
+ * whole top half of the screen.
  */
 val TARGET_RADIUS = 44.dp
 
-/** Releasing here opens text, which is what a slow tap on the button asked for. */
+/** Releasing here opens text, which is what a slow tap asked for. */
 val ORIGIN_RADIUS = 56.dp
 
-/** Past this the touch became a press and the fan opens even without movement. */
+/** Past this the touch is a press and the fan opens without movement. */
 const val FAN_OPEN_MS = 180L
 
 /**
- * `Motion.FAST` (150 ms) is a chip reacting to a touch that already ended. Here
- * the finger is still moving: 90 ms is the ceiling for the highlight to land
- * before the hand doubts which target is marked.
+ * Not `Motion.FAST` (150ms): that is a chip reacting to a touch already over.
+ * Here the finger is still moving, and 90ms is the ceiling before the hand
+ * doubts which target is marked.
  */
 const val TARGET_HIGHLIGHT_MS = 90
 
@@ -70,7 +63,6 @@ fun offsetOf(format: CaptureFormat): DpOffset = when (format) {
     CaptureFormat.PHOTO -> PHOTO_OFFSET
 }
 
-/** The same three offsets in pixels, ready to compare against the finger. */
 fun Density.targetsInPixels(): List<Pair<CaptureFormat, Offset>> =
     CaptureFormat.entries.map { format ->
         val destination = offsetOf(format)
@@ -78,12 +70,10 @@ fun Density.targetsInPixels(): List<Pair<CaptureFormat, Offset>> =
     }
 
 /**
- * **The target has to be reached.** The earlier version chose by angle — with
- * audio filling the whole central sector, a short upward swipe already marked
- * "record", and what was meant as a pointer became a trigger.
+ * The target has to be reached. Choosing by angle — the earlier version — let a
+ * short upward swipe mark "record", turning a pointer into a trigger.
  *
- * Every measure arrives in pixels because the caller is inside a
- * `PointerInputScope`.
+ * Measures arrive in pixels: the caller is inside a `PointerInputScope`.
  */
 fun targetFor(
     shift: Offset,

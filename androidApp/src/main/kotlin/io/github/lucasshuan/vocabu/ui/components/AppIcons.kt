@@ -7,8 +7,8 @@ import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
 
 /**
- * Icons drawn from path data (24x24 viewport), in Material's stroke. Avoids
- * pulling in the whole material-icons dependency for a handful of glyphs.
+ * Path data in a 24x24 viewport, in Material's stroke — the material-icons
+ * dependency for a handful of glyphs is not worth its size.
  */
 private fun icon(name: String, data: String): ImageVector =
     ImageVector.Builder(
@@ -122,7 +122,6 @@ object AppIcons {
         )
     }
 
-    /** Words pulling words — the association network. */
     val Network: ImageVector by lazy {
         icon(
             "rede",
@@ -138,12 +137,10 @@ object AppIcons {
         icon("house", "M10,20v-6h4v6h5v-8h3L12,3 2,12h3v8z")
     }
 
-    /** Right arrow: "this opens another screen". */
     val Forward: ImageVector by lazy {
         icon("forward", "M10,6L8.59,7.41 13.17,12l-4.58,4.59L10,18l6,-6z")
     }
 
-    /** Down arrow: "this opens a list of options". */
     val Expand: ImageVector by lazy {
         icon("expand", "M7.41,8.59L12,13.17l4.59,-4.58L18,10l-6,6 -6,-6z")
     }
@@ -177,7 +174,6 @@ object AppIcons {
         )
     }
 
-    /** Clipboard: "Paste" on the capture sheet. */
     val Paste: ImageVector by lazy {
         icon(
             "colar",
@@ -192,7 +188,6 @@ object AppIcons {
         )
     }
 
-    /** Gear: opens Settings. */
     val Gear: ImageVector by lazy {
         icon(
             "engrenagem",
@@ -241,17 +236,14 @@ object AppIcons {
         )
     }
 
-    /** Arrow leaving a sheet: export. */
     val Export: ImageVector by lazy {
         icon("export", "M9,16h6v-6h4l-7,-7 -7,7h4v6zM5,18h14v2H5v-2z")
     }
 
-    /** The same sheet with the arrow reversed: import. */
     val Import: ImageVector by lazy {
         icon("import", "M19,9h-4V3H9v6H5l7,7 7,-7zM5,18v2h14v-2H5z")
     }
 
-    /** The circled "i" — the About section. */
     val Info: ImageVector by lazy {
         icon(
             "informacao",

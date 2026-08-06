@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
 data class NewLanguageState(
-    /** The courses that already exist — the "You already have" pills. */
+    /** The "You already have" pills. */
     val alreadyHas: List<Language> = emptyList(),
     val native: String = Languages.DEFAULT_NATIVE,
 )
@@ -28,11 +28,9 @@ class NewLanguageViewModel(app: Application) : AndroidViewModel(app) {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), NewLanguageState())
 
     /**
-     * What is left to choose, and the same list for both choices.
-     *
-     * Existing courses drop out, because repeating them creates nothing, and so
-     * does the current native language, because a course from a language to itself
-     * would produce cards translating every word by itself. It holds both ways.
+     * The same list for both choices. Existing courses drop out, and so does the
+     * native language: a course from a language to itself would produce cards
+     * translating every word by itself. It holds both ways.
      */
     fun available(): List<Language> {
         val current = state.value

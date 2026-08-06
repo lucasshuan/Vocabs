@@ -79,15 +79,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * The `+` and everything that comes out of it.
+ * Releasing is the only confirmation: a target that fired on touch would turn
+ * the path to the other two into a minefield.
  *
- * **Releasing is the only confirmation.** While the finger moves nothing has
- * started — no recording, no camera, no text field. A target that fired on being
- * touched would turn the path to the other two into a minefield.
- *
- * The hub fills the screen so the fan and the veil can draw over the bar, but
- * intercepts no touch outside a gesture: a `Box` without `pointerInput` consumes
- * nothing, so the bottom bar stays clickable through it.
+ * Fills the screen so the fan and veil draw over the bar. The outer `Box` has no
+ * `pointerInput`, so it consumes nothing and the bar stays clickable through it.
  */
 @Composable
 fun CaptureHub(
@@ -105,14 +101,14 @@ fun CaptureHub(
     var target by remember { mutableStateOf<GestureTarget>(GestureTarget.Origin) }
     val isRecording = capture.isRecording
 
-    // Applies to the recording too: that screen is opaque, but the content stays
-    // composed beneath it, and a `+` TalkBack can still reach is a trap.
+    // Recording counts: that screen is opaque, but the content beneath stays
+    // composed, and a `+` TalkBack can still reach is a trap.
     val inGesture = fanOpen || isRecording
     LaunchedEffect(inGesture) { onPhaseChange(inGesture) }
 
-    // Leaving the composition cancels the gesture coroutine without going through
-    // the normal finish. Without this, a recording caught by a navigation keeps
-    // the microphone open with nothing on screen saying so.
+    // Leaving the composition cancels the gesture coroutine without reaching
+    // `finish`. Without this, a navigation mid-recording leaves the microphone
+    // open with nothing on screen saying so.
     DisposableEffect(Unit) {
         onDispose {
             if (capture.isRecording) capture.cancelAudio()
@@ -144,11 +140,10 @@ fun CaptureHub(
                 .navigationBarsPadding()
                 .fillMaxWidth()
                 .height(ANCHOR_HEIGHT)
-                // Leaving the `+` reachable under the opaque recording screen
-                // would offer "Capture" mid-recording.
+                // Otherwise TalkBack offers "Capture" mid-recording.
                 .then(if (isRecording) Modifier.clearAndSetSemantics {} else Modifier)
-                // The anchor drops until its center meets the button's, so every
-                // target is a pure `offset` from the `+`.
+                // Drops until its center meets the button's, so every target is a
+                // pure `offset` from the `+`.
                 .offset(y = ANCHOR_HEIGHT / 2 - BAR_HEIGHT / 2 - BUTTON_ELEVATION),
         ) {
             if (drawingFan) {
@@ -179,7 +174,7 @@ fun CaptureHub(
                     .semantics {
                         contentDescription = captureLabel
                         // The drag has no screen-reader equivalent, so the fan's
-                        // three exits become actions on the button itself.
+                        // three exits become actions on the button.
                         customActions = listOf(
                             CustomAccessibilityAction(writeLabel) { openText(); true },
                             CustomAccessibilityAction(photoLabel) { capture.takePhoto(); true },
@@ -201,9 +196,9 @@ fun CaptureHub(
                             first.consume()
                             val center = Offset(size.width / 2f, size.height / 2f)
 
-                            // Up to 180 ms held still is a tap. The system's
-                            // 500 ms is too long for a gesture that has to land
-                            // before the sentence scrolls past.
+                            // Held still under 180ms is a tap. The system's 500ms
+                            // is too long for a gesture that has to land before
+                            // the sentence scrolls past.
                             val releasedEarly = withTimeoutOrNull(FAN_OPEN_MS) {
                                 var loose: PointerInputChange? = null
                                 while (true) {
@@ -240,8 +235,8 @@ fun CaptureHub(
                                 if (new != current) {
                                     current = new
                                     target = new
-                                    // Entry only. A second pulse on exit would
-                                    // make crossing the fan one long vibration.
+                                    // Entry only: a pulse on exit too would make
+                                    // crossing the fan one long vibration.
                                     if (new is GestureTarget.Mode) {
                                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     }
@@ -271,10 +266,6 @@ fun CaptureHub(
     }
 }
 
-/**
- * Whether something already dismissed still needs to be composed to finish
- * leaving.
- */
 @Composable
 private fun stillOnScreen(active: Boolean, leftover: Long = Motion.DEFAULT.toLong() + 80): Boolean {
     var present by remember { mutableStateOf(active) }
@@ -290,10 +281,8 @@ private fun stillOnScreen(active: Boolean, leftover: Long = Motion.DEFAULT.toLon
 }
 
 /**
- * The next state of this same finger, or null once it is gone.
- *
- * Every event is consumed: the hub sits above scrollable lists, and an upward
- * drag leaking through would scroll the screen underneath the fan.
+ * Consumes every event: the hub sits above scrollable lists, and an upward drag
+ * leaking through would scroll the screen underneath the fan.
  */
 private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.nextChange(
     source: PointerInputChange,
@@ -305,9 +294,8 @@ private suspend fun androidx.compose.ui.input.pointer.AwaitPointerEventScope.nex
 }
 
 /**
- * [released] separates a finger that lifted from a gesture the system cancelled:
- * another pointer, the screen going dark, the app backgrounding. Treating a
- * cancellation as a release would open the camera by itself mid-call.
+ * [released] tells a lifted finger from a gesture the system cancelled — another
+ * pointer, the screen going dark. Treating those alike opens the camera mid-call.
  */
 private fun finish(
     capture: QuickCapture,
@@ -328,8 +316,7 @@ private fun finish(
                     else capture.requestAudioPermission()
             }
         }
-        // A slow tap, not a change of mind: it lands on the text path rather than
-        // on a gesture that did nothing.
+        // A slow tap, not a change of mind — the text path, not nothing.
         GestureTarget.Origin -> openText()
         GestureTarget.Outward -> Unit
     }
@@ -340,14 +327,13 @@ internal val NIGHT = Color(0xFF17111F)
 private val BUTTON_ELEVATION = 10.dp
 
 /**
- * The handoff asks for 84 and bleeds the button past the bottom edge, which comes
- * from an iPhone frame. On Android that strip is the home-gesture area and the
- * system intercepts touches inside it, so the button stays whole in the safe area
- * and rises [BUTTON_ELEVATION] to break the bar's top edge instead.
+ * 76, not the handoff's 84 bleeding past the bottom edge — that came from an
+ * iPhone frame, and on Android the strip is the home-gesture area, where the
+ * system takes the touches. It rises [BUTTON_ELEVATION] to break the bar instead.
  */
 val BUTTON_DIAMETER = 76.dp
 
-/** Tall enough for the whole fan: 260 dp of half-height against the 238 dp hint. */
+/** Fits the whole fan: 260dp of half-height against the 238dp hint. */
 private val ANCHOR_HEIGHT = 520.dp
 
 private val ENTER_DELAY = mapOf(
@@ -385,15 +371,14 @@ private fun HubButton(
         animationSpec = Motion.gestureSpring(),
         label = "buttonScale",
     )
-    // The shadow is for the solid button. Over the veil it separates nothing and
-    // only blurs the dashed outline.
+    // Over the veil the shadow separates nothing and blurs the dashed outline.
     val shadow = animateFloatAsState(
         targetValue = if (fanOpen) 0f else 1f,
         animationSpec = tween(Motion.FAST),
         label = "buttonShadow",
     )
 
-    // An infinite animation under an opaque surface is battery spent on no frame.
+    // An infinite animation under an opaque surface is battery spent on nothing.
     val atRest = !fanOpen && !isRecording && !reduced
 
     Box(
@@ -423,9 +408,9 @@ private fun HubButton(
 }
 
 /**
- * 2.8 s growing and 1.2 s still, because a continuous pulse would read as an
- * alarm. The animated value is read **inside** `drawBehind`, so only the draw
- * phase is invalidated each frame rather than the whole button recomposing.
+ * 2.8s growing, 1.2s still: a continuous pulse reads as an alarm. The animated
+ * value is read inside `drawBehind`, so each frame invalidates the draw phase
+ * and not the whole button.
  */
 private fun Modifier.halo(active: Boolean, color: Color): Modifier = composed {
     if (!active) return@composed this
@@ -490,10 +475,8 @@ private val HIGHLIGHT_GROWTH =
     MARKED_TARGET_DIAMETER.value / TARGET_DIAMETER.value - 1f
 
 /**
- * Position is interpolated inside `graphicsLayer`, in the draw phase: three
- * targets animating position by layout would remeasure the whole anchor every
- * frame of the gesture. The highlight comes from **one** animated value read the
- * same way, so it chases the finger instead of arriving a frame late.
+ * Position interpolates inside `graphicsLayer`, in the draw phase: animating it
+ * by layout would remeasure the whole anchor every frame of the gesture.
  */
 @Composable
 private fun FanTarget(
@@ -527,10 +510,9 @@ private fun FanTarget(
         label = "targetTint",
     )
 
-    // The label hangs **outside** the disc's box: in a column what centers on the
-    // destination is disc plus label, and the disc would draw some 13 dp above
-    // the point the finger tests. With proximity selection that gap is the
-    // distance between the target you see and the target that exists.
+    // The label hangs outside the disc's box: in a column, disc plus label is
+    // what centers on the destination, putting the disc ~13dp above the point
+    // the finger is tested against.
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -577,11 +559,9 @@ private fun FanTarget(
 private val GUIDE_STUB = 46.dp
 
 /**
- * With nothing marked it is a stub pointing up — the one instruction missing
- * right after the fan opens is *where*.
- *
- * The tip is an `Animatable<Offset>` read in the draw phase, so the line follows
- * a change of target with the discs' own spring without recomposing anyone.
+ * A stub pointing up with nothing marked: right after the fan opens, the missing
+ * instruction is *where*. The tip is read in the draw phase, so the line follows
+ * a change of target on the discs' spring without recomposing anyone.
  */
 @Composable
 private fun GuideToTarget(target: GestureTarget, fanOpen: Boolean) {
@@ -627,10 +607,7 @@ private fun GuideToTarget(target: GestureTarget, fanOpen: Boolean) {
     )
 }
 
-/**
- * The pill wears the marked target's color, which is the second place the
- * color-to-mode association forms.
- */
+/** Wears the marked target's colour — the second place the association forms. */
 @Composable
 private fun GestureHint(target: GestureTarget, fanOpen: Boolean) {
     val marked = (target as? GestureTarget.Mode)?.format
@@ -656,8 +633,7 @@ private fun GestureHint(target: GestureTarget, fanOpen: Boolean) {
         modifier = Modifier
             .offset(y = (-238).dp)
             .graphicsLayer { alpha = presence.value }
-            // Without this the pill jumps in width every time the finger enters
-            // a disc.
+            // Without it the pill jumps in width on every disc the finger enters.
             .animateContentSize(tween(TARGET_HIGHLIGHT_MS, easing = LinearOutSlowInEasing))
             .background(background, CircleShape)
             .padding(horizontal = 14.dp, vertical = 7.dp),

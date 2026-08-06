@@ -11,26 +11,20 @@ import io.github.lucasshuan.vocabu.contracts.GenerateCardRequest
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.json.Json
 
-/**
- * A language pair the catalog does not know.
- *
- * Becomes a 400, not a 503: repeating the same request will never work, and the
- * app needs to tell "try again" apart from "this does not exist".
- */
+/** A 400, not a 503: retrying will never work, and the app retries on 503. */
 class UnknownLanguagePair(native: String, target: String) :
     IllegalArgumentException("Par de languages desconhecido: $native → $target.")
 
 /**
- * Turns a raw capture (snippet plus target) into a full card, via Claude.
+ * Snippet plus target into a card, via Claude.
  *
- * The critical part is structured output: the schema below forces the response
- * into [CardResponse]'s exact shape. Without it the model sometimes returns the
- * JSON wrapped in markdown or with a comment first, and you end up writing a
- * regex to extract it — which breaks on the first odd case.
+ * [SCHEMA] is what makes it parseable: unstructured, the model sometimes wraps
+ * the JSON in markdown, and extracting it needs a regex that breaks on the
+ * first odd case.
  */
 class CardGenerator(
-    // Lazy on purpose: without it, a missing ANTHROPIC_API_KEY brings the server
-    // down at boot and you cannot even test /health or authentication.
+    // Lazy: otherwise a missing ANTHROPIC_API_KEY takes the server down at boot,
+    // leaving /health and authentication untestable.
     clientFactory: () -> AnthropicClient = {
         AnthropicOkHttpClient.builder()
             .apiKey(Config.required("ANTHROPIC_API_KEY"))
@@ -41,12 +35,8 @@ class CardGenerator(
     private val json = Json { ignoreUnknownKeys = true }
 
     /**
-     * Each pair's prompt, built once.
-     *
-     * The system text is the longest and most repeated piece of every call, and
-     * rebuilding it per request would produce byte-different strings through
-     * formatting luck alone — enough to lose the prompt cache on the other side.
-     * There are few pairs per install; keeping them all costs nothing.
+     * Built once per pair: rebuilding the system text per request risks a
+     * byte-different string, which loses the prompt cache on the other side.
      */
     private val prompts = ConcurrentHashMap<LanguagePairSpec, String>()
 
@@ -61,15 +51,9 @@ class CardGenerator(
             .outputConfig(
                 OutputConfig.builder()
                     .apply {
-                        // Not every model accepts `effort` — Haiku 4.5 answers
-                        // 400 "does not support the effort parameter". Sending it
-                        // anyway fails the whole card, so it only goes to models
-                        // that support it.
-                        if (supportsEffort) {
-                            // A short, well-defined extraction task: no deep
-                            // reasoning needed. This is a cost/latency choice.
-                            effort(OutputConfig.Effort.LOW)
-                        }
+                        // Haiku 4.5 rejects `effort` with a 400, failing the card.
+                        // LOW where it is accepted: a short extraction task.
+                        if (supportsEffort) effort(OutputConfig.Effort.LOW)
                     }
                     .format(JsonOutputFormat.builder().schema(SCHEMA).build())
                     .build()
@@ -93,7 +77,6 @@ class CardGenerator(
         return applyLocalDecisions(request, card)
     }
 
-    // Configurable so models can be compared without recompiling.
     private val model: String = Config["MODEL"] ?: DEFAULT_MODEL
 
     /** Haiku 4.5 rejects `effort` with a 400; Opus and Sonnet accept it. */
@@ -101,22 +84,15 @@ class CardGenerator(
 
     /** Internal, not private, so a test can check the prompt names both languages. */
     internal companion object {
-        // Haiku by default: the card is a short, well-specified extraction, and
-        // the type it is graded on is decided on the device and reinjected, not
-        // asked of the model. Raise it through MODEL if definitions or related
-        // terms come out thin.
+        // Raise through MODEL if definitions or related terms come out thin.
         const val DEFAULT_MODEL = "claude-haiku-4-5"
 
         /**
-         * The instruction's language and the output's are independent: the model
-         * reads this and writes the translation in the native language because
-         * the instruction says so, not because the instruction is in that
-         * language. Keeping a translated copy per native language would mean N
-         * versions of calibrated prose — the WORD versus PHRASE test is the
-         * subtlest part of a card, and translating is recalibrating by accident.
-         *
-         * Field names and enum values stay as they are: they are the contract
-         * with [CardResponse], not text for the model to translate.
+         * English whatever the pair: instruction language and output language are
+         * independent, and one calibrated prompt beats N translated copies — the
+         * WORD/PHRASE test is the subtlest part, and translating recalibrates it
+         * by accident. Field names are the contract with [CardResponse], not text
+         * to translate.
          */
         fun promptFor(languages: LanguagePairSpec): String {
             val native = languages.native.englishName
@@ -148,13 +124,12 @@ class CardGenerator(
         }
 
         /**
-         * Mirrors [CardResponse]. `additionalProperties: false` and every field in
-         * `required` are demanded by the API's structured outputs.
+         * `additionalProperties: false` and a full `required` list are demanded by
+         * structured outputs.
          *
-         * Kept as a plain map, not inlined into [SCHEMA], so a test can compare
-         * its keys against [CardResponse]'s serial names. Nothing else connects
-         * the two — a field renamed on one side and not the other does not fail
-         * to compile, it fails to decode, on every card.
+         * A map rather than inline JSON so a test can compare its keys against
+         * [CardResponse]'s serial names. Nothing else connects the two: a field
+         * renamed on one side still compiles, and fails to decode on every card.
          */
         internal val SCHEMA_MAP: Map<String, Any> = mapOf(
                 "type" to "object",
@@ -174,11 +149,9 @@ class CardGenerator(
                     ),
                     "example" to mapOf("type" to "string"),
                     "pronunciation" to mapOf("type" to "string"),
-                    // No `minItems`/`maxItems`: the API's structured outputs only
-                    // accepts `minItems` 0 or 1 and rejects the rest with a 400,
-                    // which would fail every card. The 3-to-6 range lives in the
-                    // prompt, and the ceiling is really enforced in
-                    // [applyLocalDecisions].
+                    // No `minItems`/`maxItems`: structured outputs accepts only
+                    // `minItems` 0 or 1 and 400s on the rest. The range lives in
+                    // the prompt, the ceiling in [applyLocalDecisions].
                     "related" to mapOf(
                         "type" to "array",
                         "items" to mapOf("type" to "string"),

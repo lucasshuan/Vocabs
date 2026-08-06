@@ -52,11 +52,8 @@ import java.time.LocalDate
 import java.util.Locale
 
 /**
- * "Day by day".
- *
- * The same week strip as Progress, and below it what actually happened each day.
- * A day with nothing appears spelled out: skipping empty days would make the
- * list compact and dishonest, with Tuesday against Friday.
+ * Empty days are spelled out: skipping them makes the list compact and
+ * dishonest, with Tuesday against Friday.
  */
 @Composable
 fun DayByDayScreen(
@@ -69,8 +66,8 @@ fun DayByDayScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val today = remember { LocalDate.now() }
     val resources = LocalResources.current
-    // The picker can differ from the device, so the locale comes from the
-    // configuration Compose is actually rendering with.
+    // From the configuration Compose renders with: the picker can differ from
+    // the device.
     val locale = LocalConfiguration.current.locales[0]
     val weekdays = remember(locale) { weekdayLabels(locale) }
     val days = remember(state.events, state.quota, locale) {
@@ -141,22 +138,17 @@ fun DayByDayScreen(
 }
 
 /**
- * One day of the timeline: the dot on the rail and what happened beside it.
+ * The rail is what makes this a timeline rather than a list with subheadings —
+ * crossing an idle day, it shows the hole instead of hiding it.
  *
- * The rail is what makes this a timeline rather than a list with subheadings. It
- * connects one day to the next including across idle days, which is exactly where
- * it works — the line crossing a "nothing here" shows the hole instead of hiding
- * it.
- *
- * Drawn behind the whole row rather than stacked as a fixed-height child: only in
- * `drawBehind` is it known how far the day's content went, which is how it lands
- * exactly on the next day's dot with one card or with four.
+ * Drawn behind the row, not stacked as a fixed-height child: only `drawBehind`
+ * knows how far the content went, which lands it on the next dot with one card
+ * or with four.
  */
 @Composable
 private fun DayGroup(group: EventDay, last: Boolean, onOpenCard: (Long) -> Unit) {
     val colors = MaterialTheme.colorScheme
-    // Today is plum even when empty: it is the day something can still be done
-    // in, not one more hole in the history.
+    // Today is plum even when empty: something can still be done in it.
     val point = when {
         group.today -> colors.primary
         group.events.isEmpty() -> colors.outline
@@ -213,11 +205,8 @@ private fun DayGroup(group: EventDay, last: Boolean, onOpenCard: (Long) -> Unit)
 }
 
 /**
- * The empty day, as a box rather than a loose sentence.
- *
- * Beside white cards, text without a box would read as a caption for the day
- * above. The lilac box takes a card's place and says there was room for
- * something — the day is empty, not the list.
+ * A box, not a loose sentence: beside white cards, bare text reads as a caption
+ * for the day above. The lilac box takes a card's place and says there was room.
  */
 @Composable
 private fun IdleDay() {
@@ -255,11 +244,8 @@ private fun EventCard(event: Event, onClick: () -> Unit) {
 }
 
 /**
- * The outcome's color, now on the text rather than on a dot.
- *
- * The colored dot left each event and became the day's dot on the rail — two
- * levels of dot in one column would fight over the vertical reading the rail
- * exists to give. The word on the right carries the meaning now.
+ * On the text, not a dot: the coloured dot became the day's dot on the rail, and
+ * two levels of dot in one column fight over the vertical reading.
  */
 @Composable
 private fun eventColor(type: EventType): Color = when (type) {
@@ -268,15 +254,13 @@ private fun eventColor(type: EventType): Color = when (type) {
     EventType.CAPTURED, EventType.CARD_READY -> MaterialTheme.colorScheme.onSurfaceVariant
 }
 
-/** The day's dot and the line descending from it live in this left column. */
 private val TRACK_WIDTH = 20.dp
 
-/** Aligns the dot with the first line of the day's title, not the block's top. */
+/** Aligns the dot with the title's first line, not the block's top. */
 private val DOT_TOP = 5.dp
 private val DOT_SIZE = 10.dp
 private val TRACK_GAP = 4.dp
 
-/** One day of the timeline, with what happened in it. */
 internal data class EventDay(
     val day: Long,
     val title: String,
@@ -286,11 +270,8 @@ internal data class EventDay(
 )
 
 /**
- * Groups by day and fills the holes.
- *
- * Every day from the most recent one with an event through today enters the list,
- * empty ones included. The floor is the oldest day with an event: inventing empty
- * months before the first capture would fill the scroll with nothing.
+ * Fills the holes: every day from today back to the oldest day with an event,
+ * empty ones included. Going further back would fill the scroll with nothing.
  */
 internal fun groupByDay(
     events: List<Event>,
@@ -310,8 +291,7 @@ internal fun groupByDay(
             day = day,
             title = title(day),
             today = day == todayDay,
-            // The quota is a count over the queue as it is now, and Tuesday's
-            // queue is gone — only today can say how much is left.
+            // The quota counts the queue as it is now, and Tuesday's is gone.
             quota = todayQuota.takeIf { day == todayDay },
             events = byDay[day].orEmpty(),
         )
@@ -332,21 +312,18 @@ private fun Resources.dayTitle(day: Long, today: LocalDate, locale: Locale): Str
 }
 
 /**
- * What the row says on the right: "captured", "2nd review correct", "mastered".
- *
- * The ordinal comes from the review number stored on the event; without it the
- * row would say only "review correct" and the timeline would lose the sense of
- * advancing it exists to show.
+ * The ordinal comes from the review number on the event. Without it the row says
+ * only "review correct", and the timeline loses the sense of advancing.
  */
 internal sealed interface EventDescription {
     data object Captured : EventDescription
     data object CardReady : EventDescription
-    /** [number] is null when the event predates review numbering or carries junk. */
+    /** [number] is null on events predating review numbering, or carrying junk. */
     data class Review(val number: Int?, val right: Boolean) : EventDescription
     data class LeveledUp(val level: MemoryLevel) : EventDescription
 }
 
-/** Kept free of resources so the branch choice stays testable without a device. */
+/** Free of resources, so the branch choice is testable without a device. */
 internal fun describeEvent(event: Event): EventDescription = when (event.type) {
     EventType.CAPTURED -> EventDescription.Captured
     EventType.CARD_READY -> EventDescription.CardReady

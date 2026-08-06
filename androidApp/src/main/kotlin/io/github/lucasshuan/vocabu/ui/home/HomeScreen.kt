@@ -57,15 +57,11 @@ import io.github.lucasshuan.vocabu.ui.languages.displayName
 import io.github.lucasshuan.vocabu.ui.languages.languageOf
 
 /**
- * Home — one page per course.
+ * The only tab sliced by language: elsewhere a filter left on across a tab
+ * change would make words disappear without anyone asking.
  *
- * The **only** tab sliced by language, and the switch is a swipe. The other three
- * always show everything: a filter left on across a tab change would make words
- * disappear without anyone asking.
- *
- * Swiping does not just navigate — it changes the open course. That is why the
- * review button and the `+` sheet follow the visible page without either needing
- * to know a carousel exists.
+ * Swiping changes the open course, not just the page, which is why review and
+ * the `+` follow it without either knowing a carousel exists.
  */
 @Composable
 fun HomeScreen(
@@ -79,10 +75,8 @@ fun HomeScreen(
     val pages = state.pages
     val pager = rememberPagerState(pageCount = { pages.size })
 
-    // Two directions, and the order between them matters. The pager starts on
-    // page 0, which is almost never the open course; letting it lead before it is
-    // positioned would silently switch the course to English on every launch. So
-    // it only leads after the first positioning.
+    // The pager starts on page 0, almost never the open course: letting it lead
+    // before positioning would switch the course to English on every launch.
     var positioned by remember { mutableStateOf(false) }
 
     LaunchedEffect(pages.size, state.activeTarget) {
@@ -146,8 +140,7 @@ fun HomeScreen(
             }
         }
 
-        // Outside the pager on purpose: the dots belong to no page and no card,
-        // and stay put no matter what changes above.
+        // Outside the pager: the dots belong to no page and stay put.
         PageDots(
             total = pages.size,
             current = pager.currentPage,
@@ -202,10 +195,8 @@ private fun CoursePage(
             }
         }
 
-        // The day's captures enter staggered. This is the list that grows while
-        // the app is used, and the only place on Home where the day is seen
-        // accumulating — arriving fully assembled would make three captures look
-        // like old history instead of what happened today.
+        // Staggered: this is the only place on Home where the day is seen
+        // accumulating, and fully assembled three captures read as old history.
         Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
             SectionLabel(stringResource(R.string.home_captured_today_in, language.displayName))
             if (page.capturedToday.isEmpty()) {
@@ -222,10 +213,8 @@ private fun CoursePage(
 }
 
 /**
- * The course ring: average strength inside, or the tick when the queue is empty.
- *
- * A course up to date repeats in the ring the same tick the flag shows in the
- * strip — confirmation that the badge up there meant this.
+ * Up to date, it repeats the tick the flag shows in the strip — confirmation
+ * that the badge up there meant this.
  */
 @Composable
 private fun CourseRing(page: HomePage) {
@@ -239,15 +228,13 @@ private fun CourseRing(page: HomePage) {
         if (upToDate) {
             Icon(AppIcons.Check, null, tint = colors.tertiary, modifier = Modifier.size(26.dp))
         } else {
-            // The percentage rises in the same time the arc runs: they are the
-            // same measure, and arriving together is what keeps the ring from
-            // looking like decoration around a number.
+            // Same duration as the arc: one measure, and arriving apart makes
+            // the ring look like decoration around a number.
             Text("${animatedCount(page.averageStrength, "averageStrength")}%", style = MaterialTheme.typography.headlineSmall)
         }
     }
 }
 
-/** "Next 5 in 19h · nothing to do today" — the card of a course with no queue. */
 @Composable
 private fun UpNextRow(page: HomePage, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
@@ -305,7 +292,7 @@ private fun CapturedRow(entry: Entry, modifier: Modifier = Modifier) {
     }
 }
 
-/** A day with no capture becomes an invitation, not an empty screen. */
+/** A day with no capture is an invitation, not an empty screen. */
 @Composable
 private fun CaptureInvite(language: String, onClick: () -> Unit) {
     DashedBox(
@@ -345,5 +332,5 @@ private fun courseDetail(total: Int, mastered: Int, inQueue: Int): String {
     return "$stock\n$queue"
 }
 
-/** The bottom bar plus the gap for the capture button that overhangs it. */
+/** The bar plus the gap for the `+` overhanging it. */
 private val BAR_SPACING = 92.dp

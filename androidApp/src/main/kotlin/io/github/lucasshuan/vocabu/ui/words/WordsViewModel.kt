@@ -18,11 +18,8 @@ import kotlinx.coroutines.flow.stateIn
 enum class MemoryFilter(val label: String) { ALL("Todas"), LEARNING("Aprendendo"), FAMILIAR("Familiar"), MASTERED("Dominada") }
 
 /**
- * A language as a header, not as a filter.
- *
- * [total] and [inQueue] are for the whole course, bypassing the search and the
- * level: a collapsed header still says how much is inside and how much of it is
- * due, which is what makes closing a group cost no information.
+ * [total] and [inQueue] bypass the search and the level, so a collapsed header
+ * still says how much is inside and how much of it is due.
  */
 data class LanguageGroup(
     val languagePair: LanguagePair,
@@ -46,12 +43,9 @@ data class WordsState(
 }
 
 /**
- * Words shows all three languages at once.
- *
- * The language became a header and stopped being a filter because a filter is
- * hidden state: leaving "Spanish only" on and coming back a week later would show
- * a collection that shrank by itself. A collapsed header also hides, but stays on
- * screen saying what it hides.
+ * Every language at once. A language filter is hidden state — "Spanish only"
+ * left on returns a week later as a collection that shrank by itself. A
+ * collapsed header hides too, but stays on screen saying what it hides.
  */
 class WordsViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = AppContainer.repository(app)
@@ -59,7 +53,7 @@ class WordsViewModel(app: Application) : AndroidViewModel(app) {
     private val filter = MutableStateFlow(MemoryFilter.ALL)
     private val query = MutableStateFlow("")
 
-    /** In two stages: `combine` only has a typed overload up to five flows. */
+    // In two stages: `combine` is only typed up to five flows.
     private val crop = combine(filter, query, ::Pair)
 
     val state: StateFlow<WordsState> = combine(
@@ -74,9 +68,8 @@ class WordsViewModel(app: Application) : AndroidViewModel(app) {
         val byCourse = readyEntries.groupBy { it.languagePair.target }
 
         WordsState(
-            // Ordered by enrollment rather than card count: the same order as
-            // Home's strip, and changing it here would make the two screens
-            // disagree about where French is.
+            // By enrolment, not card count: Home's strip order, and changing it
+            // would make the two screens disagree about where French is.
             groups = enrolled.map { target ->
                 val ofCourse = byCourse[target].orEmpty()
                 LanguageGroup(

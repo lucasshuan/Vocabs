@@ -1,20 +1,17 @@
 package io.github.lucasshuan.vocabu.contracts
 
 /**
- * One catalog for both sides. If each kept its own, the day one of them gained
- * a language would be the day cards started being born in the wrong one.
- *
- * No display name here: that changes with the interface language, and this
- * module is compiled by the server too, which has no Android resources.
+ * No display name here: it changes with the interface language, and the server
+ * compiles this module without Android resources.
  */
 data class Language(
-    /** Stable key, stored in the database. Renaming one orphans its cards. */
+    /** Stored in the database. Renaming one orphans its cards. */
     val code: String,
-    /** Country code, matching the flag drawable. */
+    /** Matches the flag drawable's name. */
     val country: String,
-    /** How the prompt refers to it; the prompt is written in English. */
+    /** What the prompt cites. */
     val englishName: String,
-    /** Full BCP-47, for TTS and formatting. */
+    /** BCP-47, for TTS and formatting. */
     val tag: String,
 )
 
@@ -76,9 +73,8 @@ object Languages {
     val ENGLISH: Language = byCode.getValue(DEFAULT_TARGET)
 
     /**
-     * Null for an unknown code, so the caller decides. A language can leave the
-     * catalog while still stored on old entries; substituting silently would
-     * make those cards change language on their own.
+     * Null rather than a substitute: a language can leave the catalog while old
+     * entries still store it, and substituting would change their language.
      */
     fun of(code: String?): Language? = code?.let(byCode::get)
 }

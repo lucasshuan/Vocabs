@@ -51,15 +51,12 @@ import io.github.lucasshuan.vocabu.ui.languages.displayName
 import io.github.lucasshuan.vocabu.ui.languages.languageOf
 
 /**
- * "You".
+ * Totals before the breakdown: streak and stock are habit, and habit belongs to
+ * no course. A language row opens "Your progress" without switching the open
+ * course underneath someone who only wanted a look.
  *
- * Totals before the breakdown: streak and stock are habit, and habit does not
- * belong to a course. Each language row opens "Your progress" for **that** course
- * without switching the open course underneath someone who only wanted a look.
- *
- * Switching language left this screen — it is Home's swipe now. The native
- * language left later, for Settings: it is about no course at all, and at the
- * foot of a list where every row opens one it read as one more of them.
+ * Switching language is Home's swipe; the native language is in Settings. At the
+ * foot of a list where every row opens a course, it read as one more of them.
  */
 @Composable
 fun ProfileScreen(
@@ -87,9 +84,8 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            // All three count up from zero. They are the balance of the whole
-            // habit across every language, and the only screen where these
-            // numbers are the subject rather than a supporting detail.
+            // All three count up: the only screen where these numbers are the
+            // subject rather than a supporting detail.
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 14.dp)) {
                 SummaryNumber(
                     value = "${animatedCount(state.totalMastered, "masteredTotal")}",
@@ -124,9 +120,8 @@ fun ProfileScreen(
 
         AiUsageRow(used = state.aiUsage.used, limit = state.aiUsage.limit)
 
-        // The subtext is not decoration: the native language used to be a row on
-        // this screen and is now one tap deeper. Without naming it here, anyone
-        // looking where it was has no clue where to look instead.
+        // The subtext names the native language: it used to be a row here and is
+        // now one tap deeper, with nothing else pointing the way.
         ListRow(
             title = stringResource(R.string.profile_settings),
             detail = stringResource(R.string.profile_settings_detail),
@@ -139,11 +134,9 @@ fun ProfileScreen(
 }
 
 /**
- * The course list in a box with its own scroll.
- *
- * Without the height cap, studying six languages would push "AI generations" and
- * "Settings" off the first screen — and those are exactly the rows nobody finds
- * by scrolling, because they never change.
+ * Capped and separately scrolled: six languages would push "AI generations" and
+ * "Settings" off the first screen, and those never change, so nobody scrolls
+ * looking for them.
  */
 @Composable
 private fun ProgressByLanguage(

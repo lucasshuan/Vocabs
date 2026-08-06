@@ -17,8 +17,8 @@ import io.github.lucasshuan.vocabu.ui.theme.darkAccordingTo
 
 class MainActivity : ComponentActivity() {
 
-    // No `android:configChanges` for locale on this activity, deliberately: a
-    // language change has to recreate so every `stringResource` re-reads.
+    // No `android:configChanges` for locale here: a language change has to
+    // recreate so every `stringResource` re-reads.
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(UiLanguage.wrap(newBase))
     }
@@ -26,21 +26,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Before any screen: the repository is created the first time a ViewModel
-        // asks for it, and by then the server URL has to be decided.
+        // Before any screen: the repository is built on the first ViewModel that
+        // asks, and by then the server URL has to be decided.
         AppContainer.configure(
             lanServer = BuildConfig.LAN_SERVER,
             token = BuildConfig.APP_TOKEN,
         )
 
-        // Content draws behind the system bars; each screen applies the insets it
-        // needs (statusBarsPadding, navigationBarsPadding, imePadding).
+        // Content draws behind the system bars; each screen applies its own insets.
         enableEdgeToEdge()
         val preferences = AppContainer.preferences(this)
         setContent {
-            // The initial value comes from the synchronous read rather than a
-            // `null` the flow fills in later: a default while the disk answers
-            // would open the app in light and flash to dark on the first frame.
+            // Seeded from the synchronous read: a default while the disk answers
+            // opens the app in light and flashes to dark on the first frame.
             val theme by preferences.observeTheme()
                 .collectAsStateWithLifecycle(initialValue = preferences.theme)
 

@@ -22,11 +22,8 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferences.theme)
 
     /**
-     * The native language, observed rather than read once.
-     *
-     * Changing it opens the picker over this screen and returns here: without the
-     * flow the row would keep showing the old language until Settings was
-     * recreated — and that row is the only proof the change took.
+     * Observed, not read once: the picker opens over this screen and returns to
+     * it, and the row is the only proof the change took.
      */
     val native: StateFlow<String> = preferences.observeNativeLanguage()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), preferences.native)

@@ -42,15 +42,10 @@ import io.github.lucasshuan.vocabu.ui.components.rememberHaptics
 import kotlinx.coroutines.launch
 
 /**
- * The text drawer — the snippet, "Paste" and "Save", and nothing else.
- *
- * Tapping and releasing on the `+` is text: the fan never opens and the cursor is
- * already here. No field frame, no title, no language choice.
- *
- * What left matters more than what stayed. The previous sheet asked for the
- * course before letting anyone write, charging one tap on every capture to get
- * right the few where the course was not the open one. Without it the keyboard is
- * already up as the drawer finishes rising.
+ * No field frame, no title, no language choice. The earlier sheet asked for the
+ * course first, charging a tap on every capture to get right the few where it
+ * was not the open one; without it the keyboard is up as the drawer finishes
+ * rising.
  */
 @Composable
 fun TextDrawer(
@@ -98,9 +93,8 @@ fun TextDrawer(
                 .heightIn(min = 52.dp, max = 220.dp)
                 .focusRequester(focus),
             decorationBox = { content ->
-                // The `Box` is not decorative: `decorationBox` hands the content
-                // to a single-child layout, and emitting the example and the
-                // field side by side leaves them fighting over the same measure.
+                // `decorationBox` hands the content to a single-child layout:
+                // example and field side by side fight over the same measure.
                 Box {
                     if (field.text.isEmpty()) {
                         Text(
@@ -122,9 +116,8 @@ fun TextDrawer(
                 icon = true,
                 onClick = ::paste,
             )
-            // "Save" only exists when there is something to save. A permanently
-            // greyed primary button in the drawer's corner is noise: it holds the
-            // prominent place without ever being tappable.
+            // A permanently greyed primary button holds the prominent place
+            // without ever being tappable.
             if (hasText) {
                 Pill(
                     text = stringResource(R.string.save),
@@ -172,13 +165,10 @@ private fun Pill(
 }
 
 /**
- * Example sentences for the drawer: a plausible snippet, not an instruction.
+ * A plausible snippet, not an instruction: "type or paste the snippet" does not
+ * show what the AI expects, which is a sentence with an expression inside it.
  *
- * "Type or paste the snippet" does not show what the AI expects — a whole
- * sentence with a capturable expression inside it. The example does.
- *
- * These are target-language content and must follow the course language, never
- * the interface language.
+ * Target-language content — follows the course language, never the interface one.
  */
 private val SNIPPET_EXAMPLES = listOf(
     "She rolled her eyes and told him to knock it off.",

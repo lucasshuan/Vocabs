@@ -10,7 +10,7 @@ import java.io.FileOutputStream
 import java.io.RandomAccessFile
 import kotlin.concurrent.thread
 
-/** Records 16 kHz mono PCM inside a WAV, the format local recognition accepts. */
+/** 16kHz mono PCM in a WAV — what the local `SpeechRecognizer` accepts. */
 class AudioRecorder(private val context: Context) {
 
     private var audioRecord: AudioRecord? = null
@@ -21,13 +21,11 @@ class AudioRecorder(private val context: Context) {
     private var writing = false
 
     /**
-     * The peak of the last block read, 0 to 1.
+     * The last block's peak, 0 to 1 — the wave is real, because one that moves
+     * the same through silence and speech answers nothing.
      *
-     * The recording screen's wave is drawn from here rather than from decorative
-     * heights: a wave that moves the same through silence and speech does not
-     * answer the only question someone holding the button has. Volatile because
-     * the WAV thread writes and the drawing thread reads; a torn read of a float
-     * here costs one crooked frame and nothing more.
+     * Volatile: the WAV thread writes and the drawing thread reads. A torn read
+     * costs one crooked frame.
      */
     @Volatile
     var level: Float = 0f
@@ -130,11 +128,8 @@ class AudioRecorder(private val context: Context) {
     }
 
     /**
-     * The block's peak, sampling every [SAMPLING_STEP].
-     *
-     * Scanning all 2,000 samples of each block to find a number that becomes one
-     * bar's height is wasted work: the peak of a 128 ms block survives sampling,
-     * and what is lost along the way is smaller than the drawn bar's thickness.
+     * Sampled, not scanned: a 128ms block's peak survives it, and what is lost
+     * is thinner than the bar drawn from it.
      */
     private fun peakOf(buffer: ByteArray, seen: Int): Float {
         var peak = 0

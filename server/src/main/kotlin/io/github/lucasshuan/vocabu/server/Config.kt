@@ -3,21 +3,15 @@ package io.github.lucasshuan.vocabu.server
 import java.io.File
 
 /**
- * Configuration in two layers: environment variable first, local `.env` after.
- *
- * The file exists because retyping two secrets in every new terminal is friction
- * that gets paid daily. The environment variable keeps precedence so CI and
- * production depend on no file.
- *
- * `.env` is in .gitignore. Never commit one.
+ * Environment variable first, local `.env` after — so CI and production depend
+ * on no file. `.env` is gitignored. Never commit one.
  */
 object Config {
 
     private val fromFile: Map<String, String> by lazy { readLocalFile() }
 
-    // The takeIf on both sides matters: `APP_TOKEN=` in the file (or exported
-    // empty) has to count as absent, otherwise the server comes up with an empty
-    // token and accepts any request without a header.
+    // Blank counts as absent on both sides: `APP_TOKEN=` would otherwise bring
+    // the server up with an empty token, accepting any request without a header.
     operator fun get(key: String): String? =
         System.getenv(key)?.takeIf { it.isNotBlank() }
             ?: fromFile[key]?.takeIf { it.isNotBlank() }
@@ -29,11 +23,8 @@ object Config {
     )
 
     /**
-     * Looks for `.env` walking up from the working directory.
-     *
-     * The walk is not fussiness: Gradle runs `:server:run` with the working
-     * directory in `server/`, not the repository root, so looking only in `.`
-     * would find nothing and the file would seem ignored.
+     * Walks up rather than reading `.`: Gradle runs `:server:run` from `server/`,
+     * not the repository root, so `.env` would seem ignored.
      */
     private fun readLocalFile(): Map<String, String> {
         val file = generateSequence(File("").absoluteFile) { it.parentFile }

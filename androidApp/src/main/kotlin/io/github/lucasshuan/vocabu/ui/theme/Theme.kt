@@ -26,12 +26,8 @@ object VocabuColors {
     val MintDark = Color(0xFF3F8A22)
 
     /**
-     * The parrot red — the third capture category, photo.
-     *
-     * Not `error`, and must never become it: one color per capture type (text is
-     * plum, audio is mint, photo is this red) so the association forms at capture
-     * time and repeats in Pending. Using the error red here would make every
-     * queued photo look like a broken one.
+     * Photo's category colour. Never `error`: that would make every queued photo
+     * look like a broken one.
      */
     val Parrot = Color(0xFFC4243C)
     val ParrotContainer = Color(0xFFFBEAEC)
@@ -40,12 +36,9 @@ object VocabuColors {
 }
 
 /**
- * Whether the current theme is dark.
- *
- * Not a style preference: the light card has a 1 px outline to separate it from
- * the near-white background, and the dark one has none. Without this signal each
- * screen would guess for itself, which is how half of them ended up outlined in
- * dark.
+ * The light card has a 1px outline against the near-white background and the
+ * dark one has none. Without this signal each screen guesses, which is how half
+ * of them ended up outlined in dark.
  */
 val LocalDarkTheme = staticCompositionLocalOf { false }
 
@@ -141,11 +134,8 @@ private val Shapes = Shapes(
 )
 
 /**
- * Whether dark is in effect, per the Settings choice.
- *
- * `SYSTEM` is the default and the only value that consults the device — `LIGHT`
- * and `DARK` are the person's decisions and do not reverse when the system
- * changes mood at night.
+ * `SYSTEM` is the only value that consults the device: `LIGHT` and `DARK` are
+ * decisions, and do not reverse when the system changes mood at night.
  */
 @Composable
 fun darkAccordingTo(preference: ThemePreference): Boolean = when (preference) {

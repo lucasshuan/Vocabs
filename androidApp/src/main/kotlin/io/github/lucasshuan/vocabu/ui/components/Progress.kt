@@ -42,12 +42,9 @@ import androidx.compose.ui.unit.sp
 import io.github.lucasshuan.vocabu.R
 
 /**
- * A fraction drawn as an arc, with the number inside.
- *
- * The core is a slot rather than text formatted here, because Home's average
- * strength and Progress's word stock are the same shape with different content.
- * The fraction is read inside the `Canvas`, so each frame invalidates the drawing
- * and nothing else.
+ * The core is a slot: Home's average strength and Progress's word stock are the
+ * same shape with different content. The fraction is read inside the `Canvas`,
+ * so a frame invalidates the drawing and nothing else.
  */
 @Composable
 fun ProgressRing(
@@ -71,9 +68,9 @@ fun ProgressRing(
 }
 
 /**
- * [future] is kept apart from "no reviews" on purpose: a Saturday with nothing is
- * an empty day, a Sunday that has not arrived yet is not a failure, and painting
- * them the same would turn every Monday into a report card of lost days.
+ * [future] is not "no reviews": a Saturday with nothing is an empty day, a
+ * Sunday that has not arrived is not, and painting them alike turns every Monday
+ * into a report card of lost days.
  */
 data class WeekDay(
     val abbreviation: String,
@@ -84,11 +81,8 @@ data class WeekDay(
 )
 
 /**
- * The seven days of the current week.
- *
- * [dashed] is the same week for a course with no words yet: the anatomy does not
- * change, the squares just keep their outline. Today stays marked — it is the
- * only date that exists before there is any history.
+ * [dashed] is the same week for a course with no words: same anatomy, outlined
+ * squares. Today stays marked — the only date that exists before any history.
  */
 @Composable
 fun WeekStrip(
@@ -119,8 +113,8 @@ fun WeekStrip(
 }
 
 /**
- * Deliberately without the number. A faded "27" inside an empty square is the
- * date of a day when nothing happened, and seven in a row read as a lost week.
+ * No number: a faded "27" in an empty square dates a day nothing happened, and
+ * seven in a row read as a lost week.
  */
 @Composable
 private fun EmptySquare() {
@@ -135,8 +129,8 @@ private fun EmptySquare() {
 @Composable
 private fun DaySquare(day: WeekDay) {
     val colors = MaterialTheme.colorScheme
-    // Two shades of mint rather than a gradient: at seven 40 dp squares a fine
-    // scale is not legible. What has to read is "worked" against "worked a lot".
+    // Two shades of mint, not a gradient: at 40dp a fine scale is not legible,
+    // and what has to read is "worked" against "worked a lot".
     val targetBackground = when {
         day.today -> colors.secondaryContainer
         day.future -> colors.surfaceVariant
@@ -144,8 +138,8 @@ private fun DaySquare(day: WeekDay) {
         day.reviews > 0 -> colors.tertiaryContainer
         else -> colors.outlineVariant
     }
-    // Today's square changes color mid-session, at the third review. The
-    // transition is what makes that step get noticed.
+    // Today's square changes colour mid-session at the third review; the
+    // transition is what gets that noticed.
     val background by animateColorAsState(targetBackground, tween(Motion.DEFAULT), label = "dayBackground")
     val text = when {
         day.today -> colors.primary
@@ -155,7 +149,7 @@ private fun DaySquare(day: WeekDay) {
         else -> colors.onSurfaceVariant
     }
 
-    // Resolved out here because `semantics {}` is not a composable scope.
+    // Hoisted: `semantics` is not a composable scope.
     val description = when {
         day.future -> stringResource(R.string.a11y_day_future, day.number)
         day.reviews == 0 -> stringResource(R.string.a11y_day_no_reviews, day.number)
@@ -182,15 +176,15 @@ private fun DaySquare(day: WeekDay) {
     }
 }
 
-/** From here the day earns the strong mint. It is the steady-state daily load. */
+/** The steady-state daily load, from `Retention.MIN_RATE`. */
 private const val FULL_DAY_REVIEWS = 3
 
 /**
- * Zero-weight bands disappear rather than becoming a 1 px thread, which would
- * only say a category is empty — and the legend beside it already says that.
+ * Zero-weight bands disappear rather than becoming a 1px thread saying what the
+ * legend beside them already says.
  *
- * The stroke is `scaleX` on a `graphicsLayer` rather than animated width, so the
- * three bands are measured once and the animation stays in the draw phase.
+ * `scaleX` on a `graphicsLayer`, not animated width: the bands are measured once
+ * and the animation stays in the draw phase.
  */
 @Composable
 fun BandBars(strips: List<Pair<Int, Color>>, modifier: Modifier = Modifier, height: Dp = 8.dp) {
@@ -217,9 +211,8 @@ fun BandBars(strips: List<Pair<Int, Color>>, modifier: Modifier = Modifier, heig
 }
 
 /**
- * Progress, Day-by-day, What's left, Settings and New language open over a tab
- * and return to it. Without this arrow they would be dead ends, because the
- * bottom bar keeps marking the tab they came from.
+ * These screens open over a tab and return to it. Without the arrow they are
+ * dead ends: the bottom bar keeps marking the tab they came from.
  */
 @Composable
 fun InnerHeader(
@@ -247,10 +240,7 @@ fun InnerHeader(
     }
 }
 
-/**
- * An informative counter with no consequence when it runs over. It is not a
- * safety quota, which is why the bar is a supporting element rather than an alert.
- */
+/** Nothing happens when it runs over, so the bar supports rather than alerts. */
 @Composable
 fun AiUsageRow(used: Int, limit: Int, modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme

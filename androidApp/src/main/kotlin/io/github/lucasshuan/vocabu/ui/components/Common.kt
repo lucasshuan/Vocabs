@@ -40,11 +40,8 @@ import io.github.lucasshuan.vocabu.shared.domain.Retention
 import io.github.lucasshuan.vocabu.ui.theme.LocalDarkTheme
 
 /**
- * The "word" / "phrase" badge.
- *
- * Phrase is the one that gets the plum tone: two or more tokens is the less
- * frequent case and the one that should stand out in a list. Lower case on
- * purpose — it is a classification, not a title.
+ * Phrase gets the plum tone: the less frequent case is the one that should stand
+ * out in a list. Lower case — a classification, not a title.
  */
 @Composable
 fun TypeBadge(type: TargetType, modifier: Modifier = Modifier) {
@@ -134,12 +131,9 @@ private fun duplicateStatusRes(status: EntryStatus): Int = when (status) {
 }
 
 /**
- * "now", "5m ago", "2h ago", "yesterday", "3d ago".
- *
- * Written against `Resources` rather than `Context` throughout this file:
- * `LocalContext.current` does not invalidate when the configuration changes, so
- * a composable reading through it keeps the previous language's text after the
- * in-app picker switches. `LocalResources.current` does invalidate.
+ * On `Resources`, not `Context`, throughout this file: `LocalContext.current`
+ * does not invalidate on configuration change, so text read through it goes
+ * stale in the old language after the in-app picker switches.
  */
 fun Resources.relativeTime(instant: Long, now: Long = System.currentTimeMillis()): String {
     val minutes = ((now - instant) / 60_000L).coerceAtLeast(0)
@@ -157,12 +151,9 @@ fun relativeTime(instant: Long, now: Long = System.currentTimeMillis()): String 
     LocalResources.current.relativeTime(instant, now)
 
 /**
- * The forward-looking mirror of [relativeTime]: "now", "in 4h", "tomorrow".
- *
- * Takes a **duration**, not an instant, on purpose. [relativeTime] has a
- * `System.currentTimeMillis()` default — a UI-layer clock that ignores the time
- * source injected into the repository. Repeating that here would let the card's
- * bar and the home card disagree about what time it is.
+ * Takes a duration, not an instant: [relativeTime]'s `currentTimeMillis()`
+ * default is a UI clock that ignores the repository's time source, and
+ * repeating it here would let the card's bar and Home disagree on the time.
  */
 fun Resources.timeUntil(millis: Long): String {
     val minutes = (millis / 60_000L).coerceAtLeast(0)
@@ -179,7 +170,7 @@ fun Resources.timeUntil(millis: Long): String {
 @Composable
 fun timeUntil(millis: Long): String = LocalResources.current.timeUntil(millis)
 
-/** "0:12", "1:03:20" — an audio duration, from millis. */
+/** "0:12", "1:03:20". */
 fun formatDurationMs(durationMs: Long): String {
     val totalSeconds = (durationMs / 1_000).coerceAtLeast(0)
     val hours = totalSeconds / 3_600
@@ -189,18 +180,15 @@ fun formatDurationMs(durationMs: Long): String {
     return if (hours > 0) "$hours:${minutes.toString().padStart(2, '0')}:$paddedSeconds" else "$minutes:$paddedSeconds"
 }
 
-/** The same duration from seconds — what the recording timer counts. */
 fun formatDuration(seconds: Long): String = formatDurationMs(seconds * 1_000L)
 
 /**
- * What to call a raw capture: "Audio · 0:12", "Photo from Kindle", "“tant pis”".
+ * "Audio · 0:12", "Photo from Kindle", "“tant pis”". Pending and the selection
+ * header share it, so tapping a row leads somewhere recognisable. The only place
+ * `source` shows, which is what makes it worth filling in.
  *
- * Pending's list and the selection header need the same name — tapping a row has
- * to lead to a recognizable screen. It is also the only place `source` appears,
- * which is what makes it worth filling in.
- *
- * Pasted text shows its own snippet in quotes rather than the word "Text": in a
- * queue of five captures, "Text" three times distinguishes nothing.
+ * Text shows its snippet, not the word "Text": three "Text" rows in a queue of
+ * five distinguish nothing.
  */
 fun Resources.captureTitle(capture: Capture): String {
     val source = capture.source?.takeIf { it.isNotBlank() }
@@ -221,7 +209,7 @@ fun Resources.captureTitle(capture: Capture): String {
 @Composable
 fun captureTitle(capture: Capture): String = LocalResources.current.captureTitle(capture)
 
-/** One line of snippet for a title, cut at the word rather than the letter. */
+/** Cuts at the word, not the letter. */
 fun summarize(text: String, limit: Int = 38): String {
     val clean = text.trim().replace(Regex("\\s+"), " ")
     if (clean.length <= limit) return clean
@@ -239,11 +227,8 @@ fun levelColor(level: MemoryLevel): Color = when (level) {
 }
 
 /**
- * The level label only earns mint at "mastered".
- *
- * At the other levels it is supporting information: the bar beside it carries the
- * state, and two colored elements saying the same thing would make "familiar"
- * look like an achievement.
+ * Mint only at "mastered": the bar beside it already carries the state, and two
+ * coloured elements saying it would make "familiar" look like an achievement.
  */
 @Composable
 fun levelLabelColor(level: MemoryLevel): Color =
@@ -264,10 +249,8 @@ fun levelLabel(level: MemoryLevel): String = stringResource(levelLabelRes(level)
 fun Resources.levelLabel(level: MemoryLevel): String = getString(levelLabelRes(level))
 
 /**
- * "review now" once past the threshold, otherwise "in 2d 4h".
- *
- * Null when there is no retention: with no card ready there is no scheduled
- * review, and "review now" would send someone to an empty queue.
+ * Null without retention: no card ready means no scheduled review, and "review
+ * now" would send someone to an empty queue.
  */
 @Composable
 fun nextReviewText(retention: Retention?, now: Long): String? {
@@ -275,12 +258,7 @@ fun nextReviewText(retention: Retention?, now: Long): String? {
     return if (missing <= 0L) stringResource(R.string.review_now) else timeUntil(missing)
 }
 
-/**
- * Memory strength as a bar.
- *
- * Usable short (Words reserves 84 dp beside the label) or full width (the card),
- * so it forces no width of its own — the caller decides with the modifier.
- */
+/** Forces no width: Words gives it 84dp beside the label, the card gives it all. */
 @Composable
 fun MemoryBar(
     points: Double,
@@ -309,17 +287,14 @@ fun MemoryBar(
 }
 
 /**
- * What to name an entry before a target has been typed.
- *
- * This was a property on `Entry`, in `:shared`. It lives here because nothing
- * below `:androidApp` should produce display text: a domain module has no
- * resources, so a title decided there can only ever exist in one language.
+ * Here, not on `Entry`: nothing below `:androidApp` produces display text, since
+ * a domain module has no resources and its sentence exists in one language only.
  */
 @Composable
 fun entryTitle(entry: Entry): String =
     entry.target?.takeIf { it.isNotBlank() } ?: stringResource(untitledResOf(entry.format))
 
-/** The same, for the view models that have to name an entry outside composition. */
+/** The same, for view models naming an entry outside composition. */
 fun Resources.entryTitle(entry: Entry): String =
     entry.target?.takeIf { it.isNotBlank() } ?: getString(untitledResOf(entry.format))
 

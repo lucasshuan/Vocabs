@@ -56,12 +56,9 @@ import io.github.lucasshuan.vocabu.ui.components.cardOutline
 import io.github.lucasshuan.vocabu.ui.languages.displayName
 
 /**
- * "New language".
- *
- * Serves both language choices, not one: enrolling in a new course and switching
- * the native language are the same list, the same search and the same selectable
- * row. Duplicating it to change the title and the button's verb would mean two
- * identical screens that diverge on the first adjustment.
+ * Serves both language choices: enrolling and switching the native language are
+ * the same list, search and row. Duplicating it to change a title and a verb
+ * would give two screens that diverge on the first adjustment.
  */
 @Composable
 fun NewLanguageScreen(
@@ -147,9 +144,9 @@ fun NewLanguageScreen(
             enabled = chosen != null,
             onClick = {
                 chosen?.let { language ->
-                    // Enrolling adds a course and needs no warning. Switching the
-                    // language you speak changes what every future card is written
-                    // in, and used to look like losing the ones you already had.
+                    // Enrolling needs no warning. Switching the language you
+                    // speak changes every future card, and used to look like
+                    // losing the ones already stored.
                     if (forNative) confirming = language else { vm.enroll(language.code); onBack() }
                 }
             },
@@ -207,11 +204,8 @@ private fun LanguageRow(language: Language, selected: Boolean, onClick: () -> Un
 }
 
 /**
- * The search field.
- *
- * `BasicTextField` rather than `OutlinedTextField`: the design is a 14-radius
- * card with the magnifier inside, and Material's field brings a floating label,
- * its own outline and a minimum height that do not fit it.
+ * `BasicTextField`, not `OutlinedTextField`: Material's brings a floating label,
+ * its own outline and a minimum height, none of which fit this card.
  */
 @Composable
 private fun SearchField(value: String, onChange: (String) -> Unit) {
@@ -249,13 +243,10 @@ private fun SearchField(value: String, onChange: (String) -> Unit) {
 }
 
 /**
- * The confirmation before the language you speak changes.
- *
- * It exists because the change is invisible until the next card is generated,
- * and because the screen behind it used to read zero afterwards — so the fear
- * it answers is "did I just delete everything". Hence the reassurance first,
- * both languages named, and an explicit line separating this from the app's own
- * language, which is the setting immediately above it.
+ * The change is invisible until the next card is generated, and the screen
+ * behind used to read zero afterwards — so the fear it answers is "did I just
+ * delete everything". Reassurance first, both languages named, and a line
+ * separating this from the app's own language, the setting just above it.
  */
 @Composable
 private fun SwitchNativeDialog(

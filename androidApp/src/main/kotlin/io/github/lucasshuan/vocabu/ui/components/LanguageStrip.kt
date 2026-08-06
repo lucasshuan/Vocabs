@@ -49,20 +49,11 @@ import io.github.lucasshuan.vocabu.ui.languages.displayName
 import io.github.lucasshuan.vocabu.ui.languages.languageOf
 
 /**
- * The course strip at the top of Home.
+ * Fixed order, never reordered by what is due: a swipe is only cheap while
+ * muscle memory knows Spanish sits right of English.
  *
- * The **order is fixed** — never reordered by what is due. Changing page is a
- * swipe, and a swipe is only cheap while muscle memory knows Spanish sits right
- * of English. A strip that reshuffled on every due review would mean rereading
- * the three flags every morning.
- *
- * Every flag **has a badge** — a plum number when there is something to review, a
- * mint tick when up to date, a grey hourglass when nothing is scheduled yet.
- * Never empty and never a written "0": zero is the strip's only good news, and
- * writing it as a number would turn it into a scoreboard of nothing done.
- *
- * The scroll follows the page, so arriving at French by swiping the carousel
- * finds the French chip already visible.
+ * Every flag is badged, never empty and never a written "0": zero is the strip's
+ * only good news, and as a number it reads as a scoreboard of nothing done.
  */
 @Composable
 fun LanguageStrip(
@@ -100,10 +91,8 @@ fun LanguageStrip(
 }
 
 /**
- * One flag in the strip: disc, name and badge.
- *
- * The active course's badge inverts its colors because the whole chip went plum —
- * a plum badge on plum would vanish on the one page that is open.
+ * The active chip inverts its badge: the chip itself went plum, and a plum badge
+ * on plum vanishes on the one page that is open.
  */
 @Composable
 fun LanguageChip(
@@ -126,8 +115,7 @@ fun LanguageChip(
     )
 
     val touch = rememberHaptics()
-    // Hoisted: `semantics` is not a composable scope, so `stringResource` cannot
-    // be called inside it.
+    // Hoisted: `semantics` is not a composable scope.
     val name = language.displayName
     val description = badgeDescription(name, badge)
     Row(
@@ -153,11 +141,8 @@ fun LanguageChip(
 }
 
 /**
- * The badge, in its three states.
- *
- * The number changes with a short vertical transition: as a review leaves the
- * queue the "3" rises and the "2" enters underneath, which says the number went
- * down without anything else on screen having to.
+ * The number changes on a short vertical transition: the "3" rises and the "2"
+ * enters underneath, which says it went down without anything else moving.
  */
 @Composable
 private fun CourseBadgeView(badge: CourseBadge, inverted: Boolean) {
@@ -206,7 +191,6 @@ private fun CourseBadgeView(badge: CourseBadge, inverted: Boolean) {
     }
 }
 
-/** The `+` that closes the strip and leads to adding a language. */
 @Composable
 private fun AddLanguageChip(onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
@@ -226,10 +210,8 @@ private fun AddLanguageChip(onClick: () -> Unit) {
 }
 
 /**
- * Pending's filter chip: flag and count, or text alone for "All".
- *
- * "All" is deliberately the only one without a flag — it is not one more language
- * in the row, it is the absence of a slice, and a flag would suggest otherwise.
+ * "All" is the only one without a flag: it is the absence of a slice, not one
+ * more language in the row.
  */
 @Composable
 fun LanguageFilterPill(
@@ -265,10 +247,6 @@ fun LanguageFilterPill(
     }
 }
 
-/**
- * The language pill that opens Pending's rows and Words' headers: small flag and
- * name, no state.
- */
 @Composable
 fun LanguageMark(
     language: Language,
@@ -286,7 +264,6 @@ fun LanguageMark(
     }
 }
 
-/** The carousel dot: a small bar for the open page, discs for the others. */
 @Composable
 fun PageDots(total: Int, current: Int, modifier: Modifier = Modifier) {
     if (total <= 1) return

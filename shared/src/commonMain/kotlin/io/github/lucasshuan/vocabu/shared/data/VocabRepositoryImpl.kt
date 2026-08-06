@@ -51,9 +51,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
 /**
- * The `require` messages here are plain English literals and stay that way: they
- * describe a programming error to whoever reads the crash, and no screen renders
- * them. Text a person is meant to read lives in `:androidApp`, in resources.
+ * The `require` messages are literals on purpose: no screen renders them, they
+ * describe a programming error. Text a person reads lives in `:androidApp`.
  */
 class VocabRepositoryImpl(
     private val db: VocabsDatabase,
@@ -61,12 +60,8 @@ class VocabRepositoryImpl(
     private val io: CoroutineDispatcher,
     private val now: () -> Long,
     /**
-     * The active course, as a flow.
-     *
-     * Enters through the constructor because the choice is a device preference
-     * and the repository is common to both KMP sides. Being a flow rather than a
-     * getter is what makes every screen rebuild itself when the course changes in
-     * the strip; otherwise each ViewModel would have to resubscribe.
+     * A flow, not a getter: every screen rebuilds itself when the strip switches
+     * course, instead of each ViewModel resubscribing.
      */
     private val activeCourse: Flow<LanguagePair> = flowOf(LanguagePair.DEFAULT),
     private val removeFile: (String) -> Unit = {},
@@ -112,13 +107,9 @@ class VocabRepositoryImpl(
             .no(scope) { it.languagePair }
 
     /**
-     * A [Scope] applied to an already-built list.
-     *
-     * Filtering in memory rather than in SQL is deliberate: the active course is a
-     * preference flow, and a query parameterised by it would have to be rebuilt —
-     * and the cursor reopened — on every swipe of the carousel. A device's whole
-     * card list fits in memory comfortably; the recreated cursor does not fit the
-     * frame budget.
+     * In memory, not in SQL: the active course is a preference flow, and a query
+     * parameterised by it reopens the cursor on every carousel swipe. A device's
+     * card list fits in memory; the reopened cursor does not fit the frame budget.
      */
     private fun <T> Flow<List<T>>.no(scope: Scope, languagePair: (T) -> LanguagePair): Flow<List<T>> =
         combine(fitsScope(scope)) { itens, cabe -> itens.filter { cabe(languagePair(it)) } }
@@ -141,8 +132,8 @@ class VocabRepositoryImpl(
         queries.findEntryById(id).asFlow().mapToOneOrNull(io).map { it?.let(::toDomain) }
 
     override fun observeEntries(ids: List<Long>): Flow<List<Entry>> {
-        // `IN ()` is not valid SQLite, and an empty list is the normal state of
-        // the confirmation screen before the navigation argument arrives.
+        // `IN ()` is not valid SQLite, and empty is the confirmation screen's
+        // normal state before the navigation argument arrives.
         if (ids.isEmpty()) return flowOf(emptyList())
         return queries.listEntriesByIds(ids).asFlow().mapToList(io)
             .map { lines -> lines.map(::toDomain) }
@@ -172,14 +163,12 @@ class VocabRepositoryImpl(
             dayStreak = streak.dayStreak,
             reviewedToday = streak.reviewedToday,
             bestStreak = bestStreakOf(days),
-            // What is already done today comes from retention itself, not from
-            // `reviewed_day`: that table counts the whole day across every course,
+            // From retention, not `reviewed_day`: that table counts every course,
             // and the quota belongs to the active one.
             //
-            // The 48h cut before the conversion is not premature optimisation:
-            // `localDayOf` is a database query, and without it there would be one
-            // per word on every emission. No review from today can fall outside
-            // that window, so the cut does not change the answer.
+            // The 48h cut comes first because `localDayOf` is a database query —
+            // otherwise one per word, per emission. Nothing from today falls
+            // outside that window, so the cut does not change the answer.
             quota = DailyQuota(
                 done = readyEntries.count { entry ->
                     val retention = entry.retention ?: return@count false
@@ -335,12 +324,8 @@ class VocabRepositoryImpl(
     }
 
     /**
-     * Which pair this capture is born into — the one chosen on the sheet, or the
-     * active course.
-     *
-     * Since the language became a decision made while recording, the active course
-     * is only the opening guess: capturing in Spanish while on the English page is
-     * a normal case, and what arrives here is the decision already made.
+     * The active course is only the opening guess: capturing in Spanish from the
+     * English page is normal, and the sheet's choice arrives here already made.
      */
     private suspend fun courseOfCapture(languagePair: LanguagePair?): LanguagePair = languagePair ?: activeCourse.first()
 
@@ -439,8 +424,8 @@ class VocabRepositoryImpl(
                         incorrect_count = initial.misses.toLong(),
                         id = id,
                     )
-                    // First time only: regenerating a card that already existed is
-                    // not something that happened today, it is a repair.
+                    // First time only: regenerating an existing card is a repair,
+                    // not something that happened today.
                     note(id, EventType.CARD_READY)
                 }
                 val month = localMonthOf(now())
@@ -452,8 +437,8 @@ class VocabRepositoryImpl(
             queries.markStatus(status = EntryStatus.PENDING.name, id = id)
             throw cancellation
         } catch (failure: Exception) {
-            // Anything that is not a CardException came from this side, not from
-            // the server, so it has no code of its own to record.
+            // Anything but a CardException came from this side, so it carries no
+            // code of its own.
             val error = failure as? CardException
             queries.markError(
                 status = EntryStatus.ERROR.name,
@@ -496,9 +481,8 @@ class VocabRepositoryImpl(
                 type = if (correct) EventType.CORRECT else EventType.INCORRECT,
                 detail = fresh.reviews.toString(),
             )
-            // The level change is what the timeline calls "became mastered", and
-            // it only exists by comparing before and after — once written, the
-            // before is gone.
+            // "Became mastered" only exists by comparing before and after, and
+            // once written the before is gone.
             val rose = Steps.level(Steps.of(fresh))
             if (rose != Steps.level(Steps.of(previous))) {
                 note(entryId = id, type = EventType.LEVELED_UP, detail = rose.name)

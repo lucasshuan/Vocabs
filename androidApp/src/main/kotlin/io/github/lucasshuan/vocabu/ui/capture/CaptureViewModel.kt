@@ -15,11 +15,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * What the `+` sheet needs to know: which languages can be saved to, and which
- * one arrives marked.
- *
- * The marked one is the open course. There is no third notion of "last capture
- * language" — it would be one more state to diverge from what the screen shows.
+ * The marked language is the open course. No third notion of "last capture
+ * language" — one more state to diverge from what the screen shows.
  */
 data class CaptureState(
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
@@ -40,13 +37,9 @@ class CaptureViewModel(app: Application) : AndroidViewModel(app) {
     ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CaptureState())
 
     /**
-     * Saves the snippet and returns the capture, which is where the selection
-     * goes.
-     *
-     * "Continue" records before there is any selection on purpose: from here on,
-     * abandoning the marking, closing the app or losing the connection leaves the
-     * capture in Pending with the language already chosen, instead of throwing
-     * away what was pasted.
+     * Records before any selection exists: abandoning the marking, closing the
+     * app or losing the connection leaves the capture in Pending rather than
+     * throwing away what was pasted.
      */
     fun saveSnippet(snippet: String, target: String, onReady: (Long) -> Unit) {
         val languagePair = LanguagePair(native = state.value.languagePair.native, target = target)
@@ -56,11 +49,9 @@ class CaptureViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * OCR and speech are local and slow; the capture is already saved before them.
-     *
-     * Runs in the application scope because the sheet closes immediately: tied to
-     * `viewModelScope`, the screen's cancellation would leave the capture in
-     * TRANSCRIBING forever.
+     * The capture is saved before OCR or speech runs, in the application scope:
+     * the sheet closes immediately, and `viewModelScope` would be cancelled with
+     * it, leaving the capture in TRANSCRIBING forever.
      */
     fun saveMedia(
         format: CaptureFormat,

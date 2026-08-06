@@ -33,8 +33,8 @@ fun main() {
 fun Application.module() {
     val log = LoggerFactory.getLogger("vocabs")
 
-    // Failing at boot beats failing on the first capture: with no token every
-    // request would be a 401, discovered with the phone already in hand.
+    // Fails at boot: without a token every request 401s, discovered with the
+    // phone already in hand.
     val expectedToken = Config.required("APP_TOKEN")
 
     val generator = CardGenerator()
@@ -44,17 +44,14 @@ fun Application.module() {
     }
     install(CallLogging)
     install(StatusPages) {
-        // Before the general handler: a language pair that does not exist will not
-        // improve on a retry, and a 503 would make the app retry.
+        // Before the general handler, which would answer 503 and make the app retry.
         exception<UnknownLanguagePair> { call, causa ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse(ErrorCode.UNKNOWN_LANGUAGE_PAIR.name, causa.message))
         }
         exception<Throwable> { call, causa ->
             log.error("Falha ao gerar card", causa)
-            // 503 rather than 500: to the app that means "try again", not "give
-            // up". The full cause stays in the log; only the first line, capped,
-            // goes to the screen — otherwise an API error becomes a JSON dump on
-            // the phone.
+            // 503, not 500: the app reads it as "try again". Only the first line,
+            // capped — an API error is otherwise a JSON dump on the phone.
             val detail = causa.message
                 ?.lineSequence()
                 ?.firstOrNull()

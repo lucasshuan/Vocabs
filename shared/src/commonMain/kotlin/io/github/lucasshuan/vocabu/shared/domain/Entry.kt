@@ -7,11 +7,8 @@ import io.github.lucasshuan.vocabu.contracts.TargetType
 /**
  * A confirmed target inside a capture and, once ready, its card.
  *
- * [card] deliberately reuses the contract type: a third shape just for the domain
- * would be one more copy to keep in sync, for nothing.
- *
- * [retention] follows the same rule as [card]: it exists if and only if there is
- * a card to review.
+ * [card] reuses the contract type rather than restating it, and [retention]
+ * exists if and only if [card] does.
  */
 data class Entry(
     val id: Long,
@@ -28,16 +25,15 @@ data class Entry(
     val mediaPath: String?,
     val card: CardResponse?,
     val retention: Retention?,
-    /** Which failure, so the screen can pick the wording. Null when there was none. */
+    /** The screen picks the wording from this. */
     val errorCode: ErrorCode?,
-    /** What does not translate: the provider's raw sentence, or the HTTP status. */
+    /** The provider's raw sentence or the HTTP status — untranslatable. */
     val errorDetail: String?,
-    /** Inherited from the capture: the pair this card is born in and regenerated in. */
+    /** Inherited from the capture: what this card is born in and regenerated in. */
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
 ) {
     fun needsReview(now: Long): Boolean = retention?.needsReview(now) == true
 
-    /** Which rung of the "What's left" ladder it is on. */
     val step: Int get() = Steps.of(retention)
 
 }
@@ -74,11 +70,8 @@ private fun duplicatePriority(status: EntryStatus): Int = when (status) {
 }
 
 /**
- * How the signal entered the app.
- *
- * Each context has a different constraint — gaming, you do not want to leave the
- * game; reading, your hands are busy. Photo and audio exist to capture in seconds
- * and resolve later, not to be processed on the spot.
+ * Photo and audio exist to capture in seconds and resolve later — mid-game or
+ * hands-busy, leaving the app is the cost that matters.
  */
 enum class CaptureFormat {
     TEXT,
@@ -92,11 +85,8 @@ enum class CaptureFormat {
 }
 
 /**
- * A capture records and returns immediately (PENDING); generating the card
- * happens afterwards, in the background.
- *
- * The draft belongs to [Capture]; an entry only exists once a target has been
- * confirmed.
+ * A capture returns immediately at PENDING; the card is generated afterwards.
+ * The draft belongs to [Capture] — an entry exists only once a target is confirmed.
  */
 enum class EntryStatus {
     PENDING,

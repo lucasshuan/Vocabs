@@ -12,26 +12,19 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 /**
- * What the person chose and the database does not keep: native language, which
- * courses they have, which one is open, and the theme.
+ * `SharedPreferences`, not DataStore: five scalars read in first composition,
+ * and a suspending theme read would flash light before dark.
  *
- * `SharedPreferences` rather than DataStore: five scalar values read in the first
- * composition of several screens, and DataStore would make every read suspend —
- * including the theme's, which has to be resolved before the first frame so the
- * app does not flash from light to dark.
- *
- * Nothing here is the source of truth about **cards**. Which pair each card was
- * born in lives in the database, on the capture.
+ * Nothing here is the truth about cards — the pair each was born in is on the
+ * capture, in the database.
  */
 class Preferences(context: Context) {
 
     /**
-     * The file name on disk. Renaming it does not migrate anything — it creates
-     * an empty file beside the old one, so an existing install comes back with
-     * no native language, no enrolled courses and the default theme, while the
-     * word database sits there intact and no screen knows what language to show
-     * it in. Changing it again means shipping a migration that reads the old
-     * file first.
+     * A storage identity. Renaming it migrates nothing: it opens an empty file
+     * beside the old one, and the install comes back with no native language and
+     * no enrolled courses while the word database sits there intact. Change it
+     * only with a migration that reads the old name first.
      */
     private val prefs: SharedPreferences =
         context.applicationContext.getSharedPreferences("vocabu_prefs", Context.MODE_PRIVATE)
@@ -47,11 +40,8 @@ class Preferences(context: Context) {
         set(value) = prefs.edit().putString(TARGET, value).apply()
 
     /**
-     * The enrolled courses, in the order the strip shows them.
-     *
-     * A separate list rather than "the languages that already have cards": a newly
-     * created course has no words, and disappearing from the strip the instant
-     * after being created is the opposite of what the screen promises.
+     * In strip order. A separate list, not "languages that have cards": a new
+     * course has no words, and would vanish from the strip on creation.
      */
     var courses: List<String>
         get() = prefs.getString(COURSES, null)
@@ -65,24 +55,20 @@ class Preferences(context: Context) {
 
     val languagePair: LanguagePair get() = LanguagePair(native = native, target = target)
 
-    /** Enrolls in a new language and opens it — what the New language button does. */
     fun enroll(code: String) {
         courses = courses + code
         target = code
     }
 
-    /** Switches the open course, enrolling first so it can never point nowhere. */
+    /** Enrols first, so the open course can never point nowhere. */
     fun openCourse(code: String) {
         if (code !in courses) courses = courses + code
         target = code
     }
 
     /**
-     * Removes a language from the strip. Its cards stay in the database.
-     *
-     * Never empties the list: with no course, Home would have no page, the `+` no
-     * destination, and the only way out would be enrolling blind. Leaving the open
-     * course opens the first one left.
+     * Off the strip only; the cards stay. Never empties the list — with no
+     * course Home has no page and the `+` no destination.
      */
     fun unenroll(code: String) {
         val rest = courses - code
@@ -92,12 +78,9 @@ class Preferences(context: Context) {
     }
 
     /**
-     * Which Words groups are closed.
-     *
-     * A preference, not screen state: someone studying three languages who wants
-     * to see one closes the other two once, and reopening them on every return to
-     * the tab would undo the gesture. Stores the closed ones because the default
-     * is open — a new language appears expanded without being registered.
+     * A preference, not screen state: reopening the groups on every return to
+     * the tab would undo the gesture. Stores the closed ones, so a new language
+     * appears expanded without being registered anywhere.
      */
     var collapsedGroups: Set<String>
         get() = prefs.getStringSet(COLLAPSED, emptySet()).orEmpty()
@@ -116,10 +99,8 @@ class Preferences(context: Context) {
     // ---- observation --------------------------------------------------------
 
     /**
-     * One flow per key, fed by SharedPreferences' own listener.
-     *
-     * This is what makes the language strip and the word list rebuild on the same
-     * frame the course changes, rather than the next time the screen is recreated.
+     * On SharedPreferences' own listener, so the strip and the word list rebuild
+     * on the frame the course changes, not the next time the screen is recreated.
      */
     private fun <T> observe(vararg keys: String, read: () -> T): Flow<T> = callbackFlow {
         trySend(read())
@@ -129,9 +110,8 @@ class Preferences(context: Context) {
         prefs.registerOnSharedPreferenceChangeListener(listener)
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
-        // Conflated because what matters is the current value, not the series:
-        // switching course three times with the screen busy should show the
-        // third, not all three in sequence.
+        // The current value, not the series: three switches with the screen busy
+        // should land on the third, not replay all three.
         .conflate()
         .distinctUntilChanged()
 
@@ -143,7 +123,6 @@ class Preferences(context: Context) {
 
     fun observeCollapsedGroups(): Flow<Set<String>> = observe(COLLAPSED) { collapsedGroups }
 
-    /** The native language alone, for Settings' "My language" row. */
     fun observeNativeLanguage(): Flow<String> = observeLanguagePair().map { it.native }
 
     private companion object {
@@ -158,7 +137,6 @@ class Preferences(context: Context) {
     }
 }
 
-/** Light, dark, or whatever the device says — Settings' segmented control. */
 enum class ThemePreference {
     LIGHT,
     DARK,

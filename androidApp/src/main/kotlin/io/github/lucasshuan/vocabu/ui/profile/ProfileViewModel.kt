@@ -16,15 +16,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * Profile: the totals first, the per-language breakdown after.
- *
- * Streak and stock are habit, and habit belongs to the person rather than the
- * course — someone who studied Spanish yesterday and French today studied two
- * days running. So the three numbers at the top sum everything.
+ * The top three numbers sum everything: habit belongs to the person, not the
+ * course, and Spanish yesterday plus French today is two days running.
  */
 data class ProfileState(
     val languagePair: LanguagePair = LanguagePair.DEFAULT,
-    /** Every enrolled course, in strip order — empty ones included. */
+    /** In strip order, empty ones included. */
     val courses: List<CourseSummary> = emptyList(),
     val dayStreak: Int = 0,
     val aiUsage: AiUsage = AiUsage("", 0),
@@ -40,7 +37,7 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<ProfileState> = combine(
         enrolledCourses(repository, preferences),
         preferences.observeLanguagePair(),
-        // Across every course: the day streak counts activity in any language.
+        // The day streak counts activity in any language.
         repository.observeReviewSummary(Scope.All),
         repository.observeAiUsage(),
     ) { courseList, languagePair, review, aiUsage ->
@@ -52,7 +49,7 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProfileState())
 
-    /** How many languages are still choosable — New language's "37 languages". */
+    /** New language's "37 languages". */
     val available: StateFlow<Int> = preferences.observeCourses()
         .map { enrolled -> io.github.lucasshuan.vocabu.contracts.Languages.CATALOG.count { it.code !in enrolled } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)

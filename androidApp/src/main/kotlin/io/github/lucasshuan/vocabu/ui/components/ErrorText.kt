@@ -7,11 +7,8 @@ import io.github.lucasshuan.vocabu.R
 import io.github.lucasshuan.vocabu.contracts.ErrorCode
 
 /**
- * The server sends a code, not a sentence, so the sentence is chosen here.
- *
- * That split is what lets a failure be readable in the interface language
- * rather than in whatever language the server happens to speak. Any free text
- * the provider returned travels separately and is never translated.
+ * The server sends a code so the sentence can be chosen here, in the interface
+ * language. The provider's free text travels apart and is never translated.
  */
 @StringRes
 fun errorTextRes(code: ErrorCode?): Int = when (code) {

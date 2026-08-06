@@ -49,12 +49,8 @@ import io.github.lucasshuan.vocabu.ui.components.levelLabel
 import io.github.lucasshuan.vocabu.ui.components.nextReviewText
 
 /**
- * "What's left".
- *
- * Each word with the step it is on and how many correct answers remain to the
- * next name. This screen speaks in **steps**, not memory strength: the question
- * here is what to do, and memory strength answers something else — how much is
- * remembered now, which walks backwards on its own and is not a task.
+ * Speaks in steps, not memory strength: the question here is what to do, and
+ * memory strength walks backwards on its own, which is not a task.
  */
 @Composable
 fun WhatsLeftScreen(
@@ -135,9 +131,8 @@ private fun WordRow(entry: Entry, onClick: () -> Unit) {
     val remain = Steps.hitsToLevelUp(step)
     val now = System.currentTimeMillis()
     val next = nextReviewText(entry.retention, now)
-    // Compared against the schedule, not against the rendered text: the same
-    // check read `it == "revisar agora"` and would have gone silently false the
-    // moment that string was English.
+    // Against the schedule, not the rendered text: this check used to compare
+    // the label, and went silently false the moment the string was translated.
     val due = (entry.retention?.nextReviewIn(now) ?: 1L) <= 0L
 
     ScreenCard(
@@ -191,11 +186,8 @@ private fun WordRow(entry: Entry, onClick: () -> Unit) {
 }
 
 /**
- * The ladder as five strokes.
- *
- * Five separate strokes rather than one continuous bar: a step is a count, and a
- * bar would suggest positions exist between one step and the next — which is
- * exactly what memory strength shows, on the other screen.
+ * Separate strokes, not a continuous bar: a step is a count, and a bar suggests
+ * positions between them — which is what the other screen's bar shows.
  */
 @Composable
 private fun StepLadder(step: Int, modifier: Modifier = Modifier) {

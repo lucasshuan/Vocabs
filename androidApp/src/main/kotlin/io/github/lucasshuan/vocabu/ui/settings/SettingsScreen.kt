@@ -89,10 +89,8 @@ import java.io.File
 import kotlin.math.roundToInt
 
 /**
- * Settings — what applies to the whole app rather than to one course.
- *
- * "My language" changes the language cards are generated in; it does not change
- * the interface. The interface language is a separate setting.
+ * "My language" changes the language cards are generated in, not the interface.
+ * That is a separate setting.
  */
 @Composable
 fun SettingsScreen(
@@ -107,8 +105,7 @@ fun SettingsScreen(
     val activity = LocalActivity.current
     val language = languageOf(native)
 
-    // Read once, not observed: on 33+ the store is the system's and on older
-    // releases it is a file, and either way changing it recreates the activity.
+    // Not observed: changing it recreates the activity either way.
     val uiTag = remember(context) { UiLanguage.tagOf(context) }
     val uiLanguageName =
         if (uiTag.isEmpty()) stringResource(R.string.settings_system_default)
@@ -146,9 +143,8 @@ fun SettingsScreen(
     ) {
         InnerHeader(stringResource(R.string.settings_title), onBack, Modifier.padding(top = 8.dp))
 
-        // Two rows, not one. The interface language and the language cards are
-        // written in are independent settings, and the single "Idioma" row that
-        // used to be here was read as doing both.
+        // Two rows: they are independent settings, and the single row that used
+        // to be here was read as doing both.
         Section(icon = AppIcons.Globe, title = stringResource(R.string.settings_section_language), index = 0) {
             val colors = MaterialTheme.colorScheme
             ListRow(
@@ -182,9 +178,8 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = colors.onSurfaceVariant,
                 )
-                // The name crossfades: the picker closes over this screen, and
-                // without the transition the only thing confirming the change is
-                // text that was already in place when the screen reappeared.
+                // The picker closes over this screen: without the transition,
+                // the only confirmation is text already in place on return.
                 AnimatedContent(
                     targetState = language.displayName,
                     transitionSpec = {
@@ -231,8 +226,8 @@ fun SettingsScreen(
                 },
                 start = { IconDisc(AppIcons.Export, null, color = colors.primary, background = colors.primaryContainer) },
                 end = {
-                    // The spinner replaces the chevron rather than sitting beside
-                    // it: while the ZIP is being built the row opens nothing.
+                    // Replaces the chevron: while the ZIP builds, the row opens
+                    // nothing.
                     AnimatedContent(
                         targetState = exporting,
                         transitionSpec = { fadeIn(tween(Motion.FAST)).togetherWith(fadeOut(tween(Motion.FAST))) },
@@ -273,9 +268,8 @@ fun SettingsScreen(
 }
 
 /**
- * The icon marks where the section starts when scrolling cuts off the rule above,
- * so it is the size of the label and must not compete with the colored discs of
- * the rows below.
+ * The icon marks the start when scrolling cuts off the rule above, so it stays
+ * label-sized and does not compete with the coloured discs below it.
  */
 @Composable
 private fun Section(
@@ -289,9 +283,8 @@ private fun Section(
         modifier = Modifier.smoothEntrance(index).fillMaxWidth().padding(top = 4.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Appearance's icon follows the choice — sun, moon, half disc — and
-            // the spring's overshoot is the confirmation left for someone whose
-            // finger covered the segmented control while the pill slid under it.
+            // Appearance's icon follows the choice, and the spring's overshoot is
+            // the confirmation left for a finger covering the control.
             AnimatedContent(
                 targetState = icon,
                 transitionSpec = {
@@ -331,10 +324,7 @@ private fun SectionNote(text: String) {
     )
 }
 
-/**
- * A hard cut between two sentences in the same position reads as a rendering
- * glitch rather than a change.
- */
+/** A hard cut between two sentences in one position reads as a glitch. */
 @Composable
 private fun SwappingDetail(text: String) {
     AnimatedContent(
@@ -352,15 +342,8 @@ private fun SwappingDetail(text: String) {
 }
 
 /**
- * The ring exists because half the catalog's flags have white at the edge: on the
- * white surface of the light card the disc would look clipped.
- */
-/**
- * The interface languages that ship translations, plus "system default".
- *
- * Only the languages with a `values-xx/` folder are offered. Android 13+ shows
- * the same list under Settings > Apps > Vocabu > Language, from
- * `res/xml/locales_config.xml`.
+ * Only the languages with a `values-xx/` folder. Android 13+ shows the same list
+ * under Settings > Apps > Language, from `res/xml/locales_config.xml`.
  */
 @Composable
 private fun AppLanguagePicker(current: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
@@ -399,6 +382,10 @@ private fun LanguageChoice(label: String, selected: Boolean, onClick: () -> Unit
     }
 }
 
+/**
+ * Ringed: half the catalogue's flags have white at the edge, and on the light
+ * card's white surface the disc would look clipped.
+ */
 @Composable
 private fun NativeFlag(code: String) {
     val colors = MaterialTheme.colorScheme
@@ -453,9 +440,8 @@ private fun SwitchPill() {
 }
 
 /**
- * Left-aligned rather than centered: what ends up at the bottom of this screen
- * sits under the capture `+`, and a centered signature disappears behind it
- * exactly when the scroll reaches the end.
+ * Left-aligned: the bottom of this screen sits under the capture `+`, and a
+ * centred signature disappears behind it exactly at the end of the scroll.
  */
 @Composable
 private fun Signature() {
@@ -496,13 +482,12 @@ private fun themeIcon(theme: ThemePreference): ImageVector = when (theme) {
 }
 
 /**
- * Equal parts rather than text-sized widths — otherwise three choices of the
- * same weight get three different target sizes, and the smallest falls under the
- * touch minimum.
+ * Equal parts, not text-sized widths: three choices of the same weight would get
+ * three target sizes, and the smallest falls under the touch minimum.
  *
- * The pill is a **single** one, drawn behind the three labels and moved by a
- * spring. Each option painting its own background made a change a hard cut in two
- * places at once, with nothing saying it was one selection moving.
+ * One pill behind all three labels, moved by a spring. Per-option backgrounds
+ * made a change a hard cut in two places, with nothing saying it was one
+ * selection moving.
  */
 @Composable
 private fun ThemeSegmented(
@@ -528,8 +513,8 @@ private fun ThemeSegmented(
                 label = "themeSlide",
             )
 
-            // `offset` with a lambda: read in the placement phase, so the pill
-            // crosses the row without recomposing or remeasuring anyone.
+            // Read in the placement phase, so the pill crosses the row without
+            // recomposing or remeasuring anyone.
             Box(
                 Modifier
                     .offset { IntOffset((destination * width.toPx()).roundToInt(), 0) }

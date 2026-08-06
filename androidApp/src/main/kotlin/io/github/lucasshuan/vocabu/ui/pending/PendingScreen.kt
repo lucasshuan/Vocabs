@@ -51,20 +51,16 @@ import io.github.lucasshuan.vocabu.ui.languages.languageOf
 import io.github.lucasshuan.vocabu.ui.components.errorText
 
 /**
- * "Pending", across every language.
+ * The flag filter lives in the composition, not the ViewModel: leaving the tab
+ * undoes it, and a surviving slice would make the queue look smaller than it is.
  *
- * The flag filter is a manual choice and lives **in the composition**, not in the
- * ViewModel: leaving the tab undoes it. A slice that survived would make the
- * queue look smaller than it is on the next visit.
+ * Every row's subtext is the language. Transcription state left it — the
+ * coloured disc already says audio, photo or text, while the language, decided
+ * at recording time, appeared nowhere.
  *
- * Every row's subtext is the language. Transcription state left it because the
- * colored disc already says whether it is audio, photo or text — while the
- * language, decided at recording time, appeared nowhere.
- *
- * Every card here leaves by being dragged sideways. It is the only screen where
- * that applies, for one reason: a queue is the thing you clear. Discarding used
- * to be a round trip — open the capture, find the button, confirm — to say "this
- * was nothing", and a queue that costs that to shrink is a queue nobody shrinks.
+ * The only screen where every card leaves by being dragged: a queue is the thing
+ * you clear, and discarding used to cost a round trip — open, find the button,
+ * confirm — to say "this was nothing".
  */
 @Composable
 fun PendingScreen(
@@ -175,13 +171,9 @@ fun PendingScreen(
 }
 
 /**
- * The row that teaches the gesture.
- *
- * A gesture that only exists under the finger is one half the people never find:
- * no arrow, shadow or border announces a drag. The sentence stays — it is not a
- * first-run bubble — because it costs one 12 sp grey line and answers the only
- * question the screen would leave open. It goes with the queue: an empty screen
- * has no card to drag.
+ * Nothing announces a drag — no arrow, shadow or border — so half the people
+ * never find it. Not a first-run bubble: it costs one grey line and stays.
+ * Goes with the queue, since an empty screen has no card to drag.
  */
 @Composable
 private fun SwipeHint() {

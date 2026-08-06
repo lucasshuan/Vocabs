@@ -10,27 +10,19 @@ import kotlin.math.pow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/** How many points the profile keeps — always more bars than the screen draws. */
+/** Always more points than the screen has bars. */
 private const val PROFILE_POINTS = 180
 
-/** How many samples each point looks at before calling the peak good. */
 private const val SAMPLES_PER_POINT = 48
 
-/** The largest accepted size for a chunk that is not the data chunk. */
 private const val MAX_BLOCK = 1_000_000
 
-/** A real WAV has two or three chunks before the data; this is the guard. */
+/** A real WAV has two or three chunks before the data. */
 private const val MAX_BLOCKS = 12
 
 /**
- * The shape of the stored speech, read from the file itself.
- *
- * The recorder writes 16-bit PCM, so the peak comes from scanning the samples and
- * keeping the largest magnitude of each slice.
- *
- * Returns an empty array while reading and when the file is not a 16-bit PCM we
- * can read. In both cases the screen draws the calm line, which is honest — it
- * invents no relief that was never measured.
+ * Empty while reading, and for anything that is not readable 16-bit PCM. Both
+ * draw the calm line rather than relief that was never measured.
  */
 @Composable
 fun rememberWaveformProfile(path: String): State<FloatArray> =
@@ -39,11 +31,8 @@ fun rememberWaveformProfile(path: String): State<FloatArray> =
     }
 
 /**
- * The peak of the profile slice that fits this bar.
- *
- * The profile has fixed resolution and the bar count comes from screen width, so
- * a bar takes the **largest** point of its slice rather than the first: reducing
- * by sampling would erase exactly the transients that give the relief.
+ * The largest point of the slice, not the first: the profile's resolution is
+ * fixed and the bar count is not, and sampling erases the transients.
  */
 fun FloatArray.picoDaBarra(index: Int, bars: Int): Float {
     if (isEmpty() || bars <= 0) return 0f
@@ -65,8 +54,8 @@ private fun wavProfile(path: String): FloatArray {
             flow.readFully(riff)
             if (mark(riff, 0) != "RIFF" || mark(riff, 8) != "WAVE") return@use FloatArray(0)
 
-            // Walks the chunks to the data one: the 44-byte header is what our
-            // recorder writes, but a foreign WAV may carry others.
+            // Walks to the data chunk: our recorder writes a 44-byte header, but
+            // a foreign WAV may carry more.
             var bits = 0
             var channels = 0
             val header = ByteArray(8)
@@ -89,13 +78,11 @@ private fun wavProfile(path: String): FloatArray {
 }
 
 /**
- * The peaks, one per slice, already normalized.
+ * The step keeps cost off duration: a three-minute memo holds nearly three
+ * million samples and draws the same at forty-eight per slice.
  *
- * The step keeps cost from following duration: a three-minute memo has nearly
- * three million samples, and forty-eight per slice already gives the same
- * drawing. The floor in the normalization is what keeps a whisper from becoming a
- * shout — without it, dividing by its own maximum would push every recording,
- * loud or quiet, to the ceiling.
+ * [PEAK_FLOOR] keeps a whisper from becoming a shout — normalising by each
+ * recording's own maximum pushes every one of them to the ceiling.
  */
 private fun peaksOf(flow: DataInputStream, dataBytes: Int, bits: Int, channels: Int): FloatArray {
     if (bits != 16 || channels !in 1..2 || dataBytes <= 0) return FloatArray(0)
@@ -110,8 +97,8 @@ private fun peaksOf(flow: DataInputStream, dataBytes: Int, bits: Int, channels: 
     var remaining = dataBytes
     var frame = 0
 
-    // `runCatching` covers a file that ends before the size declared in the
-    // header: a recording interrupted midway still has a wave up to where it got.
+    // Covers a file ending before the header's declared size: a recording cut
+    // short still draws up to where it got.
     runCatching {
         while (remaining >= bytesPerFrame) {
             val chunk = minOf(buffer.size, remaining) / bytesPerFrame * bytesPerFrame

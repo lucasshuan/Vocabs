@@ -40,13 +40,9 @@ import io.github.lucasshuan.vocabu.shared.domain.tokenizeSnippet
 import io.github.lucasshuan.vocabu.ui.theme.Bricolage
 
 /**
- * The snippet as a selection field: a tap picks a word, a drag picks a phrase.
- *
- * The highlight exists **only while the finger is on the screen**. Once the
- * gesture ends the snippet returns to normal and what was chosen appears below as
- * a chip. One snippet can yield both `fence` and `on the fence`, and overlapping
- * ranges painted at once become a soup of color that no longer says how many
- * selections exist. The chip list says it, and is also what allows undoing.
+ * The highlight lives only while the finger is down; the chips below are the
+ * record. One snippet yields both `fence` and `on the fence`, and overlapping
+ * ranges painted at once stop saying how many selections exist.
  */
 @Composable
 fun TermPicker(
@@ -115,13 +111,9 @@ fun TermPicker(
 }
 
 /**
- * The chips of what has been chosen: term, type, and the ✕ that undoes it.
- *
- * Each springs in when the finger releases the snippet. It is the receipt for the
- * gesture, since the highlight in the text disappears the instant the selection
- * ends. The `key` ties the animation to the range rather than the position in the
- * list: without it, removing the first chip would make every other one enter
- * again.
+ * The receipt for a gesture whose highlight vanishes on release. `key` ties the
+ * animation to the range, not the list position: without it, removing the first
+ * chip makes every other one enter again.
  */
 @Composable
 fun SelectionChips(

@@ -54,12 +54,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val preferences = AppContainer.preferences(app)
 
     /**
-     * One read of every course, split up here.
-     *
-     * The carousel shows all three languages at once, so swiping must not fire a
-     * new query. Reading everything at once and grouping in memory is what makes
-     * the page change instant, and what guarantees the three cards are describing
-     * the same instant.
+     * One read, grouped in memory: swiping the carousel must not fire a query,
+     * and one read is also what makes the pages describe the same instant.
      */
     val state: StateFlow<HomeState> = combine(
         preferences.observeLanguagePair(),
@@ -96,9 +92,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             summary = CourseSummary(
                 target = languagePair.target,
                 total = entries.size,
-                // By step, as on every screen with a number: counting by memory
-                // strength would make the same total differ between screens,
-                // because it decays between one read and the next.
+                // By step, as everywhere: memory strength decays between reads,
+                // so the same total would differ between screens.
                 mastered = entries.count { Steps.level(it.step) == MemoryLevel.MASTERED },
                 inQueue = entries.count { it.needsReview(now) },
                 nextInMillis = misses.filter { it > 0L }.minOrNull(),
@@ -111,7 +106,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    /** Swiping the carousel **is** switching course: review and the `+` follow. */
+    /** Swiping the carousel is switching course: review and the `+` follow. */
     fun openCourse(code: String) = preferences.openCourse(code)
 
     private companion object {

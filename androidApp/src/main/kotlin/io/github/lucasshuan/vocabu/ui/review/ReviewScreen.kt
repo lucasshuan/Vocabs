@@ -98,11 +98,8 @@ fun ReviewScreen(onBack: () -> Unit, vm: ReviewViewModel = viewModel()) {
 }
 
 /**
- * The top bar, advancing one card at a time.
- *
- * The only thing on screen showing the whole session, and it only plays that part
- * if the advance is seen — jumping between frames along with the new card, it
- * disappears mid-swap.
+ * The only thing showing the whole session, and it only plays that part if the
+ * advance is seen: jumping with the new card, it disappears mid-swap.
  */
 @Composable
 private fun ProgressBar(fraction: Float, modifier: Modifier = Modifier) {
@@ -124,10 +121,9 @@ private fun ProgressBar(fraction: Float, modifier: Modifier = Modifier) {
 @Composable
 private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
     val keyboard = LocalSoftwareKeyboardController.current
-    // The verdict the box shows is a copy, not a read of the state. "Continue"
-    // clears the feedback and swaps the card at the same instant, while the box
-    // is still shrinking: reading live, those 150 ms of exit would show the
-    // **next** card's answer — giving away the word about to be asked.
+    // A copy, not a live read: "Continue" clears the feedback and swaps the card
+    // while the box is still shrinking, and those 150ms would show the next
+    // card's answer — giving away the word about to be asked.
     var lastVerdict by remember { mutableStateOf<Pair<ReviewFeedback, String>?>(null) }
     LaunchedEffect(state.feedback, state.entry.id) {
         state.feedback?.let { lastVerdict = it to state.entry.target.orEmpty() }
@@ -136,10 +132,8 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
         verticalArrangement = Arrangement.spacedBy(18.dp),
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
-        // The snippet is the only thing that changes between cards, so it is the
-        // snippet that moves and not the screen: the answer field below stays
-        // where it is with the cursor intact. Swapping the whole column would
-        // drop keyboard focus on every answered word.
+        // Only the snippet moves, not the screen: swapping the whole column
+        // would drop keyboard focus on every answered word.
         AnimatedContent(
             targetState = state.entry,
             transitionSpec = {
@@ -180,18 +174,15 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
             modifier = Modifier.fillMaxWidth(),
         )
 
-        // The verdict opens by pushing the button down rather than appearing
-        // ready in its place. It is the one moment of the review where something
-        // was found out, and 240 ms of opening separates "the screen answered"
-        // from "the screen was already like this".
+        // Opens by pushing the button down rather than appearing ready: 240ms
+        // separates "the screen answered" from "it was already like this".
         AnimatedVisibility(
             visible = state.feedback != null,
             enter = expandVertically(tween(Motion.DEFAULT)) + fadeIn(tween(Motion.DEFAULT)),
             exit = shrinkVertically(tween(Motion.FAST)) + fadeOut(tween(Motion.FAST)),
         ) {
-            // Live while the feedback exists, from the copy while it leaves — so
-            // the box is never a frame without content on entry and never shows
-            // the wrong card on exit.
+            // Live on entry, from the copy on exit: never a frame without
+            // content, never the wrong card's answer.
             val verdict = state.feedback?.let { it to state.entry.target.orEmpty() } ?: lastVerdict
             if (verdict != null) {
                 val (feedback, answer) = verdict
@@ -227,7 +218,7 @@ private fun CardSurface(state: ReviewState.CardSurface, vm: ReviewViewModel) {
     }
 }
 
-/** The gap becomes a plum rule: a solid underline, not underscores. */
+/** A solid plum rule, not underscores. */
 @Composable
 private fun annotatedCloze(snippet: String) = buildAnnotatedString {
     val cut = snippet.indexOf(GAP)
@@ -265,9 +256,8 @@ private fun Summary(state: ReviewState.Summary, vm: ReviewViewModel, onBack: () 
             style = MaterialTheme.typography.headlineLarge,
             modifier = Modifier.smoothEntrance().padding(top = 48.dp),
         )
-        // Hits and streak count up from zero; "to reinforce" does not. The first
-        // two are what the session earned; the third is what is still missing,
-        // and a rising count there would turn a mistake into a score.
+        // Hits and streak count up; "to reinforce" does not. It is what is still
+        // missing, and a rising count there turns a mistake into a score.
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
             MetricCard("${animatedCount(state.hits, "hits")}", stringResource(R.string.review_hits), Modifier.weight(1f), highlight = true)
             MetricCard("${state.misses}", stringResource(R.string.review_to_reinforce), Modifier.weight(1f))

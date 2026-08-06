@@ -85,14 +85,11 @@ import io.github.lucasshuan.vocabu.ui.languages.languageOf
 import io.github.lucasshuan.vocabu.ui.theme.LocalDarkTheme
 
 /**
- * "What caught your eye?" — one task: marking.
+ * A confirmed selection clears the snippet and becomes a chip below, which is
+ * what lets one snippet yield both `fence` and `on the fence`.
  *
- * The marking does not stay in the text: each confirmed selection clears the
- * snippet and becomes a chip below. That is what lets one snippet yield both
- * `fence` and `on the fence` without a soup of overlapping highlights.
- *
- * The language at the top is still changeable here: the capture exists, but no
- * card has been born in this pair until "Save".
+ * The language is still changeable: the capture exists, but nothing is born in
+ * this pair until "Save".
  */
 @Composable
 fun SelectScreen(
@@ -248,19 +245,14 @@ fun SelectScreen(
 }
 
 /**
- * "Discard capture" — soft red, with the trash icon.
- *
- * It used to be a `TextButton` in `outline`, which in light is a lilac with 1 px
- * of contrast: the only exit for someone who opened a capture by mistake was
- * written in the color of the borders. It is now the same pairing (light
- * container plus error ink) the delete swipe uses before its threshold — across
- * the app that pair means "this erases, and you can still back out".
+ * Light container plus error ink — the swipe's pre-threshold pair, which across
+ * the app means "this erases, and you can still back out". It was an `outline`
+ * `TextButton`, a lilac with 1px of contrast in light.
  */
 @Composable
 private fun DiscardCaptureButton(onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    // In dark, Material's `errorContainer` is a nearly opaque wine, too heavy for
-    // a supporting action.
+    // In dark, `errorContainer` is a near-opaque wine — too heavy to support.
     val background = if (LocalDarkTheme.current) colors.error.copy(alpha = 0.14f) else colors.errorContainer
     val touch = rememberHaptics()
     Surface(
@@ -283,8 +275,8 @@ private fun DiscardCaptureButton(onClick: () -> Unit) {
 }
 
 /**
- * A destination, not a label: whoever recorded with the wrong language marked
- * fixes it here, at the last moment it is still cheap.
+ * A destination, not a label: recording under the wrong language is fixed here,
+ * the last moment it is still cheap.
  */
 @Composable
 private fun LanguagePicker(target: String, courses: List<String>, onChoose: (String) -> Unit) {
@@ -344,9 +336,8 @@ private fun PhotoPreview(path: String) {
 }
 
 /**
- * Deliberately without word-level sync: listening again solves it, and a
- * highlight following the speech would need per-word alignment the local
- * transcription does not provide.
+ * No word-level sync: a highlight following the speech needs per-word alignment
+ * the local transcription does not provide, and listening again solves it.
  */
 @Composable
 private fun AudioPlayerBar(path: String, durationMs: Long?, correcting: Boolean, onCorrect: () -> Unit) {
@@ -422,17 +413,17 @@ private fun ErrorNotice(text: String) {
     }
 }
 
-/** What the lowest bar still occupies, so silence is a line and not a gap. */
+/** Silence draws a line, not a gap. */
 private val MIN_WAVE_HEIGHT = 3.dp
 
 private const val PRESS_OPACITY = 0.3f
 
 /**
- * A fixed bar width rather than ten stretched bars: what reads as "audio" is the
- * repeated thin bar, not the count of them.
+ * Fixed bar width, not ten stretched bars: what reads as "audio" is the repeated
+ * thin bar, not the count.
  *
- * Until the profile arrives — or if the file is unreadable — every bar stays at
- * minimum height; an invented wave would say something nobody measured.
+ * Every bar sits at minimum until the profile arrives, and stays there if the
+ * file is unreadable — an invented wave would say something nobody measured.
  */
 @Composable
 private fun AudioWave(

@@ -12,19 +12,13 @@ import java.text.Normalizer
 import java.util.Locale
 
 /**
- * Each flag's drawing.
+ * The circle-flags collection (MIT), SVG converted to VectorDrawable without
+ * redrawing. `Canvas` does not scale to 43 flags — Brazil's is not a diamond
+ * with a circle — and emoji regional indicators depend on the system font,
+ * landing as a rectangle or two letters on many devices.
  *
- * The flags are the **circle-flags** collection (MIT), converted from SVG to
- * VectorDrawable without redrawing anything: hand-made drawings with the right
- * proportions and coats of arms. Approximating them in `Canvas` does not scale to
- * 43 languages — Brazil's flag is not a diamond with a circle.
- *
- * Emoji does not serve either: the regional indicator depends on the system font
- * and becomes a rectangle or two letters on many devices.
- *
- * The map is explicit on purpose. `getIdentifier()` would resolve the name at
- * runtime in one line, and is exactly the kind of reference R8 cannot see: all 43
- * flags would be stripped from the APK and only the screen would show the damage.
+ * Explicit, not `getIdentifier()`: a name resolved at runtime is a reference R8
+ * cannot see, and all 43 flags would be stripped from the APK.
  */
 @DrawableRes
 fun flagOf(language: Language): Int = when (language.country) {
@@ -75,21 +69,16 @@ fun flagOf(language: Language): Int = when (language.country) {
 }
 
 /**
- * The language for a code, falling back to English.
- *
- * The interface needs **something** to draw; returning null here would spread a
- * `?:` across every row of every screen. Whoever must know the code is unknown —
- * the server, at generation time — uses [Languages.of], which returns null.
+ * Falls back rather than returning null: the interface needs something to draw,
+ * and null would spread a `?:` across every row. Whoever has to know a code is
+ * unknown — the server, at generation — uses [Languages.of].
  */
 fun languageOf(code: String?): Language = Languages.of(code) ?: Languages.ENGLISH
 
 /**
- * Which string resource names this language in the interface.
- *
- * An explicit `when`, the twin of [flagOf], for the reason a `<string-array>` is
- * wrong here: an array is index-keyed, and index drift against [Languages.CATALOG]
- * would be silent. Codes with a region become underscores, since a resource name
- * cannot hold a hyphen.
+ * A `when`, not a `<string-array>`: an array is index-keyed, and drift against
+ * [Languages.CATALOG] would be silent. Regions become underscores — a resource
+ * name cannot hold a hyphen.
  */
 @StringRes
 fun nameResOf(code: String): Int = when (code) {
@@ -142,14 +131,12 @@ fun nameResOf(code: String): Int = when (code) {
 val Language.displayName: String
     @Composable get() = stringResource(nameResOf(code))
 
-/** For the two places a name is needed outside composition: search, and `semantics`. */
+/** For search and `semantics`, the two places outside composition. */
 fun Context.nameOf(language: Language): String = getString(nameResOf(language.code))
 
 /**
- * The search filter of the "New language" screen.
- *
- * Matches the display name, the English name and the code, so someone reading a
- * Portuguese interface who types "japanese" still finds it.
+ * Matches display name, English name and code, so someone on a Portuguese
+ * interface typing "japanese" still finds it.
  */
 fun List<Language>.search(term: String, displayName: (Language) -> String): List<Language> {
     val wanted = term.fold()
@@ -162,11 +149,10 @@ fun List<Language>.search(term: String, displayName: (Language) -> String): List
 }
 
 /**
- * Accent-free and lower case, on both sides. Someone typing "japones" in a hurry
- * wants to find "Japonês", and a filter demanding the circumflex returns nothing.
+ * Accent-free on both sides: "japones" typed in a hurry has to find "Japonês".
  *
- * `Locale.ROOT` rather than the default: this is a comparison, and under a Turkish
- * locale the default would fold "I" to a dotless "ı" and stop matching.
+ * `Locale.ROOT`, not the default — under a Turkish locale that folds "I" to a
+ * dotless "ı" and stops matching.
  */
 private fun String.fold(): String = Normalizer.normalize(trim(), Normalizer.Form.NFD)
     .replace(COMBINING_MARKS, "")

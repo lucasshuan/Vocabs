@@ -15,11 +15,8 @@ import io.github.lucasshuan.vocabu.ui.languages.displayName
 import io.github.lucasshuan.vocabu.ui.languages.flagOf
 
 /**
- * The flag as a disc.
- *
- * The clipping is Compose's rather than the drawing's: `clip` has real
- * antialiasing, while a `clip-path` inside the VectorDrawable jags the edge on
- * some Android versions. The drawing itself is the original square art.
+ * Clipped by Compose, not the drawable: `clip` antialiases, while a `clip-path`
+ * inside a VectorDrawable jags the edge on some Android versions.
  */
 @Composable
 fun CircularFlag(language: Language, modifier: Modifier = Modifier, size: Dp = 20.dp) {

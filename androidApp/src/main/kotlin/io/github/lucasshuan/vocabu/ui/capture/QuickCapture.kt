@@ -27,15 +27,11 @@ import java.io.File
 import kotlinx.coroutines.delay
 
 /**
- * Audio and photo capture, with no screen of its own.
+ * Held outside any navigation destination, because the bottom bar triggers it:
+ * inside one, leaving the tab mid-recording would lose the state.
  *
- * The wiring is separate from the buttons because what triggers these actions is
- * the bottom bar, which lives outside any screen. Inside a navigation
- * destination, leaving the tab mid-recording would lose the state.
- *
- * Duration is in milliseconds, not whole seconds: the [MIN_RECORDING_MS] cut is
- * 0.8 s, and against a counter that only ticks at 1 s it discarded every short
- * recording and nothing else.
+ * Duration in millis, not whole seconds: against a 1s counter the 0.8s
+ * [MIN_RECORDING_MS] cut discarded every short recording and nothing else.
  */
 @Stable
 class QuickCapture internal constructor() {
@@ -44,9 +40,8 @@ class QuickCapture internal constructor() {
         internal set
 
     /**
-     * Deliberately outside Compose state: what needs it is the save-or-discard
-     * decision. Publishing every millisecond would recompose the screen 20 times
-     * a second to write the same "0:07".
+     * Outside Compose state: only the save-or-discard decision reads it, and
+     * publishing it would recompose 20 times a second to write the same "0:07".
      */
     val durationMs: Long
         get() = if (isRecording) SystemClock.elapsedRealtime() - startedAt else lastDurationMs
@@ -67,9 +62,8 @@ class QuickCapture internal constructor() {
     internal var readLevel: () -> Float = { 0f }
 
     /**
-     * A function rather than observable state: the wave samples this at its own
-     * rate, and state changing at 60 Hz would recompose the whole recording
-     * screen to move nineteen rectangles.
+     * A function, not observable state: the wave samples at its own rate, and
+     * 60Hz state would recompose the screen to move nineteen rectangles.
      */
     fun levelNow(): Float = readLevel()
 
@@ -77,10 +71,6 @@ class QuickCapture internal constructor() {
 
     fun saveAudio() = onFinish(true)
 
-    /**
-     * Ends without saving. A queue full of half-second audio would cost more to
-     * clean up than the gesture saves.
-     */
     fun cancelAudio() = onFinish(false)
 
     fun takePhoto() = onOpenCamera()
@@ -88,17 +78,12 @@ class QuickCapture internal constructor() {
     fun requestAudioPermission() = onRequestPermission()
 }
 
-/**
- * Below this the recording was a mistake, not a capture: the shortest path from
- * starting to ending is someone who released on the wrong target.
- */
+/** Below this it was a slip: someone released on the wrong target. */
 const val MIN_RECORDING_MS = 800L
 
 /**
- * [onSave] receives the finished capture and decides what to do with it. The
- * bottom notice needs the duration, format and course in the same call that
- * records the capture, because the id the database returns is what links the card
- * to the "Select" shortcut.
+ * [onSave] gets duration, format and course in the same call that records the
+ * capture: the id the database returns is what links the notice to "Select".
  */
 @Composable
 fun rememberQuickCapture(
@@ -115,8 +100,8 @@ fun rememberQuickCapture(
         Manifest.permission.RECORD_AUDIO,
     ) == PackageManager.PERMISSION_GRANTED
 
-    // The destination file has to exist before calling the camera: the camera app
-    // writes into it, it does not hand back a path.
+    // The file has to exist first: the camera app writes into it and hands back
+    // no path.
     var pendingPhoto by remember { mutableStateOf<File?>(null) }
     var photoTarget by remember { mutableStateOf(target) }
     val camera = rememberLauncherForActivityResult(
@@ -132,14 +117,13 @@ fun rememberQuickCapture(
     }
 
     /**
-     * The destination course is frozen when the capture starts: the carousel page
-     * can change while the audio runs, and the destination has to be what was
-     * marked when the finger went down.
+     * Frozen at the start: the carousel page can change while the audio runs,
+     * and the destination is what was marked when the finger went down.
      */
     var recordingTarget by remember { mutableStateOf(target) }
 
-    // LocalResources, not LocalContext: only the former invalidates when the
-    // configuration changes, and these are read from a callback.
+    // LocalResources, not LocalContext: only it invalidates on configuration
+    // change, and these strings are read from a callback.
     val resources = LocalResources.current
 
     val audioPermission = rememberLauncherForActivityResult(
@@ -192,14 +176,12 @@ fun rememberQuickCapture(
         }
     }
 
-    // If the app dies mid-recording the half file is discarded rather than
-    // becoming a mute audio in the pending list.
+    // A half file is discarded rather than becoming mute audio in Pending.
     DisposableEffect(Unit) {
         onDispose { if (recorder.isRecording) recorder.cancel() }
     }
 
-    // The timer publishes only the turn of the second. The real precision is in
-    // `durationMs`, read straight off the clock when someone asks.
+    // Publishes only the turn of the second; `durationMs` holds the precision.
     LaunchedEffect(state.isRecording) {
         while (state.isRecording) {
             state.seconds = state.durationMs / 1_000L

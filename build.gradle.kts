@@ -1,4 +1,4 @@
-// Plugins declarados aqui sem aplicar; cada módulo aplica o que precisa.
+// Declared here, applied per module.
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.kmp.library) apply false

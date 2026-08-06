@@ -18,9 +18,8 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
 
 /**
- * The failure as a code, so the screen picks the wording in the reader's
- * language. [detail] is what cannot be translated — the AI provider's raw
- * sentence, or the HTTP status. It is for diagnosis and never replaces the code.
+ * A code, so the screen picks the wording. [detail] is the provider's raw
+ * sentence or the HTTP status — for diagnosis, never a replacement for the code.
  */
 class CardException(
     val code: ErrorCode,
@@ -33,8 +32,8 @@ class CardApi(
     private val client: HttpClient,
 ) {
     /**
-     * [pair] comes from the entry, not from app configuration: regenerating an old
-     * card after switching course has to return it in the language it was born in.
+     * The pair comes from the entry, not from app configuration: an old card
+     * regenerated after a switch must come back in the language it was born in.
      */
     suspend fun generate(snippet: String, target: String, type: TargetType, languagePair: LanguagePair): CardResponse {
         val answer = try {
@@ -54,9 +53,8 @@ class CardApi(
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (failure: Exception) {
-            // Server down, network out, DNS: to a reader these are the same thing,
-            // and the operating system's sentence arrives in English anyway. The
-            // original text stays in the detail, for diagnosis.
+            // Server down, network out, DNS: one thing to a reader, and the OS
+            // sentence arrives in English anyway. It survives in the detail.
             throw CardException(ErrorCode.UNREACHABLE, failure.message)
         }
 

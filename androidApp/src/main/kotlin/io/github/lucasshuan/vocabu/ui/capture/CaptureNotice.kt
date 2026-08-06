@@ -49,21 +49,17 @@ import io.github.lucasshuan.vocabu.ui.languages.displayName
 import io.github.lucasshuan.vocabu.ui.languages.languageOf
 
 /**
- * What the bottom notice has to say.
- *
- * [key] exists so the notice is **replaceable**: captures in a row swap the
- * content and restart the countdown instead of stacking cards. Two identical
- * captures in a row have to count as different notices, and the key is what
- * guarantees that when every other field matches.
+ * [key] makes the notice replaceable: captures in a row swap the content and
+ * restart the countdown instead of stacking. It is the only thing separating two
+ * identical captures in a row.
  */
 sealed interface Notice {
 
     val key: Long
 
     /**
-     * The capture entered the queue. [captureId] arrives a few milliseconds after
-     * the rest, when the database returns the id — until then the "Select"
-     * shortcut has nowhere to go and so is not drawn.
+     * [captureId] lands a few millis after the rest, when the database returns
+     * it. Until then "Select" has nowhere to go and is not drawn.
      */
     data class Saved(
         override val key: Long,
@@ -73,25 +69,20 @@ sealed interface Notice {
         val captureId: Long? = null,
     ) : Notice
 
-    /** One sentence and nothing else: microphone denied, recording too short. */
+    /** Microphone denied, recording too short — one sentence, no action. */
     data class Message(override val key: Long, val text: String) : Notice
 }
 
-/** How long each notice lives. The message is shorter because it offers nothing. */
+/** The message is shorter because it offers nothing to act on. */
 private const val SAVED_LIFETIME_MS = 5_000
 private const val NOTICE_LIFETIME_MS = 3_500
 
 /**
- * The passing notice.
+ * Floats over the content and moves nothing. Ignoring is the default exit —
+ * "Select" is a shortcut for whoever has time now, never the next step.
  *
- * It returns to where the person was and moves nothing: it floats over the
- * content, disappears on its own in 5 s, and the bar at its base counts the time
- * left. Ignoring is the default exit and carries no penalty — "Select" is a
- * shortcut for whoever has time now, never the next step.
- *
- * It replaced the `Snackbar` because a flag, an audio duration, a named action
- * and a visible clock do not fit in a line of text — and the clock is the piece
- * that makes the notice ignorable without anxiety.
+ * Not a `Snackbar`: a flag, a duration, a named action and a visible clock do
+ * not fit in a line of text, and the clock is what makes it ignorable.
  */
 @Composable
 fun NoticeStrip(
@@ -100,9 +91,8 @@ fun NoticeStrip(
     onExpire: (key: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // The last non-null notice stays drawn while the card leaves: without it the
-    // content would vanish on the first frame of the exit and the card would
-    // descend empty.
+    // Kept while the card leaves, or the content vanishes on the exit's first
+    // frame and the card descends empty.
     var last by remember { mutableStateOf<Notice?>(null) }
     LaunchedEffect(notice) { if (notice != null) last = notice }
 
@@ -206,9 +196,8 @@ private fun NoticeCard(
                 }
             }
 
-            // The notice's clock, drawn from the animated fraction read inside
-            // `drawBehind`: five seconds of bar should not recompose the card
-            // three hundred times.
+            // The fraction is read inside `drawBehind`: five seconds of bar
+            // should not recompose the card three hundred times.
             Box(
                 Modifier
                     .fillMaxWidth()
